@@ -1,5 +1,10 @@
 <section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
-  <button type="button" class="sidebar-toggle" aria-label="Toggle navigation" (click)="toggleSidebar()">
+  <button
+    type="button"
+    class="sidebar-toggle"
+    aria-label="Toggle navigation"
+    (click)="toggleSidebar()"
+  >
     ☰
   </button>
 
@@ -9,7 +14,9 @@
       <a routerLink="/dashboard/academic">Overview</a>
       <a routerLink="/dashboard/academic">Waiting</a>
       <a routerLink="/dashboard/academic">Approved</a>
-      <button type="button" class="logout-link" (click)="logout()">Log out</button>
+      <button type="button" class="logout-link" (click)="logout()">
+        Log out
+      </button>
     </nav>
   </aside>
 
@@ -22,9 +29,15 @@
     </header>
 
     <div class="stats-grid">
-      <article class="stat-card"><span>Pending</span><strong>13</strong></article>
-      <article class="stat-card success"><span>Approved</span><strong>50</strong></article>
-      <article class="stat-card danger"><span>Rejected</span><strong>4</strong></article>
+      <article class="stat-card">
+        <span>Pending</span><strong>13</strong>
+      </article>
+      <article class="stat-card success">
+        <span>Approved</span><strong>50</strong>
+      </article>
+      <article class="stat-card danger">
+        <span>Rejected</span><strong>4</strong>
+      </article>
     </div>
   </main>
 </section>

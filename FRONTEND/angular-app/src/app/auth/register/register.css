@@ -9,7 +9,11 @@
   place-items: center;
   padding: 32px 20px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--udsm-blue) 12%, transparent), transparent 45%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--udsm-blue) 12%, transparent),
+      transparent 45%
+    ),
     var(--bg-light);
 }
 
@@ -33,9 +37,9 @@
   object-fit: contain;
   padding: 6px;
   margin: 0 auto 14px;
-  border: 1px solid var(--border-soft);
+  /* border: 1px solid var(--border-soft); */
   border-radius: 10px;
-  background: #ffffff;
+  /* background: #ffffff; */
   display: block;
 }
 
@@ -88,7 +92,9 @@
   background: #ffffff;
   color: var(--text-dark);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .field input:focus,

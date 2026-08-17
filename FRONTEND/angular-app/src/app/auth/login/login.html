@@ -1,6 +1,6 @@
 <header class="login-header">
   <div class="header-content">
-    <img src="/udsm-logo.png" alt="UDSM" class="header-logo" />
+    <img src="/public/udsm-logo.png" alt="UDSM" class="header-logo" />
     <h2>E-Clearance MIS</h2>
   </div>
 </header>
@@ -8,7 +8,7 @@
 <section class="login-page">
   <div class="login-card">
     <div class="brand-panel">
-      <img src="/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
       <h1>University of Dar es Salaam</h1>
       <p>Secure access for students, staff, and administrators.</p>
     </div>
@@ -16,12 +16,22 @@
     <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()">
       <label class="field" for="identifier">
         <span>Email / Registration Number</span>
-        <input id="identifier" type="text" formControlName="identifier" placeholder="Email / Registration Number" />
+        <input
+          id="identifier"
+          type="text"
+          formControlName="identifier"
+          placeholder="Email / Registration Number"
+        />
       </label>
 
       <label class="field" for="password">
         <span>Password</span>
-        <input id="password" type="password" formControlName="password" placeholder="Password" />
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Password"
+        />
       </label>
 
       <label class="field" for="role">
