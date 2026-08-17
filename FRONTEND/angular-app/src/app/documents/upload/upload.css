@@ -1,0 +1,81 @@
+:host {
+  display: block;
+}
+
+.upload-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--bg-light);
+}
+
+.upload-card {
+  width: min(100%, 720px);
+  padding: 30px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+}
+
+.upload-card h1 {
+  margin: 0 0 24px;
+  color: var(--udsm-blue-dark);
+  font-size: 1.7rem;
+}
+
+.upload-card header p { margin: -12px 0 22px; color: var(--text-muted); }
+.checklist { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:24px; }
+.checklist > div { display:flex; align-items:flex-start; gap:9px; padding:12px; border:1px solid var(--border-soft); border-radius:var(--radius-control); background:var(--surface-soft); color:var(--text-muted); }
+.checklist .complete { border-color:color-mix(in srgb,var(--success) 35%,var(--border-soft)); color:var(--success); background:color-mix(in srgb,var(--success) 8%,#fff); }.checklist span{font-weight:800;}.checklist strong,.checklist small{display:block;}.checklist small{margin-top:3px;font-size:.75rem;line-height:1.35;}
+
+form {
+  display: grid;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text-dark);
+}
+
+.file-field input {
+  padding: 10px;
+}
+
+button {
+  min-height: 46px;
+  border: none;
+  border-radius: 8px;
+  background: var(--udsm-blue);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+button:hover {
+  background: var(--udsm-blue-dark);
+}
+
+.success-message {
+  margin: 0;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.error-message { margin:0; color:var(--danger); font-weight:700; }.documents-link{margin-top:18px;display:inline-block;font-weight:700;text-decoration:none;}button:disabled{cursor:not-allowed;opacity:.65;}@media(max-width:600px){.checklist{grid-template-columns:1fr;}}

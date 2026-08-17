@@ -1,0 +1,45 @@
+<header class="login-header">
+  <div class="header-content">
+    <img src="/udsm-logo.png" alt="UDSM" class="header-logo" />
+    <h2>E-Clearance MIS</h2>
+  </div>
+</header>
+
+<section class="login-page">
+  <div class="login-card">
+    <div class="brand-panel">
+      <img src="/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
+      <h1>University of Dar es Salaam</h1>
+      <p>Secure access for students, staff, and administrators.</p>
+    </div>
+
+    <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()">
+      <label class="field" for="identifier">
+        <span>Email / Registration Number</span>
+        <input id="identifier" type="text" formControlName="identifier" placeholder="Email / Registration Number" />
+      </label>
+
+      <label class="field" for="password">
+        <span>Password</span>
+        <input id="password" type="password" formControlName="password" placeholder="Password" />
+      </label>
+
+      <label class="field" for="role">
+        <span>User Role</span>
+        <select id="role" formControlName="role">
+          <option value="" disabled>Select role</option>
+          <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+        </select>
+      </label>
+
+      <button type="submit">Sign In</button>
+
+      <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+      <div class="helper-row">
+        <a routerLink="/login">Forgot Password</a>
+        <a routerLink="/signup-options">Create Account</a>
+      </div>
+    </form>
+  </div>
+</section>

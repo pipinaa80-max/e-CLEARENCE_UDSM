@@ -1,0 +1,30 @@
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+  <button type="button" class="sidebar-toggle" aria-label="Toggle navigation" (click)="toggleSidebar()">
+    ☰
+  </button>
+
+  <aside class="sidebar">
+    <div class="brand">ICT</div>
+    <nav>
+      <a routerLink="/dashboard/ict">Overview</a>
+      <a routerLink="/dashboard/ict">Pending</a>
+      <a routerLink="/dashboard/ict">Cleared</a>
+      <button type="button" class="logout-link" (click)="logout()">Log out</button>
+    </nav>
+  </aside>
+
+  <main class="content-panel">
+    <header class="topbar">
+      <div>
+        <h2>ICT Dashboard</h2>
+        <p>Review ICT clearance checks</p>
+      </div>
+    </header>
+
+    <div class="stats-grid">
+      <article class="stat-card"><span>Pending</span><strong>11</strong></article>
+      <article class="stat-card success"><span>Cleared</span><strong>56</strong></article>
+      <article class="stat-card danger"><span>Rejected</span><strong>3</strong></article>
+    </div>
+  </main>
+</section>

@@ -1,0 +1,26 @@
+<main class="signup-page">
+  <header class="page-header">
+    <img src="/udsm-logo.png" alt="University of Dar es Salaam" />
+    <span>E-Clearance MIS</span>
+  </header>
+
+  <section class="choice-card" aria-labelledby="signup-title">
+    <div class="account-icon" aria-hidden="true">♙</div>
+    <h1 id="signup-title">Create an account</h1>
+    <p>Please select whether you are a Student or Staff member.</p>
+
+    <div class="choices">
+      <a routerLink="/register" class="choice student">
+        <span class="choice-icon" aria-hidden="true">🎓</span>
+        <span>Student</span>
+      </a>
+      <span class="or">OR</span>
+      <a routerLink="/staff-register" class="choice staff">
+        <span class="choice-icon" aria-hidden="true">♟</span>
+        <span>Staff</span>
+      </a>
+    </div>
+
+    <a routerLink="/login" class="login-link">Already have an account? Log in</a>
+  </section>
+</main>

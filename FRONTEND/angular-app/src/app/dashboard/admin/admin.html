@@ -1,0 +1,34 @@
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+  <button type="button" class="sidebar-toggle" aria-label="Toggle navigation" (click)="toggleSidebar()">
+    ☰
+  </button>
+
+  <aside class="sidebar">
+    <div class="brand">Admin</div>
+    <nav>
+      <a routerLink="/dashboard/admin">Overview</a>
+      <a routerLink="/dashboard/admin">Users</a>
+      <a routerLink="/dashboard/admin">Roles</a>
+      <a routerLink="/dashboard/admin">Reports</a>
+      <button type="button" class="logout-link" (click)="logout()">Log out</button>
+    </nav>
+  </aside>
+
+  <main class="content-panel">
+    <header class="topbar">
+      <div>
+        <h2>Administrator Dashboard</h2>
+        <p>Manage users, offices, requests, and reports</p>
+      </div>
+    </header>
+
+    <div class="stats-grid">
+      <article class="stat-card"><span>Total Students</span><strong>220</strong></article>
+      <article class="stat-card"><span>Clearance Requests</span><strong>135</strong></article>
+      <article class="stat-card success"><span>Completed</span><strong>94</strong></article>
+      <article class="stat-card warning"><span>Pending</span><strong>31</strong></article>
+      <article class="stat-card danger"><span>Rejected</span><strong>10</strong></article>
+      <article class="stat-card"><span>Total Staff</span><strong>42</strong></article>
+    </div>
+  </main>
+</section>

@@ -1,0 +1,31 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--bg-light);
+  color: var(--text-dark);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.router-shell {
+  flex: 1;
+  display: block;
+}
+
+.app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+.app-footer { padding: 22px 24px; background: var(--udsm-blue-dark); color: color-mix(in srgb, #ffffff 86%, var(--udsm-gold)); text-align: center; font-size: .88rem; }.app-footer p{margin:0;}.app-footer nav{display:flex;justify-content:center;gap:12px;margin-top:8px;}.app-footer a{color:var(--udsm-gold);font-weight:700;text-decoration:none;}.app-footer a:hover{color:whitesmoke;}.app-footer nav span{color:color-mix(in srgb,#fff 60%,transparent);}

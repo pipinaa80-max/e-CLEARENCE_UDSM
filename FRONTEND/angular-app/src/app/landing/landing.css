@@ -1,0 +1,238 @@
+:host {
+  display: block;
+}
+
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-light);
+  color: var(--text-dark);
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 48px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 6%, transparent);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.nav-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.logo-section h1 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.logo-section span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.login-btn-outline,
+.cta-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.login-btn-outline {
+  background: var(--udsm-blue);
+  color: #ffffff;
+  padding: 10px 18px;
+  white-space: nowrap;
+}
+
+.login-btn-outline:hover {
+  background: var(--udsm-blue-dark);
+}
+
+.hero {
+  position: relative;
+  padding: 76px 24px 84px;
+  text-align: center;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--udsm-blue) 94%, #ffffff), var(--udsm-blue-dark));
+  border-bottom: 5px solid var(--udsm-gold);
+}
+
+.hero-logo {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--udsm-blue-dark) 28%, transparent));
+}
+
+.hero h2 {
+  max-width: 900px;
+  margin: 0 auto 18px;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.hero p {
+  max-width: 720px;
+  margin: 0 auto 34px;
+  color: color-mix(in srgb, #ffffff 88%, var(--udsm-gold));
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.cta-btn {
+  background: var(--udsm-gold);
+  color: var(--udsm-blue-dark);
+  padding: 14px 32px;
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--udsm-blue-dark) 22%, transparent);
+}
+
+.cta-btn:hover {
+  background: var(--udsm-gold-hover);
+  transform: translateY(-1px);
+}
+
+.info-section {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 64px 32px 72px;
+  flex: 1;
+}
+
+.info-section h3 {
+  margin: 0 0 34px;
+  color: var(--udsm-blue-dark);
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.info-section h3::after {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 4px;
+  margin: 12px auto 0;
+  border-radius: 999px;
+  background: var(--udsm-gold);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: var(--shadow-soft);
+}
+
+.step-num {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: var(--udsm-blue);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--udsm-blue-dark) 35%, transparent);
+}
+
+.info-card h4 {
+  margin: 0 0 10px;
+  color: var(--udsm-blue-dark);
+  font-size: 1.05rem;
+}
+
+.info-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+  font-size: 0.94rem;
+}
+
+.footer {
+  padding: 22px 24px;
+  background: var(--udsm-blue-dark);
+  color: color-mix(in srgb, #ffffff 86%, var(--udsm-gold));
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--udsm-gold);
+  font-weight: 700;
+}
+
+.footer a:hover{
+  color: whitesmoke;
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    padding: 14px 24px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .login-btn-outline {
+    width: 100%;
+  }
+
+  .hero {
+    padding: 56px 18px 64px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

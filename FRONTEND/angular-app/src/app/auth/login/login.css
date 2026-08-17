@@ -1,0 +1,246 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 18px 48px;
+  background: var(--udsm-blue);
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 6%, transparent);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.header-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.header-content h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  border: 3px solid var(--udsm-gold);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--udsm-blue) 14%, transparent), transparent 42%),
+    var(--bg-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  filter: blur(2.5px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+
+.login-card {
+  width: min(100%, 960px);
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  z-index: 1;
+}
+
+.brand-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 38px;
+  background: linear-gradient(150deg, var(--udsm-blue), var(--udsm-blue-dark));
+  color: #ffffff;
+}
+
+.brand-badge {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  padding: 8px;
+  margin: 0 auto 24px;
+  border-radius: 10px;
+  justify-content: center;
+  display: block;
+}
+
+.brand-panel h1 {
+  margin: 0 0 14px;
+  font-size: medium;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.brand-panel p {
+  margin: 0;
+  color: color-mix(in srgb, #ffffff 84%, var(--udsm-gold));
+  line-height: 1.6;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 44px 38px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.field span {
+  font-size: 0.9rem;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--udsm-blue);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--udsm-blue) 15%, transparent);
+}
+
+button {
+  min-height: 48px;
+  border: none;
+  border-radius: 8px;
+  background: var(--udsm-blue);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background: var(--udsm-blue-dark);
+  transform: translateY(-1px);
+}
+
+.error-message {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.helper-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.helper-row a {
+  color: var(--udsm-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.helper-row a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .login-header {
+    padding: 16px 24px;
+    justify-content: center;
+  }
+
+  .header-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .header-content h2 {
+    font-size: 1.15rem;
+  }
+
+  .login-page {
+    margin-top: 0;
+  }
+
+  .login-card {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel,
+  .login-form {
+    padding: 30px 24px;
+  }
+  background-size: cover;
+  background-position: center;
+}
+
+.footer {
+  padding: 22px 24px;
+  background: var(--udsm-blue-dark);
+  color: color-mix(in srgb, #ffffff 86%, var(--udsm-gold));
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer a {
+  color: var(--udsm-gold);
+  font-weight: 700;
+}
+
+.footer a:hover{
+  color: whitesmoke;
+}
