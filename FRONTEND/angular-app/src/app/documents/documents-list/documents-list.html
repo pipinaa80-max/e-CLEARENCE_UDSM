@@ -1,25 +1,72 @@
 <section class="documents-page">
   <div class="documents-card">
+
     <div class="header-row">
       <h1>Documents</h1>
-      <a routerLink="/documents/upload" class="primary-link">Upload Document</a>
+
+      <a
+              routerLink="/documents/upload"
+              class="primary-link"
+      >
+        Upload Document
+      </a>
     </div>
 
-    <p class="empty-state" *ngIf="!documents.length">No documents uploaded yet. Upload the four required clearance documents to continue.</p>
-    <table *ngIf="documents.length">
-      <thead>
+    <ng-container *ngIf="documents$ | async as documents">
+
+      <!-- Empty state -->
+      <p
+              class="empty-state"
+              *ngIf="documents.length === 0"
+      >
+        No documents uploaded yet.
+        Upload the four required clearance documents to continue.
+      </p>
+
+      <!-- Documents table -->
+      <table *ngIf="documents.length > 0">
+
+        <thead>
         <tr>
           <th>File Name</th>
           <th>Type</th>
           <th>Upload Date</th>
           <th>Status</th>
         </tr>
-      </thead>
-      <tbody>
+        </thead>
+
+        <tbody>
+
         <tr *ngFor="let document of documents">
-          <td>{{ document.fileName }}</td><td>{{ document.fileType }}</td><td>{{ document.uploadedAt | date:'mediumDate' }}</td><td><span class="status" [ngClass]="document.status.toLowerCase()">{{ document.status }}</span></td>
+
+          <td>
+            {{ document.fileName }}
+          </td>
+
+          <td>
+            {{ document.fileType }}
+          </td>
+
+          <td>
+            {{ document.uploadDate | date:'mediumDate' }}
+          </td>
+
+          <td>
+              <span
+                      class="status"
+                      [ngClass]="document.verified ? 'approved' : 'pending'"
+              >
+                {{ document.verified ? 'Approved' : 'Pending' }}
+              </span>
+          </td>
+
         </tr>
-      </tbody>
-    </table>
+
+        </tbody>
+
+      </table>
+
+    </ng-container>
+
   </div>
 </section>

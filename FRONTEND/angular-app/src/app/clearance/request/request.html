@@ -1,7 +1,135 @@
-<section class="request-page"><div class="request-card"><header><h1>Clearance Request</h1><p>Step 1 of 2: complete your academic details. Your name and registration number are filled in from your account.</p></header><form [formGroup]="requestForm" (ngSubmit)="submit()"><div class="grid">
-<label class="field"><span>Student Information</span><input formControlName="studentName" readonly /></label><label class="field"><span>Registration Number</span><input formControlName="registrationNumber" readonly /></label>
-<label class="field"><span>College</span><select formControlName="college" (change)="onCollegeChange()"><option value="" disabled>Select college</option><option *ngFor="let college of collegeList" [value]="college">{{ college }}</option></select></label>
-<label class="field"><span>Department</span><select formControlName="department" [disabled]="!requestForm.controls.college.value"><option value="" disabled>Select department</option><option *ngFor="let department of departments" [value]="department">{{ department }}</option></select></label>
-<label class="field"><span>Programme</span><select formControlName="programme" [disabled]="!requestForm.controls.college.value"><option value="" disabled>Select programme</option><option *ngFor="let programme of programmeOptions" [value]="programme">{{ programme }}</option></select></label>
-<label class="field"><span>Academic Year</span><input formControlName="academicYear" placeholder="e.g. 2025/2026" /></label><label class="field"><span>Graduation Year</span><input formControlName="graduationYear" placeholder="e.g. 2026" /></label>
-</div><label class="confirm-box"><input type="checkbox" formControlName="confirm" /><span>I confirm that the information provided is correct.</span></label><p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p><button type="submit">Continue to Documents</button></form></div></section>
+<section class="request-page">
+    <div class="request-card">
+
+        <header>
+            <h1>Clearance Request</h1>
+            <p>
+                Step 1 of 2: complete your academic details.
+                Your name is filled in from your account.
+            </p>
+        </header>
+
+        <form [formGroup]="requestForm" (ngSubmit)="submit()">
+
+            <div class="grid">
+
+                <!-- Student Name -->
+                <label class="field">
+                    <span>Student Information</span>
+                    <input
+                            type="text"
+                            formControlName="studentName"
+                            readonly
+                    />
+                </label>
+
+                <!-- Registration Number - NOW TYPABLE -->
+                <label class="field">
+                    <span>Registration Number</span>
+                    <input
+                            type="text"
+                            formControlName="registrationNumber"
+                            placeholder="e.g. 2021-04-12345"
+                            autocomplete="off"
+                    />
+                </label>
+
+                <!-- College -->
+                <label class="field">
+                    <span>College</span>
+                    <select
+                            formControlName="college"
+                            (change)="onCollegeChange()"
+                    >
+                        <option value="" disabled>Select college</option>
+                        <option
+                                *ngFor="let college of collegeList"
+                                [value]="college"
+                        >
+                            {{ college }}
+                        </option>
+                    </select>
+                </label>
+
+                <!-- Department -->
+                <label class="field">
+                    <span>Department</span>
+                    <select
+                            formControlName="department"
+                            [disabled]="!requestForm.controls.college.value"
+                    >
+                        <option value="" disabled>Select department</option>
+                        <option
+                                *ngFor="let department of departments"
+                                [value]="department"
+                        >
+                            {{ department }}
+                        </option>
+                    </select>
+                </label>
+
+                <!-- Programme -->
+                <label class="field">
+                    <span>Programme</span>
+                    <select
+                            formControlName="programme"
+                            [disabled]="!requestForm.controls.college.value"
+                    >
+                        <option value="" disabled>Select programme</option>
+                        <option
+                                *ngFor="let programme of programmeOptions"
+                                [value]="programme"
+                        >
+                            {{ programme }}
+                        </option>
+                    </select>
+                </label>
+
+                <!-- Academic Year -->
+                <label class="field">
+                    <span>Academic Year</span>
+                    <input
+                            type="text"
+                            formControlName="academicYear"
+                            placeholder="e.g. 2025/2026"
+                    />
+                </label>
+
+                <!-- Graduation Year -->
+                <label class="field">
+                    <span>Graduation Year</span>
+                    <input
+                            type="text"
+                            formControlName="graduationYear"
+                            placeholder="e.g. 2026"
+                    />
+                </label>
+
+            </div>
+
+            <!-- Confirmation -->
+            <label class="confirm-box">
+                <input
+                        type="checkbox"
+                        formControlName="confirm"
+                />
+                <span>
+          I confirm that the information provided is correct.
+        </span>
+            </label>
+
+            <!-- Error -->
+            <p
+                    class="error-message"
+                    *ngIf="errorMessage"
+            >
+                {{ errorMessage }}
+            </p>
+
+            <button type="submit">
+                Continue to Documents
+            </button>
+
+        </form>
+    </div>
+</section>

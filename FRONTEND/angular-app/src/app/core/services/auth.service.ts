@@ -1,177 +1,176 @@
-import { Injectable } from '@angular/core';
-
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
 import { StorageService } from './storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly http = inject(HttpClient);
   private readonly storage = new StorageService();
+
+  private readonly apiUrl = 'http://localhost:8080/api/v1/auth';
+
   private readonly currentUserKey = 'udsm-current-user';
-  private readonly usersKey = 'udsm-users';
+  private readonly tokenKey = 'udsm-auth-token';
 
-  register(user: Omit<User, 'id' | 'createdAt'> & { password: string }): User {
-    const users = this.getAllUsers();
-    const duplicateEmail = users.some((item) => item.email.toLowerCase() === user.email.toLowerCase());
-    const duplicateRegistrationNumber = users.some(
-      (item) => item.registrationNumber.toLowerCase() === user.registrationNumber.toLowerCase()
+  register(user: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/register`, user);
+  }
+
+  login(identifier: string, password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/login`, {
+      identifier: identifier,
+      password,
+      rememberMe: false
+    }).pipe(
+      tap((response) => {
+        // Handle JwtResponse fields
+        const token = response.access_token || response.accessToken;
+        if (token) {
+          this.storage.save(this.tokenKey, token);
+        }
+
+        // Map backend response to frontend User model
+        const user = this.mapUserResponse(response);
+        this.storage.save(this.currentUserKey, user);
+      })
     );
+  }
 
-    if (duplicateEmail) {
-      throw new Error('A user with this email already exists.');
-    }
-
-    if (duplicateRegistrationNumber) {
-      throw new Error('A user with this registration number already exists.');
-    }
-
-    const newUser: User = {
-      ...user,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      status: 'Active'
+  private mapUserResponse(response: any): any {
+    // Convert snake_case from backend to camelCase for frontend
+    const user = {
+      ...response,
+      id: response.user_id || response.id,
+      fullName: response.full_name || response.fullName,
+      registrationNumber: response.registration_number || response.registrationNumber,
+      phoneNumber: response.phone_number || response.phoneNumber || response.phone,
+      isActive: response.is_active !== undefined ? response.is_active : response.isActive,
+      lastLogin: response.last_login || response.lastLogin,
+      createdAt: response.created_at || response.createdAt,
+      updatedAt: response.updated_at || response.updatedAt,
+      clearanceStatus: response.clearance_status || response.clearanceStatus,
+      isFinalYear: response.is_final_year !== undefined ? response.is_final_year : response.isFinalYear
     };
 
-    users.push(newUser);
-    this.storage.save(this.usersKey, users);
-    return newUser;
-  }
-
-  login(identifier: string, password: string, role: UserRole): User | null {
-    const users = this.getAllUsers();
-    const match = users.find(
-      (user) =>
-        user.status === 'Active' &&
-        user.role === role &&
-        (user.email.toLowerCase() === identifier.toLowerCase() ||
-          user.registrationNumber.toLowerCase() === identifier.toLowerCase()) &&
-        user.password === password
-    );
-
-    if (!match) {
-      return null;
+    // Map role
+    if (user.role) {
+      user.role = this.mapRole(user);
     }
 
-    this.storage.save(this.currentUserKey, match);
-    return match;
+    return user;
   }
 
-  logout(): void {
+  private mapRole(user: any): UserRole {
+    const backendRole = user.role;
+    const department = user.department;
+
+    const map: Record<string, UserRole> = {
+      'STUDENT': 'Student',
+      'LIBRARY_OFFICER': 'Library',
+      'FINANCE_OFFICER': 'Finance',
+      'ICT_OFFICER': 'ICT',
+      'DEPARTMENT_OFFICER': 'Department',
+      'ADMINISTRATOR': 'Administrator',
+      'ADMIN': 'Administrator'
+    };
+
+    let role = map[backendRole] || (backendRole as UserRole);
+
+    // Distinguish between Department and Academic Staff based on saved department name
+    if (backendRole === 'DEPARTMENT_OFFICER' && department === 'Academic Staff') {
+      role = 'Academic Staff';
+    }
+
+    return role;
+  }
+
+  refreshToken(refreshToken: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/refresh?refreshToken=${refreshToken}`, {});
+  }
+
+  logout(): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post(`${this.apiUrl}/logout`, {}, { headers }).pipe(
+      tap(() => {
+        this.storage.remove(this.currentUserKey);
+        this.storage.remove(this.tokenKey);
+      })
+    );
+  }
+
+  changePassword(data: { oldPassword: string; newPassword: string }): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post(`${this.apiUrl}/change-password`, data, { headers });
+  }
+
+  resetPassword(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password?email=${email}`, {});
+  }
+
+  resetPasswordConfirm(token: string, newPassword: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/reset-password/confirm?token=${token}&newPassword=${newPassword}`,
+      {}
+    );
+  }
+
+  getProfile(): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(`${this.apiUrl}/profile`, { headers }).pipe(
+      tap((response) => {
+        const user = this.mapUserResponse(response);
+        this.storage.save(this.currentUserKey, user);
+      })
+    );
+  }
+
+  updateProfile(userData: any): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.put(`${this.apiUrl}/profile`, userData, { headers });
+  }
+
+  getUserProfile(userId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.get(`${this.apiUrl}/profile/${userId}`, { headers });
+  }
+
+  activateAccount(userId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.put(`${this.apiUrl}/activate/${userId}`, {}, { headers });
+  }
+
+  deactivateAccount(userId: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.put(`${this.apiUrl}/deactivate/${userId}`, {}, { headers });
+  }
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.storage.get<string>(this.tokenKey);
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+  }
+
+  logoutLocal(): void {
     this.storage.remove(this.currentUserKey);
+    this.storage.remove(this.tokenKey);
   }
 
-  getCurrentUser(): User | null {
-    return this.storage.get<User>(this.currentUserKey);
+  getCurrentUser(): any | null {
+    return this.storage.get<any>(this.currentUserKey);
   }
 
-  updateCurrentUser(user: User): void {
-    const users = this.getAllUsers().map((item) => (item.id === user.id ? user : item));
-    this.storage.save(this.usersKey, users);
-    this.storage.save(this.currentUserKey, user);
+  getToken(): string | null {
+    return this.storage.get<string>(this.tokenKey);
   }
 
   isLoggedIn(): boolean {
-    return !!this.getCurrentUser();
+    return !!this.getToken() && !!this.getCurrentUser();
   }
 
-  getAllUsers(): User[] {
-    return this.storage.get<User[]>(this.usersKey) ?? this.seedDemoUsers();
-  }
-
-  private seedDemoUsers(): User[] {
-    const demoUsers: User[] = [
-      {
-        id: crypto.randomUUID(),
-        fullName: 'Demo Student',
-        registrationNumber: 'DEMO-001',
-        email: 'student@example.com',
-        phone: '+255712345678',
-        password: 'Student123!',
-        role: 'Student',
-        programme: 'Computer Science',
-        department: 'Computer Science',
-        college: 'CoICT',
-        yearOfStudy: 3,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: crypto.randomUUID(),
-        fullName: 'Library Officer',
-        registrationNumber: 'LIB-001',
-        email: 'library@example.com',
-        phone: '+255712345679',
-        password: 'Library123!',
-        role: 'Library',
-        programme: '',
-        department: 'Library Services',
-        college: 'Main Campus',
-        yearOfStudy: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: crypto.randomUUID(),
-        fullName: 'Finance Officer',
-        registrationNumber: 'FIN-001',
-        email: 'finance@example.com',
-        phone: '+255712345680',
-        password: 'Finance123!',
-        role: 'Finance',
-        programme: '',
-        department: 'Finance Office',
-        college: 'Administration',
-        yearOfStudy: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: crypto.randomUUID(),
-        fullName: 'ICT Officer',
-        registrationNumber: 'ICT-001',
-        email: 'ict@example.com',
-        phone: '+255712345681',
-        password: 'Ict123!',
-        role: 'ICT',
-        programme: '',
-        department: 'ICT Support',
-        college: 'IT Services',
-        yearOfStudy: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: crypto.randomUUID(),
-        fullName: 'Academic Officer',
-        registrationNumber: 'ACA-001',
-        email: 'academic@example.com',
-        phone: '+255712345682',
-        password: 'Academic123!',
-        role: 'Academic Staff',
-        programme: '',
-        department: 'Academic Registry',
-        college: 'Academics',
-        yearOfStudy: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: crypto.randomUUID(),
-        fullName: 'System Administrator',
-        registrationNumber: 'ADM-001',
-        email: 'admin@example.com',
-        phone: '+255712345683',
-        password: 'Admin123!',
-        role: 'Administrator',
-        programme: '',
-        department: 'Administration',
-        college: 'Administration',
-        yearOfStudy: 0,
-        status: 'Active',
-        createdAt: new Date().toISOString()
-      }
-    ];
-
-    this.storage.save(this.usersKey, demoUsers);
-    return demoUsers;
+  updateCurrentUser(user: any): void {
+    this.storage.save(this.currentUserKey, user);
   }
 }

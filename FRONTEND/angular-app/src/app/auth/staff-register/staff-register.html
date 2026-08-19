@@ -3,18 +3,70 @@
   <section class="staff-card" aria-labelledby="staff-title">
     <div class="staff-icon" aria-hidden="true">♟</div><h1 id="staff-title">Create Staff Account</h1><p>All fields are required</p><div class="credentials"><span></span>Your credentials<span></span></div>
     <form [formGroup]="form" (ngSubmit)="register()">
-      <label for="full-name">Full name</label><input id="full-name" formControlName="fullName" placeholder="Enter your full name" />
-      <label for="staff-id">Staff ID number</label><input id="staff-id" formControlName="staffId" placeholder="Enter your staff ID" />
-      <label for="email">Official email address</label><input id="email" type="email" formControlName="email" placeholder="name@udsm.ac.tz" />
-      <label for="role">Staff role</label><select id="role" formControlName="role"><option value="" disabled>Select your role</option><option *ngFor="let role of staffRoles" [value]="role">{{ role }}</option></select>
+
+      <div class="name-row">
+        <div class="field-group">
+          <label for="first-name">First name</label>
+          <input id="first-name" formControlName="firstName" placeholder="First name" />
+        </div>
+        <div class="field-group">
+          <label for="last-name">Last name</label>
+          <input id="last-name" formControlName="lastName" placeholder="Last name" />
+        </div>
+      </div>
+
+      <label for="middle-name">Middle name (Optional)</label>
+      <input id="middle-name" formControlName="middleName" placeholder="Middle name" />
+
+      <label for="staff-id">Staff ID number</label>
+      <input id="staff-id" formControlName="staffId" placeholder="Enter your staff ID" />
+
+      <label for="email">Official email address</label>
+      <input id="email" type="email" formControlName="email" placeholder="name@udsm.ac.tz" />
+
+      <label for="phone">Phone number</label>
+      <input id="phone" type="tel" formControlName="phone" placeholder="+255..." />
+
+      <label for="role">Staff role</label>
+      <select id="role" formControlName="role">
+        <option value="" disabled>Select your role</option>
+        <option *ngFor="let role of staffRoles" [value]="role">{{ role }}</option>
+      </select>
+
       <ng-container *ngIf="isDepartmentStaff">
-        <label for="college">College</label><select id="college" formControlName="college" (change)="onCollegeChange()"><option value="" disabled>Select your college</option><option *ngFor="let college of collegeDepartments | keyvalue" [value]="college.key">{{ college.key }}</option></select><small class="department-help">Select your exact department. Your dashboard will only show applications assigned to that department.</small>
-        <label for="department">Department</label><select id="department" formControlName="department" [disabled]="!form.controls.college.value"><option value="" disabled>Select your department</option><option *ngFor="let department of departments" [value]="department">{{ department }}</option></select>
+        <label for="college">College</label>
+        <select id="college" formControlName="college" (change)="onCollegeChange()">
+          <option value="" disabled>Select your college</option>
+          <option *ngFor="let college of collegeDepartments | keyvalue" [value]="college.key">{{ college.key }}</option>
+        </select>
+        <small class="department-help">Select your exact department. Your dashboard will only show applications assigned to that department.</small>
+
+        <label for="department">Department</label>
+        <select id="department" formControlName="department" [disabled]="!form.controls.college.value">
+          <option value="" disabled>Select your department</option>
+          <option *ngFor="let department of departments" [value]="department">{{ department }}</option>
+        </select>
       </ng-container>
-      <label for="password">Create password</label><input id="password" type="password" formControlName="password" placeholder="Create password" />
-      <label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" formControlName="confirmPassword" placeholder="Confirm password" />
-      <label class="terms"><input type="checkbox" formControlName="acceptTerms" /> <span>Accept <a href="#">terms of service</a></span></label>
-      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p><button type="submit">Register <span>›</span></button>
-    </form><p class="login-text">Have an account? <a routerLink="/login">Login</a></p>
+
+      <label for="password">Create password</label>
+      <input id="password" type="password" formControlName="password" placeholder="Min 8 characters" />
+
+      <label for="confirm-password">Confirm password</label>
+      <input id="confirm-password" type="password" formControlName="confirmPassword" placeholder="Confirm password" />
+
+      <label class="terms">
+        <input type="checkbox" formControlName="acceptTerms" />
+        <span>Accept <a href="#">terms of service</a></span>
+      </label>
+
+      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+      <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+
+      <button type="submit" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Register <span>›</span></span>
+        <span *ngIf="isLoading">Registering...</span>
+      </button>
+    </form>
+    <p class="login-text">Have an account? <a routerLink="/login">Login</a></p>
   </section>
 </main>

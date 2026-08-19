@@ -1,3 +1,4 @@
+<!-- src/app/auth/register/register.html -->
 <section class="register-page">
   <div class="register-card">
     <div class="card-header">
@@ -8,64 +9,94 @@
         application.
       </p>
     </div>
+
     <form
-      class="register-form"
-      [formGroup]="registerForm"
-      (ngSubmit)="submit()"
+            class="register-form"
+            [formGroup]="registerForm"
+            (ngSubmit)="submit()"
     >
       <div class="form-grid">
-        <label class="field"
-          ><span>First Name</span
-          ><input formControlName="firstName" placeholder="First Name" /></label
-        ><label class="field"
-          ><span>Middle Name</span
-          ><input
-            formControlName="middleName"
-            placeholder="Middle Name" /></label
-        ><label class="field full-width"
-          ><span>Last Name</span
-          ><input formControlName="lastName" placeholder="Last Name" /></label
-        ><label class="field full-width"
-          ><span>Registration Number</span
-          ><input
-            formControlName="registrationNumber"
-            placeholder="Registration Number" /></label
-        ><label class="field full-width"
-          ><span>Email</span
-          ><input
-            type="email"
-            formControlName="email"
-            placeholder="Email" /></label
-        ><label class="field full-width"
-          ><span>Mobile Number</span
-          ><input
-            type="tel"
-            formControlName="phone"
-            placeholder="Mobile Number" /></label
-        ><label class="field full-width"
-          ><span>Create Password</span
-          ><input
-            type="password"
-            formControlName="password"
-            placeholder="Create Password" /></label
-        ><label class="field full-width"
-          ><span>Repeat Password</span
-          ><input
-            type="password"
-            formControlName="confirmPassword"
-            placeholder="Repeat Password"
-        /></label>
+        <label class="field">
+          <span>First Name *</span>
+          <input formControlName="firstName" placeholder="First Name" />
+        </label>
+
+        <label class="field">
+          <span>Middle Name</span>
+          <input formControlName="middleName" placeholder="Middle Name (Optional)" />
+        </label>
+
+        <label class="field full-width">
+          <span>Last Name *</span>
+          <input formControlName="lastName" placeholder="Last Name" />
+        </label>
+
+        <label class="field full-width">
+          <span>Registration Number *</span>
+          <input
+                  formControlName="registrationNumber"
+                  placeholder="e.g., 2023-01-001"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span>Email *</span>
+          <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="your.email@udsm.ac.tz"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span>Mobile Number *</span>
+          <input
+                  type="tel"
+                  formControlName="phone"
+                  placeholder="e.g., 0712-345-678"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span>Create Password *</span>
+          <input
+                  type="password"
+                  formControlName="password"
+                  placeholder="Minimum 8 characters"
+          />
+        </label>
+
+        <label class="field full-width">
+          <span>Repeat Password *</span>
+          <input
+                  type="password"
+                  formControlName="confirmPassword"
+                  placeholder="Confirm your password"
+          />
+        </label>
       </div>
-      <label class="checkbox-row"
-        ><input type="checkbox" formControlName="acceptTerms" /><span
-          >I accept terms of service</span
-        ></label
-      >
+
+      <label class="checkbox-row">
+        <input type="checkbox" formControlName="acceptTerms" />
+        <span>I accept terms of service</span>
+      </label>
+
+      <!-- Error/Success Messages -->
       <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
       <p class="success-message" *ngIf="successMessage">{{ successMessage }}</p>
-      <button type="submit">Register</button>
+
+      <!-- Submit Button with Loading State -->
+      <button
+              type="submit"
+              [disabled]="isLoading"
+      >
+        <span *ngIf="isLoading">Registering...</span>
+        <span *ngIf="!isLoading">Register</span>
+      </button>
+
       <div class="helper-row">
-        <span>Have an account?</span><a routerLink="/login">Login</a>
+        <span>Have an account?</span>
+        <a routerLink="/login">Login</a>
       </div>
     </form>
   </div>

@@ -1,5 +1,6 @@
 <header class="login-header">
   <div class="header-content">
+    <!-- FIX: Changed from /public/ to /public/ -->
     <img src="/public/udsm-logo.png" alt="UDSM" class="header-logo" />
     <h2>E-Clearance MIS</h2>
   </div>
@@ -8,6 +9,7 @@
 <section class="login-page">
   <div class="login-card">
     <div class="brand-panel">
+      <!-- FIX: Changed from /public/ to /public/ -->
       <img src="/public/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
       <h1>University of Dar es Salaam</h1>
       <p>Secure access for students, staff, and administrators.</p>
@@ -17,37 +19,44 @@
       <label class="field" for="identifier">
         <span>Email / Registration Number</span>
         <input
-          id="identifier"
-          type="text"
-          formControlName="identifier"
-          placeholder="Email / Registration Number"
+                id="identifier"
+                type="text"
+                formControlName="identifier"
+                placeholder="Enter your email or registration number"
+                required
         />
       </label>
 
       <label class="field" for="password">
         <span>Password</span>
         <input
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="Password"
+                id="password"
+                type="password"
+                formControlName="password"
+                placeholder="Enter your password"
+                required
         />
       </label>
 
       <label class="field" for="role">
         <span>User Role</span>
-        <select id="role" formControlName="role">
-          <option value="" disabled>Select role</option>
+        <select id="role" formControlName="role" required>
+          <option value="" disabled>Select your role</option>
           <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
         </select>
       </label>
 
-      <button type="submit">Sign In</button>
+      <button type="submit" [disabled]="loginForm.invalid || isLoading">
+        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="isLoading">Signing In...</span>
+      </button>
 
+      <!-- Display error messages -->
       <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
 
       <div class="helper-row">
-        <a routerLink="/login">Forgot Password</a>
+        <!-- FIX: Changed routerLink from /login to /forgot-password -->
+        <a routerLink="/forgot-password">Forgot Password?</a>
         <a routerLink="/signup-options">Create Account</a>
       </div>
     </form>

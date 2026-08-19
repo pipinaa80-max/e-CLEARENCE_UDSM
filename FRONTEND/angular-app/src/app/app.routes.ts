@@ -13,7 +13,6 @@ import { ClearanceRequestComponent } from './clearance/request/request';
 import { ClearanceStatusComponent } from './clearance/status/status';
 import { ClearanceHistoryComponent } from './clearance/history/history';
 import { ClearanceReportComponent } from './clearance/report/report';
-import { DocumentUploadComponent } from './documents/upload/upload';
 import { DocumentsListComponent } from './documents/documents-list/documents-list';
 import { NotificationListComponent } from './notifications/notifications';
 import { ProfileComponent } from './profile/profile';
@@ -39,7 +38,6 @@ export const routes: Routes = [
   { path: 'clearance/history', component: ClearanceHistoryComponent },
   { path: 'clearance/report', component: ClearanceReportComponent },
   { path: 'documents', component: DocumentsListComponent },
-  { path: 'documents/upload', component: DocumentUploadComponent },
   { path: 'notifications', component: NotificationListComponent },
   { path: 'profile', component: ProfileComponent }
 ];
