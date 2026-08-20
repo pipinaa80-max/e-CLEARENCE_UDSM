@@ -14,18 +14,11 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @NotBlank(message = "Identifier is required")
-    @Size(
-            max = 100,
-            message = "Identifier must not exceed 100 characters"
-    )
+    @Size(max = 100, message = "Identifier must not exceed 100 characters")
     private String identifier;
 
     @NotBlank(message = "Password is required")
-    @Size(
-            min = 6,
-            max = 100,
-            message = "Password must be between 6 and 100 characters"
-    )
+    @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     private String password;
 
     @Builder.Default

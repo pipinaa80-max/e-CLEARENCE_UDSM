@@ -1,16 +1,24 @@
 package com.UDSM.BACKEND.Service;
-
 import com.UDSM.BACKEND.dto.ClearanceResponse;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 @Component
 public class PdfGenerator {
@@ -20,7 +28,35 @@ public class PdfGenerator {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
 
+        String certificateId =
+                "UDSM-CLR-"
+                        + LocalDateTime.now().getYear()
+                        + "-"
+                        + UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 16)
+                        .toUpperCase();
+
+        /*
+         * ==========================================================
+         * QR VERIFICATION URL
+         * ==========================================================
+         *
+         * During development we use localhost.
+         *
+         * Later change this to your real verification URL, for
+         * example:
+         *
+         * https://clearance.jmsolution.co.tz/verify/
+         *
+         */
+        String verificationUrl =
+                "http://localhost:4200/verify/"
+                        + certificateId;
+
         try {
+
             PdfWriter.getInstance(document, baos);
 
             document.open();
@@ -217,6 +253,120 @@ public class PdfGenerator {
                 }
 
                 document.add(table);
+            }
+
+            // =====================================================
+            // UNIQUE CERTIFICATE INFORMATION
+            // =====================================================
+
+            Paragraph certificateIdParagraph =
+                    new Paragraph();
+
+            certificateIdParagraph.setSpacingBefore(15);
+            certificateIdParagraph.setSpacingAfter(5);
+
+            certificateIdParagraph.add(
+                    new com.lowagie.text.Chunk(
+                            "Certificate ID: ",
+                            boldFont
+                    )
+            );
+
+            certificateIdParagraph.add(
+                    new com.lowagie.text.Chunk(
+                            certificateId,
+                            normalFont
+                    )
+            );
+
+            document.add(certificateIdParagraph);
+
+            Paragraph generatedDate =
+                    new Paragraph();
+
+            generatedDate.setSpacingAfter(10);
+
+            generatedDate.add(
+                    new com.lowagie.text.Chunk(
+                            "Generated: ",
+                            boldFont
+                    )
+            );
+
+            generatedDate.add(
+                    new com.lowagie.text.Chunk(
+                            LocalDateTime.now().format(
+                                    DateTimeFormatter.ofPattern(
+                                            "dd MMMM yyyy HH:mm:ss"
+                                    )
+                            ),
+                            normalFont
+                    )
+            );
+
+            document.add(generatedDate);
+
+            // =====================================================
+            // QR CODE
+            // =====================================================
+
+            try {
+
+                QRCodeWriter qrCodeWriter =
+                        new QRCodeWriter();
+
+                BitMatrix bitMatrix =
+                        qrCodeWriter.encode(
+                                verificationUrl,
+                                BarcodeFormat.QR_CODE,
+                                250,
+                                250
+                        );
+
+                ByteArrayOutputStream qrOutputStream =
+                        new ByteArrayOutputStream();
+
+                MatrixToImageWriter.writeToStream(
+                        bitMatrix,
+                        "PNG",
+                        qrOutputStream
+                );
+
+                byte[] qrBytes =
+                        qrOutputStream.toByteArray();
+
+                Image qrImage =
+                        Image.getInstance(qrBytes);
+
+                qrImage.scaleToFit(130, 130);
+
+                qrImage.setAlignment(
+                        Element.ALIGN_CENTER
+                );
+
+                document.add(qrImage);
+
+                Paragraph qrText =
+                        new Paragraph(
+                                "Scan to verify this certificate",
+                                normalFont
+                        );
+
+                qrText.setAlignment(
+                        Element.ALIGN_CENTER
+                );
+
+                qrText.setSpacingBefore(5);
+                qrText.setSpacingAfter(10);
+
+                document.add(qrText);
+
+            } catch (WriterException | IOException e) {
+
+                throw new RuntimeException(
+                        "Failed to generate QR code",
+                        e
+                );
             }
 
             // ==============================

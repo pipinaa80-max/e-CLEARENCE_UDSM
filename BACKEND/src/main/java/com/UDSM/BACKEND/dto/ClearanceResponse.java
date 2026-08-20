@@ -1,5 +1,3 @@
-
-
 package com.UDSM.BACKEND.dto;
 import com.UDSM.BACKEND.Model.ClearanceStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -21,118 +19,181 @@ import static com.UDSM.BACKEND.Model.ClearanceStatus.IN_PROGRESS;
 public class ClearanceResponse {
     @JsonProperty("id")
     private String requestId;
+
     @JsonProperty("student_id")
     private String studentId;
+
     @JsonProperty("registration_number")
     private String registrationNumber;
+
     @JsonProperty("student_name")
     private String studentName;
+
     @JsonProperty("email")
     private String email;
+
     @JsonProperty("phone_number")
     private String phoneNumber;
+
     @JsonProperty("profile_picture")
     private String profilePicture;
+
+
     @JsonProperty("programme")
     private String programme;
+
     @JsonProperty("faculty")
     private String faculty;
+
     @JsonProperty("department")
     private String department;
+
     @JsonProperty("department_code")
     private String departmentCode;
+
     @JsonProperty("year_of_study")
     private String yearOfStudy;
+
     @JsonProperty("academic_year")
     private String academicYear;
+
     @JsonProperty("semester")
     private String semester;
+
     @JsonProperty("student_status")
     private String studentStatus;
+
     @JsonProperty("status")
     private ClearanceStatus status;
+
     @JsonProperty("status_message")
     private String statusMessage;
+
     @JsonProperty("status_color")
     private String statusColor;
+
     @JsonProperty("status_icon")
     private String statusIcon;
+
     @JsonProperty("status_description")
     private String statusDescription;
+
     @JsonProperty("is_editable")
     private boolean isEditable;
+
     @JsonProperty("can_reapply")
     private boolean canReapply;
+
     @JsonProperty("progress_percentage")
     private int progressPercentage;
+
     @JsonProperty("total_departments")
     private int totalDepartments;
+
     @JsonProperty("approved_count")
     private int approvedCount;
+
     @JsonProperty("pending_count")
     private int pendingCount;
+
+
     @JsonProperty("rejected_count")
     private int rejectedCount;
+
+
     @JsonProperty("not_started_count")
     private int notStartedCount;
+
     @JsonProperty("completed_count")
     private int completedCount;
+
     @JsonProperty("progress_text")
     private String progressText;
+
     @JsonProperty("progress_level")
     private String progressLevel;
+
     @JsonProperty("approvals")
     private List<DepartmentApprovalDTO> approvals = new ArrayList();
+
     @JsonProperty("department_summary")
     private Map<String, DepartmentSummaryDTO> departmentSummary = new HashMap();
+
+
     @JsonProperty("request_date")
     private LocalDateTime requestDate;
+
+
     @JsonProperty("completed_date")
     private LocalDateTime completedDate;
+
+
     @JsonProperty("last_updated")
     private LocalDateTime lastUpdated;
+
     @JsonProperty("estimated_completion_date")
     private String estimatedCompletionDate;
+
     @JsonProperty("days_since_request")
     private int daysSinceRequest;
+
     @JsonProperty("days_remaining")
     private Long daysRemaining;
+
     @JsonProperty("timeline")
     private List<TimelineEventDTO> timeline = new ArrayList();
+
     @JsonProperty("documents")
     private List<DocumentDTO> documents = new ArrayList();
+
     @JsonProperty("has_certificate")
     private boolean hasCertificate;
+
     @JsonProperty("certificate_url")
     private String certificateUrl;
+
     @JsonProperty("certificate_generated_date")
     private LocalDateTime certificateGeneratedDate;
+
     @JsonProperty("certificate_expiry_date")
     private LocalDateTime certificateExpiryDate;
+
     @JsonProperty("has_pending_notifications")
     private boolean hasPendingNotifications;
+
     @JsonProperty("notification_count")
     private int notificationCount;
+
     @JsonProperty("recent_notifications")
     private List<NotificationDTO> recentNotifications = new ArrayList();
+
     @JsonProperty("last_notification")
     private NotificationDTO lastNotification;
+
     @JsonProperty("next_action")
     private String nextAction;
+
     @JsonProperty("available_actions")
     private List<String> availableActions = new ArrayList();
+
     @JsonProperty("action_buttons")
     private List<ActionButtonDTO> actionButtons = new ArrayList();
+
     @JsonProperty("metadata")
     private Map<String, Object> metadata = new HashMap();
+
     @JsonProperty("qr_code_url")
     private String qrCodeUrl;
+
     @JsonProperty("clearance_certificate_id")
     private String clearanceCertificateId;
+
     @JsonProperty("is_urgent")
     private boolean isUrgent;
+
     @JsonProperty("priority_level")
     private String priorityLevel;
+
     @JsonProperty("remarks")
     private String remarks;
 
