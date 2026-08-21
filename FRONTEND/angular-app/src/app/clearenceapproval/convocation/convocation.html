@@ -1,0 +1,38 @@
+<section class="convocation-page" *ngIf="!isOfficer; else review">
+    <div class="convocation-card">
+        <header>
+            <img src="/udsm-logo.png" alt="UDSM Logo" />
+            <div>
+                <p>Convocation Clearance</p>
+                <h1>Upload Payment Receipt</h1>
+            </div>
+        </header>
+        
+        <div class="notice">Request a control number, make the payment, then upload the official payment receipt.</div>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+            <label class="field">
+                <span>Control Number</span>
+                <input formControlName="controlNumber" placeholder="Enter control number" />
+            </label>
+            
+            <label class="field">
+                <span>Receipt Number</span>
+                <input formControlName="receiptNumber" placeholder="Enter receipt number" /></label>
+                <label class="field">
+                    <span>Payment Date</span>
+                    <input type="date" formControlName="paymentDate" />
+                </label>
+                
+                <label class="file-field">
+                    <span>Payment Receipt</span>
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
+                    <small *ngIf="selectedFileName">Selected: {{ selectedFileName }}</small>
+                </label>
+                <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+                <button type="submit">Submit Receipt</button>
+            </form>
+            <a routerLink="/clearance/status">Back to Clearance Status</a>
+        </div>
+    </section>
+
+    <ng-template #review><section class="review-page"><aside><strong>Convocation Office</strong><button type="button" (click)="logout()">Log out</button></aside><main><header><div><p>Staff review</p><h1>Convocation receipt verification</h1></div><span>{{ requests.length }} Pending</span></header><p class="message" *ngIf="message">{{ message }}</p><p class="empty" *ngIf="!requests.length">No Convocation receipts are waiting for review.</p><article *ngFor="let request of requests"><div><strong>{{ request.programme }}</strong><span>{{ request.department }} · {{ request.college }}</span><small>Submitted {{ request.requestDate | date:'mediumDate' }}</small></div><div class="actions"><input [(ngModel)]="comment" placeholder="Reason if returning request" /><button class="return" (click)="reject(request)">Return</button><button (click)="approve(request)">Approve</button></div></article></main></section></ng-template>

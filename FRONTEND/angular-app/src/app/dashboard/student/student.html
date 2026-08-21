@@ -13,8 +13,6 @@
       <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">My Profile</a>
       <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">Request Clearance</a>
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">Clearance Status</a>
-      <a routerLink="/clearance/history" routerLinkActive="active" (click)="closeSidebar()">Clearance History</a>
-      <a routerLink="/documents" routerLinkActive="active" (click)="closeSidebar()">Documents</a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">Notifications <span class="notification-badge" *ngIf="unreadNotifications">{{ unreadNotifications }}</span></a>
       <button type="button" class="logout-link" (click)="logout()">Log out</button>
     </nav>
@@ -28,6 +26,7 @@
       </div>
       <div class="topbar-actions">
         <span>{{ currentUser?.role ?? 'Student' }}</span>
+        <span *ngIf="currentUser?.registrationNumber"> | {{ currentUser?.registrationNumber }}</span>
       </div>
     </header>
 
@@ -50,10 +49,12 @@
       </article>
     </div>
 
+    <!-- Academic Profile - using safe navigation operator -->
     <section class="academic-profile" *ngIf="currentUser">
-      <div><span>College</span><strong>{{ currentUser.college }}</strong></div>
-      <div><span>Department</span><strong>{{ currentUser.department }}</strong></div>
-      <div><span>Programme</span><strong>{{ currentUser.programme }}</strong></div>
+      <div><span>College</span><strong>{{ currentUser?.college || currentUser?.faculty || 'Not Assigned' }}</strong></div>
+      <div><span>Department</span><strong>{{ currentUser?.department || 'Not Assigned' }}</strong></div>
+      <div><span>Programme</span><strong>{{ currentUser?.programme || currentUser?.course || 'Not Assigned' }}</strong></div>
+      <div *ngIf="currentUser?.registrationNumber"><span>Registration No.</span><strong>{{ currentUser?.registrationNumber }}</strong></div>
     </section>
 
     <div class="action-row">

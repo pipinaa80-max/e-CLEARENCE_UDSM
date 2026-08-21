@@ -77,6 +77,35 @@ public class User implements UserDetails {
     @Column(name = "department")
     private String department;
 
+
+    @Column(name = "college")
+    private String college;
+
+    @Column(name = "programme")
+    private String programme;
+
+    @Column(name = "hall")
+    private String hall;
+
+    @Column(name = "room_number")
+    private String roomNumber;
+
+    @Column(name = "sponsor")
+    private String sponsor;
+
+    @Column(name = "photo")
+    private String photo;
+
+    @Column(name = "academic_year")
+    private String academicYear;
+
+    @Column(name = "graduation_year")
+    private String graduationYear;
+
+    @Column(name = "semester")
+    private String semester;
+
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

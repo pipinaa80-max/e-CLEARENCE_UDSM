@@ -68,7 +68,15 @@ export class AuthService {
 
     const map: Record<string, UserRole> = {
       'STUDENT': 'Student',
+      'CONVOCATION_OFFICER': 'Convocation',
+      'GAMES_COACH': 'Games Coach',
+      'HALL_WARDEN': 'Hall Warden',
+      'USAB_OFFICER': 'USAB',
+      'DARUSO_OFFICER': 'DARUSO',
       'LIBRARY_OFFICER': 'Library',
+      'DEAN_OF_STUDENTS': 'Dean of Students',
+      'SMART_CARD_OFFICER': 'Smart Card',
+      'PRINCIPAL': 'Principal',
       'FINANCE_OFFICER': 'Finance',
       'ICT_OFFICER': 'ICT',
       'DEPARTMENT_OFFICER': 'Department',
@@ -92,11 +100,10 @@ export class AuthService {
 
   logout(): Observable<any> {
     const headers = this.getAuthHeaders();
+    this.storage.remove(this.currentUserKey);
+    this.storage.remove(this.tokenKey);
     return this.http.post(`${this.apiUrl}/logout`, {}, { headers }).pipe(
-      tap(() => {
-        this.storage.remove(this.currentUserKey);
-        this.storage.remove(this.tokenKey);
-      })
+      tap(() => undefined)
     );
   }
 

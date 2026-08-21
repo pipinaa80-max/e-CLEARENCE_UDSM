@@ -1,1 +1,34 @@
-<section class="upload-page"><div class="upload-card"><header><h1>Required Clearance Documents</h1><p>Step 2 of 2: upload all four documents. Your profile is updated automatically when they are complete.</p></header><div class="checklist"><div *ngFor="let category of categories" [class.complete]="!missingCategories.includes(category)"><span>{{ !missingCategories.includes(category) ? '✓' : '○' }}</span><div><strong>{{ category }}</strong><small *ngIf="category === 'Identity Document'">{{ identityHelp }}</small></div></div></div><form [formGroup]="uploadForm" (ngSubmit)="submit()"><label class="field"><span>Document Category</span><select formControlName="category"><option *ngFor="let category of missingCategories" [value]="category">{{ category }}</option></select></label><label class="field file-field"><span>Choose File</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" /></label><p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p><p class="success-message" *ngIf="successMessage">{{ successMessage }}</p><button type="submit" [disabled]="!missingCategories.length">Upload Document</button></form><a routerLink="/documents" class="documents-link">View uploaded documents</a></div></section>
+<section class="upload-page">
+<div class="upload-card">
+        <header>
+            <h1>Required Clearance Documents</h1><p>Step 2 of 2: upload all four documents. Your profile is updated automatically when they are complete.</p>
+        </header>
+    <div class="checklist">
+        <div *ngFor="let category of categories" [class.complete]="!missingCategories.includes(category)">
+            <span>{{ !missingCategories.includes(category) ? '✓' : '○' }}</span>
+            <div>
+                <strong>{{ category }}</strong>
+                <small *ngIf="category === 'Identity Document'">{{ identityHelp }}</small>
+            </div>
+        </div>
+    </div>
+    <form [formGroup]="uploadForm" (ngSubmit)="submit()">
+        <label class="field">
+            <span>Document Category</span>
+            <select formControlName="category">
+                <option *ngFor="let category of missingCategories" [value]="category">{{ category }}</option>
+            </select>
+        </label>
+        
+        <label class="field file-field">
+            <span>Choose File</span>
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
+        </label>
+        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+        <p class="success-message" *ngIf="successMessage">{{ successMessage }}</p>
+        <button type="submit" [disabled]="!missingCategories.length">Upload Document</button>
+    </form>
+    
+    <a routerLink="/documents" class="documents-link">View uploaded documents</a>
+</div>
+</section>

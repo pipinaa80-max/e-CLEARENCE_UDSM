@@ -2,11 +2,11 @@
   "name": "udsm-clearance-mis",
   "version": "0.0.0",
   "scripts": {
-    "ng": "../../node_modules/.bin/ng",
-    "start": "../../node_modules/.bin/ng serve",
-    "build": "../../node_modules/.bin/ng build",
-    "watch": "../../node_modules/.bin/ng build --watch --configuration development",
-    "test": "../../node_modules/.bin/ng test"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
@@ -24,12 +24,12 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.2.21",
-    "@angular/build": "^22.1.4",
+    "@angular/build": "^21.2.21",
     "@angular/cli": "^21.2.21",
     "@angular/compiler-cli": "^21.2.20",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
-    "typescript": "~6.0.2",
+    "typescript": "~5.9.3",
     "vitest": "^4.0.8"
   }
 }

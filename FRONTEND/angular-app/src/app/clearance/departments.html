@@ -1,0 +1,20 @@
+<div *ngIf="!latestRequest">
+  <p>No clearance request found. Please submit a clearance request first.</p>
+  <button (click)="createRequest()">Create Request</button>
+</div>
+
+<div *ngIf="latestRequest">
+  <h3>Clearance workflow for request: {{ latestRequest.id }}</h3>
+  <p>Status: {{ latestRequest.status }} | Current Office: {{ latestRequest.currentOffice }}</p>
+
+  <h4>Workflow steps</h4>
+  <ul>
+    <li *ngFor="let a of approvals">
+      <strong>{{ a.officeId }}</strong> - <em>{{ a.group }}</em> - <span [ngClass]="{approved: a.status === 'Approved', pending: a.status === 'Pending', rejected: a.status === 'Rejected'}">{{ a.status }}</span>
+      <div *ngIf="a.comment">Comment: {{ a.comment }}</div>
+      <div *ngIf="a.date">Date: {{ a.date }}</div>
+    </li>
+  </ul>
+
+  <button (click)="viewRequest()">View full request status</button>
+</div>

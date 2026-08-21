@@ -1,104 +1,98 @@
-// clearance.service.ts
-import { Injectable } from '@angular/core';
-import { Observable, map, catchError, throwError } from 'rxjs';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import {StorageService} from "../../core/services/storage.service";
-import {ConfigService} from "../../core/services/config.service";
+import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { DocumentService } from '../../core/services/document.service';
+import { AuthService } from '../../core/services/auth.service';
 
-export interface ClearanceRequestDTO {
-  registrationNumber: string;
-  studentName: string;
-  email?: string;
-  phoneNumber?: string;
-  programme: string;
-  faculty: string;
-  department: string;
-  yearOfStudy: string;
-  academicYear: string;
-  semester: string;
-  reason: string;
-  comments?: string;
-  clearanceType: 'FINAL_YEAR_CLEARANCE' | 'SEMESTER_CLEARANCE' | 'GRADUATION_CLEARANCE' | 'DEPARTMENT_TRANSFER' | 'OTHER';
-  selectedDepartments?: string[];
-  allDepartments?: boolean;
-  documents?: any[];
-  hasSupportingDocuments?: boolean;
-  additionalInfo?: any;
-}
+@Component({
+  selector: 'app-documents-upload',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
+  templateUrl: './upload.html',
+  styleUrl: './upload.css'
+})
+export class DocumentsUploadComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly documentService = inject(DocumentService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-@Injectable({ providedIn: 'root' })
-export class ClearanceService {
-  private readonly storage = new StorageService();
-  private readonly draftKey = 'udsm-clearance-drafts';
-  private readonly requestKey = 'udsm-clearance-requests';
+  readonly categories = [
+    'Admission Letter',
+    'Birth Certificate',
+    'Identity Document',
+    'Tuition Fee Receipts'
+  ];
 
-  constructor(
-      private http: HttpClient,
-      private configService: ConfigService
-  ) {}
+  readonly identityHelp = 'Voter ID, Passport, National ID, or Driving License';
 
-  private get baseUrl(): string {
-    return `${this.configService.apiUrl}/clearance`;
+  missingCategories: string[] = [];
+  errorMessage = '';
+  successMessage = '';
+  selectedFile: File | null = null;
+
+  uploadForm = this.fb.nonNullable.group({
+    category: ['', Validators.required]
+  });
+
+  ngOnInit(): void {
+    this.loadMissingCategories();
   }
 
-  // Draft methods
-  saveDraft(studentId: string, clearanceType: string, remarks: string, academicProfile?: any): void {
-    const drafts = this.storage.get<Record<string, any>>(this.draftKey) ?? {};
-    drafts[studentId] = { clearanceType, remarks, academicProfile };
-    this.storage.save(this.draftKey, drafts);
+  private loadMissingCategories(): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    this.documentService.getMissingDocuments(user.id).subscribe({
+      next: (categories) => {
+        this.missingCategories = categories;
+        if (categories.length > 0) {
+          this.uploadForm.patchValue({ category: categories[0] });
+        }
+      },
+      error: () => {
+        // Fallback for mock/demo
+        this.missingCategories = [...this.categories];
+        this.uploadForm.patchValue({ category: this.categories[0] });
+      }
+    });
   }
 
-  getDraft(studentId: string): any | null {
-    return (this.storage.get<Record<string, any>>(this.draftKey) ?? {})[studentId] ?? null;
-  }
-
-  clearDraft(studentId: string): void {
-    const drafts = this.storage.get<Record<string, any>>(this.draftKey) ?? {};
-    delete drafts[studentId];
-    this.storage.save(this.draftKey, drafts);
-  }
-
-  // Create request with backend
-  createRequest(request: any): Observable<any> {
-    const dto: ClearanceRequestDTO = {
-      registrationNumber: request.studentId,
-      studentName: request.studentName || 'Student',
-      programme: request.programme || '',
-      faculty: request.college || '',
-      department: request.department || '',
-      yearOfStudy: '3',
-      academicYear: '2024/2025',
-      semester: '1',
-      reason: request.remarks || 'Clearance request',
-      comments: request.remarks,
-      clearanceType: this.mapClearanceType(request.clearanceType),
-      selectedDepartments: ['Library', 'Finance', 'Academic Affairs', 'ICT Division'],
-      allDepartments: false,
-      hasSupportingDocuments: false
-    };
-
-    return this.http.post(`${this.baseUrl}/request`, dto).pipe(
-        catchError(this.handleError)
-    );
-  }
-
-  private mapClearanceType(type: string): any {
-    const map: Record<string, string> = {
-      'Graduation Clearance': 'GRADUATION_CLEARANCE',
-      'Semester Clearance': 'SEMESTER_CLEARANCE',
-      'Final Year Clearance': 'FINAL_YEAR_CLEARANCE',
-      'Department Transfer': 'DEPARTMENT_TRANSFER'
-    };
-    return map[type] || 'OTHER';
-  }
-
-  private handleError(error: any): Observable<never> {
-    let errorMessage = 'An error occurred while processing your request.';
-    if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.message) {
-      errorMessage = error.message;
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
     }
-    return throwError(() => new Error(errorMessage));
+  }
+
+  submit(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const user = this.authService.getCurrentUser();
+    if (!user || !this.selectedFile) {
+      this.errorMessage = 'Please select a file to upload.';
+      return;
+    }
+
+    const { category } = this.uploadForm.getRawValue();
+
+    this.documentService.uploadDocument({
+      studentId: user.id,
+      fileName: this.selectedFile.name,
+      fileType: this.selectedFile.type,
+      fileSize: this.selectedFile.size,
+      description: category
+    }, this.selectedFile).subscribe({
+      next: () => {
+        this.successMessage = `${category} uploaded successfully.`;
+        this.selectedFile = null;
+        this.loadMissingCategories();
+      },
+      error: (err) => {
+        this.errorMessage = err.error?.message || 'Upload failed. Please try again.';
+      }
+    });
   }
 }

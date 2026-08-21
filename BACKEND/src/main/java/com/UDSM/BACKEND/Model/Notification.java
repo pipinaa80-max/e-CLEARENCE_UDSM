@@ -20,9 +20,7 @@ import java.time.LocalDateTime;
 import lombok.Generated;
 
 @Entity
-@Table(
-        name = "notifications"
-)
+@Table(name = "notifications")
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,1 +1,41 @@
-<section class="profile-page"><div class="profile-card" *ngIf="user"><header><div class="avatar">{{ initials }}</div><div><p class="eyebrow">Clearance profile</p><h1>{{ user.fullName }}</h1><span>{{ user.registrationNumber }}</span></div></header><ng-container *ngIf="hasAcademicCredentials; else incompleteCredentials"><section class="clearance-details"><div><span>College</span><strong>{{ user.college }}</strong></div><div><span>Department</span><strong>{{ user.department }}</strong></div><div><span>Programme</span><strong>{{ user.programme }}</strong></div></section><p class="profile-note">These academic details are used to route your clearance application to the correct department.</p><a routerLink="/clearance/request" class="profile-action">Review credentials application</a></ng-container><ng-template #incompleteCredentials><section class="credentials-prompt"><span class="prompt-icon">!</span><div><h2>Complete your academic credentials</h2><p>Your College, Department, and Programme will appear here after you complete the credentials application and upload all required documents.</p></div></section><a routerLink="/clearance/request" class="profile-action">Complete credentials application</a></ng-template></div></section>
+<section class="profile-page">
+  <div class="profile-card" *ngIf="user">
+    <header>
+      <div class="avatar" *ngIf="!user.photo">{{ initials }}</div>
+      <div *ngIf="user.photo" class="avatar-photo">
+        <img [src]="user.photo" alt="Passport photo" width="120" height="150" />
+      </div>
+      <div>
+        <p class="eyebrow">Clearance profile</p>
+        <h1>{{ user.fullName }}</h1>
+        <span>{{ user.registrationNumber }}</span>
+      </div>
+    </header>
+
+    <ng-container *ngIf="hasAcademicCredentials; else incompleteCredentials">
+      <section class="clearance-details">
+        <div><span>College</span><strong>{{ user.college }}</strong></div>
+        <div><span>Department</span><strong>{{ user.department }}</strong></div>
+        <div><span>Programme</span><strong>{{ user.programme }}</strong></div>
+        <div *ngIf="user.hall"><span>Hall</span><strong>{{ user.hall }}</strong></div>
+        <div *ngIf="user.roomNumber"><span>Room No</span><strong>{{ user.roomNumber }}</strong></div>
+        <div *ngIf="user.sponsor"><span>Sponsor</span><strong>{{ user.sponsor }}</strong></div>
+      </section>
+
+      <p class="profile-note">These academic details are used to route your clearance application to the correct department.</p>
+      <a *ngIf="canStartClearance" routerLink="/clearance/status" class="profile-action">Start Clearance</a>
+      <a *ngIf="!canStartClearance" routerLink="/clearance/request" class="profile-action">Review clearance details</a>
+    </ng-container>
+
+    <ng-template #incompleteCredentials>
+      <section class="credentials-prompt">
+        <span class="prompt-icon">!</span>
+        <div>
+          <h2>Complete your academic credentials</h2>
+          <p>Your College, Department, and Programme will appear here after you complete the credentials application and upload all required documents.</p>
+        </div>
+      </section>
+      <a routerLink="/clearance/request" class="profile-action">Complete credentials application</a>
+    </ng-template>
+  </div>
+</section>

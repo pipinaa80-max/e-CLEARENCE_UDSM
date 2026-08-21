@@ -1,34 +1,53 @@
 <section class="status-page">
-  <div class="status-card">
-    <h1>Clearance Status</h1>
-    <div class="summary">
-      <div class="summary-item">
-        <span>Current Status</span>
-        <strong>Pending</strong>
+  <div class="status-card" *ngIf="request; else noRequest">
+    <header>
+      <div>
+        <p>Graduation Clearance</p>
+        <h1>Clearance Process</h1>
       </div>
-      <div class="summary-item">
-        <span>Current Office</span>
-        <strong>Library</strong>
-      </div>
-    </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Office</th>
-          <th>Status</th>
-          <th>Date</th>
-          <th>Comment</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Library</td>
-          <td><span class="status pending">Pending</span></td>
-          <td>2026-08-13</td>
-          <td>Waiting for review</td>
-        </tr>
-      </tbody>
-    </table>
+      <span
+        class="final-status"
+        [ngClass]="request.status.toLowerCase()"
+      >
+        {{ request.status }}
+      </span>
+    </header>
+
+    <section class="current-stage"><span>Current Stage</span><strong>{{ currentStageLabel }}</strong></section>
+    <section class="process-path">
+      <article *ngFor="let step of processSteps; let last = last; let index = index" class="process-step" [ngClass]="step.status.toLowerCase()">
+        <div class="step-line" *ngIf="!last"></div>
+        <span class="step-number">{{ index + 1 }}</span>
+        <div class="step-content"><strong>{{ step.label }}</strong><small>{{ step.detail }}</small><span>{{ step.status }}</span></div>
+      </article>
+    </section>
+
+    <a *ngIf="request.currentStage === 'Convocation'" routerLink="/convocation" class="approval-button">Step 1: Continue to Convocation</a>
+
+    <section *ngIf="request.currentStage === 'Parallel'" class="waiting-card">
+      <h2>Step 2: Parallel Offices</h2>
+      <p>Your request is being reviewed by Library, Smart Card, Dean of Students, Hall Warden, Games Coach, USAB and DARUSO.</p>
+      <p>All offices must approve before your request goes to the Department.</p>
+    </section>
+
+    <section *ngIf="request.currentStage === 'Department'" class="waiting-card"><h2>Step 3: Department</h2><p>Your request is waiting for Department approval.</p></section>
+    <section *ngIf="request.currentStage === 'Principal'" class="waiting-card"><h2>Step 4: Principal</h2><p>Your request is waiting for Principal approval.</p></section>
+    <section *ngIf="request.currentStage === 'Finance'" class="waiting-card"><h2>Step 5: Finance</h2><p>Your request is waiting for final Finance approval.</p></section>
+
+    <a *ngIf="request.status === 'Completed'" routerLink="/clearance/confirmation" class="approval-button">Clearance Approved</a>
+    <a *ngIf="request.status !== 'Completed'" routerLink="/notifications" class="notification-link">View Notifications</a>
   </div>
+
+  <ng-template #noRequest>
+    <div class="no-request-card">
+      <h1>No Clearance Request</h1>
+
+      <p>You have not submitted a clearance request yet.</p>
+
+      <a routerLink="/clearance/request">
+        Start Clearance Request
+      </a>
+    </div>
+  </ng-template>
 </section>

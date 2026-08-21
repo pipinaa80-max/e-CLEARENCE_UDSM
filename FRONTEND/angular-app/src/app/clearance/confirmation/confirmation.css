@@ -1,0 +1,7 @@
+:host { display:block; min-height:100vh; }
+.confirmation-page { min-height:100vh; display:grid; place-items:center; padding:24px; background:var(--bg-light); }
+.confirmation-card { width:min(100%,620px); padding:42px; text-align:center; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-card); box-shadow:var(--shadow-soft); }
+.success-icon { width:70px; height:70px; display:grid; place-items:center; margin:0 auto 18px; border-radius:50%; background:var(--success); color:#fff; font-size:2.3rem; font-weight:800; }
+.eyebrow { color:var(--success); font-weight:800; text-transform:uppercase; letter-spacing:.08em; } h1 { margin:8px 0 12px; color:var(--udsm-blue-dark); } p { color:var(--text-muted); line-height:1.6; }
+.reference { margin:24px 0; padding:15px; border-radius:var(--radius-control); background:var(--surface-soft); }.reference span,.reference strong { display:block; }.reference span { color:var(--text-muted); font-size:.8rem; text-transform:uppercase; }.reference strong { margin-top:5px; color:var(--udsm-blue-dark); }
+a { display:inline-flex; padding:12px 18px; border-radius:var(--radius-control); background:var(--udsm-blue); color:#fff; text-decoration:none; font-weight:800; }

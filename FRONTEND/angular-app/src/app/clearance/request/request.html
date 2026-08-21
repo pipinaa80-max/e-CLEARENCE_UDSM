@@ -1,45 +1,77 @@
 <section class="request-page">
     <div class="request-card">
-
         <header>
             <h1>Clearance Request</h1>
-            <p>
-                Step 1 of 2: complete your academic details.
-                Your name is filled in from your account.
-            </p>
+            <p *ngIf="isLoading" class="loading-text">Loading your information...</p>
         </header>
 
         <form [formGroup]="requestForm" (ngSubmit)="submit()">
-
             <div class="grid">
-
-                <!-- Student Name -->
+                <!-- Student Name - Auto-filled from user data -->
                 <label class="field">
-                    <span>Student Information</span>
+                    <span>Student Name</span>
                     <input
                             type="text"
                             formControlName="studentName"
                             readonly
+                            [class.error]="requestForm.controls.studentName.invalid && requestForm.controls.studentName.touched"
                     />
+                    <small class="field-error" *ngIf="requestForm.controls.studentName.invalid && requestForm.controls.studentName.touched">
+                        Student name is required
+                    </small>
                 </label>
 
-                <!-- Registration Number - NOW TYPABLE -->
+                <!-- Registration Number - Auto-filled from user data -->
                 <label class="field">
                     <span>Registration Number</span>
                     <input
                             type="text"
                             formControlName="registrationNumber"
-                            placeholder="e.g. 2021-04-12345"
+                            placeholder="2021-04-12345"
                             autocomplete="off"
+                            readonly
+                            [class.error]="requestForm.controls.registrationNumber.invalid && requestForm.controls.registrationNumber.touched"
                     />
+                    <small class="field-error" *ngIf="requestForm.controls.registrationNumber.invalid && requestForm.controls.registrationNumber.touched">
+                        Registration number is required
+                    </small>
+                </label>
+
+                <!-- Academic Year -->
+                <label class="field">
+                    <span>Academic Year</span>
+                    <input
+                            type="text"
+                            formControlName="academicYear"
+                            placeholder="2025/2026"
+                            [class.error]="requestForm.controls.academicYear.invalid && requestForm.controls.academicYear.touched"
+                    />
+                    <small class="field-error" *ngIf="requestForm.controls.academicYear.invalid && requestForm.controls.academicYear.touched">
+                        Academic year is required
+                    </small>
+                </label>
+
+                <!-- Graduation Year -->
+                <label class="field">
+                    <span>Graduation Year</span>
+                    <input
+                            type="text"
+                            formControlName="graduationYear"
+                            placeholder="2026"
+                            [class.error]="requestForm.controls.graduationYear.invalid && requestForm.controls.graduationYear.touched"
+                    />
+                    <small class="field-error" *ngIf="requestForm.controls.graduationYear.invalid && requestForm.controls.graduationYear.touched">
+                        Graduation year is required
+                    </small>
                 </label>
 
                 <!-- College -->
                 <label class="field">
-                    <span>College</span>
+                    <span>College/School</span>
                     <select
                             formControlName="college"
                             (change)="onCollegeChange()"
+                            [class.error]="requestForm.controls.college.invalid && requestForm.controls.college.touched"
                     >
                         <option value="" disabled>Select college</option>
                         <option
@@ -49,6 +81,9 @@
                             {{ college }}
                         </option>
                     </select>
+                    <small class="field-error" *ngIf="requestForm.controls.college.invalid && requestForm.controls.college.touched">
+                        College is required
+                    </small>
                 </label>
 
                 <!-- Department -->
@@ -57,6 +92,7 @@
                     <select
                             formControlName="department"
                             [disabled]="!requestForm.controls.college.value"
+                            [class.error]="requestForm.controls.department.invalid && requestForm.controls.department.touched"
                     >
                         <option value="" disabled>Select department</option>
                         <option
@@ -66,6 +102,9 @@
                             {{ department }}
                         </option>
                     </select>
+                    <small class="field-error" *ngIf="requestForm.controls.department.invalid && requestForm.controls.department.touched">
+                        Department is required
+                    </small>
                 </label>
 
                 <!-- Programme -->
@@ -74,6 +113,7 @@
                     <select
                             formControlName="programme"
                             [disabled]="!requestForm.controls.college.value"
+                            [class.error]="requestForm.controls.programme.invalid && requestForm.controls.programme.touched"
                     >
                         <option value="" disabled>Select programme</option>
                         <option
@@ -83,28 +123,56 @@
                             {{ programme }}
                         </option>
                     </select>
+                    <small class="field-error" *ngIf="requestForm.controls.programme.invalid && requestForm.controls.programme.touched">
+                        Programme is required
+                    </small>
                 </label>
 
-                <!-- Academic Year -->
+                <!-- Hall -->
                 <label class="field">
-                    <span>Academic Year</span>
+                    <span>Hall of Residence</span>
                     <input
                             type="text"
-                            formControlName="academicYear"
-                            placeholder="e.g. 2025/2026"
+                            formControlName="hall"
+                            placeholder="Hall 1"
                     />
                 </label>
 
-                <!-- Graduation Year -->
+                <!-- Room Number -->
                 <label class="field">
-                    <span>Graduation Year</span>
+                    <span>Room Number</span>
                     <input
-                            type="text"
-                            formControlName="graduationYear"
-                            placeholder="e.g. 2026"
+                            type="number"
+                            formControlName="roomNumber"
+                            placeholder="20"
+                            min="1"
                     />
                 </label>
 
+                <!-- Sponsor -->
+                <label class="field">
+                    <span>Sponsor</span>
+                    <input
+                            type="text"
+                            formControlName="sponsor"
+                            placeholder="HELSB"
+                    />
+                </label>
+
+                <!-- Photo Upload -->
+                <label class="field photo-upload">
+                    <span>Passport Photo (120×150 pixels, JPG)</span>
+                    <input
+                            type="file"
+                            accept=".jpg,.jpeg"
+                            (change)="onPhotoSelected($event)"
+                    />
+                    <div class="photo-preview" *ngIf="photoPreview">
+                        <img [src]="photoPreview" alt="Passport preview" />
+                        <button type="button" (click)="photoPreview = null; requestForm.patchValue({ photo: '' })">Remove</button>
+                    </div>
+                    <small>Upload a passport photo (120×150 pixels, JPG format)</small>
+                </label>
             </div>
 
             <!-- Confirmation -->
@@ -112,24 +180,25 @@
                 <input
                         type="checkbox"
                         formControlName="confirm"
+                        [class.error]="requestForm.controls.confirm.invalid && requestForm.controls.confirm.touched"
                 />
                 <span>
-          I confirm that the information provided is correct.
-        </span>
+                    I confirm that the information provided is correct.
+                </span>
             </label>
+            <small class="field-error" *ngIf="requestForm.controls.confirm.invalid && requestForm.controls.confirm.touched">
+                You must confirm the information is correct
+            </small>
 
             <!-- Error -->
-            <p
-                    class="error-message"
-                    *ngIf="errorMessage"
-            >
+            <p class="error-message" *ngIf="errorMessage">
                 {{ errorMessage }}
             </p>
 
-            <button type="submit">
-                Continue to Documents
+            <button type="submit" [disabled]="isLoading || !userDataLoaded">
+                <span *ngIf="!isLoading">Submit Clearance Request</span>
+                <span *ngIf="isLoading">Submitting...</span>
             </button>
-
         </form>
     </div>
 </section>

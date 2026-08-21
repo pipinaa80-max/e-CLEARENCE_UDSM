@@ -6,6 +6,7 @@ import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.config.JwtTokenProvider;
 import com.UDSM.BACKEND.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -22,10 +22,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-// =============================================================
-// FIX: Remove @Transactional from class level
-// =============================================================
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
@@ -46,7 +44,7 @@ public class AuthService {
     private final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
     // =========================================================
-    // LOGIN - Keep @Transactional
+    // LOGIN
     // =========================================================
 
     @Transactional
@@ -109,25 +107,23 @@ public class AuthService {
         } catch (Exception e) {
             recordFailedLogin(identifier);
             auditLogService.logLoginAttempt(identifier, false, getClientIp());
-            e.printStackTrace();
+            log.error("Login error: {}", e.getMessage());
             throw new RuntimeException("Unable to authenticate user", e);
         }
     }
 
     // =========================================================
-    // REGISTER - FIXED: NO @Transactional HERE!
+    // REGISTER
     // =========================================================
 
+    @Transactional
     public ApiResponse register(RegisterRequest request) {
 
         if (request == null) {
             throw new IllegalArgumentException("Registration request cannot be null");
         }
 
-        // =====================================================
-        // VALIDATE EMAIL
-        // =====================================================
-
+        // Validate email
         if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
             throw new IllegalArgumentException("Email is required");
         }
@@ -138,10 +134,7 @@ public class AuthService {
             throw new RuntimeException("Email is already registered");
         }
 
-        // =====================================================
-        // CHECK REGISTRATION NUMBER
-        // =====================================================
-
+        // Check registration number
         if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().trim().isEmpty()) {
             String registrationNumber = request.getRegistrationNumber().trim();
             if (userRepository.existsByRegistrationNumber(registrationNumber)) {
@@ -149,70 +142,39 @@ public class AuthService {
             }
         }
 
-        // =====================================================
-        // DETERMINE ROLE
-        // =====================================================
-
+        // Determine role
         ERole userRole = ERole.STUDENT;
         if (request.getRole() != null) {
             try {
                 String roleStr = request.getRole().toUpperCase().replace(" ", "_");
-
                 switch(roleStr) {
-                    case "STUDENT":
-                        userRole = ERole.STUDENT;
-                        break;
-                    case "LIBRARY":
-                        userRole = ERole.LIBRARY_OFFICER;
-                        break;
-                    case "FINANCE":
-                        userRole = ERole.FINANCE_OFFICER;
-                        break;
-                    case "ICT":
-                        userRole = ERole.ICT_OFFICER;
-                        break;
-                    case "DEPARTMENT":
-                        userRole = ERole.DEPARTMENT_OFFICER;
-                        break;
-                    case "ACADEMIC_STAFF":
-                        userRole = ERole.DEPARTMENT_OFFICER;
-                        break;
-                    case "ADMINISTRATOR":
-                        userRole = ERole.ADMIN;
-                        break;
-                    default:
-                        userRole = ERole.STUDENT;
-                        break;
+                    case "STUDENT": userRole = ERole.STUDENT; break;
+                    case "LIBRARY": userRole = ERole.LIBRARY_OFFICER; break;
+                    case "FINANCE": userRole = ERole.FINANCE_OFFICER; break;
+                    case "ICT": userRole = ERole.ICT_OFFICER; break;
+                    case "DEPARTMENT": userRole = ERole.DEPARTMENT_OFFICER; break;
+                    case "ADMINISTRATOR": userRole = ERole.ADMIN; break;
+                    default: userRole = ERole.STUDENT; break;
                 }
             } catch (Exception e) {
                 userRole = ERole.STUDENT;
             }
         }
 
-        // =====================================================
-        // BUILD FULL NAME
-        // =====================================================
-
+        // Build full name
         String fullName = "";
-
         if (request.getFirstName() != null) {
             fullName = request.getFirstName().trim();
         }
-
         if (request.getMiddleName() != null && !request.getMiddleName().trim().isEmpty()) {
             fullName += " " + request.getMiddleName().trim();
         }
-
         if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
             fullName += " " + request.getLastName().trim();
         }
-
         fullName = fullName.trim();
 
-        // =====================================================
-        // CREATE USER
-        // =====================================================
-
+        // Create user
         User user = new User();
         user.setUsername(email);
         user.setEmail(email);
@@ -229,19 +191,11 @@ public class AuthService {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
-        // =====================================================
-        // SAVE USER - ONLY ONCE!
-        // =====================================================
-
         User savedUser = userRepository.save(user);
         String userId = savedUser.getId();
 
-        // =====================================================
-        // CREATE STUDENT RECORD
-        // =====================================================
-
+        // Create student record
         if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().trim().isEmpty()) {
-
             Student student = new Student();
             student.setRegistrationNumber(request.getRegistrationNumber());
             student.setFullName(fullName);
@@ -253,51 +207,26 @@ public class AuthService {
             student.setYearOfStudy(request.getYearOfStudy());
             student.setAcademicYear(request.getAcademicYear());
             student.setUser(savedUser);
-
-            // ✅ Set final year - CLEAR AND SIMPLE
-            boolean isFinalYear = "Final Year".equalsIgnoreCase(request.getYearOfStudy());
-            student.setIsFinalYear(isFinalYear);
-
+            student.setFinalYear("Final Year".equalsIgnoreCase(request.getYearOfStudy()));
             student.setClearanceStatus(ClearanceStatus.PENDING);
             student.setCreatedAt(LocalDateTime.now());
             student.setUpdatedAt(LocalDateTime.now());
-
             studentRepository.save(student);
         }
 
-        // =====================================================
-        // AUDIT LOG - Separate transaction!
-        // =====================================================
-
+        // Audit log
         try {
-            // This will run in a separate transaction
-            auditLogService.logAction(
-                    userId,
-                    "REGISTER",
-                    "User registered: " + email,
-                    "SUCCESS"
-            );
+            auditLogService.logAction(userId, "REGISTER", "User registered: " + email, "SUCCESS");
         } catch (Exception e) {
-            System.err.println("Failed to log audit: " + e.getMessage());
+            log.error("Failed to log audit: {}", e.getMessage());
         }
 
-        // =====================================================
-        // WELCOME EMAIL - No transaction needed
-        // =====================================================
-
+        // Welcome email
         try {
-            emailService.sendWelcomeEmail(
-                    email,
-                    fullName,
-                    "SmartClearance UDSM"
-            );
+            emailService.sendWelcomeEmail(email, fullName, "SmartClearance UDSM");
         } catch (Exception e) {
-            System.err.println("Failed to send welcome email: " + e.getMessage());
+            log.error("Failed to send welcome email: {}", e.getMessage());
         }
-
-        // =====================================================
-        // RETURN RESPONSE
-        // =====================================================
 
         return ApiResponse.success("Registration successful. Please login to continue.");
     }
@@ -352,28 +281,20 @@ public class AuthService {
     // =========================================================
 
     public ApiResponse logout() {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication == null || !authentication.isAuthenticated()) {
             return ApiResponse.success("Already logged out");
         }
 
         String username = authentication.getName();
-        User user = null;
-
         try {
-            user = findUserByIdentifier(username);
-        } catch (Exception ignored) {
-            // User may already be unavailable
-        }
+            User user = findUserByIdentifier(username);
+            if (user != null) {
+                auditLogService.logLogout(user.getId(), username);
+            }
+        } catch (Exception ignored) {}
 
         SecurityContextHolder.clearContext();
-
-        if (user != null) {
-            auditLogService.logLogout(user.getId(), username);
-        }
-
         return ApiResponse.success("Logged out successfully");
     }
 
@@ -383,16 +304,10 @@ public class AuthService {
 
     @Transactional
     public ApiResponse changePassword(ChangePasswordRequest request) {
-
         User user = getCurrentUser();
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            auditLogService.logAction(
-                    user.getId(),
-                    "CHANGE_PASSWORD",
-                    "Failed password change attempt",
-                    "FAILED"
-            );
+            auditLogService.logAction(user.getId(), "CHANGE_PASSWORD", "Failed password change attempt", "FAILED");
             throw new RuntimeException("Current password is incorrect");
         }
 
@@ -400,19 +315,8 @@ public class AuthService {
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
-        auditLogService.logAction(
-                user.getId(),
-                "CHANGE_PASSWORD",
-                "Password changed successfully",
-                "SUCCESS"
-        );
-
-        notificationService.sendNotification(
-                user,
-                "Password Changed",
-                "Your password has been changed successfully.",
-                NotificationType.SYSTEM
-        );
+        auditLogService.logAction(user.getId(), "CHANGE_PASSWORD", "Password changed successfully", "SUCCESS");
+        notificationService.sendNotification(user, "Password Changed", "Your password has been changed successfully.", NotificationType.SYSTEM);
 
         return ApiResponse.success("Password changed successfully");
     }
@@ -423,7 +327,6 @@ public class AuthService {
 
     @Transactional
     public ApiResponse resetPassword(String email) {
-
         User user = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
@@ -432,12 +335,7 @@ public class AuthService {
 
         emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
 
-        auditLogService.logAction(
-                user.getId(),
-                "PASSWORD_RESET",
-                "Password reset requested",
-                "SUCCESS"
-        );
+        auditLogService.logAction(user.getId(), "PASSWORD_RESET", "Password reset requested", "SUCCESS");
 
         return ApiResponse.success("Password reset link sent to your email");
     }
@@ -474,51 +372,180 @@ public class AuthService {
     // =========================================================
 
     @Transactional
-    public UserProfileResponse updateProfile(RegisterRequest request) {
+    public UserProfileResponse updateProfile(ProfileUpdateRequest request) {
+        log.info("📝 Updating profile with request: {}", request);
 
         User user = getCurrentUser();
+        boolean updated = false;
 
-        // Update full name
-        var ref = new Object() {
-            String fullName = request.getFirstName();
-        };
-        if (request.getMiddleName() != null && !request.getMiddleName().trim().isEmpty()) {
-            ref.fullName += " " + request.getMiddleName();
-        }
-        if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
-            ref.fullName += " " + request.getLastName();
+        // Update first name
+        if (request.getFirstName() != null && !request.getFirstName().isEmpty()) {
+            user.setFirstName(request.getFirstName());
+            updated = true;
         }
 
-        user.setFullName(ref.fullName.trim());
-        user.setPhoneNumber(request.getPhone());
-        user.setDepartment(request.getDepartment());
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
+        // Update last name
+        if (request.getLastName() != null && !request.getLastName().isEmpty()) {
+            user.setLastName(request.getLastName());
+            updated = true;
+        }
 
-        // Update student
-        if (request.getRegistrationNumber() != null) {
-            studentRepository.findByRegistrationNumber(request.getRegistrationNumber())
-                    .ifPresent(student -> {
-                        student.setFullName(ref.fullName.trim());
-                        student.setPhoneNumber(request.getPhone());
-                        student.setProgramme(request.getProgramme());
-                        student.setFaculty(request.getFaculty());
-                        student.setDepartment(request.getDepartment());
-                        student.setYearOfStudy(request.getYearOfStudy());
-                        student.setAcademicYear(request.getAcademicYear());
-                        student.setUpdatedAt(LocalDateTime.now());
-                        studentRepository.save(student);
+        // Update middle name
+        if (request.getMiddleName() != null && !request.getMiddleName().isEmpty()) {
+            user.setMiddleName(request.getMiddleName());
+            updated = true;
+        }
+
+        // Update full name if provided, or build it from parts
+        if (request.getFullName() != null && !request.getFullName().isEmpty()) {
+            user.setFullName(request.getFullName());
+            updated = true;
+        } else if (request.getFirstName() != null || request.getLastName() != null) {
+            // Build full name from parts
+            String fullName = "";
+            if (user.getFirstName() != null) {
+                fullName = user.getFirstName();
+            }
+            if (user.getMiddleName() != null && !user.getMiddleName().isEmpty()) {
+                fullName += " " + user.getMiddleName();
+            }
+            if (user.getLastName() != null) {
+                fullName += " " + user.getLastName();
+            }
+            user.setFullName(fullName.trim());
+            updated = true;
+        }
+
+        // Update phone number
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isEmpty()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+            updated = true;
+        }
+
+        // Update department
+        if (request.getDepartment() != null && !request.getDepartment().isEmpty()) {
+            user.setDepartment(request.getDepartment());
+            updated = true;
+        }
+
+        // Update registration number
+        if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().isEmpty()) {
+            // Check if registration number is already taken by another user
+            userRepository.findByRegistrationNumber(request.getRegistrationNumber())
+                    .ifPresent(existingUser -> {
+                        if (!existingUser.getId().equals(user.getId())) {
+                            throw new RuntimeException("Registration number is already taken");
+                        }
                     });
+            user.setRegistrationNumber(request.getRegistrationNumber());
+            updated = true;
         }
 
-        auditLogService.logAction(
-                user.getId(),
-                "UPDATE_PROFILE",
-                "Profile updated",
-                "SUCCESS"
-        );
+        // Update college
+        if (request.getCollege() != null && !request.getCollege().isEmpty()) {
+            user.setCollege(request.getCollege());
+            updated = true;
+        }
 
-        return mapToUserProfileResponse(user);
+        // Update programme
+        if (request.getProgramme() != null && !request.getProgramme().isEmpty()) {
+            user.setProgramme(request.getProgramme());
+            updated = true;
+        }
+
+        // Update hall
+        if (request.getHall() != null && !request.getHall().isEmpty()) {
+            user.setHall(request.getHall());
+            updated = true;
+        }
+
+        // Update room number
+        if (request.getRoomNumber() != null && !request.getRoomNumber().isEmpty()) {
+            user.setRoomNumber(request.getRoomNumber());
+            updated = true;
+        }
+
+        // Update sponsor
+        if (request.getSponsor() != null && !request.getSponsor().isEmpty()) {
+            user.setSponsor(request.getSponsor());
+            updated = true;
+        }
+
+        // Update photo
+        if (request.getPhoto() != null && !request.getPhoto().isEmpty()) {
+            user.setPhoto(request.getPhoto());
+            updated = true;
+        }
+
+        // Update academic year
+        if (request.getAcademicYear() != null && !request.getAcademicYear().isEmpty()) {
+            user.setAcademicYear(request.getAcademicYear());
+            updated = true;
+        }
+
+        // Update graduation year
+        if (request.getGraduationYear() != null && !request.getGraduationYear().isEmpty()) {
+            user.setGraduationYear(request.getGraduationYear());
+            updated = true;
+        }
+
+        // Update semester
+        if (request.getSemester() != null && !request.getSemester().isEmpty()) {
+            user.setSemester(request.getSemester());
+            updated = true;
+        }
+
+        // Update email
+        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equals(user.getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new RuntimeException("Email is already taken");
+                }
+                user.setEmail(newEmail);
+                user.setUsername(newEmail);
+                updated = true;
+            }
+        }
+
+        // Update password
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            updated = true;
+        }
+
+        if (updated) {
+            user.setUpdatedAt(LocalDateTime.now());
+            User savedUser = userRepository.save(user);
+            log.info("✅ Profile updated successfully for user: {}", savedUser.getEmail());
+
+            // Update student record if exists
+            if (user.getRegistrationNumber() != null) {
+                studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
+                        .ifPresent(student -> {
+                            student.setFullName(user.getFullName());
+                            student.setPhoneNumber(user.getPhoneNumber());
+                            student.setProgramme(user.getProgramme());
+                            student.setFaculty(user.getCollege());
+                            student.setDepartment(user.getDepartment());
+                            student.setAcademicYear(user.getAcademicYear());
+                            student.setUpdatedAt(LocalDateTime.now());
+                            studentRepository.save(student);
+                        });
+            }
+
+            auditLogService.logAction(
+                    user.getId(),
+                    "UPDATE_PROFILE",
+                    "Profile updated successfully",
+                    "SUCCESS"
+            );
+
+            return mapToUserProfileResponse(savedUser);
+        } else {
+            log.warn("⚠️ No fields to update for user: {}", user.getEmail());
+            return mapToUserProfileResponse(user);
+        }
     }
 
     // =========================================================
@@ -527,7 +554,6 @@ public class AuthService {
 
     @Transactional
     public ApiResponse activateAccount(String userId) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -558,7 +584,6 @@ public class AuthService {
 
     @Transactional
     public ApiResponse deactivateAccount(String userId) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -581,10 +606,24 @@ public class AuthService {
     // =========================================================
 
     private User findUserByIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            log.error("❌ Identifier is null or empty");
+            throw new RuntimeException("Identifier cannot be null or empty");
+        }
+
         String value = identifier.trim();
+        log.debug("🔍 Finding user by identifier: {}", value);
+
+        // Try email first (case insensitive)
         return userRepository.findByEmail(value.toLowerCase())
-                .or(() -> userRepository.findByRegistrationNumber(value))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .or(() -> {
+                    log.debug("🔍 User not found by email, trying registration number: {}", value);
+                    return userRepository.findByRegistrationNumber(value);
+                })
+                .orElseThrow(() -> {
+                    log.error("❌ User not found with identifier: {}", value);
+                    return new RuntimeException("User not found with identifier: " + value);
+                });
     }
 
     private void recordFailedLogin(String identifier) {
@@ -594,6 +633,7 @@ public class AuthService {
         if (attempt.getAttempts() >= MAX_LOGIN_ATTEMPTS) {
             attempt.setLocked(true);
             attempt.setLockTime(System.currentTimeMillis());
+            log.warn("🔒 Account locked for identifier: {}", identifier);
         }
     }
 
@@ -615,10 +655,21 @@ public class AuthService {
     }
 
     private User getCurrentUser() {
-        String identifier = getCurrentUsername();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        //  Better check for authentication
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getPrincipal())) {
+            log.error(" No authenticated user found in SecurityContext");
+            throw new RuntimeException("User not authenticated. Please login first.");
+        }
+
+        String identifier = authentication.getName();
+        log.info("Getting current user: {}", identifier);
+
         return findUserByIdentifier(identifier);
     }
-
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -640,39 +691,40 @@ public class AuthService {
         return "http://localhost:4200/reset-password?token=" + token;
     }
 
-    private void sendWelcomeEmail(User user) {
-        try {
-            emailService.sendWelcomeEmail(
-                    user.getEmail(),
-                    user.getFullName(),
-                    "SmartClearance UDSM"
-            );
-        } catch (Exception e) {
-            System.err.println("Failed to send welcome email: " + e.getMessage());
-        }
-    }
-
     private UserProfileResponse mapToUserProfileResponse(User user) {
-        Student student = studentRepository.findByEmail(user.getEmail()).orElse(null);
+        // Try to find student by registration number
+        Student student = null;
+        if (user.getRegistrationNumber() != null && !user.getRegistrationNumber().isEmpty()) {
+            student = studentRepository.findByRegistrationNumber(user.getRegistrationNumber()).orElse(null);
+        }
 
         return UserProfileResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .middleName(user.getMiddleName())
                 .registrationNumber(user.getRegistrationNumber())
-                .role(user.getRole().name())
+                .role(user.getRole() != null ? user.getRole().name() : null)
                 .isActive(user.isActive())
                 .phoneNumber(user.getPhoneNumber())
                 .department(user.getDepartment())
+                .college(user.getCollege())
+                .programme(user.getProgramme())
+                .hall(user.getHall())
+                .roomNumber(user.getRoomNumber())
+                .sponsor(user.getSponsor())
+                .photo(user.getPhoto())
+                .academicYear(user.getAcademicYear())
+                .graduationYear(user.getGraduationYear())
+                .semester(user.getSemester())
                 .lastLogin(user.getLastLogin())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                .programme(student != null ? student.getProgramme() : null)
-                .faculty(student != null ? student.getFaculty() : null)
-                .yearOfStudy(student != null ? student.getYearOfStudy() : null)
-                .academicYear(student != null ? student.getAcademicYear() : null)
                 .clearanceStatus(student != null ? student.getClearanceStatus() : null)
+                .isFinalYear(student != null ? student.isFinalYear() : false)
                 .build();
     }
 

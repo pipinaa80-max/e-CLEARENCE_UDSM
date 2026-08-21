@@ -1,0 +1,5 @@
+@import '../hall_warden/hall_warden';
+.approved { color: green; }
+.pending { color: orange; }
+.blocked { color: gray; }
+.rejected { color: red; }

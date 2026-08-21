@@ -19,7 +19,7 @@ export class StaffRegister {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly staffRoles: StaffRole[] = ['Library', 'Department', 'Finance', 'ICT', 'Academic Staff', 'Administrator'];
+  readonly staffRoles: StaffRole[] = ['Convocation', 'Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Department', 'Principal', 'Finance', 'ICT', 'Academic Staff', 'Administrator'];
 
   readonly collegeDepartments: Record<string, string[]> = {
     CoAF: ['Agricultural Economics and Business', 'Agricultural Engineering', 'Crop Science and Beekeeping Technology', 'Food Science and Technology'],
@@ -166,12 +166,20 @@ export class StaffRegister {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
+      Convocation: '/convocation',
+      'Games Coach': '/games_coach',
+      'Hall Warden': '/hall_warden',
+      USAB: '/usab',
+      DARUSO: '/daruso',
       Library: '/dashboard/library',
+      'Dean of Students': '/dean_of_students',
+      'Smart Card': '/smart_card',
       Department: '/dashboard/department',
       Finance: '/dashboard/finance',
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
-      Administrator: '/dashboard/admin'
+      Administrator: '/dashboard/admin',
+      Principal: '/principal'
     };
     return map[role] ?? '/dashboard';
   }

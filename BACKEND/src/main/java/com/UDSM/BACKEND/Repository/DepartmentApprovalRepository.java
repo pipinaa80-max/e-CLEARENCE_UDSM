@@ -1,6 +1,7 @@
-
 package com.UDSM.BACKEND.Repository;
+
 import java.util.List;
+import java.util.Optional;
 
 import com.UDSM.BACKEND.Model.ClearanceRequest;
 import com.UDSM.BACKEND.Model.ClearanceStatus;
@@ -9,16 +10,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DepartmentApprovalRepository extends JpaRepository<DepartmentApproval, String> {
+public interface DepartmentApprovalRepository extends JpaRepository<DepartmentApproval, Long> {
+
     List<DepartmentApproval> findByClearanceRequest(ClearanceRequest clearanceRequest);
 
-    List<DepartmentApproval> findByClearanceRequestAndDepartment(ClearanceRequest clearanceRequest, String department);
+    Optional<DepartmentApproval> findByClearanceRequestAndDepartment(ClearanceRequest clearanceRequest, String department);
 
-    List<DepartmentApproval> findByDepartmentAndStatus(String department, ClearanceStatus status);
-
-    long countByDepartmentAndStatus(String department, ClearanceStatus status);
+    long countByClearanceRequest(ClearanceRequest clearanceRequest);
 
     long countByClearanceRequestAndStatus(ClearanceRequest clearanceRequest, ClearanceStatus status);
-
-    long countByClearanceRequest(ClearanceRequest request);
 }

@@ -1,37 +1,41 @@
-export type ClearanceType =
-  | 'Graduation Clearance'
-  | 'Withdrawal Clearance'
-  | 'Transfer Clearance'
-  | 'General Clearance';
+export type ClearanceOffice =
+  | 'Convocation'
+  | 'Games Coach'
+  | 'Hall Warden'
+  | 'USAB'
+  | 'DARUSO'
+  | 'Library'
+  | 'Dean of Students'
+  | 'Smart Card'
+  | 'Department'
+  | 'Principal'
+  | 'Finance';
 
-export type ClearanceStatus =
-  | 'Not Requested'
-  | 'Pending'
-  | 'Approved'
-  | 'Rejected'
-  | 'Completed'
-  | 'Cancelled';
+export type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
+
+export interface OfficeApproval {
+  office: ClearanceOffice;
+  status: ApprovalStatus;
+  comment?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
 
 export interface ClearanceRequest {
   id: string;
   studentId: string;
-  college?: string;
-  department?: string;
-  programme?: string;
-  clearanceType: ClearanceType;
+  college: string;
+  department: string;
+  programme: string;
   requestDate: string;
-  status: ClearanceStatus;
-  completionDate?: string;
-  currentOffice: string;
-  remarks?: string;
-}
-
-export interface ClearanceApproval {
-  id: string;
-  clearanceId: string;
-  officeId: string;
-  officerId: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  comment: string;
-  date: string;
+  status: 'Pending' | 'Completed' | 'Rejected';
+  currentOffice?: ClearanceOffice;
+  currentStage:
+    | 'Convocation'
+    | 'Parallel'
+    | 'Department'
+    | 'Principal'
+    | 'Finance'
+    | 'Completed';
+  approvals: OfficeApproval[];
 }

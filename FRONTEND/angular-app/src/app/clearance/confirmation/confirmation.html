@@ -1,0 +1,9 @@
+<main class="confirmation-page">
+  <section class="confirmation-card" *ngIf="request?.status === 'Completed'; else notComplete">
+    <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow">Clearance approved</p><h1>Your clearance is complete</h1>
+    <p>All required offices have approved your clearance request. Keep your registration number for reference.</p>
+    <div class="reference"><span>Registration number</span><strong>{{ registrationNumber }}</strong></div>
+    <a routerLink="/dashboard">Return to dashboard</a>
+  </section>
+  <ng-template #notComplete><section class="confirmation-card"><h1>Clearance is still in progress</h1><p>Your request will appear here after Convocation, the parallel offices, Department, Principal, and Finance approve it.</p><a routerLink="/clearance/status">View clearance process</a></section></ng-template>
+</main>

@@ -28,7 +28,14 @@ export class Login {
 
   readonly roles: UserRole[] = [
     'Student',
+    'Convocation',
+    'Games Coach',
+    'Hall Warden',
+    'USAB',
+    'DARUSO',
     'Library',
+    'Dean of Students',
+    'Smart Card',
     'Department',
     'Finance',
     'ICT',
@@ -73,12 +80,20 @@ export class Login {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
+      Convocation: '/convocation',
+      'Games Coach': '/games_coach',
+      'Hall Warden': '/hall_warden',
+      USAB: '/usab',
+      DARUSO: '/daruso',
       Library: '/dashboard/library',
+      'Dean of Students': '/dean_of_students',
+      'Smart Card': '/smart_card',
       Department: '/dashboard/department',
       Finance: '/dashboard/finance',
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
-      Administrator: '/dashboard/admin'
+      Administrator: '/dashboard/admin',
+      Principal: '/principal'
     };
     return map[role] ?? '/dashboard';
   }

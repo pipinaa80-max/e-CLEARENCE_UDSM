@@ -1,0 +1,99 @@
+<section class="office-page">
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/udsm-logo.png" alt="UDSM Logo" />
+
+      <div>
+        <strong>Finance Office</strong>
+        <small>Clearance Workspace</small>
+      </div>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard/finance">Pending Requests</a>
+
+      <button type="button" (click)="logout()">
+        Log out
+      </button>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <header class="page-header">
+      <div>
+        <p>Final Clearance Stage</p>
+        <h1>Finance Approval</h1>
+      </div>
+
+      <span class="count">{{ requests.length }} Pending</span>
+    </header>
+
+    <p class="message" *ngIf="message">{{ message }}</p>
+
+    <section class="empty-state" *ngIf="!requests.length">
+      <h2>No pending requests</h2>
+      <p>There are no student applications awaiting Finance approval.</p>
+    </section>
+
+    <section class="request-list" *ngIf="requests.length">
+      <article class="request-card" *ngFor="let request of requests">
+        <div class="student-info">
+          <span>Graduation Clearance</span>
+          <h2>{{ request.programme }}</h2>
+          <p>{{ request.department }} · {{ request.college }}</p>
+          <small>Submitted: {{ request.requestDate | date:'mediumDate' }}</small>
+        </div>
+
+        <div class="actions">
+          <button
+            type="button"
+            class="return-button"
+            (click)="openRejectForm(request)"
+          >
+            Return with Reason
+          </button>
+
+          <button
+            type="button"
+            class="approve-button"
+            (click)="approve(request)"
+          >
+            Complete Clearance
+          </button>
+        </div>
+      </article>
+    </section>
+
+    <section class="reject-modal" *ngIf="selectedRequest">
+      <div class="modal-card">
+        <h2>Return Clearance Request</h2>
+
+        <p>Write the financial issue the student must correct.</p>
+
+        <textarea
+          [(ngModel)]="rejectionComment"
+          placeholder="Example: Please settle the outstanding fee balance before requesting clearance again."
+        ></textarea>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="cancel-button"
+            (click)="selectedRequest = null"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            class="return-button"
+            (click)="reject()"
+            [disabled]="!rejectionComment.trim()"
+          >
+            Send Reason to Student
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+</section>
