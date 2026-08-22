@@ -49,6 +49,10 @@ public class Student {
     @Column(name = "faculty")
     private String faculty;
 
+    // ✅ ADD THIS: College field (actual database column)
+    @Column(name = "college")
+    private String college;
+
     @Column(name = "department")
     private String department;
 
@@ -114,20 +118,41 @@ public class Student {
         if (this.clearanceStatus == null) {
             this.clearanceStatus = ClearanceStatus.PENDING;
         }
+        // Sync college with faculty if college is null
+        if (this.college == null && this.faculty != null) {
+            this.college = this.faculty;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+        // Keep college and faculty in sync
+        if (this.college != null && this.faculty == null) {
+            this.faculty = this.college;
+        }
+        if (this.faculty != null && this.college == null) {
+            this.college = this.faculty;
+        }
     }
 
     // Helper methods
     public String getCollege() {
-        return this.faculty;  // Alias for faculty
+        return this.college != null ? this.college : this.faculty;
     }
 
     public void setCollege(String college) {
-        this.faculty = college;
+        this.college = college;
+        if (this.faculty == null) {
+            this.faculty = college;
+        }
+    }
+
+    public void setFaculty(String faculty) {
+        this.faculty = faculty;
+        if (this.college == null) {
+            this.college = faculty;
+        }
     }
 
     public void setIsFinalYear(boolean isFinalYear) {
@@ -135,6 +160,6 @@ public class Student {
     }
 
     public void setFinalYear(boolean b) {
-
+        this.isFinalYear = b;
     }
 }

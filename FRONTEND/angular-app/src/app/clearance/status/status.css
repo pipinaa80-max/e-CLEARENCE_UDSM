@@ -1,5 +1,3 @@
-/* src/app/clearance/status/status.css */
-
 :host {
   display: block;
   min-height: 100vh;
@@ -7,14 +5,8 @@
 
 .status-page {
   min-height: 100vh;
-  padding: 28px 36px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--udsm-blue) 13%, transparent),
-      transparent 42%
-    ),
-    var(--bg-light);
+  padding: 32px;
+  background: var(--bg-light);
 }
 
 .status-card,
@@ -28,188 +20,1546 @@
   box-shadow: var(--shadow-soft);
 }
 
-header {
+/* =========================
+   HEADER
+========================= */
+
+.status-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding-bottom: 18px;
+  gap: 24px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--border-soft);
 }
 
-header p {
-  margin: 0;
+.page-label {
+  display: block;
+  margin-bottom: 6px;
   color: var(--udsm-blue);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
-header h1,
-.no-request-card h1 {
-  margin: 6px 0 0;
+.status-header h1 {
+  margin: 0;
   color: var(--udsm-blue-dark);
-  font-size: 1.25rem;
+  font-size: 1.8rem;
 }
 
-.final-status,
-.approval-status {
-  display: inline-flex;
-  padding: 7px 11px;
+.status-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* =========================
+   OVERALL STATUS
+========================= */
+
+.overall-status {
+  min-width: 110px;
+  padding: 9px 15px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  text-align: center;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
-.final-status.pending,
-.approval-item.pending .approval-status {
-  background: color-mix(in srgb, var(--udsm-gold) 22%, #ffffff);
+.overall-status.pending {
+  background: #fff7df;
   color: var(--warning);
 }
 
-.final-status.completed,
-.approval-item.approved .approval-status {
-  background: color-mix(in srgb, var(--success) 14%, #ffffff);
+.overall-status.completed {
+  background: #e9f7ef;
   color: var(--success);
 }
 
-.final-status.rejected,
-.approval-item.rejected .approval-status {
-  background: color-mix(in srgb, var(--danger) 12%, #ffffff);
+.overall-status.rejected {
+  background: #fdecec;
   color: var(--danger);
 }
 
+/* =========================
+   CURRENT STAGE
+========================= */
+
 .current-stage {
-  display: grid;
-  gap: 7px;
-  margin: 18px 0 6px;
-  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 24px 0 34px;
+  padding: 18px 20px;
   border-left: 4px solid var(--udsm-gold);
   border-radius: var(--radius-control);
   background: var(--surface-soft);
 }
 
-.current-stage span,
-.student-info span {
+.current-stage div {
+  display: grid;
+  gap: 5px;
+}
+
+.current-stage span {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.current-stage strong {
+  color: var(--udsm-blue-dark);
+  font-size: 1rem;
+}
+
+.current-stage p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+/* =========================
+   SECTION HEADER
+========================= */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.section-header > div > span {
+  color: var(--udsm-blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.section-header h2 {
+  margin: 5px 0 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.25rem;
+}
+
+.stage-count {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--udsm-blue-dark);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* =========================
+   CLEARANCE PROCESS
+========================= */
+
+.process-list {
+  margin-top: 24px;
+}
+
+.process-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 18px;
+  min-height: 102px;
+}
+
+.connector {
+  position: absolute;
+  z-index: 0;
+  top: 51px;
+  left: 25px;
+  width: 2px;
+  height: calc(100% - 8px);
+  background: var(--border-soft);
+}
+
+.status-circle {
+  position: relative;
+  z-index: 2;
+
+  width: 50px;
+  height: 50px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid var(--border-soft);
+  border-radius: 50%;
+
+  background: var(--surface);
+  color: var(--text-muted);
+
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.process-content {
+  min-width: 0;
+  padding: 2px 0 26px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.process-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.process-top small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.process-top h3 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.02rem;
+}
+
+.process-content > p {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+/* =========================
+   STATUS BADGE
+========================= */
+
+.status-badge {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* APPROVED */
+
+.process-item.approved .status-circle {
+  border-color: var(--success);
+  background: var(--success);
+  color: #fff;
+}
+
+.process-item.approved .connector {
+  background: var(--success);
+}
+
+.process-item.approved .status-badge {
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+/* PENDING */
+
+.process-item.pending .status-circle {
+  border-color: var(--udsm-blue);
+  color: var(--udsm-blue);
+}
+
+.process-item.pending .status-badge {
+  background: #edf3fa;
+  color: var(--udsm-blue);
+}
+
+/* REJECTED */
+
+.process-item.rejected .status-circle {
+  border-color: var(--danger);
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.process-item.rejected .status-badge {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+/* WAITING */
+
+.process-item.waiting .status-circle {
+  border-color: var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+.process-item.waiting .status-badge {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+/* =========================
+   REJECTION DETAILS
+========================= */
+
+.rejection-details {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius-control);
+  background: #fff7f7;
+}
+
+.rejection-header {
+  margin-bottom: 6px;
+}
+
+.rejection-header span {
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rejection-details > p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.rejection-details .no-reason {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.review-information {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.review-information strong {
+  color: var(--udsm-blue-dark);
+}
+
+/* =========================
+   OFFICE SECTION
+========================= */
+
+.office-section {
+  margin-top: 38px;
+  padding-top: 30px;
+  border-top: 2px solid var(--border-soft);
+}
+
+.section-description {
+  max-width: 760px;
+  margin: 10px 0 22px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.office-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.office-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 14px;
+
+  min-height: 78px;
+  padding: 15px 16px;
+
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--border-soft);
+  border-radius: var(--radius-card);
+
+  background: var(--surface);
+}
+
+.office-status-icon {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid var(--border-soft);
+  border-radius: 50%;
+
+  color: var(--text-muted);
+  font-weight: 900;
+}
+
+.office-content {
+  min-width: 0;
+}
+
+.office-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.office-content h3 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 0.94rem;
+}
+
+.office-content > p {
+  margin: 5px 0 0;
   color: var(--text-muted);
   font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.office-status {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* APPROVED OFFICE */
+
+.office-card.approved {
+  border-left-color: var(--success);
+}
+
+.office-card.approved .office-status-icon {
+  border-color: var(--success);
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+.office-card.approved .office-status {
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+/* PENDING OFFICE */
+
+.office-card.pending {
+  border-left-color: var(--udsm-blue);
+}
+
+.office-card.pending .office-status-icon {
+  border-color: var(--udsm-blue);
+  color: var(--udsm-blue);
+}
+
+.office-card.pending .office-status {
+  background: #edf3fa;
+  color: var(--udsm-blue);
+}
+
+/* REJECTED OFFICE */
+
+.office-card.rejected {
+  border-left-color: var(--danger);
+}
+
+.office-card.rejected .office-status-icon {
+  border-color: var(--danger);
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.office-card.rejected .office-status {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+/* =========================
+   OFFICE REJECTION
+========================= */
+
+.office-rejection {
+  margin-top: 12px;
+  padding: 11px 12px;
+  border-radius: var(--radius-control);
+  background: #fff7f7;
+}
+
+.office-rejection > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--danger);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.office-rejection p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.office-rejection .no-reason {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.office-rejection small {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* =========================
+   OFFICE APPROVED
+========================= */
+
+.office-approved {
+  margin-top: 9px;
+  color: var(--success);
+  font-size: 0.72rem;
+}
+
+.office-approved strong {
+  color: var(--udsm-blue-dark);
+}
+
+/* =========================
+   INFORMATION CARD
+========================= */
+
+.information-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+
+  margin-top: 28px;
+  padding: 19px;
+
+  border-left: 4px solid var(--udsm-blue);
+  border-radius: var(--radius-control);
+
+  background: var(--surface-soft);
+}
+
+.information-icon {
+  width: 40px;
+  height: 40px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.information-card h3 {
+  margin: 0 0 5px;
+  color: var(--udsm-blue-dark);
+  font-size: 0.98rem;
+}
+
+.information-card p {
+  margin: 4px 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* =========================
+   REJECTED CARD
+========================= */
+
+.rejected-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+
+  margin-top: 28px;
+  padding: 21px;
+
+  border: 1px solid #f1cccc;
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius-card);
+
+  background: #fff7f7;
+}
+
+.rejected-icon {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: #fdecec;
+
+  color: var(--danger);
+
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.rejected-card > div:nth-child(2) > span {
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rejected-card h2 {
+  margin: 5px 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.05rem;
+}
+
+.rejected-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* =========================
+   COMPLETED
+========================= */
+
+.completed-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  margin-top: 28px;
+  padding: 22px;
+
+  border: 1px solid #cfe8d8;
+  border-radius: var(--radius-card);
+
+  background: #f2faf5;
+}
+
+.completed-icon {
+  width: 50px;
+  height: 50px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+  background: var(--success);
+
+  color: #fff;
+
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.completed-card > div:nth-child(2) > span {
+  color: var(--success);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.completed-card h2 {
+  margin: 5px 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.05rem;
+}
+
+.completed-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+/* =========================
+   NO REQUEST
+========================= */
+
+.no-request-card {
+  min-height: 420px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+
+  display: grid;
+  place-items: center;
+
+  margin-bottom: 18px;
+
+  border-radius: 50%;
+  background: var(--surface-soft);
+
+  color: var(--udsm-blue);
+
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.no-request-card > span {
+  color: var(--udsm-blue);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.no-request-card h1 {
+  margin: 7px 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.45rem;
+}
+
+.no-request-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 850px) {
+
+  .status-page {
+    padding: 20px;
+  }
+
+  .status-card,
+  .no-request-card {
+    padding: 24px;
+  }
+
+  .office-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .current-stage {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .status-page {
+    padding: 12px;
+  }
+
+  .status-card,
+  .no-request-card {
+    padding: 18px;
+  }
+
+  .status-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .status-header h1 {
+    font-size: 1.45rem;
+  }
+
+  .process-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 13px;
+  }
+
+  .status-circle {
+    width: 42px;
+    height: 42px;
+  }
+
+  .connector {
+    left: 20px;
+    top: 43px;
+  }
+
+  .process-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-card {
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .office-status-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .office-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rejection-details {
+    padding: 12px;
+  }
+
+  .review-information {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .rejected-card,
+  .completed-card {
+    align-items: flex-start;
+  }
+}
+
+
+/* =========================
+   CLEARANCE PROCESS PAGE
+========================= */
+
+.status-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.status-card {
+  padding: 28px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.status-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.page-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--udsm-blue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.status-header h1 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.65rem;
+}
+
+.status-header p {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+
+/* =========================
+   OVERALL STATUS
+========================= */
+
+.overall-status {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.overall-status.pending {
+  background: #edf3fa;
+  color: var(--udsm-blue);
+}
+
+.overall-status.rejected {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.overall-status.completed {
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+
+/* =========================
+   CURRENT STAGE
+========================= */
+
+.current-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+
+  margin: 22px 0;
+  padding: 18px;
+
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.current-stage span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .current-stage strong {
   color: var(--udsm-blue-dark);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
-.student-info {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 28px;
+.current-stage p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
-.student-info div {
-  padding: 16px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: var(--surface);
+
+/* =========================
+   PROCESS HEADER
+========================= */
+
+.process-section {
+  margin-top: 28px;
 }
 
-.student-info strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--udsm-blue-dark);
-  overflow-wrap: anywhere;
-}
-
-.approval-list h2 {
-  margin: 0 0 15px;
-  color: var(--udsm-blue-dark);
-  font-size: 1.2rem;
-}
-
-.approval-item {
+.section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 17px 18px;
-  border-top: 1px solid var(--border-soft);
+  gap: 15px;
+  margin-bottom: 18px;
 }
 
-.approval-item strong,
-.approval-item small,
-.approval-item p {
+.section-header > div > span {
+  color: var(--udsm-blue);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.section-header h2 {
+  margin: 3px 0 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.05rem;
+}
+
+.stage-count {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+
+/* =========================
+   PROCESS LIST
+========================= */
+
+.process-list {
+  position: relative;
+}
+
+.process-item {
+  position: relative;
+
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 16px;
+
+  padding: 18px 0;
+}
+
+.process-item:not(:last-child)::after {
+  content: '';
+
+  position: absolute;
+
+  top: 58px;
+  bottom: -1px;
+  left: 25px;
+
+  width: 2px;
+
+  background: var(--border-soft);
+}
+
+
+/* =========================
+   STEP NUMBER
+========================= */
+
+.step-number {
+  position: relative;
+  z-index: 2;
+
+  width: 50px;
+  height: 50px;
+
+  display: grid;
+  place-items: center;
+
+  border: 2px solid var(--border-soft);
+  border-radius: 50%;
+
+  background: var(--surface);
+
+  color: var(--text-muted);
+
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.process-item.approved .step-number {
+  border-color: var(--success);
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+.process-item.rejected .step-number {
+  border-color: var(--danger);
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.process-item.pending .step-number {
+  border-color: var(--udsm-blue);
+  color: var(--udsm-blue);
+}
+
+
+/* =========================
+   STEP CONTENT
+========================= */
+
+.step-content {
+  min-width: 0;
+
+  padding: 15px 17px;
+
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+
+  background: var(--surface);
+}
+
+.process-item.approved .step-content {
+  border-left: 3px solid var(--success);
+}
+
+.process-item.rejected .step-content {
+  border-left: 3px solid var(--danger);
+}
+
+.process-item.pending .step-content {
+  border-left: 3px solid var(--udsm-blue);
+}
+
+.step-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.step-header small {
   display: block;
+  margin-bottom: 3px;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-.approval-item strong {
+.step-header h3 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 0.92rem;
+}
+
+.step-content > p {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+
+/* =========================
+   STATUS BADGE
+========================= */
+
+.status-badge {
+  flex-shrink: 0;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background: var(--surface-soft);
+  color: var(--text-muted);
+
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.process-item.approved .status-badge {
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+.process-item.rejected .status-badge {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.process-item.pending .status-badge {
+  background: #edf3fa;
+  color: var(--udsm-blue);
+}
+
+
+/* =========================
+   REJECTION DETAILS
+========================= */
+
+.rejection-details {
+  margin-top: 14px;
+  padding: 13px;
+
+  border: 1px solid #f0caca;
+  border-radius: 8px;
+
+  background: #fff7f7;
+}
+
+.rejection-title {
+  margin-bottom: 5px;
+
+  color: var(--danger);
+
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rejection-details p {
+  margin: 0;
+
+  color: var(--text-dark);
+
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.rejection-details .no-reason {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.review-information {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+
+  margin-top: 10px;
+  padding-top: 9px;
+
+  border-top: 1px solid #f0dada;
+
+  color: var(--text-muted);
+
+  font-size: 0.65rem;
+}
+
+.review-information strong {
   color: var(--text-dark);
 }
 
-.approval-item small {
-  margin-top: 5px;
-  color: var(--text-muted);
-}
 
-.approval-item p {
-  margin: 7px 0 0;
-  color: var(--danger);
-  line-height: 1.45;
-}
+/* =========================
+   INFORMATION / COMPLETED
+========================= */
 
-.notification-link,
-.no-request-card a {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
+.process-information,
+.rejected-card,
+.completed-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+
   margin-top: 24px;
-  padding: 10px 16px;
-  border-radius: var(--radius-control);
-  background: var(--udsm-blue);
-  color: #ffffff;
-  font-weight: 800;
-  text-decoration: none;
+  padding: 17px;
+
+  border-radius: 10px;
 }
 
-.notification-link:hover,
-.no-request-card a:hover {
-  background: var(--udsm-blue-dark);
+.process-information {
+  background: var(--surface-soft);
 }
+
+.rejected-card {
+  border: 1px solid #f0caca;
+  background: #fff7f7;
+}
+
+.completed-card {
+  border: 1px solid #cfe8d8;
+  background: #f2faf5;
+}
+
+.information-icon,
+.rejected-icon,
+.completed-icon {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  font-weight: 900;
+}
+
+.information-icon {
+  background: #edf3fa;
+  color: var(--udsm-blue);
+}
+
+.rejected-icon {
+  background: #fdecec;
+  color: var(--danger);
+}
+
+.completed-icon {
+  background: #e9f7ef;
+  color: var(--success);
+}
+
+.process-information h3,
+.rejected-card h3,
+.completed-card h3 {
+  margin: 0 0 5px;
+  color: var(--udsm-blue-dark);
+  font-size: 0.88rem;
+}
+
+.process-information p,
+.rejected-card p,
+.completed-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.rejected-card > div:last-child > span,
+.completed-card > div:last-child > span {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.63rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rejected-card > div:last-child > span {
+  color: var(--danger);
+}
+
+.completed-card > div:last-child > span {
+  color: var(--success);
+}
+
+
+/* =========================
+   NO REQUEST
+========================= */
 
 .no-request-card {
+  max-width: 600px;
+  margin: 70px auto;
+  padding: 35px;
   text-align: center;
+
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.empty-icon {
+  width: 50px;
+  height: 50px;
+
+  display: grid;
+  place-items: center;
+
+  margin: 0 auto 15px;
+
+  border-radius: 50%;
+  background: #fff7df;
+
+  color: #946f00;
+
+  font-weight: 900;
+}
+
+.no-request-card h2 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.1rem;
 }
 
 .no-request-card p {
+  margin: 8px auto 18px;
+  max-width: 450px;
+
   color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
-@media (max-width: 680px) {
-  .status-card,
-  .no-request-card {
-    padding: 24px;
+.primary-button {
+  display: inline-flex;
+
+  padding: 10px 16px;
+
+  border-radius: 8px;
+
+  background: var(--udsm-blue);
+  color: #fff;
+
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primary-button:hover {
+  opacity: 0.9;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+  .status-page {
+    padding: 18px;
   }
 
-  header,
-  .approval-item {
+  .status-card {
+    padding: 20px;
+  }
+
+  .status-header {
+    flex-direction: column;
+  }
+
+  .current-stage {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .student-info {
-    grid-template-columns: 1fr;
+  .step-header {
+    flex-direction: column;
   }
+
+  .process-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .step-number {
+    width: 40px;
+    height: 40px;
+  }
+
+  .process-item:not(:last-child)::after {
+    left: 20px;
+    top: 48px;
+  }
+
+  .step-content {
+    padding: 13px;
+  }
+
 }
 
-.process-path { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 0; margin: 28px 0 34px; overflow-x: auto; padding: 10px 0 18px; }
-.process-step { position: relative; min-width: 140px; text-align: center; padding: 0 7px; }
-.step-line { position: absolute; top: 18px; left: 50%; width: 100%; height: 2px; background: #e1e7eb; }
-.step-number { position: relative; z-index: 1; width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid #d8e0e5; border-radius: 50%; background: #fff; color: #95a3ad; font-size: .82rem; font-weight: 700; }
-.step-content { display: grid; gap: 5px; margin-top: 10px; }.step-content strong { color: #41515d; font-size: .78rem; font-weight: 700; }.step-content small { min-height: 35px; color: #87949d; font-size: .7rem; line-height: 1.3; }.step-content span { font-size: .67rem; font-weight: 800; text-transform: uppercase; color: var(--warning); }
-.process-step.approved .step-number { border-color: #2eb85c; background: #2eb85c; color: #fff; }.process-step.approved .step-line { background: #13b5cb; }.process-step.approved .step-content span { color: #2eb85c; }.process-step.pending .step-number { border-color: #13b5cb; color: #13b5cb; }.process-step.rejected .step-number { border-color: var(--danger); color: var(--danger); }.process-step.rejected .step-content span { color: var(--danger); }
-.approval-button { display: inline-flex; min-height: 46px; align-items: center; padding: 0 18px; border-radius: var(--radius-control); background: var(--success); color: #fff; text-decoration: none; font-weight: 800; }
-.waiting-card { margin-top: 24px; padding: 20px; border-left: 4px solid var(--udsm-blue); border-radius: var(--radius-control); background: var(--surface-soft); }.waiting-card h2 { margin: 0 0 8px; color: var(--udsm-blue-dark); }.waiting-card p { margin: 6px 0; color: var(--text-muted); }
+/* =====================================================
+   NO CLEARANCE REQUEST
+===================================================== */
+
+.no-request-page {
+  min-height: calc(100vh - 56px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 24px;
+}
+
+.no-request-card {
+  width: min(100%, 480px);
+
+  margin: 0;
+  padding: 64px 40px;
+
+  text-align: center;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border-soft);
+
+  border-radius: 14px;
+
+  box-shadow: var(--shadow-soft);
+}
+
+.warning-icon {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  margin: 0 auto 18px;
+
+  border-radius: 50%;
+
+  background: #fff7df;
+
+  color: #946f00;
+
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.no-request-card h1 {
+  margin: 0 0 10px;
+
+  color: var(--udsm-blue-dark);
+
+  font-size: 1.1rem;
+
+  font-weight: 800;
+}
+
+.no-request-card p {
+  max-width: 360px;
+
+  margin: 0 auto 20px;
+
+  color: var(--text-muted);
+
+  font-size: 0.82rem;
+
+  line-height: 1.5;
+}
+
+.request-button {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 42px;
+
+  padding: 0 18px;
+
+  border-radius: 8px;
+
+  background: var(--udsm-blue);
+
+  color: #ffffff;
+
+  font-size: 0.82rem;
+
+  font-weight: 800;
+
+  text-decoration: none;
+}
+
+.request-button:hover {
+  opacity: 0.9;
+}

@@ -1,7 +1,209 @@
-:host { display:block; min-height:100vh; }
-.confirmation-page { min-height:100vh; display:grid; place-items:center; padding:24px; background:var(--bg-light); }
-.confirmation-card { width:min(100%,620px); padding:42px; text-align:center; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-card); box-shadow:var(--shadow-soft); }
-.success-icon { width:70px; height:70px; display:grid; place-items:center; margin:0 auto 18px; border-radius:50%; background:var(--success); color:#fff; font-size:2.3rem; font-weight:800; }
-.eyebrow { color:var(--success); font-weight:800; text-transform:uppercase; letter-spacing:.08em; } h1 { margin:8px 0 12px; color:var(--udsm-blue-dark); } p { color:var(--text-muted); line-height:1.6; }
-.reference { margin:24px 0; padding:15px; border-radius:var(--radius-control); background:var(--surface-soft); }.reference span,.reference strong { display:block; }.reference span { color:var(--text-muted); font-size:.8rem; text-transform:uppercase; }.reference strong { margin-top:5px; color:var(--udsm-blue-dark); }
-a { display:inline-flex; padding:12px 18px; border-radius:var(--radius-control); background:var(--udsm-blue); color:#fff; text-decoration:none; font-weight:800; }
+/* =====================================================
+   CLEARANCE CONFIRMATION
+===================================================== */
+
+.confirmation-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--bg-light);
+}
+
+.confirmation-card {
+  width: min(100%, 760px);
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.success-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  background: color-mix(
+    in srgb,
+    var(--success) 12%,
+    transparent
+  );
+  color: var(--success);
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--udsm-blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.confirmation-card h1 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+}
+
+.intro {
+  max-width: 650px;
+  margin: 12px 0 28px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+
+/* =====================================================
+   STUDENT DETAILS
+===================================================== */
+
+.student-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 30px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--border-soft);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 15px 16px;
+  background: var(--surface-soft);
+}
+
+.detail span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detail strong {
+  color: var(--text-dark);
+  line-height: 1.4;
+}
+
+
+/* =====================================================
+   COMPLETED STAGES
+===================================================== */
+
+.completed-process {
+  margin-top: 10px;
+}
+
+.completed-process h2 {
+  margin: 0 0 14px;
+  color: var(--udsm-blue-dark);
+  font-size: 1rem;
+}
+
+.completed-stage {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.completed-stage:last-child {
+  border-bottom: none;
+}
+
+.completed-stage span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(
+    in srgb,
+    var(--success) 12%,
+    transparent
+  );
+  color: var(--success);
+  font-weight: 900;
+}
+
+.completed-stage strong {
+  color: var(--text-dark);
+}
+
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.confirmation-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 28px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: var(--radius-control);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primary-button {
+  background: var(--udsm-blue);
+  color: #ffffff;
+}
+
+.primary-button:hover {
+  background: var(--udsm-blue-dark);
+}
+
+.secondary-button {
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--udsm-blue);
+}
+
+.secondary-button:hover {
+  background: var(--surface-soft);
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 650px) {
+
+  .confirmation-card {
+    padding: 24px;
+  }
+
+  .student-details {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-actions {
+    flex-direction: column;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+
+}

@@ -1,204 +1,176 @@
-<section class="request-page">
-    <div class="request-card">
-        <header>
-            <h1>Clearance Request</h1>
-            <p *ngIf="isLoading" class="loading-text">Loading your information...</p>
-        </header>
+<!-- request.html -->
+<div class="request-page">
 
-        <form [formGroup]="requestForm" (ngSubmit)="submit()">
-            <div class="grid">
-                <!-- Student Name - Auto-filled from user data -->
-                <label class="field">
-                    <span>Student Name</span>
-                    <input
-                            type="text"
-                            formControlName="studentName"
-                            readonly
-                            [class.error]="requestForm.controls.studentName.invalid && requestForm.controls.studentName.touched"
-                    />
-                    <small class="field-error" *ngIf="requestForm.controls.studentName.invalid && requestForm.controls.studentName.touched">
-                        Student name is required
-                    </small>
-                </label>
+  <!-- HEADER -->
+  <header class="request-header">
+    <span>Student Clearance</span>
+    <h1>Clearance Request</h1>
+    <p>Complete the information below to submit your clearance request.</p>
+  </header>
 
-                <!-- Registration Number - Auto-filled from user data -->
-                <label class="field">
-                    <span>Registration Number</span>
-                    <input
-                            type="text"
-                            formControlName="registrationNumber"
-                            placeholder="2021-04-12345"
-                            autocomplete="off"
-                            readonly
-                            [class.error]="requestForm.controls.registrationNumber.invalid && requestForm.controls.registrationNumber.touched"
-                    />
-                    <small class="field-error" *ngIf="requestForm.controls.registrationNumber.invalid && requestForm.controls.registrationNumber.touched">
-                        Registration number is required
-                    </small>
-                </label>
+  <!-- MAIN CARD -->
+  <section class="request-card">
 
-                <!-- Academic Year -->
-                <label class="field">
-                    <span>Academic Year</span>
-                    <input
-                            type="text"
-                            formControlName="academicYear"
-                            placeholder="2025/2026"
-                            [class.error]="requestForm.controls.academicYear.invalid && requestForm.controls.academicYear.touched"
-                    />
-                    <small class="field-error" *ngIf="requestForm.controls.academicYear.invalid && requestForm.controls.academicYear.touched">
-                        Academic year is required
-                    </small>
-                </label>
-
-                <!-- Graduation Year -->
-                <label class="field">
-                    <span>Graduation Year</span>
-                    <input
-                            type="text"
-                            formControlName="graduationYear"
-                            placeholder="2026"
-                            [class.error]="requestForm.controls.graduationYear.invalid && requestForm.controls.graduationYear.touched"
-                    />
-                    <small class="field-error" *ngIf="requestForm.controls.graduationYear.invalid && requestForm.controls.graduationYear.touched">
-                        Graduation year is required
-                    </small>
-                </label>
-
-                <!-- College -->
-                <label class="field">
-                    <span>College/School</span>
-                    <select
-                            formControlName="college"
-                            (change)="onCollegeChange()"
-                            [class.error]="requestForm.controls.college.invalid && requestForm.controls.college.touched"
-                    >
-                        <option value="" disabled>Select college</option>
-                        <option
-                                *ngFor="let college of collegeList"
-                                [value]="college"
-                        >
-                            {{ college }}
-                        </option>
-                    </select>
-                    <small class="field-error" *ngIf="requestForm.controls.college.invalid && requestForm.controls.college.touched">
-                        College is required
-                    </small>
-                </label>
-
-                <!-- Department -->
-                <label class="field">
-                    <span>Department</span>
-                    <select
-                            formControlName="department"
-                            [disabled]="!requestForm.controls.college.value"
-                            [class.error]="requestForm.controls.department.invalid && requestForm.controls.department.touched"
-                    >
-                        <option value="" disabled>Select department</option>
-                        <option
-                                *ngFor="let department of departments"
-                                [value]="department"
-                        >
-                            {{ department }}
-                        </option>
-                    </select>
-                    <small class="field-error" *ngIf="requestForm.controls.department.invalid && requestForm.controls.department.touched">
-                        Department is required
-                    </small>
-                </label>
-
-                <!-- Programme -->
-                <label class="field">
-                    <span>Programme</span>
-                    <select
-                            formControlName="programme"
-                            [disabled]="!requestForm.controls.college.value"
-                            [class.error]="requestForm.controls.programme.invalid && requestForm.controls.programme.touched"
-                    >
-                        <option value="" disabled>Select programme</option>
-                        <option
-                                *ngFor="let programme of programmeOptions"
-                                [value]="programme"
-                        >
-                            {{ programme }}
-                        </option>
-                    </select>
-                    <small class="field-error" *ngIf="requestForm.controls.programme.invalid && requestForm.controls.programme.touched">
-                        Programme is required
-                    </small>
-                </label>
-
-                <!-- Hall -->
-                <label class="field">
-                    <span>Hall of Residence</span>
-                    <input
-                            type="text"
-                            formControlName="hall"
-                            placeholder="Hall 1"
-                    />
-                </label>
-
-                <!-- Room Number -->
-                <label class="field">
-                    <span>Room Number</span>
-                    <input
-                            type="number"
-                            formControlName="roomNumber"
-                            placeholder="20"
-                            min="1"
-                    />
-                </label>
-
-                <!-- Sponsor -->
-                <label class="field">
-                    <span>Sponsor</span>
-                    <input
-                            type="text"
-                            formControlName="sponsor"
-                            placeholder="HELSB"
-                    />
-                </label>
-
-                <!-- Photo Upload -->
-                <label class="field photo-upload">
-                    <span>Passport Photo (120×150 pixels, JPG)</span>
-                    <input
-                            type="file"
-                            accept=".jpg,.jpeg"
-                            (change)="onPhotoSelected($event)"
-                    />
-                    <div class="photo-preview" *ngIf="photoPreview">
-                        <img [src]="photoPreview" alt="Passport preview" />
-                        <button type="button" (click)="photoPreview = null; requestForm.patchValue({ photo: '' })">Remove</button>
-                    </div>
-                    <small>Upload a passport photo (120×150 pixels, JPG format)</small>
-                </label>
-            </div>
-
-            <!-- Confirmation -->
-            <label class="confirm-box">
-                <input
-                        type="checkbox"
-                        formControlName="confirm"
-                        [class.error]="requestForm.controls.confirm.invalid && requestForm.controls.confirm.touched"
-                />
-                <span>
-                    I confirm that the information provided is correct.
-                </span>
-            </label>
-            <small class="field-error" *ngIf="requestForm.controls.confirm.invalid && requestForm.controls.confirm.touched">
-                You must confirm the information is correct
-            </small>
-
-            <!-- Error -->
-            <p class="error-message" *ngIf="errorMessage">
-                {{ errorMessage }}
-            </p>
-
-            <button type="submit" [disabled]="isLoading || !userDataLoaded">
-                <span *ngIf="!isLoading">Submit Clearance Request</span>
-                <span *ngIf="isLoading">Submitting...</span>
-            </button>
-        </form>
+    <!-- INFORMATION -->
+    <div class="request-info">
+      <div class="request-info-icon">i</div>
+      <div>
+        <strong>Student Information</strong>
+        <p>Your name and registration number are automatically retrieved from your student account and cannot be edited.</p>
+      </div>
     </div>
-</section>
+
+    <!-- FORM -->
+    <form [formGroup]="requestForm" (ngSubmit)="submit()">
+
+      <!-- STEP 01 — STUDENT INFORMATION -->
+      <section class="form-section">
+        <div class="section-heading">
+          <span>Step 01</span>
+          <h2>Student Information</h2>
+          <p>These details come directly from your student account.</p>
+        </div>
+
+        <div class="fields-grid">
+          <label class="field">
+            <span>Full Name</span>
+            <input type="text" formControlName="studentName" readonly />
+            <small *ngIf="requestForm.controls.studentName.value" class="field-hint">
+              ✓ Loaded from your profile
+            </small>
+          </label>
+
+          <label class="field">
+            <span>Registration Number</span>
+            <input type="text" formControlName="registrationNumber" readonly />
+            <small *ngIf="requestForm.controls.registrationNumber.value" class="field-hint">
+              ✓ Loaded from your profile
+            </small>
+          </label>
+        </div>
+      </section>
+
+      <!-- STEP 02 — ACADEMIC INFORMATION -->
+      <section class="form-section">
+        <div class="section-heading">
+          <span>Step 02</span>
+          <h2>Academic Information</h2>
+          <p>Select your college, department and programme.</p>
+        </div>
+
+        <div class="fields-grid">
+          <label class="field">
+            <span>College</span>
+            <select formControlName="college" (change)="onCollegeChange()">
+              <option value="" disabled>Select College</option>
+              <option *ngFor="let college of collegeList" [value]="college">
+                {{ college }}
+              </option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Department</span>
+            <select formControlName="department" (change)="onDepartmentChange()" [disabled]="!requestForm.controls.college.value">
+              <option value="" disabled>Select Department</option>
+              <option *ngFor="let department of departments" [value]="department">
+                {{ department }}
+              </option>
+            </select>
+          </label>
+
+          <label class="field full-width">
+            <span>Programme</span>
+            <select formControlName="programme" [disabled]="!requestForm.controls.department.value">
+              <option value="" disabled>Select Programme</option>
+              <option *ngFor="let programme of programmeOptions" [value]="programme">
+                {{ programme }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- STEP 03 — RESIDENCE & SPONSOR -->
+      <section class="form-section">
+        <div class="section-heading">
+          <span>Step 03</span>
+          <h2>Residence &amp; Sponsor</h2>
+          <p>Enter your residence and sponsorship information.</p>
+        </div>
+
+        <div class="fields-grid">
+          <label class="field">
+            <span>Hall</span>
+            <input type="text" formControlName="hall" placeholder="Enter your hall" />
+          </label>
+
+          <label class="field">
+            <span>Room Number</span>
+            <input type="text" formControlName="roomNumber" placeholder="Enter room number" />
+          </label>
+
+          <label class="field full-width">
+            <span>Sponsor</span>
+            <input type="text" formControlName="sponsor" placeholder="Enter your sponsor" />
+          </label>
+        </div>
+      </section>
+
+      <!-- STEP 04 — PASSPORT PHOTO -->
+      <section class="form-section">
+        <div class="section-heading">
+          <span>Step 04</span>
+          <h2>Passport Photo</h2>
+          <p>Upload your passport photo in JPG format. Any size is accepted.</p>
+        </div>
+
+        <div class="photo-upload">
+          <!-- PREVIEW -->
+          <div class="photo-preview" *ngIf="photoPreview">
+            <img [src]="photoPreview" alt="Passport photo preview" />
+          </div>
+
+          <!-- UPLOAD -->
+          <div class="photo-input">
+            <label for="passport-photo">
+              Select Passport Photo
+            </label>
+            <input id="passport-photo" type="file" accept=".jpg,.jpeg" (change)="onPhotoSelected($event)" />
+            <small>JPG format only. Any size accepted.</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONFIRMATION -->
+      <section class="form-section confirmation-section">
+        <label class="confirmation">
+          <input type="checkbox" formControlName="confirm" />
+          <span>I confirm that the information provided above is correct and belongs to me.</span>
+        </label>
+      </section>
+
+      <!-- ERROR -->
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- BUTTONS -->
+      <div class="request-actions">
+        <button type="button" class="cancel-button" (click)="cancel()">
+          Cancel
+        </button>
+
+        <button type="submit" class="submit-button" [disabled]="requestForm.invalid || isSubmitting">
+          <span *ngIf="!isSubmitting">Submit Clearance Request</span>
+          <span *ngIf="isSubmitting">
+            <span class="spinner"></span> Submitting...
+          </span>
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+</div>

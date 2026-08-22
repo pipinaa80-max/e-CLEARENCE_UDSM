@@ -1,15 +1,17 @@
+// models/clearance.model.ts
+
 export type ClearanceOffice =
-  | 'Convocation'
-  | 'Games Coach'
-  | 'Hall Warden'
-  | 'USAB'
-  | 'DARUSO'
-  | 'Library'
-  | 'Dean of Students'
-  | 'Smart Card'
-  | 'Department'
-  | 'Principal'
-  | 'Finance';
+    | 'Convocation'
+    | 'Games Coach'
+    | 'Hall Warden'
+    | 'USAB'
+    | 'DARUSO'
+    | 'Library'
+    | 'Dean of Students'
+    | 'Smart Card'
+    | 'Department'
+    | 'Principal'
+    | 'Finance';
 
 export type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -21,21 +23,32 @@ export interface OfficeApproval {
   reviewedAt?: string;
 }
 
+export interface ConvocationPayment {
+  controlNumber?: string;
+  controlNumberRequestedAt?: string;
+  controlNumberIssuedAt?: string;
+  receiptFileName?: string;
+  receiptSubmittedAt?: string;
+}
+
 export interface ClearanceRequest {
   id: string;
   studentId: string;
+  studentName?: string;           // Added
+  registrationNumber?: string;    // Added
   college: string;
   department: string;
   programme: string;
+  hall?: string;                  // Added
+  roomNumber?: string;            // Added
+  sponsor?: string;               // Added
+  photo?: string;                 // Added
+  clearanceType?: string;         // Added
+  remarks?: string;               // Added
   requestDate: string;
   status: 'Pending' | 'Completed' | 'Rejected';
   currentOffice?: ClearanceOffice;
-  currentStage:
-    | 'Convocation'
-    | 'Parallel'
-    | 'Department'
-    | 'Principal'
-    | 'Finance'
-    | 'Completed';
+  currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Completed';
+  convocation?: ConvocationPayment;
   approvals: OfficeApproval[];
 }

@@ -1,41 +1,116 @@
-<section class="profile-page">
-  <div class="profile-card" *ngIf="user">
-    <header>
-      <div class="avatar" *ngIf="!user.photo">{{ initials }}</div>
-      <div *ngIf="user.photo" class="avatar-photo">
-        <img [src]="user.photo" alt="Passport photo" width="120" height="150" />
-      </div>
-      <div>
-        <p class="eyebrow">Clearance profile</p>
-        <h1>{{ user.fullName }}</h1>
-        <span>{{ user.registrationNumber }}</span>
-      </div>
-    </header>
+<!-- profile.html -->
+<div class="profile-page">
 
-    <ng-container *ngIf="hasAcademicCredentials; else incompleteCredentials">
-      <section class="clearance-details">
-        <div><span>College</span><strong>{{ user.college }}</strong></div>
-        <div><span>Department</span><strong>{{ user.department }}</strong></div>
-        <div><span>Programme</span><strong>{{ user.programme }}</strong></div>
-        <div *ngIf="user.hall"><span>Hall</span><strong>{{ user.hall }}</strong></div>
-        <div *ngIf="user.roomNumber"><span>Room No</span><strong>{{ user.roomNumber }}</strong></div>
-        <div *ngIf="user.sponsor"><span>Sponsor</span><strong>{{ user.sponsor }}</strong></div>
-      </section>
+  <header class="profile-header">
+    <div>
+      <span>Student Account</span>
+      <h1>My Profile</h1>
+      <p>View your student information and clearance account.</p>
+    </div>
+  </header>
 
-      <p class="profile-note">These academic details are used to route your clearance application to the correct department.</p>
-      <a *ngIf="canStartClearance" routerLink="/clearance/status" class="profile-action">Start Clearance</a>
-      <a *ngIf="!canStartClearance" routerLink="/clearance/request" class="profile-action">Review clearance details</a>
-    </ng-container>
+  <!-- STUDENT INFORMATION -->
+  <section class="student-profile-card">
 
-    <ng-template #incompleteCredentials>
-      <section class="credentials-prompt">
-        <span class="prompt-icon">!</span>
+    <div class="student-photo">
+      <!-- Priority: profilePhoto > clearance photo > initials -->
+      <img
+              *ngIf="hasPhoto()"
+              [src]="getPhotoSource()"
+              [alt]="user?.fullName || 'Student'"
+              (error)="profilePhoto = null; loadProfilePhoto()"
+      />
+      <span *ngIf="!hasPhoto()">
+        {{ initials }}
+      </span>
+    </div>
+
+    <div class="student-information">
+      <span class="label">Student</span>
+      <h2>{{ user?.fullName || 'Student' }}</h2>
+
+      <div class="profile-details">
         <div>
-          <h2>Complete your academic credentials</h2>
-          <p>Your College, Department, and Programme will appear here after you complete the credentials application and upload all required documents.</p>
+          <span>Registration Number</span>
+          <strong>{{ user?.registrationNumber || 'Not available' }}</strong>
         </div>
-      </section>
-      <a routerLink="/clearance/request" class="profile-action">Complete credentials application</a>
-    </ng-template>
-  </div>
-</section>
+
+        <div>
+          <span>Programme</span>
+          <strong>{{ user?.programme || 'Not available' }}</strong>
+        </div>
+
+        <div *ngIf="user?.college">
+          <span>College</span>
+          <strong>{{ user?.college }}</strong>
+        </div>
+
+        <div *ngIf="user?.department">
+          <span>Department</span>
+          <strong>{{ user?.department }}</strong>
+        </div>
+
+        <div *ngIf="user?.hall">
+          <span>Hall</span>
+          <strong>{{ user?.hall }}</strong>
+        </div>
+
+        <div *ngIf="user?.roomNumber">
+          <span>Room Number</span>
+          <strong>{{ user?.roomNumber }}</strong>
+        </div>
+
+        <div *ngIf="user?.sponsor">
+          <span>Sponsor</span>
+          <strong>{{ user?.sponsor }}</strong>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- CLEARANCE STATUS BADGE -->
+  <section class="clearance-status-badge" *ngIf="hasClearanceRequest">
+    <div class="status-container">
+      <span class="status-label">Clearance Status</span>
+      <span class="status-value" [class]="clearanceStatus.toLowerCase().replace(' ', '-')">
+        {{ clearanceStatus }}
+      </span>
+    </div>
+  </section>
+
+  <!-- CLEARANCE REQUEST REQUIRED -->
+  <section class="request-warning" *ngIf="needsClearanceRequest">
+    <div class="warning-icon">!</div>
+    <div class="warning-content">
+      <span>Clearance Request Required</span>
+      <h2>Complete your clearance request first</h2>
+      <p>
+        Before you can start the clearance process,
+        you must first complete your Clearance Request.
+        The information you provide will be used
+        throughout your clearance process.
+      </p>
+      <a routerLink="/clearance/request" class="primary-button">
+        Complete Clearance Request
+      </a>
+    </div>
+  </section>
+
+  <!-- REQUEST COMPLETED -->
+  <section class="request-completed" *ngIf="hasClearanceRequest">
+    <div class="completed-icon">✓</div>
+    <div class="completed-content">
+      <span>Clearance Request Completed</span>
+      <h2>Your clearance request has been submitted</h2>
+      <p>
+        Your information has been saved successfully.
+        You can now start the clearance process.
+      </p>
+      <a routerLink="/clearance/status" class="primary-button">
+        Start Clearance Process
+      </a>
+    </div>
+  </section>
+
+</div>

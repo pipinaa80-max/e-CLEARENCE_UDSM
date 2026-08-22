@@ -3,6 +3,10 @@
   min-height: 100vh;
 }
 
+/* =====================================================
+   STUDENT CONVOCATION PAGE
+===================================================== */
+
 .convocation-page {
   min-height: 100vh;
   display: grid;
@@ -54,6 +58,11 @@ header h1 {
   font-size: 1.55rem;
 }
 
+
+/* =====================================================
+   NOTICE
+===================================================== */
+
 .notice {
   margin-bottom: 24px;
   padding: 14px 16px;
@@ -63,6 +72,11 @@ header h1 {
   color: var(--text-muted);
   line-height: 1.55;
 }
+
+
+/* =====================================================
+   FORM
+===================================================== */
 
 form {
   display: grid;
@@ -102,6 +116,11 @@ form {
   font-weight: 700;
 }
 
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
 button {
   min-height: 48px;
   border: none;
@@ -110,17 +129,163 @@ button {
   color: #ffffff;
   cursor: pointer;
   font-weight: 800;
+  padding: 0 18px;
 }
 
 button:hover {
   background: var(--udsm-blue-dark);
 }
 
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =====================================================
+   CONTROL NUMBER
+===================================================== */
+
+.control-number-box {
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+
+.control-number-box p {
+  margin: 0 0 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.issued-control-number {
+  display: grid;
+  gap: 7px;
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+
+.issued-control-number span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.issued-control-number strong {
+  color: var(--udsm-blue-dark);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+}
+
+
+/* =====================================================
+   WAITING MESSAGE
+===================================================== */
+
+.waiting-message {
+  margin-top: 14px;
+  padding: 16px;
+  border-left: 4px solid var(--udsm-blue);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+
+.waiting-message strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--udsm-blue-dark);
+}
+
+.waiting-message p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+
+/* =====================================================
+   SUCCESS / ERROR
+===================================================== */
+
 .error-message {
   margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: color-mix(
+    in srgb,
+    var(--danger) 8%,
+    transparent
+  );
   color: var(--danger);
   font-weight: 700;
 }
+
+.success-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: color-mix(
+    in srgb,
+    var(--success) 10%,
+    transparent
+  );
+  color: var(--success);
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.primary-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--udsm-blue);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: var(--udsm-blue-dark);
+}
+
+.secondary-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--udsm-blue);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   LINKS
+===================================================== */
 
 a {
   display: inline-block;
@@ -132,4 +297,309 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+
+/* =====================================================
+   STAFF REVIEW PAGE
+===================================================== */
+
+.review-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  background: var(--bg-light);
+}
+
+.review-page aside {
+  padding: 28px 20px;
+  background: var(--udsm-blue-dark);
+  color: #ffffff;
+}
+
+.review-page aside strong {
+  display: block;
+  margin-bottom: 30px;
+  font-size: 1rem;
+}
+
+.review-page aside button {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.review-page main {
+  width: min(1100px, 100%);
+  padding: 34px;
+}
+
+.review-page main > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.review-page main > header span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--udsm-blue);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   STAFF REQUEST CARD
+===================================================== */
+
+.request-card {
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.request-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.request-header h3 {
+  margin: 4px 0;
+  color: var(--udsm-blue-dark);
+}
+
+.request-header span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.status-badge {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--warning) 12%,
+    transparent
+  );
+  color: var(--warning);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+
+/* =====================================================
+   DETAILS
+===================================================== */
+
+.details {
+  display: grid;
+  gap: 1px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 14px;
+  background: var(--surface-soft);
+}
+
+.detail-row span {
+  color: var(--text-muted);
+}
+
+.detail-row strong {
+  color: var(--text-dark);
+  text-align: right;
+}
+
+
+/* =====================================================
+   CONTROL NUMBER STAFF SECTION
+===================================================== */
+
+.control-number-section,
+.receipt-section {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+}
+
+.control-number-section > label,
+.receipt-section > span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+  font-weight: 800;
+}
+
+.control-number-section p {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+
+.control-number-section .primary-button {
+  margin-top: 4px;
+}
+
+.receipt-section strong {
+  color: var(--udsm-blue-dark);
+  word-break: break-word;
+}
+
+
+/* =====================================================
+   COMMENT
+===================================================== */
+
+.comment-section {
+  margin-top: 18px;
+}
+
+.comment-section label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-dark);
+  font-weight: 800;
+}
+
+.comment-section textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  resize: vertical;
+  font: inherit;
+}
+
+.comment-section textarea:focus,
+.field input:focus,
+.file-field input:focus {
+  outline: 2px solid color-mix(
+    in srgb,
+    var(--udsm-blue) 20%,
+    transparent
+  );
+  border-color: var(--udsm-blue);
+}
+
+
+/* =====================================================
+   STAFF ACTIONS
+===================================================== */
+
+.approve-button,
+.reject-button {
+  min-height: 46px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--radius-control);
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.approve-button {
+  background: var(--success);
+}
+
+.approve-button:hover {
+  filter: brightness(0.94);
+}
+
+.approve-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reject-button {
+  background: var(--danger);
+}
+
+.reject-button:hover {
+  filter: brightness(0.94);
+}
+
+
+/* =====================================================
+   EMPTY / MESSAGE
+===================================================== */
+
+.empty,
+.message {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-control);
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+.message {
+  color: var(--success);
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 760px) {
+
+  .convocation-card {
+    padding: 24px;
+  }
+
+  .review-page {
+    grid-template-columns: 1fr;
+  }
+
+  .review-page aside {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .review-page aside strong {
+    margin: 0;
+  }
+
+  .review-page aside button {
+    width: auto;
+  }
+
+  .review-page main {
+    padding: 22px 16px;
+  }
+
+  .request-header {
+    flex-direction: column;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .detail-row strong {
+    text-align: left;
+  }
+
 }

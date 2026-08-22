@@ -1,38 +1,553 @@
-<section class="convocation-page" *ngIf="!isOfficer; else review">
-    <div class="convocation-card">
-        <header>
-            <img src="/udsm-logo.png" alt="UDSM Logo" />
-            <div>
-                <p>Convocation Clearance</p>
-                <h1>Upload Payment Receipt</h1>
+<div class="convocation-page">
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="page-header">
+
+    <div>
+
+      <span class="eyebrow">
+        Clearance Step 1
+      </span>
+
+      <h1>
+        Convocation
+      </h1>
+
+      <p>
+        Complete the Convocation payment and verification
+        process.
+      </p>
+
+    </div>
+
+    <a
+      routerLink="/clearance/status"
+      class="back-link"
+    >
+      ← Back to Clearance
+    </a>
+
+  </header>
+
+
+
+  <!-- =====================================================
+       STUDENT VIEW
+  ====================================================== -->
+
+  <ng-container *ngIf="!isOfficer">
+
+    <section class="card">
+
+      <div class="section-heading">
+
+        <span>
+          Step 1
+        </span>
+
+        <h2>
+          Convocation Payment
+        </h2>
+
+        <p>
+          Request your control number, make the payment,
+          then upload your payment receipt.
+        </p>
+
+      </div>
+
+
+      <!-- ===============================================
+           CONTROL NUMBER
+      ================================================ -->
+
+      <div class="form-section">
+
+        <label>
+          Control Number
+        </label>
+
+
+        <!-- REQUEST CONTROL NUMBER -->
+
+        <div
+          *ngIf="!controlNumber"
+          class="control-number-box"
+        >
+
+          <ng-container
+            *ngIf="!controlNumberRequested"
+          >
+
+            <p>
+              You need a control number before making
+              your payment.
+            </p>
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="requestControlNumber()"
+            >
+              Request Control Number
+            </button>
+
+          </ng-container>
+
+
+          <!-- WAITING FOR CONVOCATION -->
+
+          <ng-container
+            *ngIf="controlNumberRequested"
+          >
+
+            <div class="waiting-message">
+
+              <strong>
+                Control Number Requested
+              </strong>
+
+              <p>
+                Your request has been sent to Convocation.
+                Please wait for your control number to be issued.
+              </p>
+
             </div>
-        </header>
-        
-        <div class="notice">Request a control number, make the payment, then upload the official payment receipt.</div>
-        <form [formGroup]="form" (ngSubmit)="submit()">
-            <label class="field">
-                <span>Control Number</span>
-                <input formControlName="controlNumber" placeholder="Enter control number" />
-            </label>
-            
-            <label class="field">
-                <span>Receipt Number</span>
-                <input formControlName="receiptNumber" placeholder="Enter receipt number" /></label>
-                <label class="field">
-                    <span>Payment Date</span>
-                    <input type="date" formControlName="paymentDate" />
-                </label>
-                
-                <label class="file-field">
-                    <span>Payment Receipt</span>
-                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
-                    <small *ngIf="selectedFileName">Selected: {{ selectedFileName }}</small>
-                </label>
-                <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
-                <button type="submit">Submit Receipt</button>
-            </form>
-            <a routerLink="/clearance/status">Back to Clearance Status</a>
+
+          </ng-container>
+
         </div>
+
+
+
+        <!-- CONTROL NUMBER ISSUED -->
+
+        <div
+          *ngIf="controlNumber"
+          class="issued-control-number"
+        >
+
+          <span>
+            Your Control Number
+          </span>
+
+          <strong>
+            {{ controlNumber }}
+          </strong>
+
+          <p>
+            Use this control number to make your payment.
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- ===============================================
+           PAYMENT RECEIPT
+      ================================================ -->
+
+      <div
+        *ngIf="controlNumber"
+        class="form-section"
+      >
+
+        <label>
+          Payment Receipt
+        </label>
+
+        <p class="field-help">
+          Upload a clear copy or photo of your payment
+          receipt.
+        </p>
+
+
+        <input
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          (change)="onFileSelected($event)"
+        />
+
+
+        <small
+          *ngIf="selectedFileName"
+        >
+          Selected file:
+          {{ selectedFileName }}
+        </small>
+
+
+        <!-- RECEIPT ALREADY SUBMITTED -->
+
+        <div
+          *ngIf="receiptSubmitted"
+          class="success-message"
+        >
+
+          Payment receipt submitted successfully.
+
+        </div>
+
+      </div>
+
+
+
+      <!-- ===============================================
+           ERROR
+      ================================================ -->
+
+      <div
+        *ngIf="errorMessage"
+        class="error-message"
+      >
+        {{ errorMessage }}
+      </div>
+
+
+
+      <!-- ===============================================
+           SUCCESS
+      ================================================ -->
+
+      <div
+        *ngIf="message"
+        class="success-message"
+      >
+        {{ message }}
+      </div>
+
+
+
+      <!-- ===============================================
+           NEXT
+      ================================================ -->
+
+      <div
+        *ngIf="
+          controlNumber &&
+          !receiptSubmitted
+        "
+        class="actions"
+      >
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="!form.controls.file.value"
+          (click)="submit()"
+        >
+          Next
+        </button>
+
+      </div>
+
+
+      <!-- AFTER RECEIPT SUBMISSION -->
+
+      <div
+        *ngIf="receiptSubmitted"
+        class="waiting-message"
+      >
+
+        <strong>
+          Waiting for Convocation approval
+        </strong>
+
+        <p>
+          Your receipt has been submitted. Convocation
+          will review it before you can continue to
+          Step 2.
+        </p>
+
+        <a
+          routerLink="/clearance/status"
+          class="secondary-button"
+        >
+          View Clearance Status
+        </a>
+
+      </div>
+
     </section>
 
-    <ng-template #review><section class="review-page"><aside><strong>Convocation Office</strong><button type="button" (click)="logout()">Log out</button></aside><main><header><div><p>Staff review</p><h1>Convocation receipt verification</h1></div><span>{{ requests.length }} Pending</span></header><p class="message" *ngIf="message">{{ message }}</p><p class="empty" *ngIf="!requests.length">No Convocation receipts are waiting for review.</p><article *ngFor="let request of requests"><div><strong>{{ request.programme }}</strong><span>{{ request.department }} · {{ request.college }}</span><small>Submitted {{ request.requestDate | date:'mediumDate' }}</small></div><div class="actions"><input [(ngModel)]="comment" placeholder="Reason if returning request" /><button class="return" (click)="reject(request)">Return</button><button (click)="approve(request)">Approve</button></div></article></main></section></ng-template>
+  </ng-container>
+
+
+
+  <!-- =====================================================
+       CONVOCATION STAFF VIEW
+  ====================================================== -->
+
+  <ng-container *ngIf="isOfficer">
+
+    <section class="card">
+
+      <div class="section-heading">
+
+        <span>
+          Convocation Office
+        </span>
+
+        <h2>
+          Clearance Requests
+        </h2>
+
+        <p>
+          Review student control-number requests and
+          payment receipts.
+        </p>
+
+      </div>
+
+
+      <!-- ===============================================
+           NO REQUESTS
+      ================================================ -->
+
+      <div
+        *ngIf="requests.length === 0"
+        class="empty-state"
+      >
+
+        <h3>
+          No pending requests
+        </h3>
+
+        <p>
+          There are currently no Convocation requests
+          waiting for review.
+        </p>
+
+      </div>
+
+
+
+      <!-- ===============================================
+           REQUEST LIST
+      ================================================ -->
+
+      <div
+        *ngFor="let request of requests"
+        class="request-card"
+      >
+
+        <div class="request-header">
+
+          <div>
+
+            <span>
+              Clearance Request
+            </span>
+
+            <h3>
+              {{ request.studentId }}
+            </h3>
+
+          </div>
+
+          <span class="status-badge">
+            Pending
+          </span>
+
+        </div>
+
+
+
+        <!-- STUDENT INFORMATION -->
+
+        <div class="details">
+
+          <div class="detail-row">
+
+            <span>
+              College
+            </span>
+
+            <strong>
+              {{ request.college }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span>
+              Department
+            </span>
+
+            <strong>
+              {{ request.department }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-row">
+
+            <span>
+              Programme
+            </span>
+
+            <strong>
+              {{ request.programme }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- =============================================
+             CONTROL NUMBER
+        ============================================== -->
+
+        <div class="control-number-section">
+
+          <label>
+            Control Number
+          </label>
+
+
+          <div
+            *ngIf="
+              !request.convocation?.controlNumber
+            "
+          >
+
+            <p
+              *ngIf="
+                request.convocation
+                  ?.controlNumberRequestedAt
+              "
+            >
+              Student has requested a control number.
+            </p>
+
+
+            <button
+              type="button"
+              class="primary-button"
+              (click)="issueControlNumber(request)"
+            >
+              Issue Control Number
+            </button>
+
+          </div>
+
+
+          <div
+            *ngIf="
+              request.convocation?.controlNumber
+            "
+            class="issued-control-number"
+          >
+
+            <span>
+              Issued Control Number
+            </span>
+
+            <strong>
+              {{ request.convocation?.controlNumber }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+
+        <!-- =============================================
+             RECEIPT
+        ============================================== -->
+
+        <div class="receipt-section">
+
+          <span>
+            Payment Receipt
+          </span>
+
+
+          <strong
+            *ngIf="
+              request.convocation?.receiptFileName
+            "
+          >
+            {{ request.convocation?.receiptFileName }}
+          </strong>
+
+
+          <span
+            *ngIf="
+              !request.convocation?.receiptFileName
+            "
+          >
+            Receipt not uploaded yet.
+          </span>
+
+        </div>
+
+
+
+        <!-- =============================================
+             COMMENT
+        ============================================== -->
+
+        <div class="comment-section">
+
+          <label>
+            Comment
+          </label>
+
+          <textarea
+            [(ngModel)]="comment"
+            rows="4"
+            placeholder="Enter a comment if the request is rejected..."
+          ></textarea>
+
+        </div>
+
+
+
+        <!-- =============================================
+             ACTIONS
+        ============================================== -->
+
+        <div class="actions">
+
+          <button
+            type="button"
+            class="approve-button"
+            [disabled]="
+              !request.convocation
+                ?.receiptSubmittedAt
+            "
+            (click)="approve(request)"
+          >
+            Approve
+          </button>
+
+
+          <button
+            type="button"
+            class="reject-button"
+            (click)="reject(request)"
+          >
+            Reject
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </ng-container>
+
+</div>

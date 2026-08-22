@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -13,39 +13,13 @@ import { NotificationService } from '../../core/services/notification.service';
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
-export class StudentDashboard implements OnInit {
+export class StudentDashboard {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-
-  // Cache the current user to avoid repeated calls
-  private _currentUser: any = null;
-
-  ngOnInit(): void {
-    // Fetch fresh user data on component initialization
-    this.refreshUserData();
-  }
-
-  refreshUserData(): void {
-    // Get user from storage first
-    this._currentUser = this.authService.getCurrentUser();
-
-    // Optionally fetch fresh profile from backend
-    if (this._currentUser) {
-      this.authService.getProfile().subscribe({
-        next: (user) => {
-          this._currentUser = user;
-        },
-        error: (error) => {
-          console.error('Failed to refresh user profile:', error);
-          // Still use cached user data
-        }
-      });
-    }
-  }
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
@@ -55,84 +29,116 @@ export class StudentDashboard implements OnInit {
     this.sidebarOpen = false;
   }
 
-  // Get offices with proper data handling
-  get offices() {
-    const request = this.currentRequest;
-    if (!request) return [];
-    return request.approvals.map((approval) => ({
+ get offices() {
+  const request = this.currentRequest;
+
+  if (!request) {
+    return [];
+  }
+
+  return request.approvals.map((approval) => {
+
+    let note = 'Awaiting review';
+
+    switch (approval.office) {
+
+      case 'Convocation':
+        note = 'Convocation clearance';
+        break;
+
+      case 'Library':
+        note = 'Library clearance';
+        break;
+
+      case 'Hall Warden':
+        note = 'Hall clearance';
+        break;
+
+      case 'Games Coach':
+        note = 'Sports clearance';
+        break;
+
+      case 'USAB':
+        note = 'USAB clearance';
+        break;
+
+      case 'DARUSO':
+        note = 'DARUSO clearance';
+        break;
+
+      case 'Dean of Students':
+        note = 'Dean of Students clearance';
+        break;
+
+      case 'Smart Card':
+        note = 'Smart Card clearance';
+        break;
+
+      case 'Department':
+        note = 'Department approval';
+        break;
+
+      case 'Principal':
+        note = 'Principal approval';
+        break;
+
+      case 'Finance':
+        note = 'Final financial clearance';
+        break;
+    }
+
+    return {
       name: approval.office,
-      note: this.getOfficeNote(approval.office),
-      status: approval.status || 'Pending'
-    }));
-  }
-
-  private getOfficeNote(office: string): string {
-    const notes: Record<string, string> = {
-      'Convocation': 'Payment and receipt verification',
-      'Department': 'Department approval',
-      'Principal': 'Principal approval',
-      'Finance': 'Final financial clearance approval',
-      'Library': 'Library clearance',
-      'Hall Warden': 'Hostel clearance',
-      'Dean of Students': 'Students affairs clearance',
-      'Games Coach': 'Sports clearance',
-      'USAB': 'USAB clearance',
-      'DARUSO': 'DARUSO clearance',
-      'Smart Card': 'Smart card clearance'
+      note,
+      status: approval.status
     };
-    return notes[office] || 'Pending approval';
+  });
+}
+
+get progressPercent(): number {
+  const request = this.currentRequest;
+
+  if (!request) {
+    return 0;
   }
 
-  // Main currentUser getter - this is what's used in the template
+  const approvals = request.approvals || [];
+
+  if (!approvals.length) {
+    return 0;
+  }
+
+  const approved = approvals.filter(
+    approval => approval.status === 'Approved'
+  ).length;
+
+  return Math.round(
+    (approved / approvals.length) * 100
+  );
+}
+
+
   get currentUser() {
-    return this._currentUser || this.authService.getCurrentUser();
+    return this.authService.getCurrentUser();
   }
 
-  // Get clearance status from the current request
   get clearanceStatus(): string {
-    const request = this.currentRequest;
-    if (!request) {
+    if (!this.currentUser) {
       return 'Not Requested';
     }
 
-    // Check if all offices are approved
-    const allApproved = request.approvals.every((a: any) => a.status === 'Approved');
-    if (allApproved) {
-      return 'Completed';
-    }
-
-    // Check if any are rejected
-    const hasRejected = request.approvals.some((a: any) => a.status === 'Rejected');
-    if (hasRejected) {
-      return 'Rejected';
-    }
-
-    // Check if any are pending
-    const hasPending = request.approvals.some((a: any) => a.status === 'Pending');
-    if (hasPending) {
-      return 'In Progress';
-    }
-
-    return 'In Progress';
+    return this.clearanceService.getClearanceStatus(this.currentUser.id);
   }
 
   get currentRequest() {
-    const user = this.currentUser;
-    if (!user) return null;
-    return this.clearanceService.getStudentRequests(user.id).at(-1) ?? null;
+    return this.currentUser ? this.clearanceService.getStudentRequests(this.currentUser.id).at(-1) ?? null : null;
   }
 
   get unreadNotifications(): number {
-    const user = this.currentUser;
-    if (!user) return 0;
-    return this.notificationService.getNotifications(user.id)
-        .filter((item) => !item.read).length;
+    return this.currentUser ? this.notificationService.getNotifications(this.currentUser.id).filter((item) => !item.read).length : 0;
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+  logout(): void { this.authService.logout(); this.router.navigate(['/login']); }
 
   get completedOffices(): number {
     return this.offices.filter((office) => office.status === 'Approved').length;

@@ -1,9 +1,220 @@
-<main class="confirmation-page">
-  <section class="confirmation-card" *ngIf="request?.status === 'Completed'; else notComplete">
-    <div class="success-icon" aria-hidden="true">✓</div><p class="eyebrow">Clearance approved</p><h1>Your clearance is complete</h1>
-    <p>All required offices have approved your clearance request. Keep your registration number for reference.</p>
-    <div class="reference"><span>Registration number</span><strong>{{ registrationNumber }}</strong></div>
-    <a routerLink="/dashboard">Return to dashboard</a>
-  </section>
-  <ng-template #notComplete><section class="confirmation-card"><h1>Clearance is still in progress</h1><p>Your request will appear here after Convocation, the parallel offices, Department, Principal, and Finance approve it.</p><a routerLink="/clearance/status">View clearance process</a></section></ng-template>
-</main>
+<section class="confirmation-page">
+
+  <div
+    class="confirmation-card"
+    *ngIf="request; else noRequest"
+  >
+
+    <!-- SUCCESS -->
+
+    <div class="success-icon">
+      ✓
+    </div>
+
+
+    <span class="eyebrow">
+      Graduation Clearance
+    </span>
+
+
+    <h1>
+      Clearance Completed
+    </h1>
+
+
+    <p class="intro">
+      Your graduation clearance has been successfully
+      completed. All required clearance stages have
+      been approved.
+    </p>
+
+
+    <!-- STUDENT DETAILS -->
+
+    <div class="student-details">
+
+      <div class="detail">
+
+        <span>
+          Registration Number
+        </span>
+
+        <strong>
+          {{ registrationNumber }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail">
+
+        <span>
+          College
+        </span>
+
+        <strong>
+          {{ request.college }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail">
+
+        <span>
+          Department
+        </span>
+
+        <strong>
+          {{ request.department }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail">
+
+        <span>
+          Programme
+        </span>
+
+        <strong>
+          {{ request.programme }}
+        </strong>
+
+      </div>
+
+
+      <div class="detail">
+
+        <span>
+          Clearance Date
+        </span>
+
+        <strong>
+          {{ request.requestDate | date:'mediumDate' }}
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <!-- PROCESS -->
+
+    <div class="completed-process">
+
+      <h2>
+        Clearance Stages
+      </h2>
+
+
+      <div class="completed-stage">
+
+        <span>✓</span>
+
+        <strong>
+          Convocation
+        </strong>
+
+      </div>
+
+
+      <div class="completed-stage">
+
+        <span>✓</span>
+
+        <strong>
+          Clearance Offices
+        </strong>
+
+      </div>
+
+
+      <div class="completed-stage">
+
+        <span>✓</span>
+
+        <strong>
+          Department
+        </strong>
+
+      </div>
+
+
+      <div class="completed-stage">
+
+        <span>✓</span>
+
+        <strong>
+          Principal
+        </strong>
+
+      </div>
+
+
+      <div class="completed-stage">
+
+        <span>✓</span>
+
+        <strong>
+          Finance
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <!-- ACTIONS -->
+
+    <div class="confirmation-actions">
+
+      <a
+        routerLink="/clearance/status"
+        class="secondary-button"
+      >
+        View Clearance Status
+      </a>
+
+
+      <a
+        routerLink="/student/dashboard"
+        class="primary-button"
+      >
+        Back to Dashboard
+      </a>
+
+    </div>
+
+  </div>
+
+
+  <!-- NO REQUEST -->
+
+  <ng-template #noRequest>
+
+    <div class="confirmation-card">
+
+      <h1>
+        No Clearance Found
+      </h1>
+
+      <p>
+        There is no clearance request associated
+        with your account.
+      </p>
+
+
+      <a
+        routerLink="/clearance/request"
+        class="primary-button"
+      >
+        Start Clearance Request
+      </a>
+
+    </div>
+
+  </ng-template>
+
+</section>
