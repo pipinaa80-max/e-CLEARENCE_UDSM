@@ -13,16 +13,29 @@
   <section class="student-profile-card">
 
     <div class="student-photo">
-      <!-- Priority: profilePhoto > clearance photo > initials -->
+      <!-- Show loading state -->
+      <div *ngIf="isLoading" class="photo-loading">
+        <span class="spinner"></span>
+      </div>
+
+      <!-- Show photo if available -->
       <img
-              *ngIf="hasPhoto()"
+              *ngIf="!isLoading && hasPhoto()"
               [src]="getPhotoSource()"
               [alt]="user?.fullName || 'Student'"
-              (error)="profilePhoto = null; loadProfilePhoto()"
+              (error)="onImageError()"
+              class="profile-image"
       />
-      <span *ngIf="!hasPhoto()">
+
+      <!-- Show initials if no photo -->
+      <span *ngIf="!isLoading && !hasPhoto()" class="initials">
         {{ initials }}
       </span>
+
+      <!-- Refresh button (hidden in production) -->
+      <button *ngIf="!isLoading" class="refresh-btn" (click)="refreshPhoto()" title="Refresh photo">
+        🔄
+      </button>
     </div>
 
     <div class="student-information">
@@ -63,6 +76,15 @@
         <div *ngIf="user?.sponsor">
           <span>Sponsor</span>
           <strong>{{ user?.sponsor }}</strong>
+        </div>
+
+        <!-- Debug info - remove in production -->
+        <div *ngIf="!hasPhoto()" class="debug-info">
+          <span>Photo Status</span>
+          <strong style="color: #e53e3e;">No photo found</strong>
+          <small style="color: #718096; font-size: 11px;">
+            Check console for details
+          </small>
         </div>
       </div>
     </div>

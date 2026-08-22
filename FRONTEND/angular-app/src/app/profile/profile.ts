@@ -19,6 +19,7 @@ export class ProfileComponent implements OnInit {
   private readonly clearanceService = inject(ClearanceService);
 
   profilePhoto: string | null = null;
+  isLoading = true;
 
   /* =========================
      LOGGED-IN STUDENT
@@ -37,34 +38,79 @@ export class ProfileComponent implements OnInit {
   }
 
   loadProfilePhoto(): void {
+    this.isLoading = true;
     const user = this.user;
 
     if (!user) {
+      this.isLoading = false;
       return;
     }
 
-    // First check if user has a profile photo
-    if (user.profilePhoto) {
+    console.log('Loading profile photo for user:', user.id);
+    console.log('User data:', {
+      profilePhoto: user.profilePhoto ? 'exists' : 'null',
+      photo: user.photo ? 'exists' : 'null',
+      fullName: user.fullName
+    });
+
+    // Method 1: Check if user has a profile photo directly
+    if (user.profilePhoto && user.profilePhoto.startsWith('data:image')) {
       this.profilePhoto = user.profilePhoto;
+      console.log('Photo loaded from user.profilePhoto');
+      this.isLoading = false;
       return;
     }
 
-    // Then check if user has a photo from clearance request
-    if (user.photo) {
+    // Method 2: Check if user has photo from clearance request
+    if (user.photo && user.photo.startsWith('data:image')) {
       this.profilePhoto = user.photo;
+      console.log('Photo loaded from user.photo');
+      this.isLoading = false;
       return;
     }
 
-    // Finally check the latest clearance request for photo
+    // Method 3: Check the latest clearance request for photo
     const requests = this.clearanceService.getStudentRequests(user.id);
-    const latestRequest = requests.at(-1);
+    console.log('Found clearance requests:', requests.length);
 
-    if (latestRequest && latestRequest.photo) {
-      this.profilePhoto = latestRequest.photo;
-      // Optionally update the user object with this photo
-      user.photo = latestRequest.photo;
-      this.authService.updateCurrentUser(user);
+    if (requests.length > 0) {
+      // Get the latest request
+      const latestRequest = requests[requests.length - 1];
+      console.log('Latest request:', {
+        id: latestRequest.id,
+        hasPhoto: !!latestRequest.photo,
+        photoLength: latestRequest.photo ? latestRequest.photo.length : 0,
+        status: latestRequest.status
+      });
+
+      if (latestRequest.photo && latestRequest.photo.startsWith('data:image')) {
+        this.profilePhoto = latestRequest.photo;
+        console.log('Photo loaded from clearance request');
+
+        // Update the user object with this photo for future use
+        user.photo = latestRequest.photo;
+        this.authService.updateCurrentUser(user);
+        this.isLoading = false;
+        return;
+      }
     }
+
+    // Method 4: Check all requests for any photo
+    for (const request of requests) {
+      if (request.photo && request.photo.startsWith('data:image')) {
+        this.profilePhoto = request.photo;
+        console.log('Photo loaded from older request:', request.id);
+
+        // Update the user object with this photo
+        user.photo = request.photo;
+        this.authService.updateCurrentUser(user);
+        this.isLoading = false;
+        return;
+      }
+    }
+
+    console.log('No photo found for user');
+    this.isLoading = false;
   }
 
   /* =========================
@@ -91,24 +137,6 @@ export class ProfileComponent implements OnInit {
   }
 
   /* =========================
-     ACADEMIC INFORMATION
-  ========================= */
-
-  get hasAcademicCredentials(): boolean {
-    const user = this.user;
-
-    if (!user) {
-      return false;
-    }
-
-    return [
-      user.college,
-      user.department,
-      user.programme
-    ].every(value => value && value !== 'Not selected');
-  }
-
-  /* =========================
      LATEST CLEARANCE REQUEST
   ========================= */
 
@@ -119,7 +147,8 @@ export class ProfileComponent implements OnInit {
       return null;
     }
 
-    return this.clearanceService.getStudentRequests(user.id).at(-1) ?? null;
+    const requests = this.clearanceService.getStudentRequests(user.id);
+    return requests.length > 0 ? requests[requests.length - 1] : null;
   }
 
   /* =========================
@@ -174,24 +203,36 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   getPhotoSource(): string | null {
-    // Priority order: profilePhoto (user uploaded), photo (from clearance), null
-    if (this.user?.profilePhoto) {
-      return this.user.profilePhoto;
-    }
+    // Debug logging
+    console.log('getPhotoSource called');
+    console.log('profilePhoto:', this.profilePhoto ? 'exists' : 'null');
+    console.log('user.photo:', this.user?.photo ? 'exists' : 'null');
+    console.log('user.profilePhoto:', this.user?.profilePhoto ? 'exists' : 'null');
+    console.log('clearanceRequest.photo:', this.clearanceRequest?.photo ? 'exists' : 'null');
 
-    if (this.profilePhoto) {
+    // Check all sources in priority order
+    if (this.profilePhoto && this.profilePhoto.startsWith('data:image')) {
+      console.log('Returning profilePhoto');
       return this.profilePhoto;
     }
 
-    if (this.user?.photo) {
+    if (this.user?.profilePhoto && this.user.profilePhoto.startsWith('data:image')) {
+      console.log('Returning user.profilePhoto');
+      return this.user.profilePhoto;
+    }
+
+    if (this.user?.photo && this.user.photo.startsWith('data:image')) {
+      console.log('Returning user.photo');
       return this.user.photo;
     }
 
     const request = this.clearanceRequest;
-    if (request?.photo) {
+    if (request?.photo && request.photo.startsWith('data:image')) {
+      console.log('Returning request.photo');
       return request.photo;
     }
 
+    console.log('No valid photo source found');
     return null;
   }
 
@@ -200,6 +241,34 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   hasPhoto(): boolean {
-    return !!this.getPhotoSource();
+    const source = this.getPhotoSource();
+    return !!source && source.startsWith('data:image');
+  }
+
+  /* =========================
+     FORCE REFRESH PHOTO
+  ========================= */
+
+  refreshPhoto(): void {
+    console.log('Refreshing photo...');
+    // Clear cached photo
+    this.profilePhoto = null;
+    // Reload
+    this.loadProfilePhoto();
+  }
+
+  /* =========================
+     HANDLE IMAGE ERROR
+  ========================= */
+
+  onImageError(): void {
+    console.log('Image failed to load, clearing photo');
+    this.profilePhoto = null;
+    const user = this.user;
+    if (user) {
+      user.profilePhoto = '';
+      user.photo = '';
+      this.authService.updateCurrentUser(user);
+    }
   }
 }

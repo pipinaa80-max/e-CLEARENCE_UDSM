@@ -1,114 +1,50 @@
-<section
-  class="dashboard-shell"
-  [class.sidebar-open]="sidebarOpen"
->
+<!-- student.html -->
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
   <!-- =========================
        SIDEBAR OVERLAY
   ========================== -->
 
-  <div
-    class="sidebar-overlay"
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- =========================
        SIDEBAR
   ========================== -->
 
   <aside class="sidebar">
-
     <div class="brand">
-
-      <img
-        src="/udsm-logo.jpg"
-        alt="UDSM Logo"
-        class="brand-logo"
-      />
-
+      <img src="/udsm-logo.jpg" alt="UDSM Logo" class="brand-logo" />
       <div>
-        <strong>
-          UDSM
-        </strong>
-
-        <small>
-          Student Portal
-        </small>
+        <strong>UDSM</strong>
+        <small>Student Portal</small>
       </div>
-
     </div>
 
-
     <nav>
-
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        (click)="closeSidebar()"
-      >
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Dashboard
       </a>
-
-
-      <a
-        routerLink="/profile"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
         My Profile
       </a>
-
-
-      <a
-        routerLink="/clearance/request"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Request
       </a>
-
-
-      <a
-        routerLink="/clearance/status"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
-
-
-      <a
-        routerLink="/notifications"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications
-
-        <span
-          class="notification-badge"
-          *ngIf="unreadNotifications"
-        >
+        <span class="notification-badge" *ngIf="unreadNotifications">
           {{ unreadNotifications }}
         </span>
-
       </a>
-
     </nav>
 
-
-    <button
-      type="button"
-      class="logout-link"
-      (click)="logout()"
-    >
+    <button type="button" class="logout-link" (click)="logout()">
       Log out
     </button>
-
   </aside>
-
 
   <!-- =========================
        MAIN CONTENT
@@ -116,137 +52,96 @@
 
   <main class="content-panel">
 
-
     <!-- =========================
          TOP BAR
     ========================== -->
 
     <header class="topbar">
-
-      <button
-        type="button"
-        class="sidebar-toggle"
-        aria-label="Open navigation"
-        [attr.aria-expanded]="sidebarOpen"
-        (click)="toggleSidebar()"
-      >
-
+      <button type="button" class="sidebar-toggle" aria-label="Open navigation" [attr.aria-expanded]="sidebarOpen" (click)="toggleSidebar()">
         <span></span>
         <span></span>
         <span></span>
-
       </button>
 
-
       <div class="topbar-title">
-
-        <span class="eyebrow">
-          Student Dashboard
-        </span>
-
-        <h1>
-          Welcome back,
-          {{ currentUser?.fullName ?? 'Student' }}
-        </h1>
-
-        <p>
-          Manage your student information and clearance process.
-        </p>
-
+        <span class="eyebrow">Student Dashboard</span>
+        <h1>Welcome back, {{ currentUser?.fullName ?? 'Student' }}</h1>
+        <p>Manage your student information and clearance process.</p>
       </div>
-
 
       <div class="topbar-profile">
-
         <div class="profile-avatar">
+          <!-- Show loading state -->
+          <div *ngIf="isLoading" class="avatar-loading">
+            <span class="spinner"></span>
+          </div>
 
+          <!-- Show photo if available -->
           <img
-            *ngIf="currentUser?.profilePhoto"
-            [src]="currentUser?.profilePhoto"
-            [alt]="currentUser?.fullName"
+                  *ngIf="!isLoading && hasPhoto()"
+                  [src]="getPhotoSource()"
+                  [alt]="currentUser?.fullName || 'Student'"
+                  (error)="onImageError()"
           />
 
-          <span *ngIf="!currentUser?.profilePhoto">
-            {{
-              currentUser?.fullName
-                ? currentUser?.fullName?.charAt(0)
-                : 'S'
-            }}
+          <!-- Show initials if no photo -->
+          <span *ngIf="!isLoading && !hasPhoto()">
+            {{ currentUser?.fullName ? currentUser?.fullName?.charAt(0) : 'S' }}
           </span>
 
+          <!-- Refresh button (small, subtle) -->
+          <button *ngIf="!isLoading" class="photo-refresh-btn" (click)="refreshPhoto()" title="Refresh photo">
+            ↻
+          </button>
         </div>
-
       </div>
-
     </header>
-
 
     <!-- =========================
          STUDENT PROFILE SUMMARY
     ========================== -->
 
-    <section
-      class="student-summary"
-      *ngIf="currentUser"
-    >
-
+    <section class="student-summary" *ngIf="currentUser">
       <div class="student-photo">
-
-        <img
-          *ngIf="currentUser.profilePhoto"
-          [src]="currentUser.profilePhoto"
-          [alt]="currentUser.fullName"
-        />
-
-        <span *ngIf="!currentUser.profilePhoto">
-          {{ currentUser.fullName?.charAt(0) || 'S' }}
-        </span>
-
-      </div>
-
-
-      <div class="student-details">
-
-        <span class="section-label">
-          Student Information
-        </span>
-
-        <h2>
-          {{ currentUser.fullName }}
-        </h2>
-
-
-        <div class="student-meta">
-
-          <div>
-            <span>Registration Number</span>
-            <strong>
-              {{ currentUser.registrationNumber || 'Not available' }}
-            </strong>
-          </div>
-
-
-          <div>
-            <span>Programme</span>
-            <strong>
-              {{ currentUser.programme || 'Not available' }}
-            </strong>
-          </div>
-
-
-          <div>
-            <span>College</span>
-            <strong>
-              {{ currentUser.college || 'Not available' }}
-            </strong>
-          </div>
-
+        <!-- Loading state -->
+        <div *ngIf="isLoading" class="photo-loading">
+          <span class="spinner"></span>
         </div>
 
+        <!-- Photo -->
+        <img
+                *ngIf="!isLoading && hasPhoto()"
+                [src]="getPhotoSource()"
+                [alt]="currentUser.fullName"
+                (error)="onImageError()"
+        />
+
+        <!-- Initials -->
+        <span *ngIf="!isLoading && !hasPhoto()">
+          {{ currentUser.fullName?.charAt(0) || 'S' }}
+        </span>
       </div>
 
-    </section>
+      <div class="student-details">
+        <span class="section-label">Student Information</span>
+        <h2>{{ currentUser.fullName }}</h2>
 
+        <div class="student-meta">
+          <div>
+            <span>Registration Number</span>
+            <strong>{{ currentUser.registrationNumber || 'Not available' }}</strong>
+          </div>
+          <div>
+            <span>Programme</span>
+            <strong>{{ currentUser.programme || 'Not available' }}</strong>
+          </div>
+          <div>
+            <span>College</span>
+            <strong>{{ currentUser.college || 'Not available' }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- =========================
          CLEARANCE OVERVIEW
@@ -254,302 +149,132 @@
 
     <section class="clearance-overview">
 
-
       <!-- STATUS CARD -->
-
       <article class="clearance-status-card">
-
         <div class="card-heading">
-
           <div>
-
-            <span class="section-label">
-              Clearance
-            </span>
-
-            <h2>
-              Clearance Status
-            </h2>
-
+            <span class="section-label">Clearance</span>
+            <h2>Clearance Status</h2>
           </div>
-
-
-          <span
-            class="status-badge"
-            [ngClass]="clearanceStatus.toLowerCase().replace(' ', '-')"
-          >
+          <span class="status-badge" [ngClass]="clearanceStatus.toLowerCase().replace(' ', '-')">
             {{ clearanceStatus }}
           </span>
-
         </div>
 
-
         <div *ngIf="!currentRequest">
-
           <p class="status-description">
             Your clearance request has not been completed.
             Complete your clearance request to begin the
             clearance process.
           </p>
-
-
-          <a
-            routerLink="/clearance/request"
-            class="primary-button"
-          >
+          <a routerLink="/clearance/request" class="primary-button">
             Request Clearance
           </a>
-
         </div>
 
-
         <div *ngIf="currentRequest">
-
           <p class="status-description">
             Your clearance request has been submitted.
             Track the progress of your clearance through
             the responsible offices.
           </p>
-
-
-          <a
-            routerLink="/clearance/status"
-            class="secondary-button"
-          >
+          <a routerLink="/clearance/status" class="secondary-button">
             View Clearance Process
           </a>
-
         </div>
-
       </article>
 
-
       <!-- PROGRESS CARD -->
-
       <article class="clearance-progress-card">
-
         <div class="card-heading">
-
           <div>
-
-            <span class="section-label">
-              Progress
-            </span>
-
-            <h2>
-              Clearance Progress
-            </h2>
-
+            <span class="section-label">Progress</span>
+            <h2>Clearance Progress</h2>
           </div>
-
-
           <strong class="progress-percentage">
             {{ completedOffices }}/{{ offices.length || 0 }}
           </strong>
-
         </div>
-
 
         <div class="progress-track">
-
-          <div
-            class="progress-fill"
-            [style.width.%]="
-              offices.length
-                ? (completedOffices / offices.length) * 100
-                : 0
-            "
-          ></div>
-
+          <div class="progress-fill" [style.width.%]="offices.length ? (completedOffices / offices.length) * 100 : 0"></div>
         </div>
-
 
         <div class="progress-footer">
-
-          <span>
-            {{ completedOffices }} approved
-          </span>
-
-          <span>
-            {{ pendingOffices }} pending
-          </span>
-
-          <span
-            *ngIf="rejectedOffices"
-            class="rejected-text"
-          >
+          <span>{{ completedOffices }} approved</span>
+          <span>{{ pendingOffices }} pending</span>
+          <span *ngIf="rejectedOffices" class="rejected-text">
             {{ rejectedOffices }} rejected
           </span>
-
         </div>
-
       </article>
 
     </section>
-
 
     <!-- =========================
          CLEARANCE PROCESS PREVIEW
     ========================== -->
 
     <section class="process-preview">
-
       <div class="process-heading">
-
         <div>
-
-          <span class="section-label">
-            Clearance Process
-          </span>
-
-          <h2>
-            Track Your Clearance
-          </h2>
-
-          <p>
-            Follow your clearance as it moves through
-            each responsible office.
-          </p>
-
+          <span class="section-label">Clearance Process</span>
+          <h2>Track Your Clearance</h2>
+          <p>Follow your clearance as it moves through each responsible office.</p>
         </div>
-
-
-        <a
-          *ngIf="currentRequest"
-          routerLink="/clearance/status"
-          class="view-process"
-        >
+        <a *ngIf="currentRequest" routerLink="/clearance/status" class="view-process">
           View Full Process
         </a>
-
       </div>
 
-
-      <div
-        class="office-grid"
-        *ngIf="currentRequest"
-      >
-
-        <article
-          class="office-card"
-          *ngFor="let office of offices"
-        >
-
+      <div class="office-grid" *ngIf="currentRequest">
+        <article class="office-card" *ngFor="let office of offices">
           <div class="office-card-top">
-
-            <div class="office-icon">
-              {{ office.name.charAt(0) }}
-            </div>
-
-
-            <span
-              class="office-status"
-              [ngClass]="office.status.toLowerCase()"
-            >
+            <div class="office-icon">{{ office.name.charAt(0) }}</div>
+            <span class="office-status" [ngClass]="office.status.toLowerCase()">
               {{ office.status }}
             </span>
-
           </div>
-
-
-          <h3>
-            {{ office.name }}
-          </h3>
-
-          <p>
-            {{ office.note }}
-          </p>
-
+          <h3>{{ office.name }}</h3>
+          <p>{{ office.note }}</p>
         </article>
-
       </div>
 
-
       <!-- NO REQUEST -->
-
-      <div
-        class="process-empty"
-        *ngIf="!currentRequest"
-      >
-
-        <div class="empty-icon">
-          01
-        </div>
-
+      <div class="process-empty" *ngIf="!currentRequest">
+        <div class="empty-icon">01</div>
         <div>
-
-          <h3>
-            Your clearance process has not started
-          </h3>
-
+          <h3>Your clearance process has not started</h3>
           <p>
             Complete your clearance request first.
             Once submitted, you will be able to track
             every responsible office here.
           </p>
-
         </div>
-
-
-        <a
-          routerLink="/clearance/request"
-          class="primary-button"
-        >
+        <a routerLink="/clearance/request" class="primary-button">
           Complete Clearance Request
         </a>
-
       </div>
 
     </section>
-
 
     <!-- =========================
          QUICK ACTIONS
     ========================== -->
 
     <section class="quick-actions">
-
-      <a
-        routerLink="/profile"
-        class="quick-action"
-      >
-        <strong>
-          My Profile
-        </strong>
-
-        <span>
-          View your student information
-        </span>
+      <a routerLink="/profile" class="quick-action">
+        <strong>My Profile</strong>
+        <span>View your student information</span>
       </a>
-
-
-      <a
-        routerLink="/clearance/request"
-        class="quick-action"
-      >
-        <strong>
-          Clearance Request
-        </strong>
-
-        <span>
-          Complete or review your request
-        </span>
+      <a routerLink="/clearance/request" class="quick-action">
+        <strong>Clearance Request</strong>
+        <span>Complete or review your request</span>
       </a>
-
-
-      <a
-        routerLink="/clearance/status"
-        class="quick-action"
-      >
-        <strong>
-          Clearance Process
-        </strong>
-
-        <span>
-          Follow each clearance stage
-        </span>
+      <a routerLink="/clearance/status" class="quick-action">
+        <strong>Clearance Process</strong>
+        <span>Follow each clearance stage</span>
       </a>
-
     </section>
 
   </main>

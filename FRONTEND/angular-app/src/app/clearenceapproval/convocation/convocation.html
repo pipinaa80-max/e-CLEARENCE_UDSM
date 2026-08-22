@@ -1,3 +1,4 @@
+<!-- convocation.html -->
 <div class="convocation-page">
 
   <!-- =====================================================
@@ -23,12 +24,26 @@
 
     </div>
 
-    <a
-      routerLink="/clearance/status"
-      class="back-link"
-    >
-      ← Back to Clearance
-    </a>
+    <div class="header-actions">
+
+      <button
+              type="button"
+              class="refresh-button"
+              (click)="refreshData()"
+              [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">🔄 Refresh</span>
+        <span *ngIf="isLoading">Loading...</span>
+      </button>
+
+      <a
+              routerLink="/clearance/status"
+              class="back-link"
+      >
+        ← Back to Clearance
+      </a>
+
+    </div>
 
   </header>
 
@@ -74,12 +89,12 @@
         <!-- REQUEST CONTROL NUMBER -->
 
         <div
-          *ngIf="!controlNumber"
-          class="control-number-box"
+                *ngIf="!controlNumber"
+                class="control-number-box"
         >
 
           <ng-container
-            *ngIf="!controlNumberRequested"
+                  *ngIf="!controlNumberRequested"
           >
 
             <p>
@@ -88,9 +103,10 @@
             </p>
 
             <button
-              type="button"
-              class="primary-button"
-              (click)="requestControlNumber()"
+                    type="button"
+                    class="primary-button"
+                    (click)="requestControlNumber()"
+                    [disabled]="isLoading"
             >
               Request Control Number
             </button>
@@ -101,7 +117,7 @@
           <!-- WAITING FOR CONVOCATION -->
 
           <ng-container
-            *ngIf="controlNumberRequested"
+                  *ngIf="controlNumberRequested"
           >
 
             <div class="waiting-message">
@@ -126,8 +142,8 @@
         <!-- CONTROL NUMBER ISSUED -->
 
         <div
-          *ngIf="controlNumber"
-          class="issued-control-number"
+                *ngIf="controlNumber"
+                class="issued-control-number"
         >
 
           <span>
@@ -153,8 +169,8 @@
       ================================================ -->
 
       <div
-        *ngIf="controlNumber"
-        class="form-section"
+              *ngIf="controlNumber"
+              class="form-section"
       >
 
         <label>
@@ -168,14 +184,16 @@
 
 
         <input
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          (change)="onFileSelected($event)"
+                id="receipt-upload"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                (change)="onFileSelected($event)"
+                [disabled]="isLoading || receiptSubmitted"
         />
 
 
         <small
-          *ngIf="selectedFileName"
+                *ngIf="selectedFileName"
         >
           Selected file:
           {{ selectedFileName }}
@@ -185,11 +203,11 @@
         <!-- RECEIPT ALREADY SUBMITTED -->
 
         <div
-          *ngIf="receiptSubmitted"
-          class="success-message"
+                *ngIf="receiptSubmitted"
+                class="success-message"
         >
 
-          Payment receipt submitted successfully.
+          ✅ Payment receipt submitted successfully.
 
         </div>
 
@@ -202,10 +220,10 @@
       ================================================ -->
 
       <div
-        *ngIf="errorMessage"
-        class="error-message"
+              *ngIf="errorMessage"
+              class="error-message"
       >
-        {{ errorMessage }}
+        ❌ {{ errorMessage }}
       </div>
 
 
@@ -215,10 +233,10 @@
       ================================================ -->
 
       <div
-        *ngIf="message"
-        class="success-message"
+              *ngIf="message"
+              class="success-message"
       >
-        {{ message }}
+        ✅ {{ message }}
       </div>
 
 
@@ -228,20 +246,21 @@
       ================================================ -->
 
       <div
-        *ngIf="
+              *ngIf="
           controlNumber &&
           !receiptSubmitted
         "
-        class="actions"
+              class="actions"
       >
 
         <button
-          type="button"
-          class="primary-button"
-          [disabled]="!form.controls.file.value"
-          (click)="submit()"
+                type="button"
+                class="primary-button"
+                [disabled]="!form.controls.file.value || isLoading"
+                (click)="submit()"
         >
-          Next
+          <span *ngIf="!isLoading">Next</span>
+          <span *ngIf="isLoading">Submitting...</span>
         </button>
 
       </div>
@@ -250,8 +269,8 @@
       <!-- AFTER RECEIPT SUBMISSION -->
 
       <div
-        *ngIf="receiptSubmitted"
-        class="waiting-message"
+              *ngIf="receiptSubmitted"
+              class="waiting-message"
       >
 
         <strong>
@@ -265,8 +284,8 @@
         </p>
 
         <a
-          routerLink="/clearance/status"
-          class="secondary-button"
+                routerLink="/clearance/status"
+                class="secondary-button"
         >
           View Clearance Status
         </a>
@@ -306,12 +325,22 @@
 
 
       <!-- ===============================================
+           LOADING STATE
+      ================================================ -->
+
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading requests...</p>
+      </div>
+
+
+      <!-- ===============================================
            NO REQUESTS
       ================================================ -->
 
       <div
-        *ngIf="requests.length === 0"
-        class="empty-state"
+              *ngIf="!isLoading && requests.length === 0"
+              class="empty-state"
       >
 
         <h3>
@@ -332,8 +361,8 @@
       ================================================ -->
 
       <div
-        *ngFor="let request of requests"
-        class="request-card"
+              *ngFor="let request of requests"
+              class="request-card"
       >
 
         <div class="request-header">
@@ -416,13 +445,13 @@
 
 
           <div
-            *ngIf="
+                  *ngIf="
               !request.convocation?.controlNumber
             "
           >
 
             <p
-              *ngIf="
+                    *ngIf="
                 request.convocation
                   ?.controlNumberRequestedAt
               "
@@ -432,9 +461,10 @@
 
 
             <button
-              type="button"
-              class="primary-button"
-              (click)="issueControlNumber(request)"
+                    type="button"
+                    class="primary-button"
+                    (click)="issueControlNumber(request)"
+                    [disabled]="isLoading"
             >
               Issue Control Number
             </button>
@@ -443,10 +473,10 @@
 
 
           <div
-            *ngIf="
+                  *ngIf="
               request.convocation?.controlNumber
             "
-            class="issued-control-number"
+                  class="issued-control-number"
           >
 
             <span>
@@ -475,7 +505,7 @@
 
 
           <strong
-            *ngIf="
+                  *ngIf="
               request.convocation?.receiptFileName
             "
           >
@@ -484,7 +514,7 @@
 
 
           <span
-            *ngIf="
+                  *ngIf="
               !request.convocation?.receiptFileName
             "
           >
@@ -506,9 +536,9 @@
           </label>
 
           <textarea
-            [(ngModel)]="comment"
-            rows="4"
-            placeholder="Enter a comment if the request is rejected..."
+                  [(ngModel)]="comment"
+                  rows="4"
+                  placeholder="Enter a comment if the request is rejected..."
           ></textarea>
 
         </div>
@@ -522,22 +552,24 @@
         <div class="actions">
 
           <button
-            type="button"
-            class="approve-button"
-            [disabled]="
+                  type="button"
+                  class="approve-button"
+                  [disabled]="
               !request.convocation
-                ?.receiptSubmittedAt
+                ?.receiptSubmittedAt ||
+              isLoading
             "
-            (click)="approve(request)"
+                  (click)="approve(request)"
           >
             Approve
           </button>
 
 
           <button
-            type="button"
-            class="reject-button"
-            (click)="reject(request)"
+                  type="button"
+                  class="reject-button"
+                  [disabled]="isLoading"
+                  (click)="reject(request)"
           >
             Reject
           </button>
