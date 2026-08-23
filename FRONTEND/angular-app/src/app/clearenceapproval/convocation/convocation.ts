@@ -1,4 +1,4 @@
-// convocation.component.ts - Fixed continueToStep2
+// convocation.component.ts - Fixed for new students
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -97,11 +97,18 @@ export class ConvocationComponent implements OnInit {
     // Force reload from storage
     const requests = this.clearanceService.getStudentRequests(user.id);
 
-    // Find the request that is either in Convocation OR was just moved to Parallel but originated here
-    // Usually a student has only one active request
-    const request = requests.at(-1) ?? null;
+    // Get the latest request
+    const request = requests.length > 0 ? requests[requests.length - 1] : null;
 
-    console.log('Student request loaded:', request?.id, request?.currentStage, request?.status);
+    console.log('Student request loaded:', {
+      id: request?.id,
+      currentStage: request?.currentStage,
+      status: request?.status,
+      hasConvocation: !!request?.convocation,
+      controlNumber: request?.convocation?.controlNumber,
+      controlNumberRequestedAt: request?.convocation?.controlNumberRequestedAt
+    });
+
     return request;
   }
 
@@ -133,13 +140,13 @@ export class ConvocationComponent implements OnInit {
         approval => approval.office === 'Convocation'
     );
 
-    // Show button if Convocation is approved, even if stage already auto-moved to Parallel
-    // but only if we are still on this page and haven't "acknowledged" it yet
-    return convocationApproval?.status === 'Approved';
+    // Only show if approved AND we are still in Convocation stage
+    return convocationApproval?.status === 'Approved' &&
+        request.currentStage === 'Convocation';
   }
 
   // =====================================================
-  // CONTINUE TO STEP 2 - FIXED
+  // CONTINUE TO STEP 2
   // =====================================================
 
   continueToStep2(): void {
@@ -211,6 +218,36 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
+  // CHECK IF CONTROL NUMBER WAS REQUESTED
+  // =====================================================
+
+  get controlNumberRequested(): boolean {
+    const request = this.studentRequest;
+    if (!request) return false;
+
+    // Check if convocation exists and has controlNumberRequestedAt
+    return !!(request.convocation?.controlNumberRequestedAt);
+  }
+
+  // =====================================================
+  // CONTROL NUMBER
+  // =====================================================
+
+  get controlNumber(): string {
+    const request = this.studentRequest;
+    return request?.convocation?.controlNumber ?? '';
+  }
+
+  // =====================================================
+  // RECEIPT SUBMITTED
+  // =====================================================
+
+  get receiptSubmitted(): boolean {
+    const request = this.studentRequest;
+    return !!(request?.convocation?.receiptSubmittedAt);
+  }
+
+  // =====================================================
   // LOAD DATA - Student only
   // =====================================================
 
@@ -268,44 +305,30 @@ export class ConvocationComponent implements OnInit {
       return;
     }
 
+    // Check if control number already requested
     if (request.convocation?.controlNumberRequestedAt) {
       this.message = 'Your control number has already been requested.';
       return;
     }
 
+    // Check if control number already issued
+    if (request.convocation?.controlNumber) {
+      this.message = 'You already have a control number: ' + request.convocation.controlNumber;
+      return;
+    }
+
+    // Initialize convocation object if it doesn't exist
+    if (!request.convocation) {
+      request.convocation = {};
+    }
+
+    // Request the control number
     this.clearanceService.requestControlNumber(request.id);
 
     // Reload data after action
     this.loadData();
 
     this.message = 'Control number requested. Please wait for Convocation to issue your control number.';
-  }
-
-  // =====================================================
-  // CONTROL NUMBER
-  // =====================================================
-
-  get controlNumber(): string {
-    const request = this.studentRequest;
-    return request?.convocation?.controlNumber ?? '';
-  }
-
-  // =====================================================
-  // CONTROL NUMBER REQUESTED
-  // =====================================================
-
-  get controlNumberRequested(): boolean {
-    const request = this.studentRequest;
-    return !!(request?.convocation?.controlNumberRequestedAt);
-  }
-
-  // =====================================================
-  // RECEIPT SUBMITTED
-  // =====================================================
-
-  get receiptSubmitted(): boolean {
-    const request = this.studentRequest;
-    return !!(request?.convocation?.receiptSubmittedAt);
   }
 
   // =====================================================

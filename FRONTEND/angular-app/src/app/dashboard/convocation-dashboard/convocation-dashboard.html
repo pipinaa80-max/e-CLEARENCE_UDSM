@@ -14,14 +14,12 @@
 
     <nav>
       <a routerLink="/convocation/dashboard" routerLinkActive="active" (click)="closeSidebar()">
-        📋 Dashboard
+        Dashboard
       </a>
       <a routerLink="/convocation/requests" routerLinkActive="active" (click)="closeSidebar()">
-        📝 All Requests
+         All Requests
       </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        🔍 Clearance Status
-      </a>
+
     </nav>
 
     <button type="button" class="logout-link" (click)="logout()">
@@ -45,9 +43,7 @@
       </div>
 
       <div class="topbar-actions">
-        <button type="button" class="refresh-btn" (click)="refreshData()" [disabled]="isLoading">
-          🔄 Refresh
-        </button>
+
         <div class="staff-avatar">
           <span>{{ currentUser?.fullName?.charAt(0) || 'C' }}</span>
         </div>
@@ -120,7 +116,7 @@
 
             <div class="request-status">
               <span class="status-badge" [class.control-requested]="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber" [class.control-issued]="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" [class.receipt-received]="request.convocation?.receiptSubmittedAt">
-                <span *ngIf="!request.convocation?.controlNumberRequestedAt">⏳ Awaiting Request</span>
+                <span *ngIf="!request.convocation?.controlNumberRequestedAt"> Awaiting Request</span>
                 <span *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber">📨 Control Number Requested</span>
                 <span *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt">🔢 Control Number Issued</span>
                 <span *ngIf="request.convocation?.receiptSubmittedAt">📄 Receipt Received</span>
@@ -183,12 +179,10 @@
               [disabled]="isLoading"
               style="background-color: #2e7d32; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"
             >
-              🚀 Final Approval
+               Final Approval
             </button>
 
-            <button type="button" class="view-btn" routerLink="/clearance/status">
-              👁️ View Status
-            </button>
+
           </div>
 
         </div>
