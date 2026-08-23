@@ -1,5 +1,3 @@
-// src/app/dashboard/department/department.ts
-
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -31,10 +29,20 @@ export class DepartmentDashboard {
     return this.authService.getCurrentUser();
   }
 
+  get isOfficer(): boolean {
+    return this.currentUser?.role === 'Department';
+  }
+
+  get studentRequest(): ClearanceRequest | null {
+    const user = this.currentUser;
+    if (!user || user.role !== 'Student') return null;
+    const requests = this.clearanceService.getStudentRequests(user.id);
+    return requests.at(-1) ?? null;
+  }
+
   get requests(): ClearanceRequest[] {
     const staff = this.currentUser;
-
-    if (!staff) {
+    if (!staff || !this.isOfficer) {
       return [];
     }
 
@@ -43,6 +51,20 @@ export class DepartmentDashboard {
       staff.college,
       staff.department
     );
+  }
+
+  getOfficeStatus(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return 'Pending';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.status ?? 'Pending';
+  }
+
+  getRejectionReason(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return '';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.comment ?? '';
   }
 
   approve(request: ClearanceRequest): void {

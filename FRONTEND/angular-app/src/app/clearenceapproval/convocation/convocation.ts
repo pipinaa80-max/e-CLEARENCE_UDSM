@@ -1,4 +1,4 @@
-// convocation.component.ts - Student only, removed staff methods
+// convocation.component.ts - Fixed continueToStep2
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -96,10 +96,118 @@ export class ConvocationComponent implements OnInit {
 
     // Force reload from storage
     const requests = this.clearanceService.getStudentRequests(user.id);
-    const request = requests.find(req => req.currentStage === 'Convocation') ?? null;
 
-    console.log('Student request loaded:', request?.id, request?.status);
+    // Find the request that is either in Convocation OR was just moved to Parallel but originated here
+    // Usually a student has only one active request
+    const request = requests.at(-1) ?? null;
+
+    console.log('Student request loaded:', request?.id, request?.currentStage, request?.status);
     return request;
+  }
+
+  // =====================================================
+  // CHECK IF CONVOCATION IS APPROVED
+  // =====================================================
+
+  get isConvocationApproved(): boolean {
+    const request = this.studentRequest;
+    if (!request) return false;
+
+    const convocationApproval = request.approvals.find(
+        approval => approval.office === 'Convocation'
+    );
+
+    return convocationApproval?.status === 'Approved';
+  }
+
+  // =====================================================
+  // CHECK IF CAN CONTINUE TO STEP 2
+  // =====================================================
+
+  get canContinueToStep2(): boolean {
+    const request = this.studentRequest;
+    if (!request) return false;
+
+    // Check if Convocation is approved
+    const convocationApproval = request.approvals.find(
+        approval => approval.office === 'Convocation'
+    );
+
+    // Show button if Convocation is approved, even if stage already auto-moved to Parallel
+    // but only if we are still on this page and haven't "acknowledged" it yet
+    return convocationApproval?.status === 'Approved';
+  }
+
+  // =====================================================
+  // CONTINUE TO STEP 2 - FIXED
+  // =====================================================
+
+  continueToStep2(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.message = '';
+
+    const request = this.studentRequest;
+    if (!request) {
+      this.errorMessage = 'No active clearance request found.';
+      this.isLoading = false;
+      return;
+    }
+
+    try {
+      // Check if Convocation is approved
+      const convocationApproval = request.approvals.find(
+          approval => approval.office === 'Convocation'
+      );
+
+      if (!convocationApproval || convocationApproval.status !== 'Approved') {
+        this.errorMessage = 'Convocation approval is required first.';
+        this.isLoading = false;
+        return;
+      }
+
+      // Get all requests and update the stage manually
+      const allRequests = this.clearanceService.getAllRequests();
+      const requestIndex = allRequests.findIndex(r => r.id === request.id);
+
+      if (requestIndex === -1) {
+        this.errorMessage = 'Request not found.';
+        this.isLoading = false;
+        return;
+      }
+
+      // Update the current stage to Parallel
+      allRequests[requestIndex].currentStage = 'Parallel';
+      allRequests[requestIndex].currentOffice = undefined;
+
+      // Save back to storage
+      const storage = new (this.clearanceService as any).storage.constructor();
+      storage.save('udsm-clearance-requests', allRequests);
+
+      // Reload data
+      this.loadData();
+
+      this.notificationService.createNotification(
+          request.studentId,
+          'Step 2 Started',
+          'Convocation clearance approved! You can now proceed with other clearance offices.',
+          'success'
+      );
+
+      this.message = '✅ Step 2 started successfully! Redirecting...';
+
+      // Redirect to clearance status page after short delay
+      setTimeout(() => {
+        this.router.navigate(['/clearance/status']);
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Error continuing to step 2:', error);
+      this.errorMessage = 'Failed to continue to Step 2. Please try again.';
+      this.isLoading = false;
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   // =====================================================

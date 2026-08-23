@@ -24,8 +24,37 @@ export class LibraryDashboard {
   rejectionComment = '';
   message = '';
 
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  get isOfficer(): boolean {
+    return this.currentUser?.role === 'Library';
+  }
+
+  get studentRequest(): ClearanceRequest | null {
+    const user = this.currentUser;
+    if (!user || user.role !== 'Student') return null;
+    const requests = this.clearanceService.getStudentRequests(user.id);
+    return requests.at(-1) ?? null;
+  }
+
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Library');
+  }
+
+  getOfficeStatus(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return 'Pending';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.status ?? 'Pending';
+  }
+
+  getRejectionReason(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return '';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.comment ?? '';
   }
 
   approve(request: ClearanceRequest): void {

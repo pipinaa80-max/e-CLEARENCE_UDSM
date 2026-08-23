@@ -5,7 +5,7 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <img src="/udsm-logo.png" alt="UDSM Logo" />
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
       <div>
         <strong>UDSM</strong>
         <small>Convocation Office</small>
@@ -165,11 +165,29 @@
           </div>
 
           <div class="action-buttons">
-            <button type="button" class="approve-btn" (click)="markReceiptReceived(request)" [disabled]="!request.convocation?.controlNumber || request.convocation?.receiptSubmittedAt || isLoading">
-              ✅ Approve Receipt
+            <button
+              *ngIf="!request.convocation?.receiptSubmittedAt"
+              type="button"
+              class="approve-btn"
+              (click)="markReceiptReceived(request)"
+              [disabled]="!request.convocation?.controlNumber || isLoading"
+            >
+              ✅ Mark Receipt Received
             </button>
+
+            <button
+              *ngIf="request.convocation?.receiptSubmittedAt"
+              type="button"
+              class="final-approve-btn"
+              (click)="approveRequest(request)"
+              [disabled]="isLoading"
+              style="background-color: #2e7d32; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"
+            >
+              🚀 Final Approval
+            </button>
+
             <button type="button" class="view-btn" routerLink="/clearance/status">
-              👁️ View Clearance
+              👁️ View Status
             </button>
           </div>
 

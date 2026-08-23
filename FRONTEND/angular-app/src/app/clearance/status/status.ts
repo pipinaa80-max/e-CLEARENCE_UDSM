@@ -1,643 +1,512 @@
+// clearance-status.component.ts - Fixed continueToNextStage
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 import {
   ClearanceRequest,
   ClearanceOffice
 } from '../../core/models/clearance.model';
 
-
 interface ProcessStep {
-
   number: number;
-
   label: string;
-
-  office:
-    | ClearanceOffice
-    | 'Clearance Offices';
-
+  office: ClearanceOffice | 'Clearance Offices';
   detail: string;
-
   status: string;
-
 }
-
 
 @Component({
   selector: 'app-clearance-status',
-
   standalone: true,
-
   imports: [
     CommonModule,
     RouterLink
   ],
-
   templateUrl: './status.html',
-
   styleUrl: './status.css'
 })
 export class ClearanceStatusComponent {
+  private readonly authService = inject(AuthService);
+  private readonly clearanceService = inject(ClearanceService);
+  private readonly notificationService = inject(NotificationService);
 
-  private readonly authService =
-    inject(AuthService);
-
-  private readonly clearanceService =
-    inject(ClearanceService);
-
+  isLoading = false;
+  errorMessage = '';
+  successMessage = '';
 
   // =====================================================
   // CURRENT STUDENT REQUEST
   // =====================================================
 
   get request(): ClearanceRequest | null {
-
-    const user =
-      this.authService.getCurrentUser();
+    const user = this.authService.getCurrentUser();
 
     if (!user) {
       return null;
     }
 
-    const requests =
-      this.clearanceService
-        .getStudentRequests(user.id);
-
-    return requests.length
-      ? requests[requests.length - 1]
-      : null;
+    const requests = this.clearanceService.getStudentRequests(user.id);
+    return requests.length ? requests[requests.length - 1] : null;
   }
-
 
   // =====================================================
   // CURRENT STUDENT
   // =====================================================
 
   get student() {
-
-    return this.authService
-      .getCurrentUser();
-
+    return this.authService.getCurrentUser();
   }
-
 
   // =====================================================
   // SEVEN CLEARANCE OFFICES
   // =====================================================
 
-  readonly officeList:
-    ClearanceOffice[] = [
-
-      'Games Coach',
-
-      'Hall Warden',
-
-      'USAB',
-
-      'DARUSO',
-
-      'Library',
-
-      'Dean of Students',
-
-      'Smart Card'
-
-    ];
-
+  readonly officeList: ClearanceOffice[] = [
+    'Games Coach',
+    'Hall Warden',
+    'USAB',
+    'DARUSO',
+    'Library',
+    'Dean of Students',
+    'Smart Card'
+  ];
 
   // =====================================================
   // GET OFFICE APPROVAL
   // =====================================================
 
-  getApproval(
-    office: ClearanceOffice
-  ) {
-
-    return this.request
-      ?.approvals
-      .find(
-        approval =>
-          approval.office === office
-      )
-      ?? null;
-
+  getApproval(office: ClearanceOffice) {
+    return this.request?.approvals.find(approval => approval.office === office) ?? null;
   }
-
 
   // =====================================================
   // GET OFFICE STATUS
   // =====================================================
 
-  getOfficeStatus(
-    office: ClearanceOffice
-  ): string {
-
-    return (
-      this.getApproval(office)
-        ?.status
-      ?? 'Pending'
-    );
-
+  getOfficeStatus(office: ClearanceOffice): string {
+    return this.getApproval(office)?.status ?? 'Pending';
   }
-
 
   // =====================================================
   // GET REJECTION COMMENT
   // =====================================================
 
-  getRejectionReason(
-    office: ClearanceOffice
-  ): string {
-
-    const approval =
-      this.getApproval(office);
-
-    if (
-      !approval ||
-      approval.status !== 'Rejected'
-    ) {
-
+  getRejectionReason(office: ClearanceOffice): string {
+    const approval = this.getApproval(office);
+    if (!approval || approval.status !== 'Rejected') {
       return '';
-
     }
-
     return approval.comment ?? '';
-
   }
-
 
   // =====================================================
   // REVIEWED BY
   // =====================================================
 
-  getReviewedBy(
-    office: ClearanceOffice
-  ): string {
-
-    return (
-      this.getApproval(office)
-        ?.reviewedBy
-      ?? ''
-    );
-
+  getReviewedBy(office: ClearanceOffice): string {
+    return this.getApproval(office)?.reviewedBy ?? '';
   }
-
-
-  // =====================================================
-  // REVIEWED AT
-  // =====================================================
-
-  getReviewedAt(
-    office: ClearanceOffice
-  ): string {
-
-    return (
-      this.getApproval(office)
-        ?.reviewedAt
-      ?? ''
-    );
-
-  }
-
 
   // =====================================================
   // ALL SEVEN APPROVED
   // =====================================================
 
   get allClearanceOfficesApproved(): boolean {
+    const request = this.request;
+    if (!request) return false;
 
-    const request =
-      this.request;
-
-    if (!request) {
-      return false;
-    }
-
-    return this.officeList.every(
-      office =>
-        this.getOfficeStatus(office)
-        === 'Approved'
-    );
-
+    return this.officeList.every(office => this.getOfficeStatus(office) === 'Approved');
   }
 
+  // =====================================================
+  // CHECK IF CONVOCATION IS APPROVED
+  // =====================================================
+
+  get isConvocationApproved(): boolean {
+    const request = this.request;
+    if (!request) return false;
+
+    const convocationApproval = request.approvals.find(
+        approval => approval.office === 'Convocation'
+    );
+
+    return convocationApproval?.status === 'Approved';
+  }
+
+  // =====================================================
+  // CHECK IF CAN CONTINUE TO NEXT STAGE
+  // =====================================================
+
+  get canContinueToNextStage(): boolean {
+    const request = this.request;
+    if (!request) return false;
+
+    // For Convocation stage - check if approved
+    if (request.currentStage === 'Convocation') {
+      return this.isConvocationApproved;
+    }
+
+    // For Parallel stage - check if all offices approved
+    if (request.currentStage === 'Parallel') {
+      return this.allClearanceOfficesApproved;
+    }
+
+    // For other stages, can't manually continue
+    return false;
+  }
+
+  // =====================================================
+  // GET NEXT STAGE NAME
+  // =====================================================
+
+  getNextStageName(): string {
+    const request = this.request;
+    if (!request) return '';
+
+    switch (request.currentStage) {
+      case 'Convocation':
+        return 'Step 2: Clearance Offices';
+      case 'Parallel':
+        return 'Step 3: Department';
+      default:
+        return '';
+    }
+  }
+
+  // =====================================================
+  // CONTINUE TO NEXT STAGE - FIXED
+  // =====================================================
+
+  continueToNextStage(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    const request = this.request;
+    if (!request) {
+      this.errorMessage = 'No active clearance request found.';
+      this.isLoading = false;
+      return;
+    }
+
+    try {
+      // Get all requests
+      const allRequests = this.clearanceService.getAllRequests();
+      const requestIndex = allRequests.findIndex(r => r.id === request.id);
+
+      if (requestIndex === -1) {
+        this.errorMessage = 'Request not found.';
+        this.isLoading = false;
+        return;
+      }
+
+      // Determine next stage
+      let nextStage: string = '';
+      let nextOffice: ClearanceOffice | undefined = undefined;
+
+      if (request.currentStage === 'Convocation') {
+        nextStage = 'Parallel';
+        nextOffice = undefined;
+      } else if (request.currentStage === 'Parallel') {
+        nextStage = 'Department';
+        nextOffice = 'Department';
+      } else {
+        this.errorMessage = 'Cannot continue from current stage.';
+        this.isLoading = false;
+        return;
+      }
+
+      // Update the request
+      allRequests[requestIndex].currentStage = nextStage as any;
+      allRequests[requestIndex].currentOffice = nextOffice;
+
+      // Save back to storage
+      const storage = new (this.clearanceService as any).storage.constructor();
+      storage.save('udsm-clearance-requests', allRequests);
+
+      // Reload data
+      this.loadData();
+
+      this.successMessage = `✅ ${this.getNextStageName()} started successfully!`;
+
+      // Show notification
+      this.notificationService.createNotification(
+          request.studentId,
+          'Next Stage Started',
+          `You have successfully moved to ${this.getNextStageName()}.`,
+          'success'
+      );
+
+      setTimeout(() => {
+        this.successMessage = '';
+        // Refresh the page data
+        window.location.reload();
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Error continuing to next stage:', error);
+      this.errorMessage = 'Failed to continue to next stage. Please try again.';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // =====================================================
+  // LOAD DATA
+  // =====================================================
+
+  loadData(): void {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.clearanceService.getStudentRequests(user.id);
+    }
+  }
 
   // =====================================================
   // CURRENT STEP NUMBER
   // =====================================================
 
   get currentStepNumber(): number {
+    const request = this.request;
+    if (!request) return 0;
 
-    const request =
-      this.request;
-
-    if (!request) {
-      return 0;
-    }
-
-    if (
-      request.status === 'Completed'
-    ) {
-
+    if (request.status === 'Completed') {
       return 5;
-
     }
 
-    switch (
-      request.currentStage
-    ) {
-
+    switch (request.currentStage) {
       case 'Convocation':
         return 1;
-
       case 'Parallel':
         return 2;
-
       case 'Department':
         return 3;
-
       case 'Principal':
         return 4;
-
       case 'Finance':
         return 5;
-
       case 'Completed':
         return 5;
-
       default:
         return 1;
-
     }
-
   }
-
 
   // =====================================================
   // CURRENT STAGE LABEL
   // =====================================================
 
   get currentStageLabel(): string {
-
-    const request =
-      this.request;
+    const request = this.request;
 
     if (!request) {
-
       return 'No clearance request';
-
     }
 
-    if (
-      request.status === 'Completed'
-    ) {
-
+    if (request.status === 'Completed') {
       return 'Clearance completed';
-
     }
 
-    if (
-      request.status === 'Rejected'
-    ) {
-
-      const rejectedOffice =
-        this.officeList.find(
-          office =>
-            this.getOfficeStatus(office)
-            === 'Rejected'
-        );
+    if (request.status === 'Rejected') {
+      const rejectedOffice = this.officeList.find(
+          office => this.getOfficeStatus(office) === 'Rejected'
+      );
 
       if (rejectedOffice) {
-
         return `${rejectedOffice} — Action Required`;
-
       }
 
-      const rejectedStage =
-        request.approvals.find(
-          approval =>
-            approval.status === 'Rejected'
-        );
+      const rejectedStage = request.approvals.find(
+          approval => approval.status === 'Rejected'
+      );
 
       if (rejectedStage) {
-
         return `${rejectedStage.office} — Action Required`;
-
       }
 
       return 'Clearance requires action';
-
     }
 
-    switch (
-      request.currentStage
-    ) {
-
+    switch (request.currentStage) {
       case 'Convocation':
         return 'Convocation';
-
       case 'Parallel':
         return 'Clearance Offices';
-
       case 'Department':
         return 'Department';
-
       case 'Principal':
         return 'Principal';
-
       case 'Finance':
         return 'Finance';
-
       case 'Completed':
         return 'Clearance completed';
-
       default:
         return 'Clearance';
-
     }
-
   }
-
 
   // =====================================================
   // FIVE MAIN STEPS
   // =====================================================
 
   get processSteps(): ProcessStep[] {
-
-    const request =
-      this.request;
+    const request = this.request;
 
     if (!request) {
-
       return [];
-
     }
 
-    const steps:
-      ProcessStep[] = [];
+    const steps: ProcessStep[] = [];
 
-
-    // ===================================================
     // STEP 1 — CONVOCATION
-    // ===================================================
-
-    let convocationStatus =
-      this.getApproval(
-        'Convocation'
-      )?.status
-      ?? 'Pending';
-
+    let convocationStatus = this.getApproval('Convocation')?.status ?? 'Pending';
 
     if (
-      request.currentStage === 'Parallel' ||
-      request.currentStage === 'Department' ||
-      request.currentStage === 'Principal' ||
-      request.currentStage === 'Finance' ||
-      request.status === 'Completed'
+        request.currentStage === 'Parallel' ||
+        request.currentStage === 'Department' ||
+        request.currentStage === 'Principal' ||
+        request.currentStage === 'Finance' ||
+        request.status === 'Completed'
     ) {
-
-      convocationStatus =
-        'Approved';
-
+      convocationStatus = 'Approved';
     }
 
-
     steps.push({
-
       number: 1,
-
       label: 'Convocation',
-
       office: 'Convocation',
-
-      detail:
-        'Request your control number, make payment and submit your receipt.',
-
-      status:
-        convocationStatus
-
+      detail: 'Request your control number, make payment and submit your receipt.',
+      status: convocationStatus
     });
 
-
-    // ===================================================
     // STEP 2 — SEVEN CLEARANCE OFFICES
-    // ===================================================
-
-    let officesStatus =
-      this.allClearanceOfficesApproved
-        ? 'Approved'
-        : 'Pending';
-
+    let officesStatus = this.allClearanceOfficesApproved ? 'Approved' : 'Pending';
 
     if (
-      request.currentStage === 'Department' ||
-      request.currentStage === 'Principal' ||
-      request.currentStage === 'Finance' ||
-      request.status === 'Completed'
+        request.currentStage === 'Department' ||
+        request.currentStage === 'Principal' ||
+        request.currentStage === 'Finance' ||
+        request.status === 'Completed'
     ) {
-
-      officesStatus =
-        'Approved';
-
+      officesStatus = 'Approved';
     }
 
-
     steps.push({
-
       number: 2,
-
       label: 'Clearance Offices',
-
       office: 'Clearance Offices',
-
-      detail:
-        'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students and Smart Card.',
-
-      status:
-        officesStatus
-
+      detail: 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students and Smart Card.',
+      status: officesStatus
     });
 
-
-    // ===================================================
     // STEP 3 — DEPARTMENT
-    // ===================================================
-
-    let departmentStatus =
-      this.getApproval(
-        'Department'
-      )?.status
-      ?? 'Pending';
-
+    let departmentStatus = this.getApproval('Department')?.status ?? 'Pending';
 
     if (
-      request.currentStage === 'Principal' ||
-      request.currentStage === 'Finance' ||
-      request.status === 'Completed'
+        request.currentStage === 'Principal' ||
+        request.currentStage === 'Finance' ||
+        request.status === 'Completed'
     ) {
-
-      departmentStatus =
-        'Approved';
-
+      departmentStatus = 'Approved';
     }
 
-
     steps.push({
-
       number: 3,
-
       label: 'Department',
-
       office: 'Department',
-
-      detail:
-        'Department clearance approval.',
-
-      status:
-        departmentStatus
-
+      detail: 'Department clearance approval.',
+      status: departmentStatus
     });
 
-
-    // ===================================================
     // STEP 4 — PRINCIPAL
-    // ===================================================
-
-    let principalStatus =
-      this.getApproval(
-        'Principal'
-      )?.status
-      ?? 'Pending';
-
+    let principalStatus = this.getApproval('Principal')?.status ?? 'Pending';
 
     if (
-      request.currentStage === 'Finance' ||
-      request.status === 'Completed'
+        request.currentStage === 'Finance' ||
+        request.status === 'Completed'
     ) {
-
-      principalStatus =
-        'Approved';
-
+      principalStatus = 'Approved';
     }
 
-
     steps.push({
-
       number: 4,
-
       label: 'Principal',
-
       office: 'Principal',
-
-      detail:
-        'Principal clearance approval.',
-
-      status:
-        principalStatus
-
+      detail: 'Principal clearance approval.',
+      status: principalStatus
     });
 
-
-    // ===================================================
     // STEP 5 — FINANCE
-    // ===================================================
+    let financeStatus = this.getApproval('Finance')?.status ?? 'Pending';
 
-    let financeStatus =
-      this.getApproval(
-        'Finance'
-      )?.status
-      ?? 'Pending';
-
-
-    if (
-      request.status === 'Completed'
-    ) {
-
-      financeStatus =
-        'Approved';
-
+    if (request.status === 'Completed') {
+      financeStatus = 'Approved';
     }
 
-
     steps.push({
-
       number: 5,
-
       label: 'Finance',
-
       office: 'Finance',
-
-      detail:
-        'Final financial clearance approval.',
-
-      status:
-        financeStatus
-
+      detail: 'Final financial clearance approval.',
+      status: financeStatus
     });
-
 
     return steps;
-
   }
-
 
   // =====================================================
   // OFFICE DETAIL
   // =====================================================
 
-  getOfficeDetail(
-    office: ClearanceOffice
-  ): string {
-
-    const approval =
-      this.getApproval(office);
+  getOfficeDetail(office: ClearanceOffice): string {
+    const approval = this.getApproval(office);
 
     if (!approval) {
-
       return 'Waiting for staff review';
-
     }
 
-    if (
-      approval.status === 'Approved'
-    ) {
-
+    if (approval.status === 'Approved') {
       return 'Approved by responsible staff';
-
     }
 
-    if (
-      approval.status === 'Rejected'
-    ) {
-
+    if (approval.status === 'Rejected') {
       return 'Rejected — view the reason below';
-
     }
 
     return 'Waiting for staff review';
-
   }
 
+  // =====================================================
+  // OFFICE ROUTES
+  // =====================================================
+
+  getOfficeRoute(office: string): string {
+    const map: Record<string, string> = {
+      'Convocation': '/convocation',
+      'Games Coach': '/games_coach',
+      'Hall Warden': '/hall_warden',
+      'USAB': '/usab',
+      'DARUSO': '/daruso',
+      'Library': '/dashboard/library',
+      'Dean of Students': '/dean_of_students',
+      'Smart Card': '/smart_card',
+      'Department': '/dashboard/department',
+      'Principal': '/principal',
+      'Finance': '/dashboard/finance'
+    };
+    return map[office] || '/clearance/status';
+  }
 
   // =====================================================
   // TYPE CHECK
   // =====================================================
 
-  isClearanceOffice(
-    office:
-      ClearanceOffice
-      | 'Clearance Offices'
-  ): office is ClearanceOffice {
-
-    return this.officeList
-      .includes(office as ClearanceOffice);
-
+  isClearanceOffice(office: ClearanceOffice | 'Clearance Offices'): office is ClearanceOffice {
+    return this.officeList.includes(office as ClearanceOffice);
   }
-
 }

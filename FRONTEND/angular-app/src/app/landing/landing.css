@@ -81,7 +81,11 @@
   text-align: center;
   color: #ffffff;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--udsm-blue) 94%, #ffffff), var(--udsm-blue-dark));
+    linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9)),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   border-bottom: 5px solid var(--udsm-gold);
 }
 

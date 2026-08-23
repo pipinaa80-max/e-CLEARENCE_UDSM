@@ -25,12 +25,41 @@ export class FinanceDashboard {
   rejectionComment = '';
   message = '';
 
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  get isOfficer(): boolean {
+    return this.currentUser?.role === 'Finance';
+  }
+
+  get studentRequest(): ClearanceRequest | null {
+    const user = this.currentUser;
+    if (!user || user.role !== 'Student') return null;
+    const requests = this.clearanceService.getStudentRequests(user.id);
+    return requests.at(-1) ?? null;
+  }
+
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Finance');
   }
 
+  getOfficeStatus(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return 'Pending';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.status ?? 'Pending';
+  }
+
+  getRejectionReason(office: string): string {
+    const request = this.studentRequest;
+    if (!request) return '';
+    const approval = request.approvals.find(a => a.office === office);
+    return approval?.comment ?? '';
+  }
+
   approve(request: ClearanceRequest): void {
-    const staff = this.authService.getCurrentUser();
+    const staff = this.currentUser;
 
     if (!staff) {
       this.router.navigate(['/login']);
@@ -60,7 +89,7 @@ export class FinanceDashboard {
   }
 
   reject(): void {
-    const staff = this.authService.getCurrentUser();
+    const staff = this.currentUser;
 
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;

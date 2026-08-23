@@ -1,3 +1,4 @@
+<!-- status.html -->
 <section class="status-page">
 
   <!-- =====================================================
@@ -5,8 +6,8 @@
   ====================================================== -->
 
   <div
-    class="status-card"
-    *ngIf="request; else noRequest"
+          class="status-card"
+          *ngIf="request; else noRequest"
   >
 
     <!-- HEADER -->
@@ -22,8 +23,8 @@
       </div>
 
       <span
-        class="final-status"
-        [ngClass]="request.status.toLowerCase()"
+              class="final-status"
+              [ngClass]="request.status.toLowerCase()"
       >
         {{ request.status }}
       </span>
@@ -53,18 +54,18 @@
     <section class="process-path">
 
       <article
-        *ngFor="
+              *ngFor="
           let step of processSteps;
           let last = last;
           let index = index
         "
-        class="process-step"
-        [ngClass]="step.status.toLowerCase()"
+              class="process-step"
+              [ngClass]="step.status.toLowerCase()"
       >
 
         <div
-          class="step-line"
-          *ngIf="!last"
+                class="step-line"
+                *ngIf="!last"
         ></div>
 
         <span class="step-number">
@@ -93,12 +94,56 @@
 
 
     <!-- =================================================
+         CONTINUE TO NEXT STAGE BUTTON
+    ================================================== -->
+
+    <div *ngIf="canContinueToNextStage" class="continue-section">
+
+      <div class="success-message">
+        ✅ {{ request.currentStage === 'Convocation' ? 'Convocation' : 'All Clearance Offices' }} approved!
+      </div>
+
+      <p class="continue-info">
+        You can now proceed to <strong>{{ getNextStageName() }}</strong>
+      </p>
+
+      <button
+              type="button"
+              class="continue-button"
+              (click)="continueToNextStage()"
+              [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">🚀 Continue to {{ getNextStageName() }}</span>
+        <span *ngIf="isLoading">Processing...</span>
+      </button>
+
+      <p class="continue-hint">
+        This will move your clearance to the next stage automatically.
+      </p>
+
+    </div>
+
+
+    <!-- =================================================
+         ERROR / SUCCESS MESSAGES
+    ================================================== -->
+
+    <div *ngIf="errorMessage" class="error-message">
+      ❌ {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="success-message">
+      ✅ {{ successMessage }}
+    </div>
+
+
+    <!-- =================================================
          STEP 1 — CONVOCATION
     ================================================== -->
 
     <section
-      *ngIf="request.currentStage === 'Convocation'"
-      class="waiting-card"
+            *ngIf="request.currentStage === 'Convocation' && !canContinueToNextStage"
+            class="waiting-card"
     >
 
       <h2>
@@ -111,8 +156,8 @@
       </p>
 
       <a
-        routerLink="/convocation"
-        class="approval-button"
+              routerLink="/convocation"
+              class="approval-button"
       >
         Continue to Convocation
       </a>
@@ -125,8 +170,8 @@
     ================================================== -->
 
     <section
-      *ngIf="request.currentStage === 'Parallel'"
-      class="waiting-card"
+            *ngIf="request.currentStage === 'Parallel'"
+            class="waiting-card"
     >
 
       <h2>
@@ -142,15 +187,17 @@
       <div class="approval-list">
 
         <div
-          class="approval-item"
-          *ngFor="let office of officeList"
+                class="approval-item"
+                *ngFor="let office of officeList"
         >
 
           <div>
 
-            <strong>
-              {{ office }}
-            </strong>
+            <a [routerLink]="getOfficeRoute(office)" class="office-link">
+              <strong>
+                {{ office }}
+              </strong>
+            </a>
 
             <small>
               {{ getOfficeDetail(office) }}
@@ -160,8 +207,8 @@
             <!-- REJECTION COMMENT -->
 
             <p
-              *ngIf="getOfficeStatus(office) === 'Rejected'"
-              class="rejection-comment"
+                    *ngIf="getOfficeStatus(office) === 'Rejected'"
+                    class="rejection-comment"
             >
 
               <strong>
@@ -176,7 +223,7 @@
             <!-- REVIEWED BY -->
 
             <small
-              *ngIf="getReviewedBy(office)"
+                    *ngIf="getReviewedBy(office)"
             >
 
               Reviewed by:
@@ -190,8 +237,8 @@
           <!-- STATUS -->
 
           <span
-            class="final-status"
-            [ngClass]="getOfficeStatus(office).toLowerCase()"
+                  class="final-status"
+                  [ngClass]="getOfficeStatus(office).toLowerCase()"
           >
             {{ getOfficeStatus(office) }}
           </span>
@@ -204,8 +251,8 @@
       <!-- ALL SEVEN APPROVED -->
 
       <div
-        *ngIf="allClearanceOfficesApproved"
-        class="step-action"
+              *ngIf="allClearanceOfficesApproved"
+              class="step-action"
       >
 
         <p>
@@ -223,8 +270,8 @@
       <!-- STILL WAITING -->
 
       <div
-        *ngIf="!allClearanceOfficesApproved"
-        class="step-action"
+              *ngIf="!allClearanceOfficesApproved"
+              class="step-action"
       >
 
         <p>
@@ -242,8 +289,8 @@
     ================================================== -->
 
     <section
-      *ngIf="request.currentStage === 'Department'"
-      class="waiting-card"
+            *ngIf="request.currentStage === 'Department' && !canContinueToNextStage"
+            class="waiting-card"
     >
 
       <h2>
@@ -255,6 +302,13 @@
         for approval from your department.
       </p>
 
+      <a
+              [routerLink]="getOfficeRoute('Department')"
+              class="approval-button"
+      >
+        View Department Status
+      </a>
+
     </section>
 
 
@@ -263,8 +317,8 @@
     ================================================== -->
 
     <section
-      *ngIf="request.currentStage === 'Principal'"
-      class="waiting-card"
+            *ngIf="request.currentStage === 'Principal' && !canContinueToNextStage"
+            class="waiting-card"
     >
 
       <h2>
@@ -276,6 +330,13 @@
         for Principal approval.
       </p>
 
+      <a
+              [routerLink]="getOfficeRoute('Principal')"
+              class="approval-button"
+      >
+        View Principal Status
+      </a>
+
     </section>
 
 
@@ -284,8 +345,8 @@
     ================================================== -->
 
     <section
-      *ngIf="request.currentStage === 'Finance'"
-      class="waiting-card"
+            *ngIf="request.currentStage === 'Finance' && !canContinueToNextStage"
+            class="waiting-card"
     >
 
       <h2>
@@ -297,6 +358,13 @@
         for final Finance approval.
       </p>
 
+      <a
+              [routerLink]="getOfficeRoute('Finance')"
+              class="approval-button"
+      >
+        View Finance Status
+      </a>
+
     </section>
 
 
@@ -305,8 +373,8 @@
     ================================================== -->
 
     <section
-      *ngIf="request.status === 'Completed'"
-      class="waiting-card completed-card"
+            *ngIf="request.status === 'Completed'"
+            class="waiting-card completed-card"
     >
 
       <h2>
@@ -319,8 +387,8 @@
       </p>
 
       <a
-        routerLink="/clearance/confirmation"
-        class="approval-button"
+              routerLink="/clearance/confirmation"
+              class="approval-button"
       >
         View Clearance Confirmation
       </a>
@@ -331,9 +399,9 @@
     <!-- NOTIFICATIONS -->
 
     <a
-      *ngIf="request.status !== 'Completed'"
-      routerLink="/notifications"
-      class="notification-link"
+            *ngIf="request.status !== 'Completed'"
+            routerLink="/notifications"
+            class="notification-link"
     >
       View Notifications
     </a>
@@ -343,7 +411,6 @@
 
   <!-- =====================================================
        NO REQUEST
-       KEEP THIS DESIGN
   ====================================================== -->
 
   <ng-template #noRequest>
@@ -366,8 +433,8 @@
         </p>
 
         <a
-          routerLink="/clearance/request"
-          class="request-button"
+                routerLink="/clearance/request"
+                class="request-button"
         >
           Complete Clearance Request
         </a>

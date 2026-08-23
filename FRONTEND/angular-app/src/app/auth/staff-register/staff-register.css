@@ -1,5 +1,14 @@
 :host { display:block; min-height:100vh; }
-.staff-page { min-height:100vh; padding-bottom:36px; background:linear-gradient(135deg,color-mix(in srgb,var(--udsm-blue) 14%,transparent),transparent 42%),var(--bg-light); }
+.staff-page {
+  min-height:100vh;
+  padding-bottom:36px;
+  background:
+    linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
 .page-header { display:flex; align-items:center; gap:14px; min-height:84px; padding:16px 48px; background:var(--udsm-blue); color:#fff; font-weight:800; box-shadow:0 8px 24px color-mix(in srgb,var(--udsm-blue-dark) 10%,transparent); }.page-header img{height:48px;width:auto;}
 .staff-card { width:min(100% - 40px,520px); margin:42px auto; padding:34px 38px; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-card); box-shadow:var(--shadow-soft); }
 .staff-icon { display:grid; place-items:center; width:70px; height:70px; margin:0 auto 18px; border:3px solid var(--udsm-blue); border-radius:50%; color:var(--udsm-blue); font-size:35px; }.staff-card h1{margin:0; color:var(--udsm-blue-dark); text-align:center; font-size:1.45rem;}.staff-card>p{margin:8px 0 24px; color:var(--text-muted); text-align:center;}.credentials{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:var(--text-muted);font-size:.85rem;}.credentials span{height:1px;flex:1;background:var(--border-soft);}

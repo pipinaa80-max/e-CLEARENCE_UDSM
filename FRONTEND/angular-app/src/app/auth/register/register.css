@@ -9,12 +9,12 @@
   place-items: center;
   padding: 32px 20px;
   background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--udsm-blue) 12%, transparent),
-      transparent 45%
-    ),
-    var(--bg-light);
+    linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  position: relative;
 }
 
 .register-card {

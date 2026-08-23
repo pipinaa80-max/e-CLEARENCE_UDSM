@@ -1,4 +1,4 @@
-<!-- convocation.html - Student only view -->
+<!-- convocation.html - Student only view with Continue button -->
 <div class="convocation-page">
 
   <!-- =====================================================
@@ -230,7 +230,7 @@
 
 
     <!-- ===============================================
-         NEXT
+         NEXT - Submit Receipt
     ================================================ -->
 
     <div
@@ -247,17 +247,20 @@
               [disabled]="!form.controls.file.value || isLoading"
               (click)="submit()"
       >
-        <span *ngIf="!isLoading">Next</span>
+        <span *ngIf="!isLoading">Submit Receipt</span>
         <span *ngIf="isLoading">Submitting...</span>
       </button>
 
     </div>
 
 
-    <!-- AFTER RECEIPT SUBMISSION -->
+
+    <!-- ===============================================
+         WAITING FOR APPROVAL
+    ================================================ -->
 
     <div
-            *ngIf="receiptSubmitted"
+            *ngIf="receiptSubmitted && !isConvocationApproved"
             class="waiting-message"
     >
 
@@ -277,6 +280,38 @@
       >
         View Clearance Status
       </a>
+
+    </div>
+
+
+
+    <!-- ===============================================
+         CONTINUE TO STEP 2 - After Approval
+    ================================================ -->
+
+    <div
+            *ngIf="canContinueToStep2"
+            class="continue-section"
+    >
+
+      <div class="success-message" style="margin-bottom: 16px;">
+        ✅ Convocation clearance approved! You can now proceed to Step 2.
+      </div>
+
+      <button
+              type="button"
+              class="continue-button"
+              (click)="continueToStep2()"
+              [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">🚀 Continue to Step 2</span>
+        <span *ngIf="isLoading">Processing...</span>
+      </button>
+
+      <p class="continue-hint">
+        You will be redirected to the clearance process page
+        where you can track all offices.
+      </p>
 
     </div>
 

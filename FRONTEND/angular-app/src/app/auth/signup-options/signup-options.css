@@ -1,4 +1,13 @@
 :host { display:block; min-height:100vh; }
-.signup-page { min-height:100vh; padding-bottom:36px; background:linear-gradient(135deg,color-mix(in srgb,var(--udsm-blue) 14%,transparent),transparent 42%),var(--bg-light); }
+.signup-page {
+  min-height:100vh;
+  padding-bottom:36px;
+  background:
+    linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
 .page-header { display:flex; align-items:center; gap:14px; min-height:84px; padding:16px 48px; background:var(--udsm-blue); color:#fff; font-weight:800; box-shadow:0 8px 24px color-mix(in srgb,var(--udsm-blue-dark) 10%,transparent); }.page-header img{height:48px;width:auto;}
 .choice-card { width:min(100% - 40px,500px); margin:62px auto; padding:38px; text-align:center; background:var(--surface); border:1px solid var(--border-soft); border-radius:var(--radius-card); box-shadow:var(--shadow-soft); }.account-icon{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 20px;border:3px solid var(--udsm-blue);border-radius:50%;color:var(--udsm-blue);font-size:40px;}.choice-card h1{margin:0;color:var(--udsm-blue-dark);font-size:1.5rem;}.choice-card p{margin:10px 0 30px;color:var(--text-muted);}.choices{display:flex;justify-content:center;align-items:center;gap:24px;}.choice{width:128px;color:var(--text-dark);font-size:1rem;font-weight:800;text-decoration:none;text-transform:uppercase;}.choice-icon{display:grid;place-items:center;width:82px;height:82px;margin:0 auto 10px;border:2px solid var(--border-soft);border-radius:50%;background:var(--surface-soft);font-size:36px;transition:transform .2s ease,box-shadow .2s ease;}.student .choice-icon{background:var(--udsm-blue);border-color:var(--udsm-blue);}.choice:hover .choice-icon{transform:translateY(-3px);box-shadow:0 10px 18px color-mix(in srgb,var(--udsm-blue-dark) 15%,transparent);}.or{color:var(--text-muted);font-weight:700;}.login-link{display:inline-block;margin-top:30px;color:var(--udsm-blue);font-weight:700;text-decoration:none;}.login-link:hover{text-decoration:underline;}@media(max-width:640px){.page-header{padding:16px 24px;}.choice-card{margin:32px auto;padding:30px 20px;}.choices{gap:10px;}.choice{width:100px;}}

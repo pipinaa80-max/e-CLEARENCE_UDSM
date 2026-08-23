@@ -234,3 +234,86 @@ Caused by: java.net.ConnectException: Connection refused
 2026-08-23 10:55:55 [restartedMain] DEBUG o.s.s.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
 2026-08-23 10:55:56 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api/v1'
 2026-08-23 10:55:56 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Started BackendApplication in 14.085 seconds (process running for 15.16)
+2026-08-23 13:34:55 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Starting BackendApplication using Java 21.0.12 with PID 94458 (/home/kali/e-CLEARENCE_UDSM/BACKEND/target/classes started by kali in /home/kali/e-CLEARENCE_UDSM)
+2026-08-23 13:34:55 [restartedMain] DEBUG com.UDSM.BACKEND.BackendApplication - Running with Spring Boot v4.1.0, Spring v7.0.8
+2026-08-23 13:34:55 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-08-23 13:34:55 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-23 13:34:55 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-23 13:34:57 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-23 13:34:57 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 74 ms. Found 8 JPA repository interfaces.
+2026-08-23 13:34:57 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-08-23 13:34:57 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-08-23 13:34:57 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-08-23 13:34:57 [restartedMain] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 1939 ms
+2026-08-23 13:34:58 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-08-23 13:34:58 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@3f5da4c9
+2026-08-23 13:34:58 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-08-23 13:34:58 [restartedMain] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/clearance_db (PostgreSQL 18.4)
+2026-08-23 13:34:58 [restartedMain] INFO  o.f.core.internal.command.DbValidate - Successfully validated 1 migration (execution time 00:00.027s)
+2026-08-23 13:34:58 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 1
+2026-08-23 13:34:58 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-08-23 13:34:59 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-23 13:34:59 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-08-23 13:35:01 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-23 13:35:01 [restartedMain] INFO  o.s.d.j.r.q.QueryEnhancerFactories - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-08-23 13:35:01 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Creating JwtAuthenticationFilter
+2026-08-23 13:35:01 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Disabled JwtAuthenticationFilter registration as normal servlet filter
+2026-08-23 13:35:01 [restartedMain] INFO  o.s.b.web.servlet.RegistrationBean - Filter jwtAuthenticationFilterRegistration was not registered (disabled)
+2026-08-23 13:35:01 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-08-23 13:35:02 [restartedMain] WARN  o.s.b.j.a.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-08-23 13:35:02 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Configuring SecurityFilterChain
+2026-08-23 13:35:02 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ SecurityFilterChain configured successfully
+2026-08-23 13:35:02 [restartedMain] DEBUG o.s.s.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-08-23 13:35:03 [restartedMain] WARN  o.s.b.w.s.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-08-23 13:35:03 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-08-23 13:35:03 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-08-23 13:35:03 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-08-23 13:35:03 [restartedMain] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-08-23 13:35:03 [restartedMain] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+2026-08-23 13:37:13 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Starting BackendApplication using Java 21.0.12 with PID 95715 (/home/kali/e-CLEARENCE_UDSM/BACKEND/target/classes started by kali in /home/kali/e-CLEARENCE_UDSM)
+2026-08-23 13:37:13 [restartedMain] DEBUG com.UDSM.BACKEND.BackendApplication - Running with Spring Boot v4.1.0, Spring v7.0.8
+2026-08-23 13:37:13 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-08-23 13:37:13 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-23 13:37:13 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-23 13:37:14 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-23 13:37:14 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 63 ms. Found 8 JPA repository interfaces.
+2026-08-23 13:37:14 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-08-23 13:37:14 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-08-23 13:37:14 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-08-23 13:37:14 [restartedMain] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 1632 ms
+2026-08-23 13:37:15 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-08-23 13:37:15 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4dad8587
+2026-08-23 13:37:15 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-08-23 13:37:15 [restartedMain] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/clearance_db (PostgreSQL 18.4)
+2026-08-23 13:37:15 [restartedMain] INFO  o.f.core.internal.command.DbValidate - Successfully validated 1 migration (execution time 00:00.019s)
+2026-08-23 13:37:15 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 1
+2026-08-23 13:37:15 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-08-23 13:37:16 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-23 13:37:16 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-08-23 13:37:17 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-23 13:37:17 [restartedMain] INFO  o.s.d.j.r.q.QueryEnhancerFactories - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-08-23 13:37:17 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Creating JwtAuthenticationFilter
+2026-08-23 13:37:17 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Disabled JwtAuthenticationFilter registration as normal servlet filter
+2026-08-23 13:37:17 [restartedMain] INFO  o.s.b.web.servlet.RegistrationBean - Filter jwtAuthenticationFilterRegistration was not registered (disabled)
+2026-08-23 13:37:17 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-08-23 13:37:19 [restartedMain] WARN  o.s.b.j.a.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-08-23 13:37:19 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Configuring SecurityFilterChain
+2026-08-23 13:37:19 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ SecurityFilterChain configured successfully
+2026-08-23 13:37:19 [restartedMain] DEBUG o.s.s.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-08-23 13:37:19 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api/v1'
+2026-08-23 13:37:19 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Started BackendApplication in 7.405 seconds (process running for 8.31)

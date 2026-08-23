@@ -209,11 +209,6 @@ export class ConvocationDashboardComponent implements OnInit {
       return;
     }
 
-    if (request.convocation?.receiptSubmittedAt) {
-      this.message = 'Receipt has already been submitted.';
-      return;
-    }
-
     const confirmMark = confirm(
         `Confirm receipt submission for ${this.getStudentName(request)}?\n\nMake sure the student has uploaded their payment receipt.`
     );
@@ -246,6 +241,53 @@ export class ConvocationDashboardComponent implements OnInit {
     } catch (error: any) {
       console.error('Mark receipt error:', error);
       this.errorMessage = '❌ Failed to mark receipt. Please try again.';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  approveRequest(request: ClearanceRequest): void {
+    this.errorMessage = '';
+    this.message = '';
+
+    if (!request.convocation?.receiptSubmittedAt) {
+      this.errorMessage = 'Student must submit a receipt first.';
+      return;
+    }
+
+    const confirmApprove = confirm(
+        `Final Approval: Are you sure you want to approve Convocation clearance for ${this.getStudentName(request)}?`
+    );
+
+    if (!confirmApprove) return;
+
+    this.isLoading = true;
+
+    try {
+      this.clearanceService.approveRequest(
+          request.id,
+          'Convocation',
+          this.currentUser?.fullName || 'Convocation Officer'
+      );
+
+      this.loadData();
+
+      this.notificationService.createNotification(
+          request.studentId,
+          'Convocation Approved',
+          'Congratulations! Convocation has approved your clearance. You can now proceed to Step 2.',
+          'success'
+      );
+
+      this.message = `✅ Convocation clearance approved for ${this.getStudentName(request)}.`;
+
+      setTimeout(() => {
+        this.message = '';
+      }, 5000);
+
+    } catch (error: any) {
+      console.error('Approve error:', error);
+      this.errorMessage = '❌ Failed to approve request. Please try again.';
     } finally {
       this.isLoading = false;
     }

@@ -1563,3 +1563,14 @@
 .request-button:hover {
   opacity: 0.9;
 }
+
+.office-link {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s ease;
+}
+
+.office-link:hover {
+  color: var(--udsm-blue);
+  text-decoration: underline;
+}
