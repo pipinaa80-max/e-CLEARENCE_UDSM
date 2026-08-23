@@ -1,0 +1,186 @@
+<!-- department-officer.html - Fixed -->
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <img src="public/udsm-logo.png" alt="UDSM Logo" />
+            <div>
+                <strong>UDSM</strong>
+                <small>{{ departmentName }}</small>
+            </div>
+        </div>
+
+        <nav>
+            <a routerLink="/department/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+                 Dashboard
+            </a>
+            <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+                 Clearance Status
+            </a>
+        </nav>
+
+        <button type="button" class="logout-link" (click)="logout()">
+            Log out
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-panel">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button type="button" class="sidebar-toggle" aria-label="Open navigation" [attr.aria-expanded]="sidebarOpen" (click)="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+            <div class="topbar-title">
+                <span class="eyebrow">{{ departmentName }}</span>
+                <h1>Clearance Dashboard</h1>
+                <p>Review and manage student clearance requests</p>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="staff-avatar">
+                    <span>{{ currentUser?.fullName?.charAt(0) || 'D' }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Statistics -->
+        <section class="stats-grid">
+            <article class="stat-card pending">
+                <span>Pending Requests</span>
+                <strong>{{ totalPending }}</strong>
+                <small>Awaiting department approval</small>
+            </article>
+
+            <article class="stat-card approved">
+                <span>Approved</span>
+                <strong>{{ totalApproved }}</strong>
+                <small>Cleared by department</small>
+            </article>
+
+            <article class="stat-card rejected">
+                <span>Rejected</span>
+                <strong>{{ totalRejected }}</strong>
+                <small>Returned with reason</small>
+            </article>
+        </section>
+
+        <!-- Message -->
+        <div *ngIf="message" class="message success">{{ message }}</div>
+        <div *ngIf="errorMessage" class="message error">{{ errorMessage }}</div>
+
+        <!-- Filters -->
+        <section class="filters-section">
+            <div class="filter-group">
+                <label>Status</label>
+                <select [(ngModel)]="filterStatus" (change)="applyFilters()">
+                    <option value="all">All Requests</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Search</label>
+                <input
+                        type="text"
+                        [(ngModel)]="searchTerm"
+                        (input)="applyFilters()"
+                        placeholder="Search by name, reg number, programme..."
+                />
+            </div>
+
+            <span class="result-count">{{ filteredRequests.length }} requests found</span>
+        </section>
+
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading requests...</p>
+        </div>
+
+        <!-- Request List -->
+        <section class="request-list" *ngIf="!isLoading">
+            <div *ngIf="filteredRequests.length === 0" class="empty-state">
+                <h3>No requests found</h3>
+                <p>There are no clearance requests matching your filters.</p>
+            </div>
+
+            <div class="request-card" *ngFor="let request of filteredRequests">
+                <!-- Student Info -->
+                <div class="student-header">
+                    <div class="student-avatar">
+                        <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" (error)="getStudentPhoto(request)" />
+                        <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
+                    </div>
+
+                    <div class="student-info">
+                        <h3>{{ getStudentName(request) }}</h3>
+                        <div class="student-meta">
+                            <span class="reg-number">📋 {{ getStudentRegNumber(request) }}</span>
+                            <span class="programme">🎓 {{ request.programme }}</span>
+                        </div>
+                        <p class="academic-info">{{ request.department }} · {{ request.college }}</p>
+                        <small class="submitted-date">Requested: {{ request.requestDate | date:'mediumDate' }}</small>
+                    </div>
+
+                    <div class="request-status">
+                        <!-- FIXED: Changed 'Approved' to 'Completed' -->
+                        <span class="status-badge"
+                              [class.pending]="request.currentStage === 'Department' && request.status === 'Pending'"
+                              [class.approved]="request.status === 'Completed'"
+                              [class.rejected]="request.status === 'Rejected'">
+              {{ request.status === 'Pending' && request.currentStage === 'Department' ? 'Awaiting Review' : request.status }}
+            </span>
+                    </div>
+                </div>
+
+                <!-- Documents Summary -->
+                <div class="documents-summary">
+                    <div class="doc-status">
+                        <span class="doc-label">📄 Documents</span>
+                        <span class="doc-count">
+              {{ getDocumentStatus(request).uploaded }}/{{ getDocumentStatus(request).total }} uploaded
+              <span *ngIf="getDocumentStatus(request).verified > 0" class="verified-text">
+                · {{ getDocumentStatus(request).verified }} verified
+              </span>
+            </span>
+                    </div>
+                </div>
+
+                <!-- Approval Status -->
+                <div class="approval-status">
+                    <div class="status-item" *ngFor="let office of ['Convocation', 'Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Department']">
+                        <span class="office-name">{{ office }}</span>
+                        <span class="office-status" [class.approved]="getOfficeStatus(request, office) === 'Approved'" [class.rejected]="getOfficeStatus(request, office) === 'Rejected'" [class.pending]="getOfficeStatus(request, office) === 'Pending'">
+              {{ getOfficeStatus(request, office) }}
+            </span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-buttons">
+                    <button
+                            type="button"
+                            class="review-btn"
+                            (click)="reviewRequest(request.id)"
+                            [disabled]="isLoading"
+                    >
+                        👁️ Review Request
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+</section>

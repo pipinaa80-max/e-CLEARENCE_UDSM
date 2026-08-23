@@ -1,4 +1,4 @@
-// clearance-status.component.ts - Fixed continueToNextStage
+// clearance-status.component.ts - Fixed for parallel offices
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -113,17 +113,6 @@ export class ClearanceStatusComponent {
   }
 
   // =====================================================
-  // ALL SEVEN APPROVED
-  // =====================================================
-
-  get allClearanceOfficesApproved(): boolean {
-    const request = this.request;
-    if (!request) return false;
-
-    return this.officeList.every(office => this.getOfficeStatus(office) === 'Approved');
-  }
-
-  // =====================================================
   // CHECK IF CONVOCATION IS APPROVED
   // =====================================================
 
@@ -139,7 +128,25 @@ export class ClearanceStatusComponent {
   }
 
   // =====================================================
-  // CHECK IF CAN CONTINUE TO NEXT STAGE
+  // ALL SEVEN APPROVED - FIXED
+  // =====================================================
+
+  get allClearanceOfficesApproved(): boolean {
+    const request = this.request;
+    if (!request) return false;
+
+    // Check if ALL seven offices are approved
+    const allApproved = this.officeList.every(office => {
+      const status = this.getOfficeStatus(office);
+      return status === 'Approved';
+    });
+
+    console.log('All clearance offices approved:', allApproved);
+    return allApproved;
+  }
+
+  // =====================================================
+  // CHECK IF CAN CONTINUE TO NEXT STAGE - FIXED
   // =====================================================
 
   get canContinueToNextStage(): boolean {
@@ -148,15 +155,18 @@ export class ClearanceStatusComponent {
 
     // For Convocation stage - check if approved
     if (request.currentStage === 'Convocation') {
-      return this.isConvocationApproved;
+      const canContinue = this.isConvocationApproved;
+      console.log('Can continue from Convocation:', canContinue);
+      return canContinue;
     }
 
     // For Parallel stage - check if all offices approved
     if (request.currentStage === 'Parallel') {
-      return this.allClearanceOfficesApproved;
+      const canContinue = this.allClearanceOfficesApproved;
+      console.log('Can continue from Parallel:', canContinue);
+      return canContinue;
     }
 
-    // For other stages, can't manually continue
     return false;
   }
 
@@ -213,6 +223,12 @@ export class ClearanceStatusComponent {
         nextStage = 'Parallel';
         nextOffice = undefined;
       } else if (request.currentStage === 'Parallel') {
+        // Check if all offices are approved before proceeding
+        if (!this.allClearanceOfficesApproved) {
+          this.errorMessage = 'All clearance offices must approve first.';
+          this.isLoading = false;
+          return;
+        }
         nextStage = 'Department';
         nextOffice = 'Department';
       } else {

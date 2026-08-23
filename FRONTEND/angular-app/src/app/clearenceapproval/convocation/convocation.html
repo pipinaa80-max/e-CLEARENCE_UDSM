@@ -43,7 +43,7 @@
        STUDENT VIEW ONLY
   ====================================================== -->
 
-  <section class="card">
+  <section class="card" *ngIf="studentRequest; else noRequest">
 
     <div class="section-heading">
 
@@ -316,5 +316,20 @@
     </div>
 
   </section>
+
+  <!-- =====================================================
+       NO REQUEST FALLBACK
+  ====================================================== -->
+
+  <ng-template #noRequest>
+    <div class="no-request-card" style="text-align: center; padding: 48px; background: white; border-radius: 12px; box-shadow: var(--shadow-soft); margin-top: 24px;">
+      <div class="warning-icon" style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+      <h2>Clearance Request Required</h2>
+      <p style="color: #666; margin-bottom: 24px;">You must complete your initial clearance request form before you can proceed with Convocation payment.</p>
+      <a routerLink="/clearance/request" class="primary-button" style="text-decoration: none; padding: 12px 24px; background: var(--udsm-blue); color: white; border-radius: 8px; font-weight: bold;">
+        Complete Clearance Request
+      </a>
+    </div>
+  </ng-template>
 
 </div>

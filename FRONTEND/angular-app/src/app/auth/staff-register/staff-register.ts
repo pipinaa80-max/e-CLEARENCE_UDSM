@@ -176,7 +176,7 @@ export class StaffRegister {
       Library: '/dashboard/library',
       'Dean of Students': '/dean_of_students',
       'Smart Card': '/smart_card',
-      Department: '/dashboard/department',
+      Department: '/department/dashboard',
       Finance: '/dashboard/finance',
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',

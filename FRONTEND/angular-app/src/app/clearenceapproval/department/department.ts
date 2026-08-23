@@ -9,13 +9,13 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 
 @Component({
-  selector: 'app-department-dashboard',
+  selector: 'app-department-status',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './department.html',
   styleUrl: './department.css'
 })
-export class DepartmentDashboard {
+export class DepartmentStatusComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);

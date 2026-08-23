@@ -90,7 +90,7 @@ export class ConvocationComponent implements OnInit {
   get studentRequest(): ClearanceRequest | null {
     const user = this.currentUser;
 
-    if (!user) {
+    if (!user || user.role !== 'Student') {
       return null;
     }
 
@@ -98,15 +98,19 @@ export class ConvocationComponent implements OnInit {
     const requests = this.clearanceService.getStudentRequests(user.id);
 
     // Get the latest request
-    const request = requests.length > 0 ? requests[requests.length - 1] : null;
+    if (requests.length === 0) {
+      console.log('No clearance request found for student');
+      return null;
+    }
+
+    const request = requests[requests.length - 1];
 
     console.log('Student request loaded:', {
-      id: request?.id,
-      currentStage: request?.currentStage,
-      status: request?.status,
-      hasConvocation: !!request?.convocation,
-      controlNumber: request?.convocation?.controlNumber,
-      controlNumberRequestedAt: request?.convocation?.controlNumberRequestedAt
+      id: request.id,
+      currentStage: request.currentStage,
+      status: request.status,
+      controlNumber: request.convocation?.controlNumber,
+      requestedAt: request.convocation?.controlNumberRequestedAt
     });
 
     return request;
