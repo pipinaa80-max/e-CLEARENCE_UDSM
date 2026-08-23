@@ -58,4 +58,8 @@ export const routes: Routes = [
   { path: 'dean_of_students', component: DeanOfStudentsComponent },
   { path: 'smart_card', component: SmartCardComponent },
   { path: 'principal', component: PrincipalComponent },
+  {path: 'convocation/dashboard',
+    loadComponent: () => import('./dashboard/convocation-dashboard/convocation-dashboard.component').then(m => m.ConvocationDashboardComponent),
+
+  }
 ];

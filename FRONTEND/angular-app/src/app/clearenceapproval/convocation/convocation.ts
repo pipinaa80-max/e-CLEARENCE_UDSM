@@ -1,4 +1,4 @@
-// convocation.component.ts
+// convocation.component.ts - Student only, removed staff methods
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -49,11 +49,7 @@ export class ConvocationComponent implements OnInit {
   selectedFileName = '';
   errorMessage = '';
   message = '';
-  comment = '';
   isLoading = false;
-
-  // Cached requests for officer view
-  private cachedRequests: ClearanceRequest[] = [];
 
   // =====================================================
   // CURRENT USER
@@ -64,11 +60,27 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // OFFICER CHECK
+  // OFFICER CHECK - Redirect staff to dashboard
   // =====================================================
 
   get isOfficer(): boolean {
     return this.currentUser?.role === 'Convocation';
+  }
+
+  // =====================================================
+  // INIT - Redirect Convocation staff to dashboard
+  // =====================================================
+
+  ngOnInit(): void {
+    // If user is Convocation staff, redirect to the dashboard
+    if (this.isOfficer) {
+      console.log('Convocation staff detected - redirecting to dashboard');
+      this.router.navigate(['/convocation/dashboard']);
+      return;
+    }
+
+    // For students, load the student view
+    this.loadData();
   }
 
   // =====================================================
@@ -91,55 +103,43 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // CONVOCATION REQUESTS - RELOADED ON EACH ACCESS
+  // LOAD DATA - Student only
   // =====================================================
-
-  get requests(): ClearanceRequest[] {
-    // Force reload from storage
-    this.cachedRequests = this.clearanceService.getRequestsForOffice('Convocation');
-    console.log('Convocation requests loaded:', this.cachedRequests.length);
-    return this.cachedRequests;
-  }
-
-  // =====================================================
-  // INIT - LOAD DATA
-  // =====================================================
-
-  ngOnInit(): void {
-    this.loadData();
-  }
 
   loadData(): void {
+    // If staff, redirect
+    if (this.isOfficer) {
+      this.router.navigate(['/convocation/dashboard']);
+      return;
+    }
+
     this.isLoading = true;
 
-    // Clear caches
-    this.cachedRequests = [];
-
-    // Force data reload
-    if (this.isOfficer) {
-      this.cachedRequests = this.clearanceService.getRequestsForOffice('Convocation');
-    } else {
-      // For students, just trigger a reload
-      const user = this.currentUser;
-      if (user) {
-        this.clearanceService.getStudentRequests(user.id);
-      }
+    // For students, just trigger a reload
+    const user = this.currentUser;
+    if (user) {
+      this.clearanceService.getStudentRequests(user.id);
     }
 
     this.isLoading = false;
-    console.log('Data reloaded successfully');
+    console.log('Student data reloaded successfully');
   }
 
   // =====================================================
-  // REFRESH DATA - Called from template
+  // REFRESH DATA - Student only
   // =====================================================
 
   refreshData(): void {
-    console.log('Refreshing data...');
+    // If staff, redirect
+    if (this.isOfficer) {
+      this.router.navigate(['/convocation/dashboard']);
+      return;
+    }
+
+    console.log('Refreshing student data...');
     this.loadData();
     this.message = 'Data refreshed successfully.';
 
-    // Clear message after 3 seconds
     setTimeout(() => {
       this.message = '';
     }, 3000);
@@ -240,7 +240,7 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // SUBMIT RECEIPT
+  // SUBMIT RECEIPT - Student only
   // =====================================================
 
   submit(): void {
@@ -325,132 +325,6 @@ export class ConvocationComponent implements OnInit {
             this.isLoading = false;
           }
         });
-  }
-
-  // =====================================================
-  // STAFF — ISSUE CONTROL NUMBER
-  // =====================================================
-
-  issueControlNumber(request: ClearanceRequest): void {
-    this.errorMessage = '';
-    this.message = '';
-
-    if (request.convocation?.controlNumber) {
-      this.message = 'This request already has a control number.';
-      return;
-    }
-
-    const controlNumber = window.prompt(
-        'Enter the control number for this student:'
-    );
-
-    if (!controlNumber?.trim()) {
-      this.errorMessage = 'Please enter a control number.';
-      return;
-    }
-
-    this.clearanceService.issueControlNumber(
-        request.id,
-        controlNumber.trim()
-    );
-
-    // Reload data after action
-    this.loadData();
-
-    this.notificationService.createNotification(
-        request.studentId,
-        'Control number issued',
-        `Convocation has issued your control number: ${controlNumber.trim()}`,
-        'success'
-    );
-
-    this.message = 'Control number issued successfully.';
-  }
-
-  // =====================================================
-  // STAFF — APPROVE
-  // =====================================================
-
-  approve(request: ClearanceRequest): void {
-    this.errorMessage = '';
-    this.message = '';
-    this.isLoading = true;
-
-    const staff = this.currentUser;
-
-    if (!staff) {
-      this.isLoading = false;
-      return;
-    }
-
-    if (!request.convocation?.receiptSubmittedAt) {
-      this.errorMessage = 'The student must submit a payment receipt before approval.';
-      this.isLoading = false;
-      return;
-    }
-
-    this.clearanceService.approveRequest(
-        request.id,
-        'Convocation',
-        staff.fullName
-    );
-
-    // Reload data after action
-    this.loadData();
-
-    this.notificationService.createNotification(
-        request.studentId,
-        'Convocation clearance approved',
-        'Your payment receipt has been verified. You can now continue to the clearance offices.',
-        'success'
-    );
-
-    this.message = 'Request approved successfully.';
-    this.isLoading = false;
-  }
-
-  // =====================================================
-  // STAFF — REJECT
-  // =====================================================
-
-  reject(request: ClearanceRequest): void {
-    this.errorMessage = '';
-    this.message = '';
-    this.isLoading = true;
-
-    const staff = this.currentUser;
-
-    if (!staff) {
-      this.isLoading = false;
-      return;
-    }
-
-    if (!this.comment.trim()) {
-      this.errorMessage = 'Please enter a comment before rejecting the request.';
-      this.isLoading = false;
-      return;
-    }
-
-    this.clearanceService.rejectRequest(
-        request.id,
-        'Convocation',
-        staff.fullName,
-        this.comment.trim()
-    );
-
-    // Reload data after action
-    this.loadData();
-
-    this.notificationService.createNotification(
-        request.studentId,
-        'Convocation clearance rejected',
-        this.comment.trim(),
-        'warning'
-    );
-
-    this.comment = '';
-    this.message = 'Request rejected and the student has been notified.';
-    this.isLoading = false;
   }
 
   // =====================================================

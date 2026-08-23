@@ -163,10 +163,12 @@ export class StaffRegister {
     this.form.controls.department.updateValueAndValidity({ emitEvent: false });
   }
 
+  // In staff-register.component.ts - Update the redirectPathFor method
+
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
-      Convocation: '/convocation',
+      Convocation: '/convocation/dashboard',  // Redirects to the dashboard
       'Games Coach': '/games_coach',
       'Hall Warden': '/hall_warden',
       USAB: '/usab',

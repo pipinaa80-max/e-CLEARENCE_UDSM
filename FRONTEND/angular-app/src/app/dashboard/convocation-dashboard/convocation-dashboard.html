@@ -1,0 +1,182 @@
+<!-- convocation-dashboard.html -->
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>UDSM</strong>
+        <small>Convocation Office</small>
+      </div>
+    </div>
+
+    <nav>
+      <a routerLink="/convocation/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+        📋 Dashboard
+      </a>
+      <a routerLink="/convocation/requests" routerLinkActive="active" (click)="closeSidebar()">
+        📝 All Requests
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        🔍 Clearance Status
+      </a>
+    </nav>
+
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <main class="content-panel">
+
+    <header class="topbar">
+      <button type="button" class="sidebar-toggle" aria-label="Open navigation" [attr.aria-expanded]="sidebarOpen" (click)="toggleSidebar()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <div class="topbar-title">
+        <span class="eyebrow">Convocation Office</span>
+        <h1>Control Number Dashboard</h1>
+        <p>Manage student control number requests and payment receipts</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="refresh-btn" (click)="refreshData()" [disabled]="isLoading">
+          🔄 Refresh
+        </button>
+        <div class="staff-avatar">
+          <span>{{ currentUser?.fullName?.charAt(0) || 'C' }}</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <article class="stat-card pending">
+        <span>Pending Requests</span>
+        <strong>{{ totalPending }}</strong>
+        <small>Students waiting for control number</small>
+      </article>
+
+      <article class="stat-card issued">
+        <span>Control Numbers Issued</span>
+        <strong>{{ totalIssued }}</strong>
+        <small>Awaiting receipt submission</small>
+      </article>
+
+      <article class="stat-card completed">
+        <span>Receipts Received</span>
+        <strong>{{ totalCompleted }}</strong>
+        <small>Awaiting final approval</small>
+      </article>
+    </section>
+
+    <div *ngIf="message" class="message success">
+      {{ message }}
+    </div>
+
+    <div *ngIf="errorMessage" class="message error">
+      {{ errorMessage }}
+    </div>
+
+    <section class="request-section">
+      <div class="section-header">
+        <h2>Pending Control Number Requests</h2>
+        <span class="request-count">{{ requests.length }} requests</span>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading requests...</p>
+      </div>
+
+      <div *ngIf="!isLoading && requests.length === 0" class="empty-state">
+        <div class="empty-icon">✓</div>
+        <h3>No pending requests</h3>
+        <p>All students have been issued control numbers or there are no new requests.</p>
+      </div>
+
+      <div *ngIf="!isLoading && requests.length > 0" class="request-list">
+        <div class="request-card" *ngFor="let request of requests">
+
+          <div class="student-header">
+            <div class="student-avatar">
+              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" (error)="getStudentPhoto(request)" />
+              <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
+            </div>
+
+            <div class="student-info">
+              <h3>{{ getStudentName(request) }}</h3>
+              <div class="student-meta">
+                <span class="reg-number">📋 {{ getStudentRegNumber(request) }}</span>
+                <span class="programme">🎓 {{ request.programme }}</span>
+              </div>
+              <p class="academic-info">{{ request.department }} · {{ request.college }}</p>
+              <small class="submitted-date">Requested: {{ request.requestDate | date:'mediumDate' }}</small>
+            </div>
+
+            <div class="request-status">
+              <span class="status-badge" [class.control-requested]="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber" [class.control-issued]="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" [class.receipt-received]="request.convocation?.receiptSubmittedAt">
+                <span *ngIf="!request.convocation?.controlNumberRequestedAt">⏳ Awaiting Request</span>
+                <span *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber">📨 Control Number Requested</span>
+                <span *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt">🔢 Control Number Issued</span>
+                <span *ngIf="request.convocation?.receiptSubmittedAt">📄 Receipt Received</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="control-section">
+            <div *ngIf="!request.convocation?.controlNumber" class="control-number-box">
+              <div *ngIf="!request.convocation?.controlNumberRequestedAt">
+                <p class="info-text">Student has not requested a control number yet.</p>
+              </div>
+              <div *ngIf="request.convocation?.controlNumberRequestedAt" class="requested-info">
+                <span class="requested-icon">📨</span>
+                <div>
+                  <strong>Control Number Requested</strong>
+                  <small>Student is waiting for control number issuance</small>
+                </div>
+              </div>
+              <button type="button" class="issue-btn" (click)="issueControlNumber(request)" [disabled]="isLoading || !request.convocation?.controlNumberRequestedAt">
+                <span *ngIf="!isLoading">🔑 Issue Control Number</span>
+                <span *ngIf="isLoading">Processing...</span>
+              </button>
+            </div>
+
+            <div *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" class="issued-control">
+              <span class="control-label">Control Number Issued</span>
+              <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
+              <small>Waiting for payment receipt</small>
+              <button type="button" class="receipt-btn" (click)="markReceiptReceived(request)" [disabled]="isLoading">
+                📄 Mark Receipt Received
+              </button>
+            </div>
+
+            <div *ngIf="request.convocation?.receiptSubmittedAt" class="receipt-received">
+              <span class="success-icon">✅</span>
+              <div>
+                <strong>Receipt Received</strong>
+                <small>Awaiting final Convocation approval</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button type="button" class="approve-btn" (click)="markReceiptReceived(request)" [disabled]="!request.convocation?.controlNumber || request.convocation?.receiptSubmittedAt || isLoading">
+              ✅ Approve Receipt
+            </button>
+            <button type="button" class="view-btn" routerLink="/clearance/status">
+              👁️ View Clearance
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</section>
