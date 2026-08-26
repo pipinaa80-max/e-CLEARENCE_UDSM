@@ -11,7 +11,9 @@ export type ClearanceOffice =
     | 'Smart Card'
     | 'Department'
     | 'Principal'
-    | 'Finance';
+    | 'Finance'
+    | 'Workshop'
+    | 'Laboratory';
 
 export type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 

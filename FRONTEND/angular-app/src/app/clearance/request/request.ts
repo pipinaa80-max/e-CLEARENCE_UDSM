@@ -430,12 +430,36 @@ export class ClearanceRequestComponent implements OnInit {
     const reader = new FileReader();
 
     reader.onload = () => {
-      const dataUrl = reader.result as string;
-      // No width/height restriction - any size accepted
-      this.photoPreview = dataUrl;
-      this.requestForm.patchValue({
-        photo: dataUrl
-      });
+      const image = new Image();
+
+      image.onload = () => {
+        const maxDimension = 600;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          this.errorMessage = 'Failed to process image file.';
+          input.value = '';
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressedPhoto = canvas.toDataURL('image/jpeg', 0.75);
+        this.photoPreview = compressedPhoto;
+        this.requestForm.patchValue({
+          photo: compressedPhoto
+        });
+      };
+
+      image.onerror = () => {
+        this.errorMessage = 'Failed to process image file.';
+        input.value = '';
+      };
+
+      image.src = reader.result as string;
     };
 
     reader.onerror = () => {
@@ -487,20 +511,20 @@ export class ClearanceRequestComponent implements OnInit {
       return;
     }
 
-    // Update student account
-    user.college = value.college;
-    user.department = value.department;
-    user.programme = value.programme;
-    user.hall = value.hall;
-    user.roomNumber = value.roomNumber;
-    user.sponsor = value.sponsor;
-    user.photo = value.photo;
-    user.fullName = value.studentName;
-    user.registrationNumber = value.registrationNumber;
-
-    this.authService.updateCurrentUser(user);
-
     try {
+      // Update student account
+      user.college = value.college;
+      user.department = value.department;
+      user.programme = value.programme;
+      user.hall = value.hall;
+      user.roomNumber = value.roomNumber;
+      user.sponsor = value.sponsor;
+      user.photo = value.photo;
+      user.fullName = value.studentName;
+      user.registrationNumber = value.registrationNumber;
+
+      this.authService.updateCurrentUser(user);
+
       // Use the existing service method with individual parameters
       this.clearanceService.createRequest(
           user.id,           // studentId

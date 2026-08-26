@@ -27,20 +27,23 @@ export class Login {
   isLoading = false;
 
   readonly roles: UserRole[] = [
-    'Student',
+    'Academic Staff',
+    'Administrator',
     'Convocation',
-    'Games Coach',
-    'Hall Warden',
-    'USAB',
     'DARUSO',
-    'Library',
     'Dean of Students',
-    'Smart Card',
     'Department',
     'Finance',
+    'Games Coach',
+    'Hall Warden',
     'ICT',
-    'Academic Staff',
-    'Administrator'
+    'Laboratory',
+    'Library',
+    'Principal',
+    'Smart Card',
+    'Student',
+    'USAB',
+    'Workshop'
   ];
 
   submit(): void {
@@ -93,7 +96,9 @@ export class Login {
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Administrator: '/dashboard/admin',
-      Principal: '/principal'
+      Principal: '/dashboard/principal',
+      Workshop: '/dashboard/workshop',
+      Laboratory: '/dashboard/laboratory'
     };
     return map[role] ?? '/dashboard';
   }

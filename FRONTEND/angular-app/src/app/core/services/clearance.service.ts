@@ -27,7 +27,9 @@ export class ClearanceService {
     'DARUSO',
     'Library',
     'Dean of Students',
-    'Smart Card'
+    'Smart Card',
+    'Workshop',
+    'Laboratory'
   ];
 
   // =====================================================

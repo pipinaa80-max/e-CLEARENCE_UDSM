@@ -73,7 +73,9 @@ export class ClearanceStatusComponent {
     'DARUSO',
     'Library',
     'Dean of Students',
-    'Smart Card'
+    'Smart Card',
+    'Workshop',
+    'Laboratory'
   ];
 
   // =====================================================
@@ -416,7 +418,7 @@ export class ClearanceStatusComponent {
       number: 2,
       label: 'Clearance Offices',
       office: 'Clearance Offices',
-      detail: 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students and Smart Card.',
+      detail: 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students, Smart Card, Workshop and Laboratory.',
       status: officesStatus
     });
 
@@ -511,6 +513,8 @@ export class ClearanceStatusComponent {
       'Library': '/dashboard/library',
       'Dean of Students': '/dean_of_students',
       'Smart Card': '/smart_card',
+      'Workshop': '/dashboard/workshop',
+      'Laboratory': '/dashboard/laboratory',
       'Department': '/department/dashboard',
       'Principal': '/principal',
       'Finance': '/dashboard/finance'

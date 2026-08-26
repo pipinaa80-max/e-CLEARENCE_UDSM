@@ -28,6 +28,8 @@ import { DarusoComponent } from './dashboard/daruso/daruso';
 import { DeanOfStudentsComponent } from './dashboard/dean_of_students/dean_of_students';
 import { SmartCardComponent } from './dashboard/smart_card/smart_card';
 import { PrincipalComponent } from './dashboard/principal/principal';
+import { WorkshopComponent } from './dashboard/workshop/workshop';
+import { LaboratoryComponent } from './dashboard/laboratory/laboratory';
 import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import {DepartmentOfficerComponent} from "./dashboard/Department-officer/department-officer.component";
@@ -46,6 +48,7 @@ export const routes: Routes = [
   // Office Dashboards
   { path: 'dashboard/library', component: LibraryDashboard },
   { path: 'dashboard/finance', component: FinanceDashboard },
+  { path: 'dashboard/principal', component: PrincipalComponent },
   { path: 'dashboard/ict', component: IctDashboard },
   { path: 'dashboard/academic', component: AcademicDashboard },
   { path: 'dashboard/admin', component: AdminDashboard },
@@ -55,6 +58,8 @@ export const routes: Routes = [
   { path: 'dashboard/daruso', component: DarusoComponent },
   { path: 'dashboard/dean-of-students', component: DeanOfStudentsComponent },
   { path: 'dashboard/smart-card', component: SmartCardComponent },
+  { path: 'dashboard/workshop', component: WorkshopComponent },
+  { path: 'dashboard/laboratory', component: LaboratoryComponent },
 
   // Clearance Routes
   { path: 'clearance/request', component: ClearanceRequestComponent },

@@ -1,7 +1,9 @@
 <section class="office-page">
+
   <aside class="sidebar">
+
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <img src="/public/udsm-logo.png" alt="UDSM Logo">
 
       <div>
         <strong>USAB</strong>
@@ -10,48 +12,180 @@
     </div>
 
     <nav>
-      <a routerLink="/usab">Pending Requests</a>
 
-      <button type="button" (click)="logout()">
+      <a
+        routerLink="/dashboard/usab"
+        class="active"
+      >
+        Pending Requests
+      </a>
+
+      <button
+        type="button"
+        (click)="logout()"
+      >
         Log out
       </button>
+
     </nav>
+
   </aside>
 
+
   <main class="content">
+
+    <!-- HEADER -->
+
     <header class="page-header">
+
       <div>
-        <p>Parallel Clearance Stage</p>
-        <h1>USAB Approval</h1>
+
+        <p>
+          Clearance Office
+        </p>
+
+        <h1>
+          USAB Approval
+        </h1>
+
+        <span class="page-description">
+          Review and process student clearance applications.
+        </span>
+
       </div>
 
-      <span class="count">{{ requests.length }} Pending</span>
+
+      <div class="pending-box">
+
+        <strong>
+          {{ requests.length }}
+        </strong>
+
+        <small>
+          Pending
+        </small>
+
+      </div>
+
     </header>
 
-    <p class="message" *ngIf="message">{{ message }}</p>
 
-    <section class="empty-state" *ngIf="!requests.length">
-      <h2>No pending requests</h2>
-      <p>There are currently no student applications awaiting USAB approval.</p>
-    </section>
+    <!-- MESSAGE -->
 
-    <section class="request-list" *ngIf="requests.length">
-      <article class="request-card" *ngFor="let request of requests">
-        <div class="student-info">
-          <span>Graduation Clearance</span>
-          <h2>{{ request.programme }}</h2>
-          <p>{{ request.department }} · {{ request.college }}</p>
-          <small>Submitted: {{ request.requestDate | date:'mediumDate' }}</small>
+    <div
+      class="message"
+      *ngIf="message"
+    >
+      {{ message }}
+    </div>
+
+
+    <!-- REQUESTS -->
+
+    <section
+      class="request-list"
+      *ngIf="requests.length"
+    >
+
+      <article
+        class="request-card"
+        *ngFor="let request of requests"
+      >
+
+        <!-- HEADER -->
+
+        <div class="request-header">
+
+          <div>
+
+            <span class="clearance-label">
+              Graduation Clearance
+            </span>
+
+            <h2>
+              {{ request.studentName || 'Student' }}
+            </h2>
+
+          </div>
+
+
+          <span class="pending-status">
+            PENDING
+          </span>
+
         </div>
 
-        <div class="actions">
+
+        <!-- STUDENT DETAILS -->
+
+        <div class="student-details">
+
+          <div class="detail">
+
+            <span>
+              Programme
+            </span>
+
+            <strong>
+              {{ request.programme }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail">
+
+            <span>
+              Department
+            </span>
+
+            <strong>
+              {{ request.department }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail">
+
+            <span>
+              College
+            </span>
+
+            <strong>
+              {{ request.college }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail">
+
+            <span>
+              Submitted
+            </span>
+
+            <strong>
+              {{ request.requestDate | date:'mediumDate' }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- ACTIONS -->
+
+        <div class="request-actions">
+
           <button
             type="button"
-            class="return-button"
+            class="reject-button"
             (click)="openRejectForm(request)"
           >
-            Return with Reason
+            Reject
           </button>
+
 
           <button
             type="button"
@@ -60,22 +194,70 @@
           >
             Approve
           </button>
+
         </div>
+
       </article>
+
     </section>
 
-    <section class="reject-modal" *ngIf="selectedRequest">
-      <div class="modal-card">
-        <h2>Return Clearance Request</h2>
 
-        <p>Write the reason and action the student must take.</p>
+    <!-- EMPTY STATE -->
+
+    <section
+      class="empty-state"
+      *ngIf="!requests.length"
+    >
+
+      <div class="empty-icon">
+        ✓
+      </div>
+
+      <h2>
+        No pending requests
+      </h2>
+
+      <p>
+        There are currently no student applications
+        awaiting USAB approval.
+      </p>
+
+    </section>
+
+
+    <!-- REJECT FORM -->
+
+    <section
+      class="reject-modal"
+      *ngIf="selectedRequest"
+    >
+
+      <div class="modal-card">
+
+        <h2>
+          Return Clearance Request
+        </h2>
+
+        <p>
+          Explain why this clearance request is
+          being returned and what the student needs
+          to do.
+        </p>
+
+
+        <label>
+          Reason for Rejection
+        </label>
+
 
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Example: Please complete your USAB obligations before requesting clearance again."
+          placeholder="Enter reason..."
         ></textarea>
 
+
         <div class="modal-actions">
+
           <button
             type="button"
             class="cancel-button"
@@ -84,16 +266,22 @@
             Cancel
           </button>
 
+
           <button
             type="button"
             class="return-button"
             (click)="reject()"
             [disabled]="!rejectionComment.trim()"
           >
-            Send Reason to Student
+            Submit Reason
           </button>
+
         </div>
+
       </div>
+
     </section>
+
   </main>
+
 </section>

@@ -29,6 +29,7 @@ export class AuthService {
       phone: user.phone,
       password: user.password,
       role: this.mapRole({ role: user.role ?? 'STUDENT' }),
+      laboratory: user.laboratory || '',
       college: 'Not selected',
       department: 'Not selected',
       programme: 'Not selected',
@@ -48,9 +49,13 @@ export class AuthService {
     if (!user) {
       return throwError(() => ({ status: 401, error: { message: 'Login failed. Please check your credentials.' } }));
     }
-    this.storage.save(this.currentUserKey, user);
+    const authenticatedUser = {
+      ...user,
+      role: this.mapRole(user)
+    };
+    this.storage.save(this.currentUserKey, authenticatedUser);
     this.storage.save(this.tokenKey, `local-${user.id}`);
-    return of(user);
+    return of(authenticatedUser);
   }
 
   private mapUserResponse(response: any): any {
@@ -78,28 +83,43 @@ export class AuthService {
   }
 
   private mapRole(user: any): UserRole {
-    const backendRole = user.role;
+    const backendRole = String(user.role ?? '').trim().toUpperCase();
     const department = user.department;
 
     const map: Record<string, UserRole> = {
       'STUDENT': 'Student',
       'CONVOCATION_OFFICER': 'Convocation',
+      'CONVOCATION': 'Convocation',
       'GAMES_COACH': 'Games Coach',
+      'GAMES COACH': 'Games Coach',
       'HALL_WARDEN': 'Hall Warden',
+      'HALL WARDEN': 'Hall Warden',
       'USAB_OFFICER': 'USAB',
+      'USAB': 'USAB',
       'DARUSO_OFFICER': 'DARUSO',
+      'DARUSO': 'DARUSO',
       'LIBRARY_OFFICER': 'Library',
+      'LIBRARY': 'Library',
       'DEAN_OF_STUDENTS': 'Dean of Students',
+      'DEAN OF STUDENTS': 'Dean of Students',
       'SMART_CARD_OFFICER': 'Smart Card',
+      'SMART CARD': 'Smart Card',
+      'WORKSHOP_OFFICER': 'Workshop',
+      'WORKSHOP': 'Workshop',
       'PRINCIPAL': 'Principal',
       'FINANCE_OFFICER': 'Finance',
+      'FINANCE': 'Finance',
       'ICT_OFFICER': 'ICT',
+      'ICT': 'ICT',
       'DEPARTMENT_OFFICER': 'Department',
+      'DEPARTMENT': 'Department',
+      'LABORATORY_OFFICER': 'Laboratory',
+      'LABORATORY': 'Laboratory',
       'ADMINISTRATOR': 'Administrator',
       'ADMIN': 'Administrator'
     };
 
-    let role = map[backendRole] || (backendRole as UserRole);
+    let role = map[backendRole] || (user.role as UserRole);
 
     // Distinguish between Department and Academic Staff based on saved department name
     if (backendRole === 'DEPARTMENT_OFFICER' && department === 'Academic Staff') {
@@ -178,7 +198,21 @@ export class AuthService {
   }
 
   getCurrentUser(): any | null {
-    return this.storage.get<any>(this.currentUserKey);
+    const user = this.storage.get<any>(this.currentUserKey);
+    if (!user) {
+      return null;
+    }
+
+    const normalizedUser = {
+      ...user,
+      role: this.mapRole(user)
+    };
+
+    if (normalizedUser.role !== user.role) {
+      this.storage.save(this.currentUserKey, normalizedUser);
+    }
+
+    return normalizedUser;
   }
 
   getToken(): string | null {

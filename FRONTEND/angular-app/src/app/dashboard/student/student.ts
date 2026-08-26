@@ -180,6 +180,12 @@ export class StudentDashboard implements OnInit {
         case 'Smart Card':
           note = 'Smart Card clearance';
           break;
+        case 'Workshop':
+          note = 'Workshop clearance';
+          break;
+        case 'Laboratory':
+          note = 'Laboratory clearance';
+          break;
         case 'Department':
           note = 'Department approval';
           break;

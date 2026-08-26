@@ -48,6 +48,14 @@
         </select>
       </ng-container>
 
+      <ng-container *ngIf="isLaboratoryStaff">
+        <label for="laboratory">Department</label>
+        <select id="laboratory" formControlName="laboratory">
+          <option value="" disabled>Select your laboratory department</option>
+          <option *ngFor="let laboratory of laboratoryDepartments" [value]="laboratory">{{ laboratory }}</option>
+        </select>
+      </ng-container>
+
       <label for="password">Create password</label>
       <input id="password" type="password" formControlName="password" placeholder="Min 8 characters" />
 

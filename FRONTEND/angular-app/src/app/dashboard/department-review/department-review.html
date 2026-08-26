@@ -205,7 +205,7 @@
         <!-- Tab Content: Approvals -->
         <section class="tab-content" *ngIf="selectedTab === 'approvals'">
             <div class="approvals-list">
-                <div class="approval-item" *ngFor="let office of ['Convocation', 'Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Department']">
+                <div class="approval-item" *ngFor="let office of ['Convocation', 'Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Workshop', 'Laboratory', 'Department']">
                     <div class="approval-info">
                         <strong>{{ office }}</strong>
                         <span class="approval-status" [class.approved]="getOfficeStatus(office) === 'Approved'" [class.rejected]="getOfficeStatus(office) === 'Rejected'" [class.pending]="getOfficeStatus(office) === 'Pending'">

@@ -1,141 +1,280 @@
 <section class="office-page">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
+
     <div class="brand">
       <img src="/public/udsm-logo.png" alt="UDSM Logo" />
 
       <div>
-        <strong>Finance</strong>
+        <strong>FINANCE</strong>
         <small>Clearance Workspace</small>
       </div>
     </div>
 
     <nav>
-      <a *ngIf="isOfficer" routerLink="/dashboard/finance">Pending Requests</a>
-      <a *ngIf="!isOfficer" routerLink="/clearance/status">← Back to Status</a>
 
-      <button type="button" (click)="logout()">
+      <a
+        routerLink="/dashboard/finance"
+        class="active"
+      >
+        Pending Requests
+      </a>
+
+      <button
+        type="button"
+        (click)="logout()"
+      >
         Log out
       </button>
+
     </nav>
+
   </aside>
 
+
+  <!-- MAIN CONTENT -->
   <main class="content">
 
-    <!-- STUDENT VIEW -->
-    <ng-container *ngIf="!isOfficer">
-      <header class="page-header">
-        <div>
-          <p>Finance Clearance</p>
-          <h1>Your Status</h1>
-        </div>
-      </header>
+    <!-- HEADER -->
+    <header class="page-header">
 
-      <section class="card" style="margin-top: 24px; padding: 24px; background: white; border-radius: 8px; box-shadow: var(--shadow-soft);">
-        <div *ngIf="studentRequest" class="student-status">
-          <p>Request Date: {{ studentRequest.requestDate | date:'medium' }}</p>
-          <div class="status-info" style="margin-top: 16px;">
-            <strong>Current Status:</strong>
-            <span [ngClass]="'final-status ' + getOfficeStatus('Finance').toLowerCase()"
-                  style="margin-left: 10px; padding: 4px 12px; border-radius: 999px; font-weight: bold;">
-              {{ getOfficeStatus('Finance') }}
+      <div>
+
+        <p>
+          Clearance Office
+        </p>
+
+        <h1>
+          Finance Approval
+        </h1>
+
+        <span class="page-description">
+          Review and process student clearance applications.
+        </span>
+
+      </div>
+
+
+      <div class="pending-box">
+
+        <strong>
+          {{ requests.length }}
+        </strong>
+
+        <small>
+          Pending
+        </small>
+
+      </div>
+
+    </header>
+
+
+    <!-- MESSAGE -->
+    <div
+      class="message"
+      *ngIf="message"
+    >
+      {{ message }}
+    </div>
+
+
+    <!-- REQUEST LIST -->
+    <section
+      class="request-list"
+      *ngIf="requests.length"
+    >
+
+      <article
+        class="request-card"
+        *ngFor="let request of requests"
+      >
+
+        <!-- CARD HEADER -->
+        <div class="request-header">
+
+          <div>
+
+            <span class="clearance-label">
+              Graduation Clearance
             </span>
+
+            <h2>
+              {{ request.studentName || 'Student' }}
+            </h2>
+
           </div>
 
-          <div *ngIf="getOfficeStatus('Finance') === 'Rejected'" class="rejection-box"
-               style="margin-top: 20px; padding: 16px; background: #fff1f0; border-left: 4px solid #ff4d4f; border-radius: 4px;">
-            <strong style="color: #cf1322;">Reason for Rejection:</strong>
-            <p style="margin-top: 8px;">{{ getRejectionReason('Finance') }}</p>
-          </div>
 
-          <p style="margin-top: 24px; color: #666;">
-            The finance office will review your fee payments and other financial obligations.
-          </p>
+          <span class="pending-status">
+            PENDING
+          </span>
+
         </div>
 
-        <div *ngIf="!studentRequest" class="empty-state">
-          <p>No active clearance request found.</p>
-        </div>
-      </section>
-    </ng-container>
 
-    <!-- OFFICER VIEW -->
-    <ng-container *ngIf="isOfficer">
-      <header class="page-header">
-        <div>
-          <p>Clearance Office</p>
-          <h1>Finance Approval</h1>
-        </div>
+        <!-- STUDENT DETAILS -->
+        <div class="student-details">
 
-        <span class="count">{{ requests.length }} Pending</span>
-      </header>
+          <div class="detail">
 
-      <p class="message" *ngIf="message">{{ message }}</p>
+            <span>
+              Programme
+            </span>
 
-      <section class="empty-state" *ngIf="!requests.length">
-        <h2>No pending requests</h2>
-        <p>There are currently no student applications awaiting Finance approval.</p>
-      </section>
+            <strong>
+              {{ request.programme }}
+            </strong>
 
-      <section class="request-list" *ngIf="requests.length">
-        <article class="request-card" *ngFor="let request of requests">
-          <div class="student-info">
-            <span>Graduation Clearance</span>
-            <h2>{{ request.programme }}</h2>
-            <p>{{ request.department }} · {{ request.college }}</p>
-            <small>Submitted: {{ request.requestDate | date:'mediumDate' }}</small>
           </div>
 
-          <div class="actions">
-            <button
-                    type="button"
-                    class="return-button"
-                    (click)="openRejectForm(request)"
-            >
-              Return with Reason
-            </button>
 
-            <button
-                    type="button"
-                    class="approve-button"
-                    (click)="approve(request)"
-            >
-              Approve
-            </button>
+          <div class="detail">
+
+            <span>
+              Department
+            </span>
+
+            <strong>
+              {{ request.department }}
+            </strong>
+
           </div>
-        </article>
-      </section>
 
-      <section class="reject-modal" *ngIf="selectedRequest">
-        <div class="modal-card">
-          <h2>Return Clearance Request</h2>
 
-          <p>Write the reason and action the student must take.</p>
+          <div class="detail">
 
-          <textarea
-                  [(ngModel)]="rejectionComment"
-                  placeholder="Example: Please clear all outstanding tuition fees."
-          ></textarea>
+            <span>
+              College
+            </span>
 
-          <div class="modal-actions">
-            <button
-                    type="button"
-                    class="cancel-button"
-                    (click)="selectedRequest = null"
-            >
-              Cancel
-            </button>
+            <strong>
+              {{ request.college }}
+            </strong>
 
-            <button
-                    type="button"
-                    class="return-button"
-                    (click)="reject()"
-                    [disabled]="!rejectionComment.trim()"
-            >
-              Send Reason to Student
-            </button>
           </div>
+
+
+          <div class="detail">
+
+            <span>
+              Submitted
+            </span>
+
+            <strong>
+              {{ request.requestDate | date:'mediumDate' }}
+            </strong>
+
+          </div>
+
         </div>
-      </section>
-    </ng-container>
+
+
+        <!-- ACTIONS -->
+        <div class="request-actions">
+
+          <button
+            type="button"
+            class="reject-button"
+            (click)="openRejectForm(request)"
+          >
+            Reject
+          </button>
+
+
+          <button
+            type="button"
+            class="approve-button"
+            (click)="approve(request)"
+          >
+            Approve
+          </button>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <!-- EMPTY STATE -->
+    <section
+      class="empty-state"
+      *ngIf="!requests.length"
+    >
+
+      <div class="empty-icon">
+        ✓
+      </div>
+
+      <h2>
+        No pending requests
+      </h2>
+
+      <p>
+        There are currently no student applications
+        awaiting Finance approval.
+      </p>
+
+    </section>
+
+
+    <!-- REJECTION MODAL -->
+    <section
+      class="reject-modal"
+      *ngIf="selectedRequest"
+    >
+
+      <div class="modal-card">
+
+        <h2>
+          Return Clearance Request
+        </h2>
+
+        <p>
+          Explain why this clearance request is being
+          returned and what the student needs to do.
+        </p>
+
+
+        <label>
+          Reason for Rejection
+        </label>
+
+
+        <textarea
+          [(ngModel)]="rejectionComment"
+          placeholder="Enter reason..."
+        ></textarea>
+
+
+        <div class="modal-actions">
+
+          <button
+            type="button"
+            class="cancel-button"
+            (click)="selectedRequest = null"
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="button"
+            class="return-button"
+            (click)="reject()"
+            [disabled]="!rejectionComment.trim()"
+          >
+            Submit Reason
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
   </main>
+
 </section>

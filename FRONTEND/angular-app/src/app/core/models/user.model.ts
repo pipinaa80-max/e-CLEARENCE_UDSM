@@ -13,6 +13,8 @@ export type UserRole =
   | 'Finance'
   | 'ICT'
   | 'Academic Staff'
+  | 'Workshop'
+  | 'Laboratory'
   | 'Administrator';
 
 export type UserStatus = 'Active' | 'Inactive' | 'Suspended';
@@ -25,6 +27,7 @@ export interface User {
   phone: string;
   password: string;
   role: UserRole;
+  laboratory?: string;
   programme: string;
   department: string;
   college: string;
