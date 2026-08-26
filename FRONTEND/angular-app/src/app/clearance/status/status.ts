@@ -511,7 +511,7 @@ export class ClearanceStatusComponent {
       'Library': '/dashboard/library',
       'Dean of Students': '/dean_of_students',
       'Smart Card': '/smart_card',
-      'Department': '/dashboard/department',
+      'Department': '/department/dashboard',
       'Principal': '/principal',
       'Finance': '/dashboard/finance'
     };

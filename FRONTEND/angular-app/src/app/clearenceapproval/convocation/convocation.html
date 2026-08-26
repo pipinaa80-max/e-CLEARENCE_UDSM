@@ -1,335 +1,274 @@
-<!-- convocation.html - Student only view with Continue button -->
-<div class="convocation-page">
+<section
+  class="convocation-page"
+  *ngIf="!isOfficer"
+>
 
-  <!-- =====================================================
-       HEADER
-  ====================================================== -->
+  <div class="convocation-wrapper">
 
-  <header class="page-header">
+    <!-- HEADER -->
 
-    <div>
+    <header class="page-header">
 
-      <span class="eyebrow">
-        Clearance Step 1
-      </span>
+      <div>
+        <span class="step-label">
+          Clearance Step 1
+        </span>
 
-      <h1>
-        Convocation
-      </h1>
+        <h1>
+          Convocation
+        </h1>
 
-      <p>
-        Complete the Convocation payment and verification
-        process.
-      </p>
-
-    </div>
-
-    <div class="header-actions">
+        <p>
+          Complete the Convocation payment and verification process.
+        </p>
+      </div>
 
       <a
-              routerLink="/clearance/status"
-              class="back-link"
+        routerLink="/clearance/status"
+        class="back-link"
       >
         ← Back to Clearance
       </a>
 
-    </div>
-
-  </header>
+    </header>
 
 
+    <!-- MAIN CARD -->
 
-  <!-- =====================================================
-       STUDENT VIEW ONLY
-  ====================================================== -->
+    <main class="convocation-card">
 
-  <section class="card" *ngIf="studentRequest; else noRequest">
+      <!-- ==============================================
+           REQUEST CONTROL NUMBER
+      =============================================== -->
 
-    <div class="section-heading">
-
-      <span>
-        Step 1
-      </span>
-
-      <h2>
-        Convocation Payment
-      </h2>
-
-      <p>
-        Request your control number, make the payment,
-        then upload your payment receipt.
-      </p>
-
-    </div>
-
-
-    <!-- ===============================================
-         CONTROL NUMBER
-    ================================================ -->
-
-    <div class="form-section">
-
-      <label>
-        Control Number
-      </label>
-
-
-      <!-- REQUEST CONTROL NUMBER -->
-
-      <div
-              *ngIf="!controlNumber"
-              class="control-number-box"
+      <section
+        *ngIf="
+          !controlNumberRequested &&
+          !controlNumber
+        "
+        class="convocation-state"
       >
 
-        <ng-container
-                *ngIf="!controlNumberRequested"
-        >
+        <div class="state-icon">
+          1
+        </div>
 
-          <p>
-            You need a control number before making
-            your payment.
-          </p>
-
-          <button
-                  type="button"
-                  class="primary-button"
-                  (click)="requestControlNumber()"
-                  [disabled]="isLoading"
-          >
-            Request Control Number
-          </button>
-
-        </ng-container>
-
-
-        <!-- WAITING FOR CONVOCATION -->
-
-        <ng-container
-                *ngIf="controlNumberRequested"
-        >
-
-          <div class="waiting-message">
-
-            <strong>
-              Control Number Requested
-            </strong>
-
-            <p>
-              Your request has been sent to Convocation.
-              Please wait for your control number to be issued.
-            </p>
-
-          </div>
-
-        </ng-container>
-
-      </div>
-
-
-
-      <!-- CONTROL NUMBER ISSUED -->
-
-      <div
-              *ngIf="controlNumber"
-              class="issued-control-number"
-      >
-
-        <span>
-          Your Control Number
+        <span class="state-label">
+          Step 1
         </span>
 
-        <strong>
-          {{ controlNumber }}
-        </strong>
+        <h2>
+          Request Control Number
+        </h2>
 
         <p>
-          Use this control number to make your payment.
+          Request your Convocation control number
+          before making your payment.
         </p>
 
-      </div>
+        <button
+          type="button"
+          class="primary-button"
+          (click)="requestControlNumber()"
+        >
+          Request Control Number
+        </button>
 
-    </div>
-
-
-
-    <!-- ===============================================
-         PAYMENT RECEIPT
-    ================================================ -->
-
-    <div
-            *ngIf="controlNumber"
-            class="form-section"
-    >
-
-      <label>
-        Payment Receipt
-      </label>
-
-      <p class="field-help">
-        Upload a clear copy or photo of your payment
-        receipt.
-      </p>
+      </section>
 
 
-      <input
-              id="receipt-upload"
+      <!-- ==============================================
+           CONTROL NUMBER REQUESTED
+      =============================================== -->
+
+      <section
+        *ngIf="
+          controlNumberRequested &&
+          !controlNumber
+        "
+        class="convocation-state waiting-state"
+      >
+
+        <div class="state-icon waiting-icon">
+          ✓
+        </div>
+
+        <span class="state-label">
+          Control Number
+        </span>
+
+        <h2>
+          Control Number Requested
+        </h2>
+
+        <p>
+          Your request has been sent to Convocation.
+          Please wait for your control number to be issued.
+        </p>
+
+        <div class="waiting-message">
+          Waiting for Convocation Office
+        </div>
+
+      </section>
+
+
+      <!-- ==============================================
+           CONTROL NUMBER ISSUED
+      =============================================== -->
+
+      <section
+        *ngIf="
+          controlNumber &&
+          !receiptSubmitted
+        "
+        class="convocation-state"
+      >
+
+        <div class="state-icon">
+          2
+        </div>
+
+        <span class="state-label">
+          Payment
+        </span>
+
+        <h2>
+          Control Number Issued
+        </h2>
+
+        <p>
+          Your control number has been issued.
+          Use it to make your Convocation payment,
+          then upload your payment receipt below.
+        </p>
+
+
+        <!-- CONTROL NUMBER -->
+
+        <div class="control-number-section">
+
+          <span>
+            Your Control Number
+          </span>
+
+          <strong>
+            {{ controlNumber }}
+          </strong>
+
+        </div>
+
+
+        <!-- RECEIPT -->
+
+        <form
+          [formGroup]="form"
+          (ngSubmit)="submit()"
+          class="receipt-form"
+        >
+
+          <label class="file-field">
+
+            <span>
+              Payment Receipt
+            </span>
+
+            <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               (change)="onFileSelected($event)"
-              [disabled]="isLoading || receiptSubmitted"
-      />
+            />
 
+            <small>
+              Upload a clear picture or PDF of your payment receipt.
+            </small>
 
-      <small
+            <small
               *ngIf="selectedFileName"
-      >
-        Selected file:
-        {{ selectedFileName }}
-      </small>
+              class="file-selected"
+            >
+              Selected: {{ selectedFileName }}
+            </small>
+
+          </label>
 
 
-      <!-- RECEIPT ALREADY SUBMITTED -->
+          <!-- ERROR -->
 
-      <div
-              *ngIf="receiptSubmitted"
-              class="success-message"
-      >
-
-        ✅ Payment receipt submitted successfully.
-
-      </div>
-
-    </div>
-
-
-
-    <!-- ===============================================
-         ERROR
-    ================================================ -->
-
-    <div
+          <p
             *ngIf="errorMessage"
             class="error-message"
-    >
-      ❌ {{ errorMessage }}
-    </div>
+          >
+            {{ errorMessage }}
+          </p>
 
 
+          <button
+            type="submit"
+            class="primary-button"
+          >
+            Next
+          </button>
 
-    <!-- ===============================================
-         SUCCESS
-    ================================================ -->
+        </form>
 
-    <div
-            *ngIf="message"
-            class="success-message"
-    >
-      ✅ {{ message }}
-    </div>
-
+      </section>
 
 
-    <!-- ===============================================
-         NEXT - Submit Receipt
-    ================================================ -->
+      <!-- ==============================================
+           RECEIPT SUBMITTED
+      =============================================== -->
 
-    <div
-            *ngIf="
-        controlNumber &&
-        !receiptSubmitted
-      "
-            class="actions"
-    >
-
-      <button
-              type="button"
-              class="primary-button"
-              [disabled]="!form.controls.file.value || isLoading"
-              (click)="submit()"
+      <section
+        *ngIf="receiptSubmitted"
+        class="convocation-state success-state"
       >
-        <span *ngIf="!isLoading">Submit Receipt</span>
-        <span *ngIf="isLoading">Submitting...</span>
-      </button>
 
-    </div>
+        <div class="state-icon success-icon">
+          ✓
+        </div>
+
+        <span class="state-label">
+          Payment Receipt
+        </span>
+
+        <h2>
+          Payment Receipt Submitted
+        </h2>
+
+        <p>
+          Your payment receipt has been submitted
+          to Convocation for verification.
+        </p>
+
+        <div class="waiting-message">
+          Waiting for Convocation verification
+        </div>
+
+      </section>
 
 
+      <!-- MESSAGE -->
 
-    <!-- ===============================================
-         WAITING FOR APPROVAL
-    ================================================ -->
-
-    <div
-            *ngIf="receiptSubmitted && !isConvocationApproved"
-            class="waiting-message"
-    >
-
-      <strong>
-        Waiting for Convocation approval
-      </strong>
-
-      <p>
-        Your receipt has been submitted. Convocation
-        will review it before you can continue to
-        Step 2.
+      <p
+        *ngIf="message"
+        class="success-message"
+      >
+        {{ message }}
       </p>
+
+
+      <!-- BACK -->
 
       <a
-              routerLink="/clearance/status"
-              class="secondary-button"
+        routerLink="/clearance/status"
+        class="status-link"
       >
-        View Clearance Status
+        Back to Clearance Status
       </a>
 
-    </div>
+    </main>
 
+  </div>
 
-
-    <!-- ===============================================
-         CONTINUE TO STEP 2 - After Approval
-    ================================================ -->
-
-    <div
-            *ngIf="canContinueToStep2"
-            class="continue-section"
-    >
-
-      <div class="success-message" style="margin-bottom: 16px;">
-        ✅ Convocation clearance approved! You can now proceed to Step 2.
-      </div>
-
-      <button
-              type="button"
-              class="continue-button"
-              (click)="continueToStep2()"
-              [disabled]="isLoading"
-      >
-        <span *ngIf="!isLoading">🚀 Continue to Step 2</span>
-        <span *ngIf="isLoading">Processing...</span>
-      </button>
-
-      <p class="continue-hint">
-        You will be redirected to the clearance process page
-        where you can track all offices.
-      </p>
-
-    </div>
-
-  </section>
-
-  <!-- =====================================================
-       NO REQUEST FALLBACK
-  ====================================================== -->
-
-  <ng-template #noRequest>
-    <div class="no-request-card" style="text-align: center; padding: 48px; background: white; border-radius: 12px; box-shadow: var(--shadow-soft); margin-top: 24px;">
-      <div class="warning-icon" style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-      <h2>Clearance Request Required</h2>
-      <p style="color: #666; margin-bottom: 24px;">You must complete your initial clearance request form before you can proceed with Convocation payment.</p>
-      <a routerLink="/clearance/request" class="primary-button" style="text-decoration: none; padding: 12px 24px; background: var(--udsm-blue); color: white; border-radius: 8px; font-weight: bold;">
-        Complete Clearance Request
-      </a>
-    </div>
-  </ng-template>
-
-</div>
+</section>

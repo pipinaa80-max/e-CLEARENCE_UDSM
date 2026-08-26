@@ -3,142 +3,234 @@
   min-height: 100vh;
 }
 
+
 /* =====================================================
-   STUDENT CONVOCATION PAGE
+   PAGE
 ===================================================== */
 
 .convocation-page {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px;
+
+  padding: 34px 24px;
+
   background:
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--udsm-blue) 14%, transparent),
-      transparent 42%
+      color-mix(
+        in srgb,
+        var(--udsm-blue) 10%,
+        transparent
+      ),
+      transparent 45%
     ),
     var(--bg-light);
 }
 
-.convocation-card {
-  width: min(100%, 620px);
-  padding: 34px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-soft);
-}
+.convocation-wrapper {
+  width: min(100%, 960px);
 
-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-header img {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-}
-
-header p {
-  margin: 0 0 5px;
-  color: var(--udsm-blue);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-header h1 {
-  margin: 0;
-  color: var(--udsm-blue-dark);
-  font-size: 1.55rem;
+  margin: 0 auto;
 }
 
 
 /* =====================================================
-   NOTICE
+   HEADER
 ===================================================== */
 
-.notice {
-  margin-bottom: 24px;
-  padding: 14px 16px;
-  border-left: 4px solid var(--udsm-gold);
-  border-radius: var(--radius-control);
-  background: var(--surface-soft);
+.page-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 25px;
+
+  margin-bottom: 28px;
+}
+
+.step-label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: var(--udsm-blue);
+
+  font-size: 0.7rem;
+
+  font-weight: 800;
+
+  letter-spacing: 0.06em;
+
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  margin: 0;
+
+  color: var(--udsm-blue-dark);
+
+  font-size: 1.5rem;
+
+  font-weight: 800;
+}
+
+.page-header p {
+  margin: 6px 0 0;
+
   color: var(--text-muted);
+
+  font-size: 0.78rem;
+}
+
+.back-link {
+  margin-top: 22px;
+
+  color: var(--udsm-blue);
+
+  font-size: 0.75rem;
+
+  font-weight: 800;
+
+  text-decoration: none;
+
+  white-space: nowrap;
+}
+
+.back-link:hover {
+  color: var(--udsm-blue-dark);
+
+  text-decoration: underline;
+}
+
+
+/* =====================================================
+   CARD
+===================================================== */
+
+.convocation-card {
+  padding: 34px;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border-soft);
+
+  border-radius: var(--radius-card);
+
+  box-shadow: var(--shadow-soft);
+}
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
+.convocation-state {
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  padding: 18px 10px;
+
+  text-align: center;
+}
+
+.state-icon {
+  width: 46px;
+  height: 46px;
+
+  display: grid;
+
+  place-items: center;
+
+  margin: 0 auto 16px;
+
+  border-radius: 50%;
+
+  background: color-mix(
+    in srgb,
+    var(--udsm-blue) 12%,
+    #ffffff
+  );
+
+  color: var(--udsm-blue);
+
+  font-size: 0.85rem;
+
+  font-weight: 900;
+}
+
+.state-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: var(--udsm-blue);
+
+  font-size: 0.68rem;
+
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+}
+
+.convocation-state h2 {
+  margin: 0 0 9px;
+
+  color: var(--udsm-blue-dark);
+
+  font-size: 1.2rem;
+
+  font-weight: 800;
+}
+
+.convocation-state > p {
+  max-width: 520px;
+
+  margin: 0 auto 22px;
+
+  color: var(--text-muted);
+
+  font-size: 0.8rem;
+
   line-height: 1.55;
 }
 
 
 /* =====================================================
-   FORM
+   WAITING
 ===================================================== */
 
-form {
-  display: grid;
-  gap: 18px;
+.waiting-state .waiting-icon {
+  background: color-mix(
+    in srgb,
+    var(--udsm-gold) 15%,
+    #ffffff
+  );
+
+  color: var(--warning);
 }
 
-.field,
-.file-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  color: var(--text-dark);
-  font-weight: 700;
-}
+.waiting-message {
+  display: inline-flex;
 
-.field span,
-.file-field span {
-  font-size: 0.9rem;
-}
+  align-items: center;
+  justify-content: center;
 
-.field input,
-.file-field input {
-  width: 100%;
-  min-height: 46px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-soft);
+  min-height: 40px;
+
+  padding: 0 15px;
+
   border-radius: var(--radius-control);
-  background: #ffffff;
-}
 
-.file-field input {
-  padding: 10px;
-}
+  background: var(--surface-soft);
 
-.file-field small {
-  color: var(--success);
-  font-weight: 700;
-}
+  color: var(--text-muted);
 
+  font-size: 0.72rem;
 
-/* =====================================================
-   BUTTONS
-===================================================== */
-
-button {
-  min-height: 48px;
-  border: none;
-  border-radius: var(--radius-control);
-  background: var(--udsm-blue);
-  color: #ffffff;
-  cursor: pointer;
   font-weight: 800;
-  padding: 0 18px;
-}
-
-button:hover {
-  background: var(--udsm-blue-dark);
-}
-
-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 
@@ -146,460 +238,267 @@ button:disabled {
    CONTROL NUMBER
 ===================================================== */
 
-.control-number-box {
+.control-number-section {
+  max-width: 500px;
+
+  margin: 24px auto;
+
   padding: 18px;
+
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: var(--surface-soft);
-}
 
-.control-number-box p {
-  margin: 0 0 14px;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.issued-control-number {
-  display: grid;
-  gap: 7px;
-  padding: 18px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: var(--surface-soft);
-}
-
-.issued-control-number span {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.issued-control-number strong {
-  color: var(--udsm-blue-dark);
-  font-size: 1.25rem;
-  letter-spacing: 0.04em;
-}
-
-
-/* =====================================================
-   WAITING MESSAGE
-===================================================== */
-
-.waiting-message {
-  margin-top: 14px;
-  padding: 16px;
   border-left: 4px solid var(--udsm-blue);
+
   border-radius: var(--radius-control);
+
   background: var(--surface-soft);
+
+  text-align: left;
 }
 
-.waiting-message strong {
+.control-number-section span {
   display: block;
-  margin-bottom: 6px;
-  color: var(--udsm-blue-dark);
-}
 
-.waiting-message p {
-  margin: 0;
+  margin-bottom: 7px;
+
   color: var(--text-muted);
-  line-height: 1.5;
+
+  font-size: 0.68rem;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+}
+
+.control-number-section strong {
+  display: block;
+
+  color: var(--udsm-blue-dark);
+
+  font-size: 1.05rem;
+
+  font-weight: 900;
+
+  letter-spacing: 0.05em;
 }
 
 
 /* =====================================================
-   SUCCESS / ERROR
+   RECEIPT FORM
 ===================================================== */
 
-.error-message {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: var(--radius-control);
-  background: color-mix(
-    in srgb,
-    var(--danger) 8%,
-    transparent
-  );
-  color: var(--danger);
-  font-weight: 700;
+.receipt-form {
+  max-width: 500px;
+
+  margin: 0 auto;
+
+  text-align: left;
 }
 
-.success-message {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-control);
-  background: color-mix(
-    in srgb,
-    var(--success) 10%,
-    transparent
-  );
-  color: var(--success);
-  font-weight: 700;
-}
-
-
-/* =====================================================
-   ACTIONS
-===================================================== */
-
-.actions {
+.file-field {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  flex-wrap: wrap;
+
+  flex-direction: column;
+
+  gap: 8px;
 }
+
+.file-field > span {
+  color: var(--text-dark);
+
+  font-size: 0.76rem;
+
+  font-weight: 800;
+}
+
+.file-field input[type="file"] {
+  width: 100%;
+
+  padding: 11px;
+
+  border: 1px dashed var(--border-soft);
+
+  border-radius: var(--radius-control);
+
+  background: var(--surface-soft);
+
+  color: var(--text-muted);
+
+  font-size: 0.74rem;
+
+  cursor: pointer;
+}
+
+.file-field small {
+  color: var(--text-muted);
+
+  font-size: 0.68rem;
+}
+
+.file-field .file-selected {
+  color: var(--success);
+
+  font-weight: 800;
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
 
 .primary-button {
-  min-height: 46px;
   display: inline-flex;
+
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
+
+  min-height: 44px;
+
+  margin-top: 18px;
+
+  padding: 0 22px;
+
   border: none;
+
   border-radius: var(--radius-control);
+
   background: var(--udsm-blue);
+
   color: #ffffff;
-  text-decoration: none;
+
+  font-size: 0.76rem;
+
   font-weight: 800;
+
   cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
 
 .primary-button:hover {
   background: var(--udsm-blue-dark);
-}
 
-.secondary-button {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: var(--surface);
-  color: var(--udsm-blue);
-  text-decoration: none;
-  font-weight: 800;
+  transform: translateY(-1px);
 }
 
 
 /* =====================================================
-   LINKS
+   ERROR / SUCCESS
 ===================================================== */
 
-a {
-  display: inline-block;
-  margin-top: 20px;
+.error-message {
+  margin: 14px 0 0;
+
+  padding: 10px 12px;
+
+  border-left: 4px solid var(--danger);
+
+  border-radius: var(--radius-control);
+
+  background: color-mix(
+    in srgb,
+    var(--danger) 6%,
+    #ffffff
+  );
+
+  color: var(--danger);
+
+  font-size: 0.74rem;
+
+  font-weight: 700;
+}
+
+.success-message {
+  margin: 20px auto 0;
+
+  padding: 11px 14px;
+
+  border-left: 4px solid var(--success);
+
+  border-radius: var(--radius-control);
+
+  background: color-mix(
+    in srgb,
+    var(--success) 7%,
+    #ffffff
+  );
+
+  color: var(--success);
+
+  font-size: 0.74rem;
+
+  font-weight: 700;
+
+  text-align: center;
+}
+
+
+/* =====================================================
+   SUCCESS STATE
+===================================================== */
+
+.success-state .success-icon {
+  background: color-mix(
+    in srgb,
+    var(--success) 14%,
+    #ffffff
+  );
+
+  color: var(--success);
+}
+
+
+/* =====================================================
+   STATUS LINK
+===================================================== */
+
+.status-link {
+  display: block;
+
+  width: fit-content;
+
+  margin: 24px auto 0;
+
   color: var(--udsm-blue);
+
+  font-size: 0.74rem;
+
   font-weight: 800;
+
   text-decoration: none;
 }
 
-a:hover {
+.status-link:hover {
+  color: var(--udsm-blue-dark);
+
   text-decoration: underline;
 }
 
 
 /* =====================================================
-   STAFF REVIEW PAGE
+   MOBILE
 ===================================================== */
 
-.review-page {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 230px 1fr;
-  background: var(--bg-light);
-}
+@media (max-width: 700px) {
 
-.review-page aside {
-  padding: 28px 20px;
-  background: var(--udsm-blue-dark);
-  color: #ffffff;
-}
+  .convocation-page {
+    padding: 22px 14px;
+  }
 
-.review-page aside strong {
-  display: block;
-  margin-bottom: 30px;
-  font-size: 1rem;
-}
+  .page-header {
+    flex-direction: column;
 
-.review-page aside button {
-  width: 100%;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
+    gap: 10px;
+  }
 
-.review-page main {
-  width: min(1100px, 100%);
-  padding: 34px;
-}
-
-.review-page main > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.review-page main > header span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: var(--surface-soft);
-  color: var(--udsm-blue);
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-
-/* =====================================================
-   STAFF REQUEST CARD
-===================================================== */
-
-.request-card {
-  margin-top: 18px;
-  padding: 22px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
-}
-
-.request-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
-}
-
-.request-header h3 {
-  margin: 4px 0;
-  color: var(--udsm-blue-dark);
-}
-
-.request-header span {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-
-.status-badge {
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--warning) 12%,
-    transparent
-  );
-  color: var(--warning);
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-
-/* =====================================================
-   DETAILS
-===================================================== */
-
-.details {
-  display: grid;
-  gap: 1px;
-  margin-bottom: 18px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  overflow: hidden;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 12px 14px;
-  background: var(--surface-soft);
-}
-
-.detail-row span {
-  color: var(--text-muted);
-}
-
-.detail-row strong {
-  color: var(--text-dark);
-  text-align: right;
-}
-
-
-/* =====================================================
-   CONTROL NUMBER STAFF SECTION
-===================================================== */
-
-.control-number-section,
-.receipt-section {
-  margin-top: 18px;
-  padding: 16px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: var(--surface-soft);
-}
-
-.control-number-section > label,
-.receipt-section > span {
-  display: block;
-  margin-bottom: 10px;
-  color: var(--text-dark);
-  font-weight: 800;
-}
-
-.control-number-section p {
-  margin: 0 0 12px;
-  color: var(--text-muted);
-}
-
-.control-number-section .primary-button {
-  margin-top: 4px;
-}
-
-.receipt-section strong {
-  color: var(--udsm-blue-dark);
-  word-break: break-word;
-}
-
-
-/* =====================================================
-   COMMENT
-===================================================== */
-
-.comment-section {
-  margin-top: 18px;
-}
-
-.comment-section label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text-dark);
-  font-weight: 800;
-}
-
-.comment-section textarea {
-  width: 100%;
-  min-height: 90px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-control);
-  background: #ffffff;
-  resize: vertical;
-  font: inherit;
-}
-
-.comment-section textarea:focus,
-.field input:focus,
-.file-field input:focus {
-  outline: 2px solid color-mix(
-    in srgb,
-    var(--udsm-blue) 20%,
-    transparent
-  );
-  border-color: var(--udsm-blue);
-}
-
-
-/* =====================================================
-   STAFF ACTIONS
-===================================================== */
-
-.approve-button,
-.reject-button {
-  min-height: 46px;
-  padding: 0 18px;
-  border: none;
-  border-radius: var(--radius-control);
-  color: #ffffff;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.approve-button {
-  background: var(--success);
-}
-
-.approve-button:hover {
-  filter: brightness(0.94);
-}
-
-.approve-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.reject-button {
-  background: var(--danger);
-}
-
-.reject-button:hover {
-  filter: brightness(0.94);
-}
-
-
-/* =====================================================
-   EMPTY / MESSAGE
-===================================================== */
-
-.empty,
-.message {
-  margin: 18px 0;
-  padding: 14px 16px;
-  border-radius: var(--radius-control);
-  background: var(--surface-soft);
-  color: var(--text-muted);
-}
-
-.message {
-  color: var(--success);
-  font-weight: 700;
-}
-
-
-/* =====================================================
-   RESPONSIVE
-===================================================== */
-
-@media (max-width: 760px) {
+  .back-link {
+    margin-top: 0;
+  }
 
   .convocation-card {
-    padding: 24px;
-  }
-
-  .review-page {
-    grid-template-columns: 1fr;
-  }
-
-  .review-page aside {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .review-page aside strong {
-    margin: 0;
-  }
-
-  .review-page aside button {
-    width: auto;
-  }
-
-  .review-page main {
-    padding: 22px 16px;
-  }
-
-  .request-header {
-    flex-direction: column;
-  }
-
-  .detail-row {
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .detail-row strong {
-    text-align: left;
+    padding: 22px 18px;
   }
 
 }

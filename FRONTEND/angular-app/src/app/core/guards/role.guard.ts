@@ -26,7 +26,7 @@ function thisRoleRedirect(role: UserRole): string {
   const map: Record<UserRole, string> = {
     Student: '/dashboard',
     Library: '/dashboard/library',
-    Department: '/dashboard/department',
+    Department: '/department/dashboard',
     Finance: '/dashboard/finance',
     ICT: '/dashboard/ict',
     'Academic Staff': '/dashboard/academic',

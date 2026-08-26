@@ -4,9 +4,8 @@ import { Routes } from '@angular/router';
 import { Login } from './auth/login/login';
 import { Register } from './auth/register/register';
 import { StudentDashboard } from './dashboard/student/student';
-import { LibraryDashboard } from './clearenceapproval/library/library';
-import { DepartmentStatusComponent } from './clearenceapproval/department/department';
-import { FinanceDashboard } from './clearenceapproval/finance/finance';
+import { LibraryDashboard } from './dashboard/library/library';
+import { FinanceDashboard } from './dashboard/finance/finance';
 import { IctDashboard } from './dashboard/ict/ict';
 import { AcademicDashboard } from './dashboard/academic/academic';
 import { AdminDashboard } from './dashboard/admin/admin';
@@ -22,13 +21,13 @@ import { Landing } from './landing/landing';
 import { SignupOptions } from './auth/signup-options/signup-options';
 import { StaffRegister } from './auth/staff-register/staff-register';
 import { ConvocationComponent } from './clearenceapproval/convocation/convocation';
-import { GamesCoachComponent } from './clearenceapproval/games_coach/games_coach';
-import { HallWardenComponent } from './clearenceapproval/hall_warden/hall_warden';
-import { UsabComponent } from './clearenceapproval/usab/usab';
-import { DarusoComponent } from './clearenceapproval/daruso/daruso';
-import { DeanOfStudentsComponent } from './clearenceapproval/dean_of_students/dean_of_students';
-import { SmartCardComponent } from './clearenceapproval/smart_card/smart_card';
-import { PrincipalComponent } from './clearenceapproval/principal/principal';
+import { GamesCoachComponent } from './dashboard/games_coach/games_coach';
+import { HallWardenComponent } from './dashboard/hall_warden/hall_warden';
+import { UsabComponent } from './dashboard/usab/usab';
+import { DarusoComponent } from './dashboard/daruso/daruso';
+import { DeanOfStudentsComponent } from './dashboard/dean_of_students/dean_of_students';
+import { SmartCardComponent } from './dashboard/smart_card/smart_card';
+import { PrincipalComponent } from './dashboard/principal/principal';
 import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import {DepartmentOfficerComponent} from "./dashboard/Department-officer/department-officer.component";
@@ -46,11 +45,16 @@ export const routes: Routes = [
 
   // Office Dashboards
   { path: 'dashboard/library', component: LibraryDashboard },
-  { path: 'dashboard/department', component: DepartmentStatusComponent },
   { path: 'dashboard/finance', component: FinanceDashboard },
   { path: 'dashboard/ict', component: IctDashboard },
   { path: 'dashboard/academic', component: AcademicDashboard },
   { path: 'dashboard/admin', component: AdminDashboard },
+  { path: 'dashboard/games-coach', component: GamesCoachComponent },
+  { path: 'dashboard/hall-warden', component: HallWardenComponent },
+  { path: 'dashboard/usab', component: UsabComponent },
+  { path: 'dashboard/daruso', component: DarusoComponent },
+  { path: 'dashboard/dean-of-students', component: DeanOfStudentsComponent },
+  { path: 'dashboard/smart-card', component: SmartCardComponent },
 
   // Clearance Routes
   { path: 'clearance/request', component: ClearanceRequestComponent },
