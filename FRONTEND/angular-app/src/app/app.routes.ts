@@ -33,6 +33,10 @@ import { LaboratoryComponent } from './dashboard/laboratory/laboratory';
 import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import {DepartmentOfficerComponent} from "./dashboard/Department-officer/department-officer.component";
+import { TranscriptComponent } from './transcript/transcript';
+import { TranscriptPaymentComponent } from './transcript/payment';
+import { TranscriptFinancePaymentComponent } from './transcript/finance-payment';
+import { TranscriptDocumentsComponent } from './documents/transcript-documents/transcript-documents';
 
 export const routes: Routes = [
   // Public Routes
@@ -67,6 +71,10 @@ export const routes: Routes = [
   { path: 'clearance/confirmation', component: ClearanceConfirmationComponent },
   { path: 'clearance/history', component: ClearanceHistoryComponent },
   { path: 'clearance/report', component: ClearanceReportComponent },
+  { path: 'transcript', component: TranscriptComponent },
+  { path: 'transcript/payment', component: TranscriptPaymentComponent },
+  { path: 'documents/transcript', component: TranscriptDocumentsComponent },
+  { path: 'dashboard/finance/transcript-payments', component: TranscriptFinancePaymentComponent },
 
   // Documents & Notifications
   { path: 'documents', component: DocumentsListComponent },

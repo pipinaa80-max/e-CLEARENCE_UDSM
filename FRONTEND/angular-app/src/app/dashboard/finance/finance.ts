@@ -51,6 +51,10 @@ export class FinanceDashboard {
     return approval?.status ?? 'Pending';
   }
 
+  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
+    return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
+  }
+
   getRejectionReason(office: string): string {
     const request = this.studentRequest;
     if (!request) return '';

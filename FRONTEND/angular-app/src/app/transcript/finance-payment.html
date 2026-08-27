@@ -1,0 +1,46 @@
+<section class="finance-transcript-page">
+  <header class="finance-transcript-header">
+    <div>
+      <span>Finance Office</span>
+      <h1>Transcript Payments</h1>
+      <p>Issue control numbers and verify transcript payment receipts.</p>
+    </div>
+    <a routerLink="/dashboard/finance" class="back-link">Back to Finance</a>
+  </header>
+
+  <main class="finance-transcript-content">
+    <p class="message success-message" *ngIf="message">{{ message }}</p>
+    <p class="message error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <section class="queue-section">
+      <div class="section-heading">
+        <span>Queue 01</span>
+        <h2>Control Number Requests</h2>
+        <p>Issue a unique control number for each approved transcript request.</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!controlNumberRequests.length">No transcript requests are waiting for control numbers.</div>
+      <article class="payment-card" *ngFor="let request of controlNumberRequests">
+        <div class="request-heading">
+          <div><span class="request-label">Request #{{ request.attemptNumber }}</span><h3>{{ request.studentName }}</h3><p>{{ request.registrationNumber }} · {{ request.award }} · {{ request.transcriptCount }} transcript{{ request.transcriptCount === 1 ? '' : 's' }}</p></div>
+          <strong class="amount">TSh {{ request.amount | number }}</strong>
+        </div>
+        <div class="request-meta"><span>Graduation year <strong>{{ request.graduationYear }}</strong></span><span>Requested <strong>{{ request.requestedAt | date:'medium' }}</strong></span></div>
+        <div class="issue-row">
+          <input [(ngModel)]="controlNumbers[request.id]" placeholder="Enter control number" aria-label="Control number" />
+          <button type="button" class="primary-button" (click)="issueControlNumber(request)">Issue Control Number</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="queue-section">
+      <div class="section-heading"><span>Queue 02</span><h2>Receipt Verification</h2><p>Review the uploaded receipt and confirm the payment.</p></div>
+      <div class="empty-state" *ngIf="!receiptRequests.length">No transcript receipts are waiting for verification.</div>
+      <article class="payment-card" *ngFor="let request of receiptRequests">
+        <div class="request-heading"><div><span class="request-label">{{ request.registrationNumber }}</span><h3>{{ request.studentName }}</h3><p>Control number: {{ request.controlNumber }} · {{ request.transcriptCount }} transcript{{ request.transcriptCount === 1 ? '' : 's' }}</p></div><strong class="amount">TSh {{ request.amount | number }}</strong></div>
+        <div class="receipt-preview" *ngIf="request.receiptData"><img [src]="request.receiptData" alt="Uploaded transcript payment receipt" /></div>
+        <button type="button" class="primary-button" (click)="markPaid(request)">Verify Payment</button>
+      </article>
+    </section>
+  </main>
+</section>

@@ -47,8 +47,10 @@ export class ClearanceRequestComponent implements OnInit {
     college: ['', Validators.required],
     department: ['', Validators.required],
     programme: ['', Validators.required],
-    hall: [''],
+    residenceType: ['', Validators.required],
+    hostelHall: [''],
     roomNumber: [''],
+    residenceEvidence: [''],
     sponsor: [''],
     photo: [''],
     confirm: [false, Validators.requiredTrue]
@@ -57,6 +59,7 @@ export class ClearanceRequestComponent implements OnInit {
   photoPreview: string | null = null;
   errorMessage = '';
   isSubmitting = false;
+  hasSubmittedRequest = false;
 
   // =====================================================
   // UDSM COLLEGE → DEPARTMENT → PROGRAMME
@@ -343,6 +346,37 @@ export class ClearanceRequestComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStudentData();
+
+    if (this.hasExistingRequest()) {
+      this.loadExistingRequest();
+
+      if (this.revisionRequest) {
+        this.hasSubmittedRequest = false;
+      } else {
+        this.hasSubmittedRequest = true;
+        this.requestForm.disable();
+      }
+    }
+  }
+
+  private hasExistingRequest(): boolean {
+    const user = this.authService.getCurrentUser();
+    return !!user && this.clearanceService.getStudentRequests(user.id).length > 0;
+  }
+
+  get revisionRequest() {
+    const user = this.authService.getCurrentUser();
+    return user
+      ? this.clearanceService.getStudentRequests(user.id).at(-1)?.status === 'Rejected'
+        ? this.clearanceService.getStudentRequests(user.id).at(-1)
+        : null
+      : null;
+  }
+
+  get revisionReason(): string {
+    const request = this.revisionRequest;
+    if (!request || !request.revisionOffice) return '';
+    return request.approvals.find(approval => approval.office === request.revisionOffice)?.comment || '';
   }
 
   loadStudentData(): void {
@@ -370,8 +404,6 @@ export class ClearanceRequestComponent implements OnInit {
       college: user.college && user.college !== 'Not selected' ? user.college : '',
       department: user.department && user.department !== 'Not selected' ? user.department : '',
       programme: user.programme && user.programme !== 'Not selected' ? user.programme : '',
-      hall: user.hall || '',
-      roomNumber: user.roomNumber || '',
       sponsor: user.sponsor || '',
       photo: user.photo || ''
     });
@@ -382,6 +414,39 @@ export class ClearanceRequestComponent implements OnInit {
     }
 
     console.log('Form patched with user data:', this.requestForm.value);
+  }
+
+  private loadExistingRequest(): void {
+    const user = this.authService.getCurrentUser();
+
+    if (!user) {
+      return;
+    }
+
+    const request = this.clearanceService.getStudentRequests(user.id).at(-1);
+
+    if (!request) {
+      return;
+    }
+
+    this.requestForm.patchValue({
+      studentName: request.studentName || this.requestForm.controls.studentName.value,
+      registrationNumber: request.registrationNumber || this.requestForm.controls.registrationNumber.value,
+      college: request.college,
+      department: request.department,
+      programme: request.programme,
+      residenceType: request.residenceType || (request.hall === 'Off Campus' ? 'Off Campus' : 'Hostel Dwellers'),
+      hostelHall: request.residenceType === 'Hostel Dwellers' ? request.hall || '' : '',
+      roomNumber: request.roomNumber || '',
+      residenceEvidence: request.residenceEvidence || '',
+      sponsor: request.sponsor || '',
+      photo: request.photo || this.requestForm.controls.photo.value,
+      confirm: true
+    });
+
+    if (request.photo) {
+      this.photoPreview = request.photo;
+    }
   }
 
   // =====================================================
@@ -403,6 +468,41 @@ export class ClearanceRequestComponent implements OnInit {
     this.requestForm.patchValue({
       programme: ''
     });
+  }
+
+  onResidenceTypeChange(): void {
+    this.requestForm.patchValue({
+      hostelHall: '',
+      roomNumber: '',
+      residenceEvidence: ''
+    });
+    this.errorMessage = '';
+  }
+
+  onResidenceEvidenceSelected(event: Event): void {
+    this.errorMessage = '';
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    this.requestForm.controls.residenceEvidence.setValue('');
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.errorMessage = 'Residence evidence must be an image.';
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.requestForm.controls.residenceEvidence.setValue(reader.result as string);
+    };
+    reader.onerror = () => {
+      this.errorMessage = 'Failed to read residence evidence.';
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
   }
 
   // =====================================================
@@ -487,6 +587,14 @@ export class ClearanceRequestComponent implements OnInit {
     this.errorMessage = '';
     this.isSubmitting = true;
 
+    if (this.hasSubmittedRequest || (this.hasExistingRequest() && !this.revisionRequest)) {
+      this.hasSubmittedRequest = true;
+      this.loadExistingRequest();
+      this.requestForm.disable();
+      this.isSubmitting = false;
+      return;
+    }
+
     if (this.requestForm.invalid) {
       this.errorMessage = 'Please complete all required clearance information correctly.';
       this.requestForm.markAllAsTouched();
@@ -505,6 +613,18 @@ export class ClearanceRequestComponent implements OnInit {
 
     const value = this.requestForm.getRawValue();
 
+    if (value.residenceType === 'Off Campus' && !value.residenceEvidence) {
+      this.errorMessage = 'Please upload a photo showing proof of your off-campus residence.';
+      this.isSubmitting = false;
+      return;
+    }
+
+    if (value.residenceType === 'Hostel Dwellers' && (!value.hostelHall.trim() || !value.roomNumber.trim())) {
+      this.errorMessage = 'Please enter your hostel hall and room number.';
+      this.isSubmitting = false;
+      return;
+    }
+
     if (!value.studentName || !value.registrationNumber) {
       this.errorMessage = 'Student information is missing. Please refresh the page and try again.';
       this.isSubmitting = false;
@@ -512,12 +632,40 @@ export class ClearanceRequestComponent implements OnInit {
     }
 
     try {
+      const existingRequest = this.revisionRequest;
+
+      if (existingRequest) {
+        const resubmitted = this.clearanceService.resubmitRequest(existingRequest.id, {
+          college: value.college,
+          department: value.department,
+          programme: value.programme,
+          hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
+          roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+          residenceType: value.residenceType as 'Off Campus' | 'Hostel Dwellers',
+          residenceEvidence: value.residenceEvidence,
+          sponsor: value.sponsor,
+          photo: value.photo
+        });
+
+        if (!resubmitted) {
+          throw new Error('This request could not be resubmitted. Please refresh and try again.');
+        }
+
+        this.authService.updateCurrentUser(user);
+        this.notificationService.createNotification(
+            user.id,
+            'Clearance request resubmitted',
+            `Your corrected request has been sent back to ${existingRequest.revisionOffice} for review.`,
+            'success'
+        );
+        this.router.navigate(['/profile']);
+        return;
+      }
+
       // Update student account
       user.college = value.college;
       user.department = value.department;
       user.programme = value.programme;
-      user.hall = value.hall;
-      user.roomNumber = value.roomNumber;
       user.sponsor = value.sponsor;
       user.photo = value.photo;
       user.fullName = value.studentName;
@@ -525,13 +673,23 @@ export class ClearanceRequestComponent implements OnInit {
 
       this.authService.updateCurrentUser(user);
 
-      // Use the existing service method with individual parameters
-      this.clearanceService.createRequest(
-          user.id,           // studentId
-          value.college,     // college
-          value.department,  // department
-          value.programme    // programme
-      );
+      this.clearanceService.createFullRequest({
+        studentId: user.id,
+        studentName: value.studentName,
+        registrationNumber: value.registrationNumber,
+        college: value.college,
+        department: value.department,
+        programme: value.programme,
+        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
+        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+        residenceType: value.residenceType as 'Off Campus' | 'Hostel Dwellers',
+        residenceEvidence: value.residenceEvidence,
+        sponsor: value.sponsor,
+        photo: value.photo
+      });
+
+      this.hasSubmittedRequest = true;
+      this.requestForm.disable();
 
       this.notificationService.createNotification(
           user.id,
@@ -544,6 +702,15 @@ export class ClearanceRequestComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Error submitting request:', error);
+
+      if (error.message?.includes('already have a submitted clearance request')) {
+        this.hasSubmittedRequest = true;
+        this.errorMessage = '';
+        this.loadExistingRequest();
+        this.requestForm.disable();
+        return;
+      }
+
       this.errorMessage = error.message || 'Failed to submit clearance request. Please try again.';
     } finally {
       this.isSubmitting = false;

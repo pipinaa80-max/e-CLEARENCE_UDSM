@@ -57,24 +57,10 @@
             Principal Approval
           </h1>
 
-          <span class="page-description">
-            Review and process student clearance applications.
-          </span>
-
         </div>
 
 
-        <div class="pending-box">
-
-          <strong>
-            {{ requests.length }}
-          </strong>
-
-          <small>
-            Pending
-          </small>
-
-        </div>
+        <span class="count">{{ requests.length }} Pending</span>
 
       </header>
 
@@ -101,98 +87,21 @@
           *ngFor="let request of requests"
         >
 
-          <!-- CARD HEADER -->
-
-          <div class="request-header">
-
-            <div>
-
-              <span class="clearance-label">
-                Graduation Clearance
-              </span>
-
-              <h2>
-                {{ request.studentName || 'Student' }}
-              </h2>
-
-            </div>
-
-
-            <span class="pending-status">
-              PENDING
-            </span>
-
+          <div class="student-info">
+            <span>Graduation Clearance</span>
+            <h2>{{ request.programme }}</h2>
+            <p>Department: {{ request.department }} · {{ request.college }}</p>
+            <small>Submitted: {{ request.requestDate | date:'mediumDate' }}</small>
           </div>
 
-
-          <!-- STUDENT INFORMATION -->
-
-          <div class="student-details">
-
-            <div class="detail">
-
-              <span>
-                Programme
-              </span>
-
-              <strong>
-                {{ request.programme }}
-              </strong>
-
-            </div>
-
-
-            <div class="detail">
-
-              <span>
-                Department
-              </span>
-
-              <strong>
-                {{ request.department }}
-              </strong>
-
-            </div>
-
-
-            <div class="detail">
-
-              <span>
-                College
-              </span>
-
-              <strong>
-                {{ request.college }}
-              </strong>
-
-            </div>
-
-
-            <div class="detail">
-
-              <span>
-                Submitted
-              </span>
-
-              <strong>
-                {{ request.requestDate | date:'mediumDate' }}
-              </strong>
-
-            </div>
-
-          </div>
-
-
-          <!-- ACTIONS -->
-
-          <div class="request-actions">
+          <div class="actions">
 
             <button
               type="button"
-              class="reject-button"
+              class="return-button"
               (click)="openRejectForm(request)"
             >
-              Reject
+              Return with Reason
             </button>
 
 
@@ -217,10 +126,6 @@
         class="empty-state"
         *ngIf="!requests.length"
       >
-
-        <div class="empty-icon">
-          ✓
-        </div>
 
         <h2>
           No pending requests

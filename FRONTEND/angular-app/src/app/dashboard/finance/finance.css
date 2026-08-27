@@ -262,6 +262,30 @@
   line-height: 1.4;
 }
 
+.approval-status {
+  display: inline-block;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.approval-status.approved {
+  background: #e7f5ea;
+  color: #218739;
+}
+
+.approval-status.pending {
+  background: #fff7df;
+  color: #9a7100;
+}
+
+.approval-status.rejected {
+  background: #fdeaea;
+  color: #c73535;
+}
+
 /* ACTIONS */
 
 .request-actions {

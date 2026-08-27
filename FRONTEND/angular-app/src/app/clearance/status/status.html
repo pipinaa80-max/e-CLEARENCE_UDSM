@@ -97,6 +97,37 @@
     ================================================== -->
 
     <section
+      *ngIf="request.status === 'Rejected' && request.revisionOffice"
+      class="waiting-card revision-card"
+    >
+
+      <h2>
+        Changes Required
+      </h2>
+
+      <p>
+        {{ request.revisionOffice }} returned this request for correction.
+      </p>
+
+      <p
+        class="rejection-comment"
+        *ngIf="request.revisionOffice"
+      >
+        <strong>Reason:</strong>
+        {{ getRejectionReason(request.revisionOffice) }}
+      </p>
+
+      <a
+        routerLink="/clearance/request"
+        class="approval-button"
+      >
+        Correct and Resubmit
+      </a>
+
+    </section>
+
+
+    <section
       *ngIf="request.currentStage === 'Convocation'"
       class="waiting-card"
     >
@@ -110,12 +141,15 @@
         payment and upload your payment receipt.
       </p>
 
-      <a
-        routerLink="/convocation"
-        class="approval-button"
-      >
-        Continue to Convocation
-      </a>
+      <div class="step-navigation">
+        <button type="button" class="back-button" (click)="goBack()">Back</button>
+        <a
+          routerLink="/convocation"
+          class="approval-button"
+        >
+          Next
+        </a>
+      </div>
 
     </section>
 
@@ -234,6 +268,18 @@
 
       </div>
 
+      <div class="step-navigation">
+        <button type="button" class="back-button" (click)="goBack()">Back</button>
+        <button
+          type="button"
+          class="approval-button"
+          [disabled]="!canAdvanceFromCurrentStage() || isLoading"
+          (click)="continueToNextStage()"
+        >
+          Next
+        </button>
+      </div>
+
     </section>
 
 
@@ -254,6 +300,18 @@
         Your clearance request is now waiting
         for approval from your department.
       </p>
+
+      <div class="step-navigation">
+        <button type="button" class="back-button" (click)="goBack()">Back</button>
+        <button
+          type="button"
+          class="approval-button"
+          [disabled]="!canAdvanceFromCurrentStage() || isLoading"
+          (click)="continueToNextStage()"
+        >
+          Next
+        </button>
+      </div>
 
     </section>
 
@@ -276,6 +334,18 @@
         for Principal approval.
       </p>
 
+      <div class="step-navigation">
+        <button type="button" class="back-button" (click)="goBack()">Back</button>
+        <button
+          type="button"
+          class="approval-button"
+          [disabled]="!canAdvanceFromCurrentStage() || isLoading"
+          (click)="continueToNextStage()"
+        >
+          Next
+        </button>
+      </div>
+
     </section>
 
 
@@ -296,6 +366,18 @@
         Your clearance request is waiting
         for final Finance approval.
       </p>
+
+      <div class="step-navigation">
+        <button type="button" class="back-button" (click)="goBack()">Back</button>
+        <button
+          type="button"
+          class="approval-button"
+          [disabled]="!canAdvanceFromCurrentStage() || isLoading"
+          (click)="continueToNextStage()"
+        >
+          Next
+        </button>
+      </div>
 
     </section>
 
@@ -318,12 +400,21 @@
         completed.
       </p>
 
-      <a
-        routerLink="/clearance/confirmation"
-        class="approval-button"
-      >
-        View Clearance Confirmation
-      </a>
+      <div class="step-navigation">
+        <a
+          routerLink="/dashboard"
+          class="back-button"
+        >
+          Back to Dashboard
+        </a>
+
+        <a
+          routerLink="/transcript"
+          class="approval-button"
+        >
+          Proceed to Request Transcript &amp; Clearance
+        </a>
+      </div>
 
     </section>
 

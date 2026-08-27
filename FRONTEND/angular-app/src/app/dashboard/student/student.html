@@ -33,6 +33,9 @@
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications
         <span class="notification-badge" *ngIf="unreadNotifications">
@@ -96,6 +99,22 @@
         </div>
       </div>
     </header>
+
+    <!-- =========================
+         NOTIFICATIONS BANNER
+    ========================== -->
+    <div class="notifications-banner" *ngIf="latestNotifications.length > 0">
+      <div class="notification-item" *ngFor="let notification of latestNotifications" [ngClass]="notification.type">
+        <div class="notification-content">
+          <span class="notification-icon">🔔</span>
+          <div class="notification-text">
+            <strong>{{ notification.title }}</strong>
+            <p>{{ notification.message }}</p>
+          </div>
+        </div>
+        <button class="close-notification" (click)="markAsRead(notification.id)">×</button>
+      </div>
+    </div>
 
     <!-- =========================
          STUDENT PROFILE SUMMARY

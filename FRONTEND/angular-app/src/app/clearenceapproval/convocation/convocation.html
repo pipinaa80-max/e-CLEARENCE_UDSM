@@ -245,6 +245,16 @@
           Waiting for Convocation verification
         </div>
 
+        <button
+          *ngIf="canContinueToStep2"
+          type="button"
+          class="primary-button"
+          [disabled]="isLoading"
+          (click)="continueToStep2()"
+        >
+          Next
+        </button>
+
       </section>
 
 

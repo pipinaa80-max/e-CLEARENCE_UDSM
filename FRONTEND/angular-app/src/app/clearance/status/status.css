@@ -444,6 +444,13 @@
   transform: translateY(-1px);
 }
 
+.approval-button:disabled {
+  background: var(--border-soft);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
 
 /* =====================================================
    CLEARANCE OFFICES
@@ -767,4 +774,34 @@
     padding: 48px 24px;
   }
 
+}
+
+.back-button {
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 17px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--udsm-blue-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: var(--surface-soft);
+}
+
+.step-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.step-navigation .approval-button,
+.step-navigation .back-button {
+  margin-top: 0;
 }

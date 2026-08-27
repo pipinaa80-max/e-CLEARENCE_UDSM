@@ -1,0 +1,56 @@
+<section class="payment-page">
+  <main class="payment-card" *ngIf="hasApproval">
+    <span class="section-kicker">Step 03</span>
+    <h1>Transcript Payment</h1>
+    <p *ngIf="!request">Your transcript request is approved. Request a payment control number to continue.</p>
+
+    <section class="payment-step" *ngIf="!request">
+      <h2>Request payment control number</h2>
+      <label class="copy-count-field">
+        <span>Total number of transcripts</span>
+        <input type="number" min="1" step="1" [(ngModel)]="transcriptCount" aria-label="Total number of transcripts" />
+      </label>
+      <p>Amount for {{ transcriptCount }} transcript{{ transcriptCount === 1 ? '' : 's' }}: <strong>TSh {{ nextRequestAmount | number }}</strong>.</p>
+      <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
+    </section>
+
+    <ng-container *ngIf="request">
+    <p>Use the control number issued by Finance to pay for your transcript request.</p>
+
+    <div class="payment-summary">
+      <div><span>Request</span><strong>#{{ request.attemptNumber }}</strong></div>
+      <div><span>{{ request.transcriptCount }} Transcript{{ request.transcriptCount === 1 ? '' : 's' }}</span><strong>TSh {{ request.amount | number }}</strong></div>
+      <div><span>Status</span><strong>{{ request.status }}</strong></div>
+    </div>
+
+    <section class="payment-step" *ngIf="request.status === 'Pending Control Number'">
+      <h2>Request payment control number</h2>
+      <p>Finance will issue a unique control number for this transcript payment.</p>
+      <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
+    </section>
+
+    <section class="payment-step" *ngIf="request.status === 'Awaiting Payment'">
+      <h2>Pay using your control number</h2>
+      <div class="control-number">{{ request.controlNumber }}</div>
+      <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your receipt.</p>
+      <label class="receipt-upload">
+        <span>Upload payment receipt photo</span>
+        <input type="file" accept="image/*" (change)="onReceiptSelected($event)" />
+      </label>
+    </section>
+
+    <section class="payment-step success-step" *ngIf="request.status === 'Receipt Submitted' || request.status === 'Paid'">
+      <h2>Receipt submitted</h2>
+      <p>Your payment receipt has been sent to Finance for verification.</p>
+      <div *ngIf="request.status === 'Paid'" class="step-navigation">
+        <span>Finance has approved your payment.</span>
+        <a routerLink="/documents/transcript" class="primary-button">Next: Attach Documents</a>
+      </div>
+    </section>
+
+    <p class="message success-message" *ngIf="message">{{ message }}</p>
+    <p class="message error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </ng-container>
+    <a routerLink="/dashboard" class="back-link">Back to Dashboard</a>
+  </main>
+</section>

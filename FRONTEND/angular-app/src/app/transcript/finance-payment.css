@@ -1,0 +1,30 @@
+:host { display: block; min-height: 100vh; }
+.finance-transcript-page { min-height: 100vh; padding: 36px 24px 60px; background: linear-gradient(135deg, #eaf4f8, #f7f8fa 48%, #fff8e8); color: #24323a; }
+.finance-transcript-header, .finance-transcript-content { width: min(100%, 1050px); margin: 0 auto; }
+.finance-transcript-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 28px; }
+.finance-transcript-header > div > span, .section-heading > span { color: #00679b; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.finance-transcript-header h1 { margin: 8px 0 0; color: #003b5c; font-size: 30px; }
+.finance-transcript-header p, .section-heading p { color: #68757d; }
+.back-link { display: inline-flex; min-height: 42px; align-items: center; padding: 0 15px; border: 1px solid #b8ccd5; border-radius: 7px; background: #fff; color: #003b5c; font-size: 13px; font-weight: 800; text-decoration: none; }
+.queue-section { padding: 26px 0; border-top: 1px solid #dfe7eb; }
+.section-heading h2 { margin: 7px 0 0; color: #003b5c; font-size: 21px; }
+.section-heading p { margin: 7px 0 18px; font-size: 13px; }
+.payment-card { margin-top: 14px; padding: 21px; border: 1px solid #e0e7eb; border-radius: 10px; background: #fff; box-shadow: 0 5px 18px rgba(0, 59, 92, .06); }
+.request-heading { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+.request-label { color: #00679b; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.request-heading h3 { margin: 6px 0; color: #003b5c; font-size: 17px; }
+.request-heading p { margin: 0; color: #68757d; font-size: 12px; }
+.amount { color: #218739; font-size: 16px; white-space: nowrap; }
+.request-meta { display: flex; gap: 24px; margin: 17px 0; padding: 12px; background: #f7fafb; color: #68757d; font-size: 11px; }
+.request-meta strong { margin-left: 5px; color: #35434a; }
+.issue-row { display: flex; gap: 10px; }
+.issue-row input { flex: 1; min-height: 42px; padding: 0 12px; border: 1px solid #cbd6dc; border-radius: 7px; font: inherit; font-size: 13px; }
+.primary-button { min-height: 42px; padding: 0 16px; border: 1px solid #00679b; border-radius: 7px; background: #00679b; color: #fff; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.primary-button:hover { background: #003b5c; }
+.receipt-preview { width: 180px; height: 130px; margin: 16px 0; overflow: hidden; border: 1px solid #d7e1e5; border-radius: 7px; background: #f7fafb; }
+.receipt-preview img { width: 100%; height: 100%; object-fit: contain; }
+.empty-state { padding: 18px; border: 1px dashed #b8ccd5; border-radius: 8px; background: rgba(255,255,255,.6); color: #68757d; font-size: 13px; }
+.message { margin: 0 0 18px; padding: 12px 14px; border-left: 4px solid; font-size: 13px; }
+.success-message { border-color: #218739; background: #f0f8f2; color: #218739; }
+.error-message { border-color: #c73535; background: #fff4f4; color: #a52222; }
+@media (max-width: 650px) { .finance-transcript-page { padding: 24px 14px 40px; } .finance-transcript-header { flex-direction: column; } .request-heading, .issue-row { flex-direction: column; } .issue-row .primary-button { width: 100%; } .request-meta { flex-direction: column; gap: 8px; } }

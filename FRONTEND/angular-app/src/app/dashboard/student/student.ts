@@ -6,6 +6,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { NotificationItem } from '../../core/models/notification.model';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -272,6 +273,24 @@ export class StudentDashboard implements OnInit {
     return this.notificationService
         .getNotifications(user.id)
         .filter((item) => !item.read).length;
+  }
+
+  // =====================================================
+  // LATEST NOTIFICATIONS
+  // =====================================================
+
+  get latestNotifications(): NotificationItem[] {
+    const user = this.currentUser;
+    if (!user) return [];
+
+    return this.notificationService
+      .getNotifications(user.id)
+      .filter(n => !n.read)
+      .slice(0, 2); // Show only top 2 unread notifications
+  }
+
+  markAsRead(id: string): void {
+    this.notificationService.markAsRead(id);
   }
 
   // =====================================================

@@ -185,9 +185,38 @@ export class ClearanceStatusComponent {
         return 'Step 2: Clearance Offices';
       case 'Parallel':
         return 'Step 3: Department';
+      case 'Department':
+        return 'Step 4: Principal';
+      case 'Principal':
+        return 'Step 5: Finance';
+      case 'Finance':
+        return 'Clearance Confirmation';
       default:
         return '';
     }
+  }
+
+  canAdvanceFromCurrentStage(): boolean {
+    const request = this.request;
+    if (!request) return false;
+
+    if (request.currentStage === 'Convocation') {
+      return this.isConvocationApproved;
+    }
+
+    if (request.currentStage === 'Parallel') {
+      return this.allClearanceOfficesApproved;
+    }
+
+    if (
+        request.currentStage === 'Department' ||
+        request.currentStage === 'Principal' ||
+        request.currentStage === 'Finance'
+    ) {
+      return this.getOfficeStatus(request.currentStage) === 'Approved';
+    }
+
+    return false;
   }
 
   // =====================================================
@@ -233,6 +262,31 @@ export class ClearanceStatusComponent {
         }
         nextStage = 'Department';
         nextOffice = 'Department';
+      } else if (request.currentStage === 'Department') {
+        if (this.getOfficeStatus('Department') !== 'Approved') {
+          this.errorMessage = 'Department approval is required first.';
+          this.isLoading = false;
+          return;
+        }
+        nextStage = 'Principal';
+        nextOffice = 'Principal';
+      } else if (request.currentStage === 'Principal') {
+        if (this.getOfficeStatus('Principal') !== 'Approved') {
+          this.errorMessage = 'Principal approval is required first.';
+          this.isLoading = false;
+          return;
+        }
+        nextStage = 'Finance';
+        nextOffice = 'Finance';
+      } else if (request.currentStage === 'Finance') {
+        if (this.getOfficeStatus('Finance') !== 'Approved') {
+          this.errorMessage = 'Finance approval is required first.';
+          this.isLoading = false;
+          return;
+        }
+        nextStage = 'Completed';
+        nextOffice = undefined;
+        allRequests[requestIndex].status = 'Completed';
       } else {
         this.errorMessage = 'Cannot continue from current stage.';
         this.isLoading = false;
@@ -283,6 +337,10 @@ export class ClearanceStatusComponent {
     if (user) {
       this.clearanceService.getStudentRequests(user.id);
     }
+  }
+
+  goBack(): void {
+    window.history.back();
   }
 
   // =====================================================

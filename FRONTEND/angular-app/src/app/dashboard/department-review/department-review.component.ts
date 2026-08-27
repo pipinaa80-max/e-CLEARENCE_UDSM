@@ -180,11 +180,15 @@ export class DepartmentReviewComponent implements OnInit {
         }
 
         try {
-            this.clearanceService.approveRequest(
+            const approved = this.clearanceService.approveRequest(
                 this.request.id,
                 'Department',
                 staff.fullName || staff.firstName + ' ' + staff.lastName
             );
+
+            if (!approved) {
+                throw new Error('This request is no longer pending Department approval.');
+            }
 
             this.loadRequest();
 
@@ -227,12 +231,16 @@ export class DepartmentReviewComponent implements OnInit {
         }
 
         try {
-            this.clearanceService.rejectRequest(
+            const rejected = this.clearanceService.rejectRequest(
                 this.request.id,
                 'Department',
                 staff.fullName || staff.firstName + ' ' + staff.lastName,
                 this.comment.trim()
             );
+
+            if (!rejected) {
+                throw new Error('This request is no longer pending Department approval.');
+            }
 
             this.loadRequest();
 

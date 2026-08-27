@@ -96,11 +96,17 @@ export class ClearanceService {
     programme: string;
     hall?: string;
     roomNumber?: string;
+    residenceType?: 'Off Campus' | 'Hostel Dwellers';
+    residenceEvidence?: string;
     sponsor?: string;
     photo?: string;
     clearanceType?: string;
     remarks?: string;
   }): ClearanceRequest {
+
+    if (this.getStudentRequests(requestData.studentId).length > 0) {
+      throw new Error('You already have a submitted clearance request.');
+    }
 
     const request: ClearanceRequest = {
       id: crypto.randomUUID(),
@@ -112,6 +118,8 @@ export class ClearanceService {
       programme: requestData.programme,
       hall: requestData.hall || '',
       roomNumber: requestData.roomNumber || '',
+      residenceType: requestData.residenceType,
+      residenceEvidence: requestData.residenceEvidence || '',
       sponsor: requestData.sponsor || '',
       photo: requestData.photo || '',
       clearanceType: requestData.clearanceType || 'Graduation Clearance',
@@ -278,11 +286,12 @@ export class ClearanceService {
       /*
        * Only pending requests.
        */
-      if (request.status !== 'Pending') {
+      if (request.status !== 'Pending' &&
+          !(request.status === 'Rejected' && request.revisionOffice === office)) {
         return false;
       }
 
-      if (approval?.status !== 'Pending') {
+      if (approval?.status !== 'Pending' && approval?.status !== 'Rejected') {
         return false;
       }
 
@@ -425,19 +434,23 @@ export class ClearanceService {
       requestId: string,
       office: ClearanceOffice,
       staffName: string
-  ): void {
+  ): boolean {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
     if (!request || !approval || approval.status !== 'Pending') {
-      return;
+      return false;
+    }
+
+    if (office === 'Department' && request.currentStage !== 'Department') {
+      return false;
     }
 
     /*
      * Convocation should only approve after receipt has been submitted.
      */
     if (office === 'Convocation' && !request.convocation?.receiptSubmittedAt) {
-      return;
+      return false;
     }
 
     approval.status = 'Approved';
@@ -445,8 +458,8 @@ export class ClearanceService {
     approval.reviewedBy = staffName;
     approval.reviewedAt = new Date().toISOString();
 
-    this.moveToNextStage(request);
     this.save(request);
+    return true;
   }
 
   // =====================================================
@@ -458,16 +471,20 @@ export class ClearanceService {
       office: ClearanceOffice,
       staffName: string,
       comment: string
-  ): void {
+  ): boolean {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
     if (!request || !approval || approval.status !== 'Pending') {
-      return;
+      return false;
+    }
+
+    if (office === 'Department' && request.currentStage !== 'Department') {
+      return false;
     }
 
     if (!comment.trim()) {
-      return;
+      return false;
     }
 
     approval.status = 'Rejected';
@@ -476,8 +493,44 @@ export class ClearanceService {
     approval.reviewedAt = new Date().toISOString();
 
     request.status = 'Rejected';
+    request.revisionOffice = office;
 
     this.save(request);
+    return true;
+  }
+
+  resubmitRequest(
+      requestId: string,
+      requestData: Partial<Pick<ClearanceRequest,
+          'college' | 'department' | 'programme' | 'hall' | 'roomNumber' |
+          'residenceType' | 'residenceEvidence' | 'sponsor' | 'photo'>>
+  ): boolean {
+    const request = this.getRequest(requestId);
+
+    if (!request || request.status !== 'Rejected' || !request.revisionOffice) {
+      return false;
+    }
+
+    Object.assign(request, requestData);
+
+    const approval = request.approvals.find(item => item.office === request.revisionOffice);
+    if (!approval) return false;
+
+    approval.status = 'Pending';
+    approval.comment = undefined;
+    approval.reviewedBy = undefined;
+    approval.reviewedAt = undefined;
+    request.status = 'Pending';
+    request.currentStage = request.revisionOffice === 'Department'
+        ? 'Department'
+        : request.revisionOffice === 'Convocation'
+            ? 'Convocation'
+            : 'Parallel';
+    request.currentOffice = request.revisionOffice;
+    request.revisionOffice = undefined;
+
+    this.save(request);
+    return true;
   }
 
   // =====================================================

@@ -1,0 +1,85 @@
+<section class="transcript-page">
+  <div class="transcript-wrapper">
+    <header class="transcript-header">
+      <div>
+        <span class="step-label">Clearance Step 3</span>
+        <h1>Transcript</h1>
+        <p>Complete the transcript request and payment process.</p>
+      </div>
+      <a routerLink="/clearance/status" class="back-link">Back to Clearance</a>
+    </header>
+
+    <main class="transcript-card">
+      <section class="transcript-state-header">
+        <div class="state-icon">3</div>
+        <div>
+          <span class="section-kicker">Transcript request</span>
+          <h2>{{ request?.programme || 'Student Transcript Request' }}</h2>
+          <p>{{ request?.department || 'Programme information will be taken from your clearance request.' }}</p>
+        </div>
+      </section>
+
+      <form [formGroup]="transcriptForm" (ngSubmit)="approve()">
+      <section class="form-section">
+        <div class="section-heading">
+          <span>Step 01</span>
+          <h2>Applicant Information</h2>
+          <p>Confirm the details that will appear on your transcript request.</p>
+        </div>
+
+        <div class="fields-grid">
+          <label class="field"><span>Surname</span><input formControlName="surname" type="text" /></label>
+          <label class="field"><span>Other Name(s)</span><input formControlName="otherNames" type="text" /></label>
+          <label class="field"><span>Registration Number</span><input formControlName="registrationNumber" type="text" /></label>
+          <label class="field"><span>Graduation Year</span><select formControlName="graduationYear"><option value="" disabled>Select year</option><option *ngFor="let year of graduationYears" [value]="year">{{ year }}</option></select></label>
+          <label class="field full-width"><span>Award</span><select formControlName="award"><option value="" disabled>Select award</option><option *ngFor="let award of awards" [value]="award">{{ award }}</option></select></label>
+          <label class="field"><span>Phone Number</span><input formControlName="phone" type="tel" /></label>
+          <label class="field"><span>Email Address</span><input formControlName="email" type="email" /></label>
+          <label class="field full-width"><span>Physical Address</span><textarea formControlName="physicalAddress" rows="3" placeholder="Enter your current physical address"></textarea></label>
+        </div>
+      </section>
+
+      <section class="terms-section">
+        <div class="section-heading">
+          <span>Step 02</span>
+          <h2>Charges, Payment and Required Documentation</h2>
+          <p>Review these instructions before choosing Approve.</p>
+        </div>
+
+        <div class="terms-copy">
+          <h3>Charges and mode of payment</h3>
+          <p>The first transcript request costs TSh 15,000. Each additional transcript request costs TSh 5,000.</p>
+          <p>For non-Tanzanian nationals, the transcript charge is US$20 for the first copy and US$10 for each additional copy.</p>
+          <p>Payment is made through the University payment control number. Keep the payment receipt for submission during the next step.</p>
+
+          <h3>Required documentation</h3>
+          <p>Attach the required identification and supporting documents requested by the University, including a valid passport-size photograph and proof of payment where applicable.</p>
+          <p>Make sure all information is accurate. Incomplete or incorrect requests may be returned for correction.</p>
+        </div>
+
+        <label class="terms-check">
+          <input type="checkbox" formControlName="termsAccepted" />
+          <span>I have read and agree to the charges, payment instructions and required documentation.</span>
+        </label>
+      </section>
+
+        <p class="message" *ngIf="message">{{ message }}</p>
+
+        <div class="action-row">
+          <button type="button" class="secondary-button" (click)="reject()" [disabled]="isSubmitted">Reject</button>
+          <button type="submit" class="primary-button" [disabled]="isSubmitted">Approve and Proceed to Payment</button>
+        </div>
+      </form>
+
+      <section class="decision-card" *ngIf="isSubmitted" [class.approved]="decision === 'Approved'" [class.rejected]="decision === 'Rejected'">
+        <div class="decision-icon">{{ decision === 'Approved' ? '✓' : '!' }}</div>
+        <div>
+          <span class="state-label">Request status</span>
+          <strong>{{ decision }}</strong>
+          <p *ngIf="decision === 'Approved'">Your request is approved. Continue to the Transcript Payment Dashboard.</p>
+          <p *ngIf="decision === 'Rejected'">This transcript request has been rejected.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</section>

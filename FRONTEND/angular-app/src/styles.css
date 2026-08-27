@@ -1,6 +1,7 @@
 :root {
   --udsm-blue: #0864af;
   --udsm-blue-dark: #053f70;
+  --udsm-blue-light: #e9f3fb;
   --udsm-gold: #f6b418;
   --udsm-gold-hover: #e09f07;
   --bg-light: #f4f7fb;
@@ -16,6 +17,7 @@
   --radius-card: 12px;
   --radius-control: 8px;
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--udsm-blue) 15%, transparent);
+  --transition-fast: 160ms ease;
 }
 
 html,
@@ -30,6 +32,10 @@ body {
 
 body {
   min-height: 100vh;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -42,8 +48,13 @@ textarea {
 input,
 select,
 textarea {
+  min-height: 42px;
+  padding: 9px 11px;
+  background: var(--surface);
   border-color: var(--border-soft);
   border-radius: var(--radius-control);
+  color: var(--text-dark);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
 input:focus,
@@ -54,12 +65,52 @@ textarea:focus {
   outline: none;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  opacity: 1;
+}
+
+textarea {
+  min-height: 100px;
+}
+
 * {
   box-sizing: border-box;
 }
 
 a {
   color: var(--udsm-blue);
+  text-underline-offset: 0.16em;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--udsm-blue-dark);
+}
+
+button {
+  min-height: 40px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--udsm-gold) 45%, #ffffff);
+  color: var(--udsm-blue-dark);
 }
 
 button,
@@ -68,9 +119,25 @@ a {
 }
 
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--udsm-gold) 85%, #ffffff);
   outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --radius-card: 10px;
+    --radius-control: 7px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* One consistent, easy-to-find session action on every dashboard sidebar. */

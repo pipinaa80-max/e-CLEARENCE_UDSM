@@ -11,6 +11,15 @@
   <!-- MAIN CARD -->
   <section class="request-card">
 
+    <div class="error-message" *ngIf="hasSubmittedRequest">
+      You have already submitted a clearance request.
+    </div>
+
+    <div class="revision-message" *ngIf="revisionRequest">
+      <strong>Changes required by {{ revisionRequest.revisionOffice }}</strong>
+      <span>{{ revisionReason || 'Please review and correct your information before resubmitting.' }}</span>
+    </div>
+
     <!-- INFORMATION -->
     <div class="request-info">
       <div class="request-info-icon">i</div>
@@ -102,12 +111,27 @@
         <div class="fields-grid">
           <label class="field">
             <span>Hall</span>
-            <input type="text" formControlName="hall" placeholder="Enter your hall" />
+            <select formControlName="residenceType" (change)="onResidenceTypeChange()">
+              <option value="" disabled>Select residence</option>
+              <option value="Off Campus">Off Campus</option>
+              <option value="Hostel Dwellers">Hostel Dwellers</option>
+            </select>
           </label>
 
-          <label class="field">
+          <label class="field" *ngIf="requestForm.controls.residenceType.value === 'Hostel Dwellers'">
+            <span>Hostel Hall</span>
+            <input type="text" formControlName="hostelHall" placeholder="Enter your hall" />
+          </label>
+
+          <label class="field" *ngIf="requestForm.controls.residenceType.value === 'Hostel Dwellers'">
             <span>Room Number</span>
             <input type="text" formControlName="roomNumber" placeholder="Enter room number" />
+          </label>
+
+          <label class="field full-width" *ngIf="requestForm.controls.residenceType.value === 'Off Campus'">
+            <span>Residence Evidence Photo</span>
+            <input type="file" accept="image/*" (change)="onResidenceEvidenceSelected($event)" />
+            <small class="field-hint">Upload a photo showing proof of your residence.</small>
           </label>
 
           <label class="field full-width">
@@ -161,8 +185,9 @@
           Cancel
         </button>
 
-        <button type="submit" class="submit-button" [disabled]="requestForm.invalid || isSubmitting">
-          <span *ngIf="!isSubmitting">Submit Clearance Request</span>
+        <button type="submit" class="submit-button" [disabled]="hasSubmittedRequest || requestForm.invalid || isSubmitting">
+          <span *ngIf="!isSubmitting && !hasSubmittedRequest">{{ revisionRequest ? 'Resubmit Clearance Request' : 'Submit Clearance Request' }}</span>
+          <span *ngIf="hasSubmittedRequest">Clearance Request Submitted</span>
           <span *ngIf="isSubmitting">
             <span class="spinner"></span> Submitting...
           </span>

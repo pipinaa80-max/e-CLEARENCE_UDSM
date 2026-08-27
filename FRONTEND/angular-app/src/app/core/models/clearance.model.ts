@@ -43,6 +43,8 @@ export interface ClearanceRequest {
   programme: string;
   hall?: string;                  // Added
   roomNumber?: string;            // Added
+  residenceType?: 'Off Campus' | 'Hostel Dwellers';
+  residenceEvidence?: string;
   sponsor?: string;               // Added
   photo?: string;                 // Added
   clearanceType?: string;         // Added
@@ -50,6 +52,7 @@ export interface ClearanceRequest {
   requestDate: string;
   status: 'Pending' | 'Completed' | 'Rejected';
   currentOffice?: ClearanceOffice;
+  revisionOffice?: ClearanceOffice;
   currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Completed';
   convocation?: ConvocationPayment;
   approvals: OfficeApproval[];

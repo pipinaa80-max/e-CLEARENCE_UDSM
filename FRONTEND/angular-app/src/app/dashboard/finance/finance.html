@@ -21,6 +21,10 @@
         Pending Requests
       </a>
 
+      <a routerLink="/dashboard/finance/transcript-payments">
+        Transcript Payments
+      </a>
+
       <button
         type="button"
         (click)="logout()"
@@ -167,6 +171,23 @@
             </strong>
 
           </div>
+
+            <div class="detail convocation-status-detail">
+
+              <span>
+                Convocation Approval
+              </span>
+
+              <strong
+                class="approval-status"
+                [class.approved]="getRequestOfficeStatus(request, 'Convocation') === 'Approved'"
+                [class.rejected]="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'"
+                [class.pending]="getRequestOfficeStatus(request, 'Convocation') === 'Pending'"
+              >
+                {{ getRequestOfficeStatus(request, 'Convocation') }}
+              </strong>
+
+            </div>
 
         </div>
 

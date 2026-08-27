@@ -75,11 +75,17 @@ export class DepartmentStatusComponent {
       return;
     }
 
-    this.clearanceService.approveRequest(
+    const approved = this.clearanceService.approveRequest(
       request.id,
       'Department',
       staff.fullName
     );
+
+    if (!approved) {
+      this.message = 'This request is no longer pending Department approval.';
+      this.loadRequests();
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,
@@ -104,12 +110,19 @@ export class DepartmentStatusComponent {
       return;
     }
 
-    this.clearanceService.rejectRequest(
+    const rejected = this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Department',
       staff.fullName,
       this.rejectionComment
     );
+
+    if (!rejected) {
+      this.message = 'This request is no longer pending Department approval.';
+      this.selectedRequest = null;
+      this.loadRequests();
+      return;
+    }
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
