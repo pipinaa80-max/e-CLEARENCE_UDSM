@@ -38,14 +38,6 @@
         />
       </label>
 
-      <label class="field" for="role">
-        <span>User Role</span>
-        <select id="role" formControlName="role" required>
-          <option value="" disabled>Select your role</option>
-          <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
-        </select>
-      </label>
-
       <button type="submit" [disabled]="loginForm.invalid || isLoading">
         <span *ngIf="!isLoading">Sign In</span>
         <span *ngIf="isLoading">Signing In...</span>

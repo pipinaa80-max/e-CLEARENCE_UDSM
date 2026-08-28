@@ -11,10 +11,10 @@
   <aside class="sidebar">
     <div class="brand">Admin</div>
     <nav>
-      <a routerLink="/dashboard/admin">Overview</a>
-      <a routerLink="/dashboard/admin">Users</a>
-      <a routerLink="/dashboard/admin">Roles</a>
-      <a routerLink="/dashboard/admin">Reports</a>
+      <a (click)="setTab('overview')" [class.active]="activeTab === 'overview'">Overview</a>
+      <a (click)="setTab('users')" [class.active]="activeTab === 'users'">User Management</a>
+      <a (click)="setTab('clearance')" [class.active]="activeTab === 'clearance'">Clearance Requests</a>
+      <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">Data Upload</a>
       <button type="button" class="logout-link" (click)="logout()">
         Log out
       </button>
@@ -27,27 +27,173 @@
         <h2>Administrator Dashboard</h2>
         <p>Manage users, offices, requests, and reports</p>
       </div>
+      <div *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
+        {{ message }}
+      </div>
     </header>
 
-    <div class="stats-grid">
-      <article class="stat-card">
-        <span>Total Students</span><strong>220</strong>
-      </article>
-      <article class="stat-card">
-        <span>Clearance Requests</span><strong>135</strong>
-      </article>
-      <article class="stat-card success">
-        <span>Completed</span><strong>94</strong>
-      </article>
-      <article class="stat-card warning">
-        <span>Pending</span><strong>31</strong>
-      </article>
-      <article class="stat-card danger">
-        <span>Rejected</span><strong>10</strong>
-      </article>
-      <article class="stat-card">
-        <span>Total Staff</span><strong>42</strong>
-      </article>
+    <!-- Overview Tab -->
+    <div *ngIf="activeTab === 'overview'">
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span>Total Students</span><strong>{{ stats.totalStudents }}</strong>
+        </article>
+        <article class="stat-card">
+          <span>Clearance Requests</span><strong>{{ stats.totalRequests }}</strong>
+        </article>
+        <article class="stat-card success">
+          <span>Completed</span><strong>{{ stats.completed }}</strong>
+        </article>
+        <article class="stat-card warning">
+          <span>Pending</span><strong>{{ stats.pending }}</strong>
+        </article>
+        <article class="stat-card danger">
+          <span>Rejected</span><strong>{{ stats.rejected }}</strong>
+        </article>
+        <article class="stat-card">
+          <span>Total Staff</span><strong>{{ stats.totalStaff }}</strong>
+        </article>
+      </div>
     </div>
+
+    <!-- Users Tab -->
+    <div *ngIf="activeTab === 'users'" class="tab-content">
+      <div class="section-header">
+        <h3>User Management</h3>
+        <div class="header-actions">
+          <input type="text" [(ngModel)]="userSearchTerm" placeholder="Search users..." class="search-input">
+          <button class="btn-primary" (click)="showAddForm = !showAddForm">
+            {{ showAddForm ? 'Close Form' : 'Add New User' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="showAddForm" class="form-container">
+        <h4>Manual User Registration</h4>
+        <form (ngSubmit)="addUser()" #userForm="ngForm" class="user-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" [(ngModel)]="newUser.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" [(ngModel)]="newUser.lastName" name="lastName" required>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" [(ngModel)]="newUser.email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label>Reg Number</label>
+              <input type="text" [(ngModel)]="newUser.registrationNumber" name="regNo">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" [(ngModel)]="newUser.password" name="password" required>
+            </div>
+            <div class="form-group">
+              <label>Role</label>
+              <select [(ngModel)]="newUser.role" name="role">
+                <option value="STUDENT">STUDENT</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="LIBRARY_OFFICER">LIBRARY_OFFICER</option>
+                <option value="FINANCE_OFFICER">FINANCE_OFFICER</option>
+                <option value="ICT_OFFICER">ICT_OFFICER</option>
+                <option value="DEPARTMENT_OFFICER">DEPARTMENT_OFFICER</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-success" [disabled]="!userForm.form.valid">Save User</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Reg No</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td>{{ user.fullName }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.registrationNumber || '-' }}</td>
+              <td>
+                <select [value]="user.role" (change)="updateRole(user.id, $event)">
+                  <option value="STUDENT">STUDENT</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="LIBRARY_OFFICER">LIBRARY_OFFICER</option>
+                  <option value="FINANCE_OFFICER">FINANCE_OFFICER</option>
+                  <option value="ICT_OFFICER">ICT_OFFICER</option>
+                  <option value="DEPARTMENT_OFFICER">DEPARTMENT_OFFICER</option>
+                </select>
+              </td>
+              <td><span class="status-badge" [class.active]="user.isActive">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td>
+                <button class="btn-danger btn-sm" (click)="deleteUser(user.id)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Clearance Requests Tab -->
+    <div *ngIf="activeTab === 'clearance'" class="tab-content">
+      <div class="section-header">
+        <h3>All Clearance Requests</h3>
+        <input type="text" [(ngModel)]="requestSearchTerm" placeholder="Search requests..." class="search-input">
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Reg No</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Current Stage</th>
+              <th>Submitted At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let req of filteredRequests">
+              <td>{{ req.student?.fullName || '-' }}</td>
+              <td>{{ req.student?.registrationNumber || '-' }}</td>
+              <td>{{ req.department || '-' }}</td>
+              <td><span class="status-pill" [class]="req.status.toLowerCase()">{{ req.status }}</span></td>
+              <td>{{ req.currentStage }}</td>
+              <td>{{ req.submittedAt | date:'short' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Data Upload Tab -->
+    <div *ngIf="activeTab === 'upload'" class="tab-content">
+      <h3>Bulk Data Population</h3>
+      <div class="upload-container">
+        <p>Upload a CSV or Excel (.xlsx) file to register multiple students at once.</p>
+        <div class="file-input-group">
+          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
+          <button class="btn-primary" [disabled]="!selectedFile" (click)="uploadFile()">Upload & Process</button>
+        </div>
+        <div class="format-info">
+          <h5>Expected File Columns:</h5>
+          <code>FirstName, MiddleName, LastName, Email, RegistrationNumber, Password, Role, Department, Programme, College, YearOfStudy</code>
+        </div>
+      </div>
+    </div>
+
   </main>
 </section>

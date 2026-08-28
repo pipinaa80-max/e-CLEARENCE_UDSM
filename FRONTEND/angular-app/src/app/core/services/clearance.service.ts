@@ -427,6 +427,43 @@ export class ClearanceService {
   }
 
   // =====================================================
+  // STEP 1 - OFFICER VERIFIES PAYMENT RECEIPT
+  // =====================================================
+
+  verifyConvocationReceipt(requestId: string, officerName: string): void {
+    const request = this.getRequest(requestId);
+
+    if (!request) {
+      return;
+    }
+
+    if (request.currentStage !== 'Convocation') {
+      return;
+    }
+
+    /*
+     * Cannot verify what doesn't exist.
+     */
+    if (!request.convocation?.receiptFileName) {
+      return;
+    }
+
+    // We keep the receipt submitted at date, but we can add a verification date if we want
+    // For now, this just serves as a state transition trigger if needed,
+    // but usually Convocation approval is the final step.
+
+    // In our logic, 'receiptSubmittedAt' is what triggers the 'Final Approval' button.
+    // If the student didn't upload it but the officer physically saw it, they can use this.
+
+    if (!request.convocation.receiptSubmittedAt) {
+        request.convocation.receiptSubmittedAt = new Date().toISOString();
+        request.convocation.receiptFileName = 'Verified by Officer';
+    }
+
+    this.save(request);
+  }
+
+  // =====================================================
   // APPROVE
   // =====================================================
 

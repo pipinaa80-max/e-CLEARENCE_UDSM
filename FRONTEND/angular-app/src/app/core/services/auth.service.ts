@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, tap, throwError } from 'rxjs';
+import { Observable, of, tap, throwError, map } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
 import { StorageService } from './storage.service';
 
@@ -16,46 +16,22 @@ export class AuthService {
   private readonly usersKey = 'udsm-local-users';
 
   register(user: any): Observable<any> {
-    const users = this.getLocalUsers();
-    const duplicate = users.some((saved) => saved.email === user.email || saved.registrationNumber === user.registrationNumber);
-    if (duplicate) {
-      return throwError(() => ({ status: 409, error: { message: 'An account with this email or registration number already exists.' } }));
-    }
-    const localUser = {
-      id: crypto.randomUUID(),
-      fullName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' '),
-      registrationNumber: user.registrationNumber,
-      email: user.email,
-      phone: user.phone,
-      password: user.password,
-      role: this.mapRole({ role: user.role ?? 'STUDENT' }),
-      laboratory: user.laboratory || '',
-      college: 'Not selected',
-      department: 'Not selected',
-      programme: 'Not selected',
-      yearOfStudy: 0,
-      status: 'Active',
-      createdAt: new Date().toISOString()
-    };
-    this.storage.save(this.usersKey, [...users, localUser]);
-    return of({ message: 'Registration successful.' });
+    return this.http.post(`${this.apiUrl}/register`, user).pipe(
+      tap(() => {
+        // We don't save to local storage anymore, backend handles persistence
+      })
+    );
   }
 
   login(identifier: string, password: string): Observable<any> {
-    const user = this.getLocalUsers().find((saved) =>
-      (saved.email.toLowerCase() === identifier.toLowerCase() || saved.registrationNumber.toLowerCase() === identifier.toLowerCase()) &&
-      saved.password === password
+    return this.http.post<any>(`${this.apiUrl}/login`, { identifier, password }).pipe(
+      map((response) => {
+        const authenticatedUser = this.mapUserResponse(response);
+        this.storage.save(this.currentUserKey, authenticatedUser);
+        this.storage.save(this.tokenKey, response.access_token);
+        return authenticatedUser;
+      })
     );
-    if (!user) {
-      return throwError(() => ({ status: 401, error: { message: 'Login failed. Please check your credentials.' } }));
-    }
-    const authenticatedUser = {
-      ...user,
-      role: this.mapRole(user)
-    };
-    this.storage.save(this.currentUserKey, authenticatedUser);
-    this.storage.save(this.tokenKey, `local-${user.id}`);
-    return of(authenticatedUser);
   }
 
   private mapUserResponse(response: any): any {

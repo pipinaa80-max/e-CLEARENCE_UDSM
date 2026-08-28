@@ -153,6 +153,7 @@ public class AuthService {
                     case "FINANCE": userRole = ERole.FINANCE_OFFICER; break;
                     case "ICT": userRole = ERole.ICT_OFFICER; break;
                     case "DEPARTMENT": userRole = ERole.DEPARTMENT_OFFICER; break;
+                    case "ADMIN":
                     case "ADMINISTRATOR": userRole = ERole.ADMIN; break;
                     default: userRole = ERole.STUDENT; break;
                 }

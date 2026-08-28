@@ -1,7 +1,20 @@
-<section class="office-page">
+<section class="principal-page">
+
+  <!-- MOBILE OVERLAY -->
+
+  <div
+    class="sidebar-overlay"
+    *ngIf="sidebarOpen"
+    (click)="closeSidebar()"
+  ></div>
+
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+
+  <aside
+    class="sidebar"
+    [class.open]="sidebarOpen"
+  >
 
     <div class="brand">
 
@@ -12,7 +25,10 @@
 
       <div>
         <strong>PRINCIPAL</strong>
-        <small>Clearance Workspace</small>
+
+        <small>
+          Clearance Workspace
+        </small>
       </div>
 
     </div>
@@ -21,8 +37,9 @@
     <nav>
 
       <a
-        routerLink="/dashboard/principal"
+        routerLink="/principal/dashboard"
         class="active"
+        (click)="closeSidebar()"
       >
         Pending Requests
       </a>
@@ -40,164 +57,369 @@
 
 
   <!-- MAIN -->
+
   <main class="content">
 
-    <!-- PRINCIPAL OFFICER VIEW -->
-    <ng-container>
+    <!-- HEADER -->
 
-      <header class="page-header">
+    <header class="page-header">
 
-        <div>
+      <div>
 
-          <p>
-            Clearance Office
-          </p>
+        <p>
+          Clearance Office
+        </p>
 
-          <h1>
-            Principal Approval
-          </h1>
+        <h1>
+          {{ collegeName }} Principal
+        </h1>
 
-        </div>
+        <span class="page-description">
+          Review and process student clearance applications for the college.
+        </span>
 
-
-        <span class="count">{{ requests.length }} Pending</span>
-
-      </header>
-
-
-      <!-- MESSAGE -->
-
-      <div
-        class="message"
-        *ngIf="message"
-      >
-        {{ message }}
       </div>
 
 
-      <!-- REQUESTS -->
+      <div class="header-actions">
 
-      <section
-        class="request-list"
-        *ngIf="requests.length"
-      >
-
-        <article
-          class="request-card"
-          *ngFor="let request of requests"
+        <button
+          type="button"
+          class="refresh-button"
+          (click)="refreshData()"
         >
+          Refresh
+        </button>
 
-          <div class="student-info">
-            <span>Graduation Clearance</span>
-            <h2>{{ request.programme }}</h2>
-            <p>Department: {{ request.department }} · {{ request.college }}</p>
-            <small>Submitted: {{ request.requestDate | date:'mediumDate' }}</small>
-          </div>
+      </div>
 
-          <div class="actions">
-
-            <button
-              type="button"
-              class="return-button"
-              (click)="openRejectForm(request)"
-            >
-              Return with Reason
-            </button>
+    </header>
 
 
-            <button
-              type="button"
-              class="approve-button"
-              (click)="approve(request)"
-            >
-              Approve
-            </button>
+    <!-- MESSAGE -->
 
-          </div>
-
-        </article>
-
-      </section>
+    <div
+      class="message"
+      *ngIf="message"
+    >
+      {{ message }}
+    </div>
 
 
-      <!-- EMPTY -->
+    <!-- ERROR -->
 
-      <section
-        class="empty-state"
-        *ngIf="!requests.length"
+    <div
+      class="error-message"
+      *ngIf="errorMessage"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <section class="stats">
+
+      <div class="stat-card">
+
+        <span>
+          Pending
+        </span>
+
+        <strong>
+          {{ totalPending }}
+        </strong>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <span>
+          Approved
+        </span>
+
+        <strong>
+          {{ totalApproved }}
+        </strong>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <span>
+          Rejected
+        </span>
+
+        <strong>
+          {{ totalRejected }}
+        </strong>
+
+      </div>
+
+    </section>
+
+
+    <!-- FILTER BAR -->
+
+    <section class="toolbar">
+
+      <div class="search-box">
+
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilters()"
+          placeholder="Search student, registration number or programme..."
+        />
+
+      </div>
+
+
+      <select
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="applyFilters()"
       >
 
-        <h2>
-          No pending requests
-        </h2>
+        <option value="all">
+          All Requests
+        </option>
 
-        <p>
-          There are currently no student applications
-          awaiting Principal approval.
-        </p>
+        <option value="pending">
+          Pending
+        </option>
 
-      </section>
+        <option value="approved">
+          Approved
+        </option>
+
+        <option value="rejected">
+          Rejected
+        </option>
+
+      </select>
+
+    </section>
 
 
-      <!-- REJECT MODAL -->
+    <!-- LOADING -->
 
-      <section
-        class="reject-modal"
-        *ngIf="selectedRequest"
+    <section
+      class="loading-state"
+      *ngIf="isLoading"
+    >
+
+      <p>
+        Loading clearance requests...
+      </p>
+
+    </section>
+
+
+    <!-- EMPTY -->
+
+    <section
+      class="empty-state"
+      *ngIf="!isLoading && !filteredRequests.length"
+    >
+
+      <div class="empty-icon">
+        ✓
+      </div>
+
+      <h2>
+        No clearance requests
+      </h2>
+
+      <p>
+        There are currently no requests matching
+        your selected filter.
+      </p>
+
+    </section>
+
+
+    <!-- REQUESTS -->
+
+    <section
+      class="request-list"
+      *ngIf="!isLoading && filteredRequests.length"
+    >
+
+      <article
+        class="request-card"
+        *ngFor="let request of filteredRequests"
       >
 
-        <div class="modal-card">
+        <!-- CARD HEADER -->
 
-          <h2>
-            Return Clearance Request
-          </h2>
+        <div class="request-header">
 
-          <p>
-            Explain why this clearance request is
-            being returned and what the student needs
-            to do.
-          </p>
+          <div class="student-heading">
 
+            <!-- STUDENT PHOTO -->
 
-          <label>
-            Reason for Rejection
-          </label>
+            <div class="student-photo">
 
+              <img
+                *ngIf="hasPhoto(request)"
+                [src]="getStudentPhoto(request)"
+                alt="Student photo"
+              />
 
-          <textarea
-            [(ngModel)]="rejectionComment"
-            placeholder="Enter reason..."
-          ></textarea>
+              <span
+                *ngIf="!hasPhoto(request)"
+              >
+                {{ getStudentInitials(request) }}
+              </span>
 
-
-          <div class="modal-actions">
-
-            <button
-              type="button"
-              class="cancel-button"
-              (click)="selectedRequest = null"
-            >
-              Cancel
-            </button>
+            </div>
 
 
-            <button
-              type="button"
-              class="return-button"
-              (click)="reject()"
-              [disabled]="!rejectionComment.trim()"
-            >
-              Submit Reason
-            </button>
+            <!-- STUDENT INFORMATION -->
+
+            <div class="student-title">
+
+              <span class="request-label">
+                Graduation Clearance
+              </span>
+
+              <h2>
+                {{ getStudentName(request) }}
+              </h2>
+
+              <p>
+                {{ request.programme }}
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <span
+            class="status"
+            [class.status-approved]="request.currentStage === 'Finance' || request.status === 'Completed'"
+            [class.status-rejected]="request.status === 'Rejected'"
+          >
+            {{ request.status === 'Pending' && request.currentStage === 'Principal' ? 'Awaiting Review' : request.status }}
+          </span>
+
+        </div>
+
+
+        <!-- STUDENT DETAILS -->
+
+        <div class="student-details">
+
+          <div class="detail-item">
+
+            <span>
+              Registration Number
+            </span>
+
+            <strong>
+              {{ getStudentRegNumber(request) }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-item">
+
+            <span>
+              Programme
+            </span>
+
+            <strong>
+              {{ request.programme }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-item">
+
+            <span>
+              Department
+            </span>
+
+            <strong>
+              {{ request.department }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-item">
+
+            <span>
+              College
+            </span>
+
+            <strong>
+              {{ request.college }}
+            </strong>
+
+          </div>
+
+
+          <div class="detail-item">
+
+            <span>
+              Submitted
+            </span>
+
+            <strong>
+              {{ request.requestDate | date:'mediumDate' }}
+            </strong>
 
           </div>
 
         </div>
 
-      </section>
 
-    </ng-container>
+        <!-- DOCUMENT SUMMARY -->
 
+        <div class="document-summary">
+
+          <span>
+            Documents
+          </span>
+
+          <strong>
+            {{ getDocumentStatus(request).uploaded }}
+            /
+            {{ getDocumentStatus(request).total }}
+            Uploaded
+          </strong>
+
+        </div>
+
+
+        <!-- ACTION -->
+
+        <div class="request-footer">
+
+          <span class="review-note">
+            Review this student's clearance request.
+          </span>
+
+
+          <button
+            type="button"
+            class="review-button"
+            (click)="reviewRequest(request.id)"
+          >
+            Review Request
+          </button>
+
+        </div>
+
+      </article>
+
+    </section>
 
   </main>
 

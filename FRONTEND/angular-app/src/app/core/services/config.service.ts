@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 })
 export class ConfigService {
     private readonly config = {
-        apiUrl: 'http://localhost:8080/api'
+        apiUrl: 'http://localhost:8080/api/v1'
     };
 
     get apiUrl(): string {

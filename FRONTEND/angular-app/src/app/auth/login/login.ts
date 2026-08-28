@@ -18,33 +18,12 @@ export class Login {
   private readonly router = inject(Router);
 
   loginForm = this.fb.nonNullable.group({
-    identifier: ['', Validators.required], // ← Changed from 'email' to 'identifier'
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    role: ['Student' as UserRole, Validators.required] // Kept for navigation
+    identifier: ['', Validators.required],
+    password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
   errorMessage = '';
   isLoading = false;
-
-  readonly roles: UserRole[] = [
-    'Academic Staff',
-    'Administrator',
-    'Convocation',
-    'DARUSO',
-    'Dean of Students',
-    'Department',
-    'Finance',
-    'Games Coach',
-    'Hall Warden',
-    'ICT',
-    'Laboratory',
-    'Library',
-    'Principal',
-    'Smart Card',
-    'Student',
-    'USAB',
-    'Workshop'
-  ];
 
   submit(): void {
     this.errorMessage = '';
@@ -64,9 +43,9 @@ export class Login {
       return;
     }
 
-    const { identifier, password, role } = this.loginForm.getRawValue();
+    const { identifier, password } = this.loginForm.getRawValue();
 
-    // Send login request WITHOUT the role
+    // Send login request
     this.authService.login(identifier, password).subscribe({
       next: (user) => {
         this.isLoading = false;

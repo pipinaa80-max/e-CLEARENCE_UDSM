@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
 
         // ✅ Only skip JWT filter for truly public endpoints
         for (String publicEndpoint : PUBLIC_ENDPOINTS) {
