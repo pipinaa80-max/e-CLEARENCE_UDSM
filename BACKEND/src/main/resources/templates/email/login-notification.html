@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 0 0 8px 8px;
+        }
+        .alert-box {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            color: #856404;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            color: #0c5460;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #1a237e;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .button:hover {
+            background: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔐 New Login Alert</h1>
+</div>
+<div class="content">
+    <h2>Hello <span th:text="${name}">User</span>!</h2>
+
+    <p>We noticed a new login to your Smart Clearance account.</p>
+
+    <div class="info-box">
+        <p><strong>📋 Login Details:</strong></p>
+        <ul>
+            <li><strong>Time:</strong> <span th:text="${loginTime}">2024-01-01 12:00:00</span></li>
+            <li><strong>Device:</strong> <span th:text="${deviceInfo}">Web Browser</span></li>
+            <li><strong>Location:</strong> <span th:text="${location}">Unknown</span></li>
+        </ul>
+    </div>
+
+    <div class="alert-box">
+        <p><strong>✅ If this was you:</strong> You can safely ignore this email.</p>
+        <p><strong>❌ If this wasn't you:</strong> Please <a th:href="${frontendUrl + '/change-password'}" style="color: #1a237e; font-weight: bold;">change your password</a> immediately and contact support.</p>
+    </div>
+
+    <div style="text-align: center; margin: 25px 0;">
+        <a th:href="${frontendUrl}" class="button">Go to Dashboard</a>
+    </div>
+
+    <p>Stay safe,<br>
+        <strong>Smart Clearance Team</strong></p>
+</div>
+<div class="footer">
+    <p>This is an automated message. Please do not reply to this email.</p>
+    <p>&copy; <span th:text="${currentYear}">2024</span> Smart Clearance. All rights reserved.</p>
+</div>
+</body>
+</html>

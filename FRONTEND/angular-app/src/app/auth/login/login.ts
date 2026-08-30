@@ -1,9 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -12,10 +13,11 @@ import { UserRole } from '../../core/models/user.model';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class Login {
+export class Login implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   loginForm = this.fb.nonNullable.group({
     identifier: ['', Validators.required],
@@ -24,6 +26,13 @@ export class Login {
 
   errorMessage = '';
   isLoading = false;
+
+  ngOnInit(): void {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      this.router.navigate([this.redirectPathFor(user.role)]);
+    }
+  }
 
   submit(): void {
     this.errorMessage = '';
@@ -49,12 +58,14 @@ export class Login {
     this.authService.login(identifier, password).subscribe({
       next: (user) => {
         this.isLoading = false;
+        this.toastService.success('Login Successful', `Welcome back, ${user.fullName}`);
         // Navigate based on mapped role
         this.router.navigate([this.redirectPathFor(user.role)]);
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
+        this.toastService.error('Authentication Failed', this.errorMessage);
       }
     });
   }

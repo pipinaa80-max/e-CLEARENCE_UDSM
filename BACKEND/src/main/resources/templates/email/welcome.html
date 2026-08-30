@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 0 0 8px 8px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #1a237e;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🎉 Welcome to Smart Clearance!</h1>
+</div>
+<div class="content">
+    <h2>Hello <span th:text="${name}">User</span>!</h2>
+
+    <p>Thank you for registering with Smart Clearance. Your account has been created successfully!</p>
+
+    <div class="info-box">
+        <p><strong>📋 Account Details:</strong></p>
+        <ul>
+            <li><strong>Email:</strong> <span th:text="${email}">user@example.com</span></li>
+            <li><strong>Registration Number:</strong> <span th:text="${registrationNumber}">N/A</span></li>
+        </ul>
+    </div>
+
+    <p>You can now login to access all features:</p>
+
+    <div style="text-align: center; margin: 25px 0;">
+        <a th:href="${frontendUrl}" class="button">Go to Login</a>
+    </div>
+
+    <p>Best regards,<br>
+        <strong>Smart Clearance Team</strong></p>
+</div>
+<div class="footer">
+    <p>This is an automated message. Please do not reply to this email.</p>
+    <p>&copy; <span th:text="${currentYear}">2024</span> Smart Clearance. All rights reserved.</p>
+</div>
+</body>
+</html>

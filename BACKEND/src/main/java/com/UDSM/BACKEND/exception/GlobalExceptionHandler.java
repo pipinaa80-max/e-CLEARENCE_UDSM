@@ -1,6 +1,7 @@
 package com.UDSM.BACKEND.exception;
 
 import com.UDSM.BACKEND.dto.ApiResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -21,7 +22,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        logger.error("Validation error: {}", ex.getMessage());
+        logger.error("❌ Validation error: {}", ex.getMessage());
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
@@ -29,14 +30,29 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.validationError("Validation failed", errors));
+                .body(ApiResponse.validationError("Please correct the highlighted errors.", errors));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        logger.error("❌ Database Integrity Error: {}", ex.getMessage());
+        String message = "System Error: The requested operation violates database constraints. (Stale Roles/Duplicates)";
+        
+        if (ex.getMessage().contains("users_role_check")) {
+            message = "Operation failed: The user role is not recognized by the database. Please contact support to refresh database constraints.";
+        } else if (ex.getMessage().contains("duplicate key")) {
+            message = "Operation failed: An account with this identifier already exists.";
+        }
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(message));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        logger.error("JSON parse error: {}", ex.getMessage());
+        logger.error("❌ JSON parse error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Invalid JSON format or missing required fields"));
+                .body(ApiResponse.error("Invalid data format received by server."));
     }
 
     @ExceptionHandler(RuntimeException.class)

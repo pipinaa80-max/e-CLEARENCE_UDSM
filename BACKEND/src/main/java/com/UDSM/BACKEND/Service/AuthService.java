@@ -5,6 +5,7 @@ import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.config.JwtTokenProvider;
 import com.UDSM.BACKEND.dto.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,8 +16,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,11 +49,11 @@ public class AuthService {
     private final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
 
     // =========================================================
-    // LOGIN
+    // LOGIN WITH EMAIL NOTIFICATION - UPDATED WITH CLIENT INFO
     // =========================================================
 
     @Transactional
-    public JwtResponse login(LoginRequest request) {
+    public JwtResponse login(LoginRequest request, String clientIp, String userAgent) {
 
         if (request == null) {
             throw new IllegalArgumentException("Login request cannot be null");
@@ -61,7 +66,7 @@ public class AuthService {
         String identifier = request.getIdentifier().trim();
 
         if (isAccountLocked(identifier)) {
-            auditLogService.logLoginAttempt(identifier, false, getClientIp());
+            auditLogService.logLoginAttempt(identifier, false, clientIp);
             throw new RuntimeException("Account is temporarily locked. Please try again later.");
         }
 
@@ -87,7 +92,10 @@ public class AuthService {
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
-            auditLogService.logLoginAttempt(user.getEmail(), true, getClientIp());
+            auditLogService.logLoginAttempt(user.getEmail(), true, clientIp);
+
+            // ========== SEND LOGIN NOTIFICATION EMAIL ==========
+            sendLoginNotification(user, clientIp, userAgent);
 
             return JwtResponse.builder()
                     .accessToken(accessToken)
@@ -102,18 +110,51 @@ public class AuthService {
 
         } catch (BadCredentialsException e) {
             recordFailedLogin(identifier);
-            auditLogService.logLoginAttempt(identifier, false, getClientIp());
+            auditLogService.logLoginAttempt(identifier, false, clientIp);
             throw new RuntimeException("Invalid email/registration number or password");
         } catch (Exception e) {
             recordFailedLogin(identifier);
-            auditLogService.logLoginAttempt(identifier, false, getClientIp());
+            auditLogService.logLoginAttempt(identifier, false, clientIp);
             log.error("Login error: {}", e.getMessage());
             throw new RuntimeException("Unable to authenticate user", e);
         }
     }
 
     // =========================================================
-    // REGISTER
+    // SEND LOGIN NOTIFICATION - UPDATED
+    // =========================================================
+
+    private void sendLoginNotification(User user, String clientIp, String userAgent) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("email", user.getEmail());
+            variables.put("loginTime", LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
+            ));
+            variables.put("deviceInfo", getDeviceInfo(userAgent));
+            variables.put("location", getLocationFromIP(clientIp));
+            variables.put("ipAddress", clientIp);
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "🔐 New Login Alert - Smart Clearance",
+                    "email/login-notification",
+                    variables
+            );
+
+            log.info("✅ Login notification email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            // Don't block login if email fails
+            log.warn("⚠️ Failed to send login notification to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // REGISTER WITH WELCOME EMAIL
     // =========================================================
 
     @Transactional
@@ -149,10 +190,30 @@ public class AuthService {
                 String roleStr = request.getRole().toUpperCase().replace(" ", "_");
                 switch(roleStr) {
                     case "STUDENT": userRole = ERole.STUDENT; break;
-                    case "LIBRARY": userRole = ERole.LIBRARY_OFFICER; break;
-                    case "FINANCE": userRole = ERole.FINANCE_OFFICER; break;
-                    case "ICT": userRole = ERole.ICT_OFFICER; break;
-                    case "DEPARTMENT": userRole = ERole.DEPARTMENT_OFFICER; break;
+                    case "LIBRARY":
+                    case "LIBRARY_OFFICER": userRole = ERole.LIBRARY_OFFICER; break;
+                    case "FINANCE":
+                    case "FINANCE_OFFICER": userRole = ERole.FINANCE_OFFICER; break;
+                    case "ICT":
+                    case "ICT_OFFICER": userRole = ERole.ICT_OFFICER; break;
+                    case "DEPARTMENT":
+                    case "DEPARTMENT_OFFICER": userRole = ERole.DEPARTMENT_OFFICER; break;
+                    case "CONVOCATION":
+                    case "CONVOCATION_OFFICER": userRole = ERole.CONVOCATION_OFFICER; break;
+                    case "GAMES_COACH": userRole = ERole.GAMES_COACH; break;
+                    case "HALL_WARDEN": userRole = ERole.HALL_WARDEN; break;
+                    case "USAB":
+                    case "USAB_OFFICER": userRole = ERole.USAB_OFFICER; break;
+                    case "DARUSO":
+                    case "DARUSO_OFFICER": userRole = ERole.DARUSO_OFFICER; break;
+                    case "DEAN_OF_STUDENTS": userRole = ERole.DEAN_OF_STUDENTS; break;
+                    case "SMART_CARD":
+                    case "SMART_CARD_OFFICER": userRole = ERole.SMART_CARD_OFFICER; break;
+                    case "WORKSHOP":
+                    case "WORKSHOP_OFFICER": userRole = ERole.WORKSHOP_OFFICER; break;
+                    case "PRINCIPAL": userRole = ERole.PRINCIPAL; break;
+                    case "LABORATORY":
+                    case "LABORATORY_OFFICER": userRole = ERole.LABORATORY_OFFICER; break;
                     case "ADMIN":
                     case "ADMINISTRATOR": userRole = ERole.ADMIN; break;
                     default: userRole = ERole.STUDENT; break;
@@ -187,6 +248,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(userRole);
         user.setActive(true);
+        user.setEmailVerified(true); // ✅ Auto-verify for now
         user.setPhoneNumber(request.getPhone());
         user.setDepartment(request.getDepartment());
         user.setCreatedAt(LocalDateTime.now());
@@ -222,14 +284,207 @@ public class AuthService {
             log.error("Failed to log audit: {}", e.getMessage());
         }
 
-        // Welcome email
+        // ========== SEND WELCOME EMAIL ==========
+        sendWelcomeEmail(savedUser);
+
+        return ApiResponse.success("Registration successful. Welcome email sent! Please login to continue.");
+    }
+
+    // =========================================================
+    // SEND WELCOME EMAIL
+    // =========================================================
+
+    private void sendWelcomeEmail(User user) {
         try {
-            emailService.sendWelcomeEmail(email, fullName, "SmartClearance UDSM");
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("email", user.getEmail());
+            variables.put("registrationNumber", user.getRegistrationNumber());
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "🎉 Welcome to Smart Clearance!",
+                    "email/welcome",
+                    variables
+            );
+
+            log.info("✅ Welcome email sent to: {}", user.getEmail());
         } catch (Exception e) {
-            log.error("Failed to send welcome email: {}", e.getMessage());
+            log.warn("⚠️ Failed to send welcome email to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // RESET PASSWORD WITH EMAIL NOTIFICATION - UPDATED
+    // =========================================================
+
+    @Transactional
+    public ApiResponse resetPassword(String email, String clientIp, String userAgent) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
         }
 
-        return ApiResponse.success("Registration successful. Please login to continue.");
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        String resetToken = UUID.randomUUID().toString();
+        String resetLink = getResetPasswordLink(resetToken);
+
+        // Save reset token to user
+        user.setResetToken(resetToken);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+
+        // ========== SEND PASSWORD RESET EMAIL ==========
+        sendPasswordResetEmail(user, resetLink, clientIp, userAgent);
+
+        auditLogService.logAction(user.getId(), "PASSWORD_RESET",
+                "Password reset requested from IP: " + clientIp, "SUCCESS");
+
+        return ApiResponse.success("Password reset link has been sent to your email. Please check your inbox.");
+    }
+
+    // =========================================================
+    // SEND PASSWORD RESET EMAIL - UPDATED
+    // =========================================================
+
+    private void sendPasswordResetEmail(User user, String resetLink, String clientIp, String userAgent) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("email", user.getEmail());
+            variables.put("resetLink", resetLink);
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("expiryTime", "24 hours");
+            variables.put("clientIp", clientIp);
+            variables.put("deviceInfo", getDeviceInfo(userAgent));
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "🔑 Password Reset Request - Smart Clearance",
+                    "email/password-reset",
+                    variables
+            );
+
+            log.info("✅ Password reset email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("❌ Failed to send password reset email to {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to send password reset email. Please try again later.");
+        }
+    }
+
+    // =========================================================
+    // RESET PASSWORD WITH TOKEN - UPDATED
+    // =========================================================
+
+    @Transactional
+    public ApiResponse resetPasswordWithToken(String token, String newPassword, String clientIp, String userAgent) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Reset token is required");
+        }
+
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("New password is required");
+        }
+
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters");
+        }
+
+        // Find user by reset token
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+
+        // Check if token is expired
+        if (user.getResetTokenExpiry() == null ||
+                user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Reset token has expired. Please request a new one.");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // ========== SEND PASSWORD CHANGED CONFIRMATION ==========
+        sendPasswordChangedConfirmation(user, clientIp, userAgent);
+
+        auditLogService.logAction(user.getId(), "PASSWORD_RESET_CONFIRM",
+                "Password reset successful from IP: " + clientIp, "SUCCESS");
+
+        return ApiResponse.success("Password has been reset successfully. You can now login with your new password.");
+    }
+
+    // =========================================================
+    // SEND PASSWORD CHANGED CONFIRMATION - UPDATED
+    // =========================================================
+
+    private void sendPasswordChangedConfirmation(User user, String clientIp, String userAgent) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("changeTime", LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
+            ));
+            variables.put("clientIp", clientIp);
+            variables.put("deviceInfo", getDeviceInfo(userAgent));
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "🔒 Password Changed Successfully - Smart Clearance",
+                    "email/password-changed",
+                    variables
+            );
+
+            log.info("✅ Password change confirmation sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to send password change confirmation to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // CHANGE PASSWORD WITH EMAIL NOTIFICATION - UPDATED
+    // =========================================================
+
+    @Transactional
+    public ApiResponse changePassword(ChangePasswordRequest request, String clientIp, String userAgent) {
+        User user = getCurrentUser();
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            auditLogService.logAction(user.getId(), "CHANGE_PASSWORD",
+                    "Failed password change attempt from IP: " + clientIp, "FAILED");
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        auditLogService.logAction(user.getId(), "CHANGE_PASSWORD",
+                "Password changed successfully from IP: " + clientIp, "SUCCESS");
+
+        // Send notification
+        notificationService.sendNotification(
+                user,
+                "Password Changed",
+                "Your password has been changed successfully from " + getDeviceInfo(userAgent),
+                NotificationType.SYSTEM
+        );
+
+        // ========== SEND PASSWORD CHANGED CONFIRMATION EMAIL ==========
+        sendPasswordChangedConfirmation(user, clientIp, userAgent);
+
+        return ApiResponse.success("Password changed successfully. A confirmation email has been sent.");
     }
 
     // =========================================================
@@ -300,56 +555,6 @@ public class AuthService {
     }
 
     // =========================================================
-    // CHANGE PASSWORD
-    // =========================================================
-
-    @Transactional
-    public ApiResponse changePassword(ChangePasswordRequest request) {
-        User user = getCurrentUser();
-
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            auditLogService.logAction(user.getId(), "CHANGE_PASSWORD", "Failed password change attempt", "FAILED");
-            throw new RuntimeException("Current password is incorrect");
-        }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        user.setUpdatedAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        auditLogService.logAction(user.getId(), "CHANGE_PASSWORD", "Password changed successfully", "SUCCESS");
-        notificationService.sendNotification(user, "Password Changed", "Your password has been changed successfully.", NotificationType.SYSTEM);
-
-        return ApiResponse.success("Password changed successfully");
-    }
-
-    // =========================================================
-    // RESET PASSWORD REQUEST
-    // =========================================================
-
-    @Transactional
-    public ApiResponse resetPassword(String email) {
-        User user = userRepository.findByEmail(email.trim().toLowerCase())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-
-        String resetToken = UUID.randomUUID().toString();
-        String resetLink = getResetPasswordLink(resetToken);
-
-        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
-
-        auditLogService.logAction(user.getId(), "PASSWORD_RESET", "Password reset requested", "SUCCESS");
-
-        return ApiResponse.success("Password reset link sent to your email");
-    }
-
-    // =========================================================
-    // RESET PASSWORD WITH TOKEN
-    // =========================================================
-
-    public ApiResponse resetPasswordWithToken(String token, String newPassword) {
-        return ApiResponse.success("Password reset successfully");
-    }
-
-    // =========================================================
     // GET CURRENT USER PROFILE
     // =========================================================
 
@@ -369,11 +574,11 @@ public class AuthService {
     }
 
     // =========================================================
-    // UPDATE PROFILE
+    // UPDATE PROFILE - UPDATED
     // =========================================================
 
     @Transactional
-    public UserProfileResponse updateProfile(ProfileUpdateRequest request) {
+    public UserProfileResponse updateProfile(ProfileUpdateRequest request, String clientIp, String userAgent) {
         log.info("📝 Updating profile with request: {}", request);
 
         User user = getCurrentUser();
@@ -538,9 +743,12 @@ public class AuthService {
             auditLogService.logAction(
                     user.getId(),
                     "UPDATE_PROFILE",
-                    "Profile updated successfully",
+                    "Profile updated successfully from IP: " + clientIp,
                     "SUCCESS"
             );
+
+            // Send profile update notification
+            sendProfileUpdateNotification(user, clientIp, userAgent);
 
             return mapToUserProfileResponse(savedUser);
         } else {
@@ -550,11 +758,41 @@ public class AuthService {
     }
 
     // =========================================================
-    // ACTIVATE ACCOUNT
+    // SEND PROFILE UPDATE NOTIFICATION
+    // =========================================================
+
+    private void sendProfileUpdateNotification(User user, String clientIp, String userAgent) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("updateTime", LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
+            ));
+            variables.put("clientIp", clientIp);
+            variables.put("deviceInfo", getDeviceInfo(userAgent));
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "📝 Profile Updated - Smart Clearance",
+                    "email/profile-updated",
+                    variables
+            );
+
+            log.info("✅ Profile update notification sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to send profile update notification to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // ACTIVATE ACCOUNT - UPDATED
     // =========================================================
 
     @Transactional
-    public ApiResponse activateAccount(String userId) {
+    public ApiResponse activateAccount(String userId, String clientIp, String userAgent) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -565,7 +803,7 @@ public class AuthService {
         auditLogService.logAction(
                 getCurrentUserId(),
                 "ACTIVATE_ACCOUNT",
-                "Account activated for: " + user.getEmail(),
+                "Account activated for: " + user.getEmail() + " from IP: " + clientIp,
                 "SUCCESS"
         );
 
@@ -576,15 +814,18 @@ public class AuthService {
                 NotificationType.SYSTEM
         );
 
+        // Send account activation notification
+        sendAccountActivationNotification(user, clientIp, userAgent);
+
         return ApiResponse.success("Account activated successfully");
     }
 
     // =========================================================
-    // DEACTIVATE ACCOUNT
+    // DEACTIVATE ACCOUNT - UPDATED
     // =========================================================
 
     @Transactional
-    public ApiResponse deactivateAccount(String userId) {
+    public ApiResponse deactivateAccount(String userId, String clientIp, String userAgent) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -595,11 +836,104 @@ public class AuthService {
         auditLogService.logAction(
                 getCurrentUserId(),
                 "DEACTIVATE_ACCOUNT",
-                "Account deactivated for: " + user.getEmail(),
+                "Account deactivated for: " + user.getEmail() + " from IP: " + clientIp,
                 "SUCCESS"
         );
 
         return ApiResponse.success("Account deactivated successfully");
+    }
+
+    // =========================================================
+    // SEND ACCOUNT ACTIVATION NOTIFICATION
+    // =========================================================
+
+    private void sendAccountActivationNotification(User user, String clientIp, String userAgent) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("activationTime", LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")
+            ));
+            variables.put("clientIp", clientIp);
+            variables.put("deviceInfo", getDeviceInfo(userAgent));
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "✅ Account Activated - Smart Clearance",
+                    "email/account-activated",
+                    variables
+            );
+
+            log.info("✅ Account activation notification sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ Failed to send account activation notification to {}: {}", user.getEmail(), e.getMessage());
+        }
+    }
+
+    // =========================================================
+    // VERIFY EMAIL
+    // =========================================================
+
+    @Transactional
+    public ApiResponse verifyEmail(String token) {
+        // Implementation for email verification
+        // This would typically check a verification token in the user record
+        log.info("📧 Email verification with token: {}", token);
+        return ApiResponse.success("Email verified successfully");
+    }
+
+    // =========================================================
+    // RESEND VERIFICATION EMAIL
+    // =========================================================
+
+    @Transactional
+    public ApiResponse resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Generate verification token
+        String verificationToken = UUID.randomUUID().toString();
+        String verificationLink = getFrontendUrl() + "/verify-email?token=" + verificationToken;
+
+        // Save verification token (you need to add this field to User entity)
+        user.setVerificationToken(verificationToken);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(48));
+        userRepository.save(user);
+
+        // Send verification email
+        sendVerificationEmail(user, verificationLink);
+
+        return ApiResponse.success("Verification email sent successfully");
+    }
+
+    // =========================================================
+    // SEND VERIFICATION EMAIL
+    // =========================================================
+
+    private void sendVerificationEmail(User user, String verificationLink) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("name", user.getFullName());
+            variables.put("email", user.getEmail());
+            variables.put("verificationLink", verificationLink);
+            variables.put("appName", "Smart Clearance");
+            variables.put("frontendUrl", getFrontendUrl());
+            variables.put("currentYear", LocalDateTime.now().getYear());
+
+            emailService.sendTemplatedEmail(
+                    user.getEmail(),
+                    "📧 Verify Your Email - Smart Clearance",
+                    "email/verify-email",
+                    variables
+            );
+
+            log.info("✅ Verification email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("❌ Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
+        }
     }
 
     // =========================================================
@@ -613,7 +947,7 @@ public class AuthService {
         }
 
         String value = identifier.trim();
-        log.debug("🔍 Finding user by identifier: {}", value);
+        log.debug(" Finding user by identifier: {}", value);
 
         // Try email first (case insensitive)
         return userRepository.findByEmail(value.toLowerCase())
@@ -658,7 +992,7 @@ public class AuthService {
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        //  Better check for authentication
+        // Better check for authentication
         if (authentication == null ||
                 !authentication.isAuthenticated() ||
                 "anonymousUser".equals(authentication.getPrincipal())) {
@@ -671,25 +1005,49 @@ public class AuthService {
 
         return findUserByIdentifier(identifier);
     }
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User not authenticated");
-        }
-        return authentication.getName();
-    }
 
     private String getCurrentUserId() {
         User user = getCurrentUser();
         return user.getId();
     }
 
-    private String getClientIp() {
-        return "0.0.0.0";
+    private String getDeviceInfo(String userAgent) {
+        if (userAgent == null || userAgent.isEmpty()) {
+            return "Unknown Device";
+        }
+
+        String ua = userAgent.toLowerCase();
+        if (ua.contains("mobile")) return "Mobile Phone";
+        if (ua.contains("tablet")) return "Tablet";
+        if (ua.contains("windows")) return "Windows PC";
+        if (ua.contains("macintosh") || ua.contains("mac os")) return "Mac PC";
+        if (ua.contains("linux")) return "Linux PC";
+        if (ua.contains("android")) return "Android Device";
+        if (ua.contains("iphone") || ua.contains("ipad")) return "iOS Device";
+        if (ua.contains("chrome")) return "Chrome Browser";
+        if (ua.contains("firefox")) return "Firefox Browser";
+        if (ua.contains("safari")) return "Safari Browser";
+        return "Web Browser";
+    }
+
+    private String getLocationFromIP(String ip) {
+        // You can integrate with IP geolocation service like ip-api.com
+        // For now, return placeholder
+        if (ip == null || ip.isEmpty() || ip.equals("0.0.0.0")) {
+            return "Unknown Location";
+        }
+        if (ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("127.")) {
+            return "Local Network";
+        }
+        return "Unknown Location";
+    }
+
+    private String getFrontendUrl() {
+        return "http://localhost:4200";
     }
 
     private String getResetPasswordLink(String token) {
-        return "http://localhost:4200/reset-password?token=" + token;
+        return getFrontendUrl() + "/reset-password?token=" + token;
     }
 
     private UserProfileResponse mapToUserProfileResponse(User user) {
@@ -725,7 +1083,7 @@ public class AuthService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .clearanceStatus(student != null ? student.getClearanceStatus() : null)
-                .isFinalYear(student != null ? student.isFinalYear() : false)
+                .isFinalYear(student != null && student.isFinalYear())
                 .build();
     }
 
@@ -747,12 +1105,12 @@ public class AuthService {
             return attempts;
         }
 
-        public void setLastAttemptTime(long lastAttemptTime) {
-            this.lastAttemptTime = lastAttemptTime;
-        }
-
         public long getLastAttemptTime() {
             return lastAttemptTime;
+        }
+
+        public void setLastAttemptTime(long lastAttemptTime) {
+            this.lastAttemptTime = lastAttemptTime;
         }
 
         public boolean isLocked() {

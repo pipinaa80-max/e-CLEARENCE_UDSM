@@ -1,24 +1,16 @@
 package com.UDSM.BACKEND.Model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
+import jakarta.persistence.*;
 import lombok.Generated;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -42,7 +34,7 @@ public class User implements UserDetails {
     @Column(name = "full_name")
     private String fullName;
 
-    // ========== NEW FIELDS ==========
+    // ========== NAME FIELDS ==========
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -51,50 +43,19 @@ public class User implements UserDetails {
 
     @Column(name = "last_name", nullable = false)
     private String lastName;
-    // =================================
 
-    @Column(name = "registration_number")
+    // ========== STUDENT/ACADEMIC FIELDS ==========
+    @Column(name = "registration_number", unique = true)
     private String registrationNumber;
-
-    @Enumerated(EnumType.STRING)
-    private ERole role;
-
-    @Column(name = "is_active")
-    private boolean isActive = true;
-
-    @Column(name = "last_login")
-    private LocalDateTime lastLogin;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "phone_number")
-    private String phoneNumber;
-
-    @Column(name = "department")
-    private String department;
-
-
-    @Column(name = "college")
-    private String college;
 
     @Column(name = "programme")
     private String programme;
 
-    @Column(name = "hall")
-    private String hall;
+    @Column(name = "college")
+    private String college;
 
-    @Column(name = "room_number")
-    private String roomNumber;
-
-    @Column(name = "sponsor")
-    private String sponsor;
-
-    @Column(name = "photo")
-    private String photo;
+    @Column(name = "department")
+    private String department;
 
     @Column(name = "academic_year")
     private String academicYear;
@@ -105,17 +66,105 @@ public class User implements UserDetails {
     @Column(name = "semester")
     private String semester;
 
+    @Column(name = "year_of_study")
+    private String yearOfStudy;
+
+    // ========== CONTACT FIELDS ==========
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    // ========== ACCOMMODATION FIELDS ==========
+    @Column(name = "hall")
+    private String hall;
+
+    @Column(name = "room_number")
+    private String roomNumber;
+
+    @Column(name = "sponsor")
+    private String sponsor;
+
+    // ========== PROFILE FIELDS ==========
+    @Column(name = "photo")
+    private String photo;
+
+    // ========== ROLE & STATUS FIELDS ==========
+    @Enumerated(EnumType.STRING)
+    private ERole role;
+
+    @Column(name = "is_active")
+    private boolean isActive = true;
+
+    @Column(name = "is_email_verified")
+    private boolean isEmailVerified = false;
+
+    @Column(name = "is_locked")
+    private boolean isLocked = false;
+
+    @Column(name = "lock_reason")
+    private String lockReason;
+
+    @Column(name = "lock_time")
+    private LocalDateTime lockTime;
+
+    // ========== TOKEN FIELDS ==========
+    // Reset Password Token
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
+    // Email Verification Token
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry;
+
+    // ========== TIMESTAMP FIELDS ==========
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // ========== AUDIT FIELDS ==========
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @Column(name = "last_login_ip")
+    private String lastLoginIp;
+
+    @Column(name = "last_login_device")
+    private String lastLoginDevice;
+
+    // =========================================================
+    // JPA LIFE CYCLE CALLBACKS
+    // =========================================================
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        this.isEmailVerified = false;
+        this.isActive = true;
+        this.isLocked = false;
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    // =========================================================
+    // SPRING SECURITY METHODS
+    // =========================================================
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -134,7 +183,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !this.isLocked;
     }
 
     @Override
@@ -144,41 +193,16 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.isActive;
+        return this.isActive && this.isEmailVerified;
     }
 
-    // ========== ADD GETTERS FOR NEW FIELDS ==========
-    public String getFirstName() {
-        return firstName;
-    }
+    // =========================================================
+    // HELPER METHODS
+    // =========================================================
 
-    public String getMiddleName() {
-        return middleName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    // ========== ADD SETTERS FOR NEW FIELDS ==========
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public void setMiddleName(String middleName) {
-        this.middleName = middleName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    // ========== FIX: Use getPhoneNumber() not getphoneNumber() ==========
-    public String getPhoneNumber() {
-        return this.phoneNumber;
-    }
-
-    // ========== Helper method to build full name ==========
+    /**
+     * Build full name from first, middle, and last name
+     */
     public static String buildFullName(String firstName, String middleName, String lastName) {
         StringBuilder fullName = new StringBuilder();
         if (firstName != null && !firstName.isEmpty()) {
@@ -195,7 +219,65 @@ public class User implements UserDetails {
         return fullName.toString();
     }
 
-    // ========== BUILDER - FIXED WITH ALL FIELDS ==========
+    /**
+     * Check if reset token is valid
+     */
+    public boolean isValidResetToken() {
+        return resetToken != null &&
+                resetTokenExpiry != null &&
+                resetTokenExpiry.isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * Check if verification token is valid
+     */
+    public boolean isValidVerificationToken() {
+        return verificationToken != null &&
+                verificationTokenExpiry != null &&
+                verificationTokenExpiry.isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * Clear all tokens
+     */
+    public void clearTokens() {
+        this.resetToken = null;
+        this.resetTokenExpiry = null;
+        this.verificationToken = null;
+        this.verificationTokenExpiry = null;
+    }
+
+    /**
+     * Lock account
+     */
+    public void lockAccount(String reason) {
+        this.isLocked = true;
+        this.lockReason = reason;
+        this.lockTime = LocalDateTime.now();
+    }
+
+    /**
+     * Unlock account
+     */
+    public void unlockAccount() {
+        this.isLocked = false;
+        this.lockReason = null;
+        this.lockTime = null;
+    }
+
+    /**
+     * Verify email
+     */
+    public void verifyEmail() {
+        this.isEmailVerified = true;
+        this.verificationToken = null;
+        this.verificationTokenExpiry = null;
+    }
+
+    // =========================================================
+    // BUILDER CLASS - FULLY UPDATED
+    // =========================================================
+
     @Generated
     public static UserBuilder builder() {
         return new UserBuilder();
@@ -203,47 +285,65 @@ public class User implements UserDetails {
 
     @Generated
     public static class UserBuilder {
-        @Generated
+        // Identity fields
         private String id;
-        @Generated
         private String username;
-        @Generated
         private String email;
-        @Generated
         private String password;
-        @Generated
+
+        // Name fields
         private String fullName;
-
-        // ========== ADD NEW FIELDS TO BUILDER ==========
-        @Generated
         private String firstName;
-        @Generated
         private String middleName;
-        @Generated
         private String lastName;
-        // ==============================================
 
-        @Generated
+        // Academic fields
         private String registrationNumber;
-        @Generated
-        private ERole role;
-        @Generated
-        private boolean isActive;
-        @Generated
-        private LocalDateTime lastLogin;
-        @Generated
-        private LocalDateTime createdAt;
-        @Generated
-        private LocalDateTime updatedAt;
-        @Generated
-        private String phoneNumber;
-        @Generated
+        private String programme;
+        private String college;
         private String department;
+        private String academicYear;
+        private String graduationYear;
+        private String semester;
+        private String yearOfStudy;
 
-        @Generated
-        UserBuilder() {
-        }
+        // Contact fields
+        private String phoneNumber;
 
+        // Accommodation fields
+        private String hall;
+        private String roomNumber;
+        private String sponsor;
+
+        // Profile fields
+        private String photo;
+
+        // Role & Status
+        private ERole role;
+        private boolean isActive = true;
+        private boolean isEmailVerified = false;
+        private boolean isLocked = false;
+        private String lockReason;
+        private LocalDateTime lockTime;
+
+        // Tokens
+        private String resetToken;
+        private LocalDateTime resetTokenExpiry;
+        private String verificationToken;
+        private LocalDateTime verificationTokenExpiry;
+
+        // Timestamps
+        private LocalDateTime lastLogin;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        // Audit
+        private String createdBy;
+        private String updatedBy;
+        private String lastLoginIp;
+        private String lastLoginDevice;
+
+        // Builder methods
         @Generated
         public UserBuilder id(String id) {
             this.id = id;
@@ -274,7 +374,6 @@ public class User implements UserDetails {
             return this;
         }
 
-        // ========== ADD BUILDER METHODS FOR NEW FIELDS ==========
         @Generated
         public UserBuilder firstName(String firstName) {
             this.firstName = firstName;
@@ -292,11 +391,82 @@ public class User implements UserDetails {
             this.lastName = lastName;
             return this;
         }
-        // ========================================================
 
         @Generated
         public UserBuilder registrationNumber(String registrationNumber) {
             this.registrationNumber = registrationNumber;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder programme(String programme) {
+            this.programme = programme;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder college(String college) {
+            this.college = college;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder department(String department) {
+            this.department = department;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder academicYear(String academicYear) {
+            this.academicYear = academicYear;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder graduationYear(String graduationYear) {
+            this.graduationYear = graduationYear;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder semester(String semester) {
+            this.semester = semester;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder yearOfStudy(String yearOfStudy) {
+            this.yearOfStudy = yearOfStudy;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder phoneNumber(String phoneNumber) {
+            this.phoneNumber = phoneNumber;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder hall(String hall) {
+            this.hall = hall;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder roomNumber(String roomNumber) {
+            this.roomNumber = roomNumber;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder sponsor(String sponsor) {
+            this.sponsor = sponsor;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder photo(String photo) {
+            this.photo = photo;
             return this;
         }
 
@@ -309,6 +479,54 @@ public class User implements UserDetails {
         @Generated
         public UserBuilder isActive(boolean isActive) {
             this.isActive = isActive;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder isEmailVerified(boolean isEmailVerified) {
+            this.isEmailVerified = isEmailVerified;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder isLocked(boolean isLocked) {
+            this.isLocked = isLocked;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder lockReason(String lockReason) {
+            this.lockReason = lockReason;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder lockTime(LocalDateTime lockTime) {
+            this.lockTime = lockTime;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder resetToken(String resetToken) {
+            this.resetToken = resetToken;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder resetTokenExpiry(LocalDateTime resetTokenExpiry) {
+            this.resetTokenExpiry = resetTokenExpiry;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder verificationToken(String verificationToken) {
+            this.verificationToken = verificationToken;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder verificationTokenExpiry(LocalDateTime verificationTokenExpiry) {
+            this.verificationTokenExpiry = verificationTokenExpiry;
             return this;
         }
 
@@ -331,14 +549,26 @@ public class User implements UserDetails {
         }
 
         @Generated
-        public UserBuilder phoneNumber(String phoneNumber) {
-            this.phoneNumber = phoneNumber;
+        public UserBuilder createdBy(String createdBy) {
+            this.createdBy = createdBy;
             return this;
         }
 
         @Generated
-        public UserBuilder department(String department) {
-            this.department = department;
+        public UserBuilder updatedBy(String updatedBy) {
+            this.updatedBy = updatedBy;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder lastLoginIp(String lastLoginIp) {
+            this.lastLoginIp = lastLoginIp;
+            return this;
+        }
+
+        @Generated
+        public UserBuilder lastLoginDevice(String lastLoginDevice) {
+            this.lastLoginDevice = lastLoginDevice;
             return this;
         }
 
@@ -349,20 +579,41 @@ public class User implements UserDetails {
             user.setUsername(this.username);
             user.setEmail(this.email);
             user.setPassword(this.password);
-            user.setFullName(this.fullName);
-            // ========== SET NEW FIELDS ==========
+            user.setFullName(this.fullName != null ? this.fullName :
+                    buildFullName(this.firstName, this.middleName, this.lastName));
             user.setFirstName(this.firstName);
             user.setMiddleName(this.middleName);
             user.setLastName(this.lastName);
-            // ====================================
             user.setRegistrationNumber(this.registrationNumber);
+            user.setProgramme(this.programme);
+            user.setCollege(this.college);
+            user.setDepartment(this.department);
+            user.setAcademicYear(this.academicYear);
+            user.setGraduationYear(this.graduationYear);
+            user.setSemester(this.semester);
+            user.setYearOfStudy(this.yearOfStudy);
+            user.setPhoneNumber(this.phoneNumber);
+            user.setHall(this.hall);
+            user.setRoomNumber(this.roomNumber);
+            user.setSponsor(this.sponsor);
+            user.setPhoto(this.photo);
             user.setRole(this.role);
             user.setActive(this.isActive);
+            user.setEmailVerified(this.isEmailVerified);
+            user.setLocked(this.isLocked);
+            user.setLockReason(this.lockReason);
+            user.setLockTime(this.lockTime);
+            user.setResetToken(this.resetToken);
+            user.setResetTokenExpiry(this.resetTokenExpiry);
+            user.setVerificationToken(this.verificationToken);
+            user.setVerificationTokenExpiry(this.verificationTokenExpiry);
             user.setLastLogin(this.lastLogin);
-            user.setCreatedAt(this.createdAt);
-            user.setUpdatedAt(this.updatedAt);
-            user.setPhoneNumber(this.phoneNumber);
-            user.setDepartment(this.department);
+            user.setCreatedAt(this.createdAt != null ? this.createdAt : LocalDateTime.now());
+            user.setUpdatedAt(this.updatedAt != null ? this.updatedAt : LocalDateTime.now());
+            user.setCreatedBy(this.createdBy);
+            user.setUpdatedBy(this.updatedBy);
+            user.setLastLoginIp(this.lastLoginIp);
+            user.setLastLoginDevice(this.lastLoginDevice);
             return user;
         }
 
@@ -371,33 +622,63 @@ public class User implements UserDetails {
             return "User.UserBuilder(id=" + this.id +
                     ", username=" + this.username +
                     ", email=" + this.email +
-                    ", password=" + this.password +
                     ", fullName=" + this.fullName +
                     ", firstName=" + this.firstName +
                     ", middleName=" + this.middleName +
                     ", lastName=" + this.lastName +
                     ", registrationNumber=" + this.registrationNumber +
-                    ", role=" + String.valueOf(this.role) +
-                    ", isActive=" + this.isActive +
-                    ", lastLogin=" + String.valueOf(this.lastLogin) +
-                    ", createdAt=" + String.valueOf(this.createdAt) +
-                    ", updatedAt=" + String.valueOf(this.updatedAt) +
+                    ", programme=" + this.programme +
+                    ", college=" + this.college +
+                    ", department=" + this.department +
+                    ", academicYear=" + this.academicYear +
+                    ", graduationYear=" + this.graduationYear +
+                    ", semester=" + this.semester +
+                    ", yearOfStudy=" + this.yearOfStudy +
                     ", phoneNumber=" + this.phoneNumber +
-                    ", department=" + this.department + ")";
+                    ", hall=" + this.hall +
+                    ", roomNumber=" + this.roomNumber +
+                    ", sponsor=" + this.sponsor +
+                    ", photo=" + this.photo +
+                    ", role=" + this.role +
+                    ", isActive=" + this.isActive +
+                    ", isEmailVerified=" + this.isEmailVerified +
+                    ", isLocked=" + this.isLocked +
+                    ", lockReason=" + this.lockReason +
+                    ", lockTime=" + this.lockTime +
+                    ", resetToken=" + this.resetToken +
+                    ", resetTokenExpiry=" + this.resetTokenExpiry +
+                    ", verificationToken=" + this.verificationToken +
+                    ", verificationTokenExpiry=" + this.verificationTokenExpiry +
+                    ", lastLogin=" + this.lastLogin +
+                    ", createdAt=" + this.createdAt +
+                    ", updatedAt=" + this.updatedAt +
+                    ", createdBy=" + this.createdBy +
+                    ", updatedBy=" + this.updatedBy +
+                    ", lastLoginIp=" + this.lastLoginIp +
+                    ", lastLoginDevice=" + this.lastLoginDevice + ")";
         }
     }
 
-    // ========== CONSTRUCTORS - FIXED ==========
+    // =========================================================
+    // CONSTRUCTORS
+    // =========================================================
+
     @Generated
     public User() {
     }
 
     @Generated
-    public User(String id, String username, String email, String password, String fullName,
-                String firstName, String middleName, String lastName,
-                String registrationNumber, ERole role, boolean isActive,
-                LocalDateTime lastLogin, LocalDateTime createdAt, LocalDateTime updatedAt,
-                String phoneNumber, String department) {
+    public User(String id, String username, String email, String password,
+                String fullName, String firstName, String middleName, String lastName,
+                String registrationNumber, String programme, String college, String department,
+                String academicYear, String graduationYear, String semester, String yearOfStudy,
+                String phoneNumber, String hall, String roomNumber, String sponsor, String photo,
+                ERole role, boolean isActive, boolean isEmailVerified, boolean isLocked,
+                String lockReason, LocalDateTime lockTime, String resetToken,
+                LocalDateTime resetTokenExpiry, String verificationToken,
+                LocalDateTime verificationTokenExpiry, LocalDateTime lastLogin,
+                LocalDateTime createdAt, LocalDateTime updatedAt, String createdBy,
+                String updatedBy, String lastLoginIp, String lastLoginDevice) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -407,16 +688,41 @@ public class User implements UserDetails {
         this.middleName = middleName;
         this.lastName = lastName;
         this.registrationNumber = registrationNumber;
+        this.programme = programme;
+        this.college = college;
+        this.department = department;
+        this.academicYear = academicYear;
+        this.graduationYear = graduationYear;
+        this.semester = semester;
+        this.yearOfStudy = yearOfStudy;
+        this.phoneNumber = phoneNumber;
+        this.hall = hall;
+        this.roomNumber = roomNumber;
+        this.sponsor = sponsor;
+        this.photo = photo;
         this.role = role;
         this.isActive = isActive;
+        this.isEmailVerified = isEmailVerified;
+        this.isLocked = isLocked;
+        this.lockReason = lockReason;
+        this.lockTime = lockTime;
+        this.resetToken = resetToken;
+        this.resetTokenExpiry = resetTokenExpiry;
+        this.verificationToken = verificationToken;
+        this.verificationTokenExpiry = verificationTokenExpiry;
         this.lastLogin = lastLogin;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.phoneNumber = phoneNumber;
-        this.department = department;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+        this.lastLoginIp = lastLoginIp;
+        this.lastLoginDevice = lastLoginDevice;
     }
 
-    // ========== EQUALS, HASHCODE, TOSTRING - UPDATED ==========
+    // =========================================================
+    // EQUALS, HASHCODE, TOSTRING
+    // =========================================================
+
     @Generated
     public boolean equals(Object o) {
         if (o == this) return true;
@@ -424,66 +730,21 @@ public class User implements UserDetails {
         User other = (User) o;
         if (!other.canEqual(this)) return false;
         if (this.isActive() != other.isActive()) return false;
+        if (this.isEmailVerified() != other.isEmailVerified()) return false;
+        if (this.isLocked() != other.isLocked()) return false;
 
         Object this$id = this.getId();
         Object other$id = other.getId();
         if (this$id == null ? other$id != null : !this$id.equals(other$id)) return false;
 
-        Object this$username = this.getUsername();
-        Object other$username = other.getUsername();
-        if (this$username == null ? other$username != null : !this$username.equals(other$username)) return false;
-
         Object this$email = this.getEmail();
         Object other$email = other.getEmail();
         if (this$email == null ? other$email != null : !this$email.equals(other$email)) return false;
 
-        Object this$password = this.getPassword();
-        Object other$password = other.getPassword();
-        if (this$password == null ? other$password != null : !this$password.equals(other$password)) return false;
-
-        Object this$fullName = this.getFullName();
-        Object other$fullName = other.getFullName();
-        if (this$fullName == null ? other$fullName != null : !this$fullName.equals(other$fullName)) return false;
-
-        Object this$firstName = this.getFirstName();
-        Object other$firstName = other.getFirstName();
-        if (this$firstName == null ? other$firstName != null : !this$firstName.equals(other$firstName)) return false;
-
-        Object this$middleName = this.getMiddleName();
-        Object other$middleName = other.getMiddleName();
-        if (this$middleName == null ? other$middleName != null : !this$middleName.equals(other$middleName)) return false;
-
-        Object this$lastName = this.getLastName();
-        Object other$lastName = other.getLastName();
-        if (this$lastName == null ? other$lastName != null : !this$lastName.equals(other$lastName)) return false;
-
         Object this$registrationNumber = this.getRegistrationNumber();
         Object other$registrationNumber = other.getRegistrationNumber();
-        if (this$registrationNumber == null ? other$registrationNumber != null : !this$registrationNumber.equals(other$registrationNumber)) return false;
-
-        Object this$role = this.getRole();
-        Object other$role = other.getRole();
-        if (this$role == null ? other$role != null : !this$role.equals(other$role)) return false;
-
-        Object this$lastLogin = this.getLastLogin();
-        Object other$lastLogin = other.getLastLogin();
-        if (this$lastLogin == null ? other$lastLogin != null : !this$lastLogin.equals(other$lastLogin)) return false;
-
-        Object this$createdAt = this.getCreatedAt();
-        Object other$createdAt = other.getCreatedAt();
-        if (this$createdAt == null ? other$createdAt != null : !this$createdAt.equals(other$createdAt)) return false;
-
-        Object this$updatedAt = this.getUpdatedAt();
-        Object other$updatedAt = other.getUpdatedAt();
-        if (this$updatedAt == null ? other$updatedAt != null : !this$updatedAt.equals(other$updatedAt)) return false;
-
-        Object this$phoneNumber = this.getPhoneNumber();
-        Object other$phoneNumber = other.getPhoneNumber();
-        if (this$phoneNumber == null ? other$phoneNumber != null : !this$phoneNumber.equals(other$phoneNumber)) return false;
-
-        Object this$department = this.getDepartment();
-        Object other$department = other.getDepartment();
-        if (this$department == null ? other$department != null : !this$department.equals(other$department)) return false;
+        if (this$registrationNumber == null ? other$registrationNumber != null :
+                !this$registrationNumber.equals(other$registrationNumber)) return false;
 
         return true;
     }
@@ -498,56 +759,33 @@ public class User implements UserDetails {
         int PRIME = 59;
         int result = 1;
         result = result * 59 + (this.isActive() ? 79 : 97);
+        result = result * 59 + (this.isEmailVerified() ? 79 : 97);
+        result = result * 59 + (this.isLocked() ? 79 : 97);
         Object $id = this.getId();
         result = result * 59 + ($id == null ? 43 : $id.hashCode());
-        Object $username = this.getUsername();
-        result = result * 59 + ($username == null ? 43 : $username.hashCode());
         Object $email = this.getEmail();
         result = result * 59 + ($email == null ? 43 : $email.hashCode());
-        Object $password = this.getPassword();
-        result = result * 59 + ($password == null ? 43 : $password.hashCode());
-        Object $fullName = this.getFullName();
-        result = result * 59 + ($fullName == null ? 43 : $fullName.hashCode());
-        Object $firstName = this.getFirstName();
-        result = result * 59 + ($firstName == null ? 43 : $firstName.hashCode());
-        Object $middleName = this.getMiddleName();
-        result = result * 59 + ($middleName == null ? 43 : $middleName.hashCode());
-        Object $lastName = this.getLastName();
-        result = result * 59 + ($lastName == null ? 43 : $lastName.hashCode());
         Object $registrationNumber = this.getRegistrationNumber();
         result = result * 59 + ($registrationNumber == null ? 43 : $registrationNumber.hashCode());
-        Object $role = this.getRole();
-        result = result * 59 + ($role == null ? 43 : $role.hashCode());
-        Object $lastLogin = this.getLastLogin();
-        result = result * 59 + ($lastLogin == null ? 43 : $lastLogin.hashCode());
-        Object $createdAt = this.getCreatedAt();
-        result = result * 59 + ($createdAt == null ? 43 : $createdAt.hashCode());
-        Object $updatedAt = this.getUpdatedAt();
-        result = result * 59 + ($updatedAt == null ? 43 : $updatedAt.hashCode());
-        Object $phoneNumber = this.getPhoneNumber();
-        result = result * 59 + ($phoneNumber == null ? 43 : $phoneNumber.hashCode());
-        Object $department = this.getDepartment();
-        result = result * 59 + ($department == null ? 43 : $department.hashCode());
         return result;
     }
 
     @Generated
     public String toString() {
         return "User(id=" + this.getId() +
-                ", username=" + this.getUsername() +
                 ", email=" + this.getEmail() +
-                ", password=" + this.getPassword() +
                 ", fullName=" + this.getFullName() +
                 ", firstName=" + this.getFirstName() +
-                ", middleName=" + this.getMiddleName() +
                 ", lastName=" + this.getLastName() +
                 ", registrationNumber=" + this.getRegistrationNumber() +
+                ", programme=" + this.getProgramme() +
+                ", college=" + this.getCollege() +
+                ", department=" + this.getDepartment() +
                 ", role=" + this.getRole() +
                 ", isActive=" + this.isActive() +
-                ", lastLogin=" + this.getLastLogin() +
+                ", isEmailVerified=" + this.isEmailVerified() +
+                ", isLocked=" + this.isLocked() +
                 ", createdAt=" + this.getCreatedAt() +
-                ", updatedAt=" + this.getUpdatedAt() +
-                ", phoneNumber=" + this.getPhoneNumber() +
-                ", department=" + this.getDepartment() + ")";
+                ", updatedAt=" + this.getUpdatedAt() + ")";
     }
 }

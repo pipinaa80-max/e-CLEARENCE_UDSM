@@ -2,6 +2,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
@@ -9,7 +10,7 @@ import { ClearanceService } from '../core/services/clearance.service';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
@@ -17,9 +18,21 @@ export class ProfileComponent implements OnInit {
 
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly fb = inject(FormBuilder);
 
   profilePhoto: string | null = null;
   isLoading = true;
+
+  showChangePassword = false;
+  passwordMessage = '';
+  passwordError = '';
+  isPasswordLoading = false;
+
+  changePasswordForm = this.fb.nonNullable.group({
+    currentPassword: ['', Validators.required],
+    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', Validators.required]
+  });
 
   /* =========================
      LOGGED-IN STUDENT
@@ -270,5 +283,36 @@ export class ProfileComponent implements OnInit {
       user.photo = '';
       this.authService.updateCurrentUser(user);
     }
+  }
+
+  submitChangePassword(): void {
+    this.passwordMessage = '';
+    this.passwordError = '';
+
+    if (this.changePasswordForm.invalid) {
+      this.changePasswordForm.markAllAsTouched();
+      return;
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm.getRawValue();
+
+    if (newPassword !== confirmPassword) {
+      this.passwordError = 'Passwords do not match.';
+      return;
+    }
+
+    this.isPasswordLoading = true;
+    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
+      next: (res) => {
+        this.isPasswordLoading = false;
+        this.passwordMessage = res.message || 'Password changed successfully. A confirmation email has been sent.';
+        this.changePasswordForm.reset();
+        setTimeout(() => this.showChangePassword = false, 3000);
+      },
+      error: (err) => {
+        this.isPasswordLoading = false;
+        this.passwordError = err.error?.message || 'Failed to change password. Please check your current password.';
+      }
+    });
   }
 }

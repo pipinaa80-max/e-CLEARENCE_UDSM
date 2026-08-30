@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -16,6 +17,7 @@ export class Register {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly toastService = inject(ToastService);
 
   registerForm = this.fb.nonNullable.group({
     firstName: ['', Validators.required],
@@ -74,12 +76,12 @@ export class Register {
     // ========== FIX: Send fields that backend expects ==========
     // Backend expects: firstName, lastName, phone (NOT fullName, phoneNumber)
     const userData = {
-      firstName: value.firstName,           // ✅ Individual field
-      middleName: value.middleName || '',   // ✅ Individual field
-      lastName: value.lastName,             // ✅ Individual field
+      firstName: value.firstName,
+      middleName: value.middleName || '',
+      lastName: value.lastName,
       registrationNumber: value.registrationNumber,
       email: value.email,
-      phone: value.phone,                   // ✅ 'phone' not 'phoneNumber'
+      phone: value.phone,
       password: value.password,
       role: 'STUDENT'
     };
@@ -92,6 +94,7 @@ export class Register {
         console.log('✅ Registration Success:', response);
         this.isLoading = false;
         this.successMessage = response.message || 'Registration successful! Redirecting to login...';
+        this.toastService.success('Registration Success', 'Your account has been created successfully.');
 
         // Auto-login after registration
         this.authService.login(value.email, value.password).subscribe({
@@ -102,7 +105,7 @@ export class Register {
             }, 1500);
           },
           error: (err) => {
-            console.error('❌ Auto-login Error:', err);
+            console.error(' Auto-login Error:', err);
             setTimeout(() => {
               this.router.navigate(['/login']);
             }, 2000);
@@ -123,6 +126,7 @@ export class Register {
         } else {
           this.errorMessage = err.error?.message || 'Unable to register user. Please try again.';
         }
+        this.toastService.error('Registration Failed', this.errorMessage);
       }
     });
   }

@@ -135,4 +135,68 @@
     </div>
   </section>
 
+  <!-- ACCOUNT SETTINGS / CHANGE PASSWORD -->
+  <section class="account-settings">
+    <div class="settings-header" (click)="showChangePassword = !showChangePassword">
+      <div class="header-left">
+        <span class="icon">🔒</span>
+        <h3>Account Security</h3>
+      </div>
+      <span class="toggle-icon">{{ showChangePassword ? '−' : '+' }}</span>
+    </div>
+
+    <div class="settings-content" *ngIf="showChangePassword">
+      <p>Update your account password. We recommend choosing a strong password.</p>
+
+      <form [formGroup]="changePasswordForm" (ngSubmit)="submitChangePassword()" class="password-form">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="currentPassword">Current Password</label>
+            <input
+                    id="currentPassword"
+                    type="password"
+                    formControlName="currentPassword"
+                    placeholder="Enter current password"
+                    required
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label for="newPassword">New Password</label>
+            <input
+                    id="newPassword"
+                    type="password"
+                    formControlName="newPassword"
+                    placeholder="Min 8 characters"
+                    required
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input
+                    id="confirmPassword"
+                    type="password"
+                    formControlName="confirmPassword"
+                    placeholder="Repeat new password"
+                    required
+            />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="save-btn" [disabled]="changePasswordForm.invalid || isPasswordLoading">
+            <span *ngIf="!isPasswordLoading">Update Password</span>
+            <span *ngIf="isPasswordLoading">Updating...</span>
+          </button>
+        </div>
+
+        <div class="alert success" *ngIf="passwordMessage">{{ passwordMessage }}</div>
+        <div class="alert danger" *ngIf="passwordError">{{ passwordError }}</div>
+      </form>
+    </div>
+  </section>
+
 </div>

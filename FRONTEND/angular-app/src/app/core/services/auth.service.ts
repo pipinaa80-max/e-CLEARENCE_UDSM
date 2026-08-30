@@ -67,9 +67,9 @@ export class AuthService {
       'CONVOCATION_OFFICER': 'Convocation',
       'CONVOCATION': 'Convocation',
       'GAMES_COACH': 'Games Coach',
-      'GAMES COACH': 'Games Coach',
+      'GAMES_COACH_OFFICER': 'Games Coach',
       'HALL_WARDEN': 'Hall Warden',
-      'HALL WARDEN': 'Hall Warden',
+      'HALL_WARDEN_OFFICER': 'Hall Warden',
       'USAB_OFFICER': 'USAB',
       'USAB': 'USAB',
       'DARUSO_OFFICER': 'DARUSO',
@@ -77,9 +77,8 @@ export class AuthService {
       'LIBRARY_OFFICER': 'Library',
       'LIBRARY': 'Library',
       'DEAN_OF_STUDENTS': 'Dean of Students',
-      'DEAN OF STUDENTS': 'Dean of Students',
       'SMART_CARD_OFFICER': 'Smart Card',
-      'SMART CARD': 'Smart Card',
+      'SMART_CARD': 'Smart Card',
       'WORKSHOP_OFFICER': 'Workshop',
       'WORKSHOP': 'Workshop',
       'PRINCIPAL': 'Principal',
@@ -115,7 +114,7 @@ export class AuthService {
     return of({});
   }
 
-  changePassword(data: { oldPassword: string; newPassword: string }): Observable<any> {
+  changePassword(data: { currentPassword: string; newPassword: string }): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.post(`${this.apiUrl}/change-password`, data, { headers });
   }
