@@ -233,11 +233,10 @@ public class ClearanceService {
 
         clearanceRequestRepository.save(request);
 
-        notificationService.sendNotification(
-                request.getStudent().getUser(),
-                "Clearance Update",
-                "Your clearance has been approved by " + department,
-                NotificationType.APPROVAL
+        notificationService.sendApprovalNotification(
+                request.getStudent().getId(),
+                department,
+                getCurrentUser().getFullName()
         );
 
         auditLogService.logAction(
@@ -267,11 +266,10 @@ public class ClearanceService {
         request.setStatus(ClearanceStatus.REJECTED.name());
         clearanceRequestRepository.save(request);
 
-        notificationService.sendNotification(
-                request.getStudent().getUser(),
-                "Clearance Update",
-                "Your clearance has been rejected by " + department + ". Reason: " + reason,
-                NotificationType.REJECTION
+        notificationService.sendRejectionNotification(
+                request.getStudent().getId(),
+                department,
+                reason
         );
 
         auditLogService.logAction(

@@ -35,11 +35,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/reset-password/confirm",
             "/api/test",
             "/swagger-ui/",
+            "/qr/",
             "/v3/api-docs/"
     );
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        // ✅ Skip filter for OPTIONS requests (CORS preflight)
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         String path = request.getServletPath();
 
         // ✅ Only skip JWT filter for truly public endpoints

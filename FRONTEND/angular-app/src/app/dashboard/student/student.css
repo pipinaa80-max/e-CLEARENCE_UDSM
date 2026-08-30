@@ -73,7 +73,7 @@
 .brand strong {
   display: block;
 
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 800;
 }
 
@@ -84,7 +84,7 @@
 
   color: rgba(255, 255, 255, 0.68);
 
-  font-size: 0.68rem;
+  font-size: 0.85rem;
 }
 
 
@@ -118,7 +118,7 @@
   color: rgba(255, 255, 255, 0.78);
 
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 600;
 
   text-align: left;
@@ -242,7 +242,7 @@
 
   color: #0b5b94;
 
-  font-size: 0.66rem;
+  font-size: 0.85rem;
   font-weight: 800;
 
   letter-spacing: 0.06em;
@@ -263,7 +263,7 @@
 
   color: #718096;
 
-  font-size: 0.78rem;
+  font-size: 0.95rem;
 }
 
 .topbar-profile {
@@ -468,7 +468,7 @@
 
   color: #7a8795;
 
-  font-size: 0.62rem;
+  font-size: 0.8rem;
   font-weight: 700;
 
   text-transform: uppercase;
@@ -479,7 +479,7 @@
 
   color: #243b53;
 
-  font-size: 0.78rem;
+  font-size: 1rem;
   line-height: 1.4;
 }
 
@@ -540,7 +540,7 @@
   background: #edf2f7;
   color: #68788a;
 
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -573,7 +573,7 @@
 
   color: #718096;
 
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   line-height: 1.55;
 }
 
@@ -592,7 +592,7 @@
 
   border-radius: 7px;
 
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   font-weight: 800;
 
   text-decoration: none;
@@ -824,7 +824,7 @@
   background: #edf2f7;
   color: #718096;
 
-  font-size: 0.58rem;
+  font-size: 0.9rem;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -850,14 +850,14 @@
 
   color: #243b53;
 
-  font-size: 0.84rem;
+  font-size: 1.1rem;
 }
 .office-card p {
   margin: 5px 0 0 48px;
 
   color: #7a8795;
 
-  font-size: 0.68rem;
+  font-size: 0.95rem;
   line-height: 1.5;
 }
 
@@ -929,7 +929,7 @@
 
   color: #718096;
 
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
@@ -978,7 +978,7 @@
 
   color: #073b68;
 
-  font-size: 0.78rem;
+  font-size: 1rem;
 }
 
 .quick-action span {
@@ -988,7 +988,7 @@
 
   color: #7a8795;
 
-  font-size: 0.65rem;
+  font-size: 0.9rem;
 }
 
 

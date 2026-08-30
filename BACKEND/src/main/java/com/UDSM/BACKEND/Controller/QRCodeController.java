@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/qr")
+@RequestMapping("/qr")
 public class QRCodeController {
 
     private final QRCodeService qrCodeService;

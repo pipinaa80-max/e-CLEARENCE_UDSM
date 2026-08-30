@@ -314,6 +314,18 @@ public class EmailService {
 
     @Async
     public void sendClearanceUpdateEmail(Student student, String status, String department, String comments) {
+        String recipientEmail = student.getEmail();
+        if (recipientEmail == null || recipientEmail.isEmpty()) {
+            if (student.getUser() != null) {
+                recipientEmail = student.getUser().getEmail();
+            }
+        }
+
+        if (recipientEmail == null || recipientEmail.isEmpty()) {
+            log.warn("⚠️ No email found for student: {}", student.getRegistrationNumber());
+            return;
+        }
+
         Map<String, Object> variables = new HashMap<>();
         variables.put("name", student.getFullName());
         variables.put("registrationNumber", student.getRegistrationNumber());
@@ -326,7 +338,8 @@ public class EmailService {
         variables.put("frontendUrl", this.frontendUrl);
         variables.put("appName", this.appName);
         variables.put("currentYear", LocalDateTime.now().getYear());
-        sendTemplatedEmail(student.getEmail(), "Clearance Update - " + this.appName,
+        
+        sendTemplatedEmail(recipientEmail, "Clearance Update - " + this.appName,
                 "email/clearance-update", variables);
     }
 

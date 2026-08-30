@@ -149,7 +149,7 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
   // Clearance Approval Offices
-  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Convocation'])] },
+  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Convocation', 'Student'])] },
   { path: 'games_coach', component: GamesCoachComponent, canActivate: [authGuard, roleGuard(['Games Coach'])] },
   { path: 'hall_warden', component: HallWardenComponent, canActivate: [authGuard, roleGuard(['Hall Warden'])] },
   { path: 'usab', component: UsabComponent, canActivate: [authGuard, roleGuard(['USAB'])] },

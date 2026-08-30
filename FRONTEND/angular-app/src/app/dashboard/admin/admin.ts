@@ -145,10 +145,16 @@ export class AdminDashboard implements OnInit {
   addUser(): void {
     this.adminService.createUser(this.newUser).subscribe({
       next: (res) => {
-        this.message = 'User added successfully';
-        this.isError = false;
-        this.loadData();
-        this.resetUserForm();
+        // Check for success property in ApiResponse
+        if (res && res.success !== false) {
+          this.message = res.message || 'User added successfully';
+          this.isError = false;
+          this.loadData();
+          this.resetUserForm();
+        } else {
+          this.message = 'Failed: ' + (res.message || 'Unknown error');
+          this.isError = true;
+        }
       },
       error: (err) => {
         this.message = 'Failed to add user: ' + (err.error?.message || err.message);

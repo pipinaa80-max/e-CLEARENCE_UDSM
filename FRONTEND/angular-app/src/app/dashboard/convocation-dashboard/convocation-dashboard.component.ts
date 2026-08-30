@@ -7,6 +7,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 
 @Component({
@@ -18,6 +19,7 @@ import { ClearanceRequest } from '../../core/models/clearance.model';
 })
 export class ConvocationDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
+  private readonly convocationService = inject(ConvocationService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
@@ -27,6 +29,8 @@ export class ConvocationDashboardComponent implements OnInit {
   message = '';
   errorMessage = '';
   selectedRequest: ClearanceRequest | null = null;
+
+  backendReceipts: any[] = [];
 
   totalPending = 0;
   totalIssued = 0;
@@ -50,9 +54,23 @@ export class ConvocationDashboardComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+
+    // 1. Load from Backend
+    this.convocationService.getPendingReceipts().subscribe({
+      next: (res) => {
+        this.backendReceipts = res.receipts || [];
+        console.log('Backend pending receipts loaded:', this.backendReceipts.length);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading backend receipts:', err);
+        this.isLoading = false;
+      }
+    });
+
+    // 2. Load from Local (for legacy/mock continuity)
     const requests = this.clearanceService.getRequestsForOffice('Convocation');
     this.updateStats(requests);
-    this.isLoading = false;
   }
 
   updateStats(requests: ClearanceRequest[]): void {
@@ -308,5 +326,39 @@ export class ConvocationDashboardComponent implements OnInit {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  approveBackendReceipt(receiptId: string): void {
+    if (!confirm('Are you sure you want to approve this receipt?')) return;
+    this.isLoading = true;
+    this.convocationService.approveReceipt(receiptId).subscribe({
+      next: (res) => {
+        this.message = '✅ Receipt approved and clearance advanced.';
+        this.loadData();
+        setTimeout(() => this.message = '', 3000);
+      },
+      error: (err) => {
+        this.errorMessage = '❌ Approval failed: ' + (err.error?.message || err.message);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  rejectBackendReceipt(receiptId: string): void {
+    const reason = window.prompt('Enter rejection reason:');
+    if (!reason) return;
+
+    this.isLoading = true;
+    this.convocationService.rejectReceipt(receiptId, reason).subscribe({
+      next: (res) => {
+        this.message = '❌ Receipt rejected and student notified.';
+        this.loadData();
+        setTimeout(() => this.message = '', 3000);
+      },
+      error: (err) => {
+        this.errorMessage = '❌ Rejection failed: ' + (err.error?.message || err.message);
+        this.isLoading = false;
+      }
+    });
   }
 }

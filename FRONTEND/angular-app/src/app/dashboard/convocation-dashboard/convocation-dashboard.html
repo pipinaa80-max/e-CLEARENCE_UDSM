@@ -78,6 +78,46 @@
       {{ errorMessage }}
     </div>
 
+    <section class="request-section" *ngIf="backendReceipts.length > 0">
+      <div class="section-header">
+        <h2 style="color: #0864af;">Online Payment Submissions (New)</h2>
+        <span class="request-count">{{ backendReceipts.length }} pending verification</span>
+      </div>
+
+      <div class="request-list">
+        <div class="request-card" *ngFor="let receipt of backendReceipts" style="border-left: 5px solid #f6b418;">
+          <div class="student-header">
+            <div class="student-avatar">
+              <span class="initials">{{ receipt.studentName?.charAt(0) }}</span>
+            </div>
+            <div class="student-info">
+              <h3>{{ receipt.studentName }}</h3>
+              <div class="student-meta">
+                <span class="reg-number">📋 {{ receipt.registrationNumber }}</span>
+                <span class="control-number">🔢 CN: {{ receipt.controlNumber }}</span>
+              </div>
+              <small class="submitted-date">Submitted: {{ receipt.submittedAt | date:'medium' }}</small>
+            </div>
+            <div class="request-status">
+              <span class="status-badge receipt-received">📄 Pending Verification</span>
+            </div>
+          </div>
+
+          <div class="action-buttons" style="margin-top: 15px; display: flex; gap: 10px;">
+            <a [href]="receipt.fileUrl" target="_blank" class="view-btn" style="padding: 8px 15px; background: #e9f3fb; border-radius: 4px; text-decoration: none; color: #0864af; font-weight: bold;">
+              👁️ View Receipt
+            </a>
+            <button (click)="approveBackendReceipt(receipt.id)" class="approve-btn" style="background: #2e7d32; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              ✅ Verify & Approve
+            </button>
+            <button (click)="rejectBackendReceipt(receipt.id)" class="reject-btn" style="background: #c62828; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              ❌ Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="request-section">
       <div class="section-header">
         <h2>Pending Control Number Requests</h2>

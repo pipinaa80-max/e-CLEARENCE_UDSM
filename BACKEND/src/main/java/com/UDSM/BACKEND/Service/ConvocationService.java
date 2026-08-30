@@ -1,10 +1,7 @@
 package com.UDSM.BACKEND.Service;
 
 import com.UDSM.BACKEND.Model.*;
-import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
-import com.UDSM.BACKEND.Repository.ConvocationReceiptRepository;
-import com.UDSM.BACKEND.Repository.DepartmentApprovalRepository;
-import com.UDSM.BACKEND.Repository.UserRepository;
+import com.UDSM.BACKEND.Repository.*;
 import com.UDSM.BACKEND.dto.ApiResponse;
 import com.UDSM.BACKEND.dto.ConvocationReceiptRequest;
 import com.UDSM.BACKEND.dto.ConvocationReceiptResponse;
@@ -34,6 +31,8 @@ public class ConvocationService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+
+    private final StudentRepository studentRepository;
 
     private static final String UPLOAD_DIR = "uploads/convocation/";
 
@@ -126,8 +125,15 @@ public class ConvocationService {
         receipt.setApprovedAt(LocalDateTime.now());
         receiptRepository.save(receipt);
 
-        // Update clearance request
-        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentId(receipt.getStudentId());
+        // Map User ID to Student ID for Clearance Request lookup
+        String studentEntityId = receipt.getStudentId(); // Default if already student id
+        Student studentEntity = studentRepository.findByUserId(receipt.getStudentId()).orElse(null);
+        if (studentEntity != null) {
+            studentEntityId = studentEntity.getId();
+        }
+
+        // Update clearance request using real Student ID
+        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentId(studentEntityId);
         if (!requests.isEmpty()) {
             ClearanceRequest clearanceRequest = requests.get(requests.size() - 1);
 
@@ -145,20 +151,16 @@ public class ConvocationService {
             }
 
             // Move to next stage (Parallel offices)
-            // Update the request to move to parallel stage
             clearanceRequest.setCurrentStage("Parallel");
+            clearanceRequest.setStatus(ClearanceStatus.PENDING.name()); // Ensure status is not REJECTED
             clearanceRequestRepository.save(clearanceRequest);
         }
 
         // Send notification to student
-        User student = userRepository.findById(receipt.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        notificationService.sendNotification(
-                student,
-                "Convocation Approval",
-                "Your Convocation payment receipt has been verified and approved. You can now proceed with other office clearances.",
-                NotificationType.APPROVAL
+        notificationService.sendApprovalNotification(
+                studentEntityId,
+                "Convocation",
+                officerUsername
         );
 
         // Audit log
@@ -190,8 +192,15 @@ public class ConvocationService {
         receipt.setComments(reason);
         receiptRepository.save(receipt);
 
+        // Map User ID to Student ID
+        String studentEntityId = receipt.getStudentId();
+        Student studentEntity = studentRepository.findByUserId(receipt.getStudentId()).orElse(null);
+        if (studentEntity != null) {
+            studentEntityId = studentEntity.getId();
+        }
+
         // Update clearance request
-        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentId(receipt.getStudentId());
+        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentId(studentEntityId);
         if (!requests.isEmpty()) {
             ClearanceRequest clearanceRequest = requests.get(requests.size() - 1);
 
@@ -214,14 +223,10 @@ public class ConvocationService {
         }
 
         // Send notification to student
-        User student = userRepository.findById(receipt.getStudentId())
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-
-        notificationService.sendNotification(
-                student,
-                "Convocation Action Required",
-                "Your Convocation payment receipt has been rejected: " + reason,
-                NotificationType.REJECTION
+        notificationService.sendRejectionNotification(
+                studentEntityId,
+                "Convocation",
+                reason
         );
 
         // Audit log

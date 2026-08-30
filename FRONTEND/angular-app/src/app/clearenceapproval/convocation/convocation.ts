@@ -14,6 +14,7 @@ import { DocumentService } from '../../core/services/document.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 
+import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 
 @Component({
@@ -33,6 +34,7 @@ export class ConvocationComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly documentService = inject(DocumentService);
+  private readonly convocationService = inject(ConvocationService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
@@ -43,6 +45,7 @@ export class ConvocationComponent implements OnInit {
 
   form = this.fb.nonNullable.group({
     controlNumber: [''],
+    receiptNumber: ['', Validators.required],
     file: [null as File | null]
   });
 
@@ -414,52 +417,46 @@ export class ConvocationComponent implements OnInit {
       return;
     }
 
-    this.documentService
-        .uploadDocument(
-            {
-              studentId: user.id,
-              fileName: file.name,
-              fileType: 'Convocation Payment Receipt',
-              fileSize: file.size,
-              description: `Payment receipt for control number ${this.controlNumber}`
-            },
-            file
-        )
-        .subscribe({
-          next: () => {
-            this.clearanceService.submitConvocationReceipt(
-                request.id,
-                file.name
-            );
+    // 1. Submit to Real Backend
+    this.convocationService.submitReceipt({
+      studentId: user.id,
+      controlNumber: this.controlNumber,
+      receiptNumber: this.form.controls.receiptNumber.value || ('REC-' + Date.now().toString().slice(-6)),
+      paymentDate: new Date().toISOString() // Required by backend validation
+    }, file).subscribe({
+      next: (res) => {
+        console.log('Backend receipt submission successful:', res);
 
-            // Reload data after submission
-            this.loadData();
+        // 2. Also update local storage for continuity
+        this.clearanceService.submitConvocationReceipt(
+          request.id,
+          file.name
+        );
 
-            this.notificationService.createNotification(
-                user.id,
-                'Payment receipt submitted',
-                'Your payment receipt has been submitted to Convocation for verification.',
-                'success'
-            );
+        this.notificationService.createNotification(
+          user.id,
+          'Payment receipt submitted',
+          'Your payment receipt has been submitted to Convocation for verification.',
+          'success'
+        );
 
-            this.message = 'Payment receipt submitted successfully.';
-            this.form.controls.file.setValue(null);
-            this.selectedFileName = '';
+        this.message = 'Payment receipt submitted successfully. Redirecting to status...';
+        this.form.controls.file.setValue(null);
+        this.selectedFileName = '';
 
-            // Clear the file input
-            const input = document.getElementById('receipt-upload') as HTMLInputElement;
-            if (input) {
-              input.value = '';
-            }
+        this.isLoading = false;
 
-            this.isLoading = false;
-          },
-          error: (error) => {
-            console.error('Upload error:', error);
-            this.errorMessage = 'Failed to upload the receipt. Please try again.';
-            this.isLoading = false;
-          }
-        });
+        // Auto-navigate to status after success
+        setTimeout(() => {
+          this.router.navigate(['/clearance/status']);
+        }, 2000);
+      },
+      error: (err) => {
+        console.error('Backend submission error:', err);
+        this.errorMessage = 'Failed to submit receipt to office: ' + (err.error?.message || err.message);
+        this.isLoading = false;
+      }
+    });
   }
 
   // =====================================================

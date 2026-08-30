@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Clearance Update</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #0864af, #053f70);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .status-box {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .status-rejected {
+            background-color: #fff5f5;
+            border: 2px solid #feb2b2;
+            color: #c53030;
+        }
+        .status-approved {
+            background-color: #f0fff4;
+            border: 2px solid #9ae6b4;
+            color: #276749;
+        }
+        .reason-box {
+            background-color: #edf2f7;
+            border-left: 4px solid #4a5568;
+            padding: 20px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .reason-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            color: #2d3748;
+            font-style: normal;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #718096;
+            font-size: 13px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #f6b418;
+            color: #053f70;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Clearance Status Update</h1>
+</div>
+<div class="content">
+    <h2>Hello <span th:text="${name}">Student</span>,</h2>
+
+    <p>There has been an update to your clearance request for <strong><span th:text="${programme}">Programme</span></strong>.</p>
+
+    <div th:if="${status == 'REJECTED'}" class="status-box status-rejected">
+        ❌ ACTION REQUIRED: REJECTED BY <span th:text="${department}">Department</span>
+    </div>
+
+    <div th:if="${status == 'APPROVED'}" class="status-box status-approved">
+        ✅ APPROVED BY <span th:text="${department}">Department</span>
+    </div>
+
+    <div th:if="${comments != null and !comments.empty}" class="reason-box">
+        <span class="reason-title">Official Comments:</span>
+        <span th:text="${comments}">"Please provide additional documentation."</span>
+    </div>
+
+    <p th:if="${status == 'REJECTED'}">Please log in to the student portal to review the details and make the necessary corrections.</p>
+    <p th:if="${status == 'APPROVED'}">Your clearance has been cleared by this department. You can monitor the remaining stages in the portal.</p>
+
+    <div style="text-align: center;">
+        <a th:href="${frontendUrl + '/clearance/status'}" class="button">View Clearance Status</a>
+    </div>
+
+    <p>Best regards,<br>
+        <strong>University of Dar es Salaam</strong><br>
+        Smart Clearance Team</p>
+</div>
+<div class="footer">
+    <p>This is an automated notification. Please do not reply directly to this email.</p>
+    <p>&copy; <span th:text="${currentYear}">2024</span> UDSM Smart Clearance. All rights reserved.</p>
+</div>
+</body>
+</html>

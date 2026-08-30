@@ -7,8 +7,8 @@
   --bg-light: #f4f7fb;
   --surface: #ffffff;
   --surface-soft: #eef4fa;
-  --text-dark: #172033;
-  --text-muted: #5f6f84;
+  --text-dark: #121926; /* Darker for better contrast */
+  --text-muted: #3f4e62; /* Darker for better contrast */
   --border-soft: #d8e2ee;
   --danger: #b42318;
   --success: #087443;
@@ -24,18 +24,66 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg-light);
   color: var(--text-dark);
+  font-size: 16px; /* Base font size */
   overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: 1.6; /* Improved line height for clarity */
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: subpixel-antialiased; /* Better for clarity on some screens */
+  -moz-osx-font-smoothing: auto;
+}
+
+/* Ensure all text is at least a readable size unless explicitly tiny */
+p, span, div, a, button, input, select, td, th, label, strong, small {
+  font-size: 1rem; /* Default to 16px */
+  color: var(--text-dark); /* High contrast */
+}
+
+h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.2; }
+h2 { font-size: 1.75rem; font-weight: 700; line-height: 1.3; }
+h3 { font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+
+small, .text-small {
+  font-size: 0.9rem !important; /* 14.4px - minimum recommended for clarity */
+}
+
+/* Force minimum readability for legacy components using tiny rems or px */
+small, .text-small, .eyebrow, .section-label, .status-badge, .clearance-label, .office-status, .pending-box small, .pending-status, .detail span, .approval-status, .reject-button, .approve-button, .cancel-button, .return-button, .view-process, .quick-action span, .brand small {
+  font-size: 0.9rem !important; /* 14.4px - minimum recommended for clarity */
+}
+
+.sidebar nav a, .sidebar nav button, .logout-link, .request-header h2, .student-meta strong, .office-card h3, .process-empty h3, .quick-action strong, .brand strong {
+  font-size: 1.1rem !important; /* Slightly larger for main navigation/headings */
+  font-weight: 700 !important;
+}
+
+td, th, p, li, label, input, select, textarea {
+  font-size: 1rem !important; /* 16px */
+  line-height: 1.6;
+}
+
+/* Logo clarity enhancement */
+.brand-logo, .header-logo, .nav-logo, .hero-logo {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.8)) contrast(1.1);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.brand img {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+  background: #ffffff;
+  border-radius: 50%;
+  padding: 4px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border: 2px solid var(--udsm-gold);
 }
 
 button,

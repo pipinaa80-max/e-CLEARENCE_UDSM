@@ -1,8 +1,9 @@
 package com.UDSM.BACKEND.Service;
-import com.UDSM.BACKEND.Model.Notification;
-import com.UDSM.BACKEND.Model.NotificationType;
-import com.UDSM.BACKEND.Model.User;
+import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.NotificationRepository;
+import com.UDSM.BACKEND.Repository.StudentRepository;
+import com.UDSM.BACKEND.Repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,10 +14,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class NotificationServiceImpl implements NotificationService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     @Override
     public void sendNotification(User user, String title, String message, NotificationType type) {
@@ -56,12 +67,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendEmail(String to, String subject, String body) {
-        // Implement email sending logic
-        // You can use JavaMailSender or other email services
-        System.out.println("Sending email to: " + to);
-        System.out.println("Subject: " + subject);
-        System.out.println("Body: " + body);
-        // TODO: Add actual email implementation
+        log.info("📧 Sending simple email to: {}", to);
+        emailService.sendHtmlEmail(to, subject, "<p>" + body + "</p>");
     }
 
     @Override
@@ -123,16 +130,44 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendApprovalNotification(String studentId, String department, String approver) {
-        System.out.println("Approval notification for student: " + studentId);
-        System.out.println("Department: " + department);
-        System.out.println("Approved by: " + approver);
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null) {
+            log.warn("⚠️ Student not found for approval notification: {}", studentId);
+            return;
+        }
+
+        String title = "Clearance Approved - " + department;
+        String message = "Your clearance request has been approved by the " + department + " office.";
+        
+        sendNotification(student.getUser(), title, message, NotificationType.APPROVAL);
+
+        // Send Real Email
+        try {
+            emailService.sendClearanceUpdateEmail(student, "APPROVED", department, "Verified by " + approver);
+        } catch (Exception e) {
+            log.error("❌ Failed to send approval email to student {}: {}", studentId, e.getMessage());
+        }
     }
 
     @Override
     public void sendRejectionNotification(String studentId, String department, String reason) {
-        System.out.println("Rejection notification for student: " + studentId);
-        System.out.println("Department: " + department);
-        System.out.println("Reason: " + reason);
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null) {
+            log.warn("⚠️ Student not found for rejection notification: {}", studentId);
+            return;
+        }
+
+        String title = "Clearance Action Required - " + department;
+        String message = "Your clearance request was rejected by " + department + ". Reason: " + reason;
+        
+        sendNotification(student.getUser(), title, message, NotificationType.REJECTION);
+
+        // Send Real Email
+        try {
+            emailService.sendClearanceUpdateEmail(student, "REJECTED", department, reason);
+        } catch (Exception e) {
+            log.error("❌ Failed to send rejection email to student {}: {}", studentId, e.getMessage());
+        }
     }
 
     @Override

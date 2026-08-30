@@ -26,15 +26,19 @@ export class AuthService {
   login(identifier: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/login`, { identifier, password }).pipe(
       map((response) => {
-        const authenticatedUser = this.mapUserResponse(response);
+        // Handle ApiResponse wrapper if present
+        const data = response.data || response;
+
+        const authenticatedUser = this.mapUserResponse(data);
         this.storage.save(this.currentUserKey, authenticatedUser);
 
         // Support both snake_case and camelCase from backend
-        const token = response.access_token || response.accessToken;
+        const token = data.access_token || data.accessToken || data.token;
         if (token) {
           this.storage.save(this.tokenKey, token);
+          console.log('✅ Auth token saved successfully');
         } else {
-          console.error('No access token found in login response', response);
+          console.error('❌ No access token found in login response data', response);
         }
 
         return authenticatedUser;

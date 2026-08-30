@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/v1/convocation")
+@RequestMapping("/convocation")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
