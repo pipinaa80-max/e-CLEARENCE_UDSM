@@ -36,12 +36,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         logger.error("❌ Database Integrity Error: {}", ex.getMessage());
-        String message = "System Error: The requested operation violates database constraints. (Stale Roles/Duplicates)";
+        String message = "Operation failed due to a database constraint. Please check your inputs.";
         
         if (ex.getMessage().contains("users_role_check")) {
-            message = "Operation failed: The user role is not recognized by the database. Please contact support to refresh database constraints.";
+            message = "Registration failed: The selected user role is currently being updated in our system. Please try again in a few minutes or contact the Administrator.";
         } else if (ex.getMessage().contains("duplicate key")) {
-            message = "Operation failed: An account with this identifier already exists.";
+            message = "Registration failed: An account with this email or registration number already exists.";
         }
         
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -55,11 +55,25 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Invalid data format received by server."));
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ApiResponse> handleApiException(ApiException ex) {
+        logger.error("❌ API Error: {}", ex.getMessage());
+        return ResponseEntity.status(ex.getStatus())
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        logger.error("❌ Resource Not Found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException ex) {
         logger.error("Runtime exception: ", ex);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error("Action failed: " + ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

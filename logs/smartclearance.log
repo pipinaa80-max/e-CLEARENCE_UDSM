@@ -1767,3 +1767,1391 @@ java.lang.RuntimeException: Email is already registered
 2026-08-30 13:22:01 [http-nio-8080-exec-2] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: chartory42@gmail.com
 2026-08-30 13:22:06 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: chartory42@gmail.com
 2026-08-30 13:22:06 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: chartory42@gmail.com
+2026-08-30 14:19:37 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Starting BackendApplication using Java 21.0.12 with PID 180238 (/home/kali/e-CLEARENCE_UDSM/BACKEND/target/classes started by kali in /home/kali/e-CLEARENCE_UDSM)
+2026-08-30 14:19:37 [restartedMain] DEBUG com.UDSM.BACKEND.BackendApplication - Running with Spring Boot v4.1.0, Spring v7.0.8
+2026-08-30 14:19:37 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-08-30 14:19:37 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-30 14:19:37 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-30 14:19:39 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-30 14:19:39 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 75 ms. Found 8 JPA repository interfaces.
+2026-08-30 14:19:40 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-08-30 14:19:40 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-08-30 14:19:40 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-08-30 14:19:40 [restartedMain] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 2450 ms
+2026-08-30 14:19:40 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-08-30 14:19:41 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@669686aa
+2026-08-30 14:19:41 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-08-30 14:19:41 [restartedMain] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/clearance_db (PostgreSQL 18.4)
+2026-08-30 14:19:41 [restartedMain] INFO  o.f.core.internal.command.DbValidate - Successfully validated 1 migration (execution time 00:00.027s)
+2026-08-30 14:19:41 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 1
+2026-08-30 14:19:41 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-08-30 14:19:42 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-30 14:19:42 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-08-30 14:19:43 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-30 14:19:44 [restartedMain] INFO  o.s.d.j.r.q.QueryEnhancerFactories - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-08-30 14:19:45 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Creating JwtAuthenticationFilter
+2026-08-30 14:19:45 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Disabled JwtAuthenticationFilter registration as normal servlet filter
+2026-08-30 14:19:45 [restartedMain] INFO  o.s.b.web.servlet.RegistrationBean - Filter jwtAuthenticationFilterRegistration was not registered (disabled)
+2026-08-30 14:19:46 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-08-30 14:19:46 [restartedMain] WARN  o.s.b.j.a.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-08-30 14:19:46 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Configuring SecurityFilterChain
+2026-08-30 14:19:46 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ SecurityFilterChain configured successfully
+2026-08-30 14:19:46 [restartedMain] DEBUG o.s.s.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-08-30 14:19:47 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api/v1'
+2026-08-30 14:19:47 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Started BackendApplication in 11.001 seconds (process running for 12.735)
+2026-08-30 14:22:34 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-30 14:22:34 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-08-30 14:22:34 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 44 ms
+2026-08-30 14:22:34 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:22:34 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:22:34 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:22:34 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:22:34 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka@gmail.com
+2026-08-30 14:22:34 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka@gmail.com
+2026-08-30 14:22:35 [http-nio-8080-exec-2] DEBUG c.U.B.S.CustomUserDetailsService - User not found by email, trying registration number: baraka@gmail.com
+2026-08-30 14:22:35 [http-nio-8080-exec-2] ERROR c.U.B.S.CustomUserDetailsService - ❌ User not found with identifier: baraka@gmail.com
+2026-08-30 14:22:35 [http-nio-8080-exec-2] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Failed to find user 'baraka@gmail.com'
+2026-08-30 14:22:35 [http-nio-8080-exec-2] DEBUG o.s.s.authentication.ProviderManager - Authentication failed with provider DaoAuthenticationProvider since Bad credentials
+2026-08-30 14:22:35 [http-nio-8080-exec-2] ERROR c.U.B.e.GlobalExceptionHandler - Runtime exception: 
+java.lang.RuntimeException: Invalid email/registration number or password
+	at com.UDSM.BACKEND.Service.AuthService.login(AuthService.java:114)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:133)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:371)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Service.AuthService$$SpringCGLIB$$0.login(<generated>)
+	at com.UDSM.BACKEND.Controller.AuthController.login(AuthController.java:27)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:903)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:649)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:128)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$2(FilterChainProxy.java:235)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:376)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:355)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:272)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:199)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:77)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:341)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:1272)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1801)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:946)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:480)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-08-30 14:22:35 [http-nio-8080-exec-2] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [java.lang.RuntimeException: Invalid email/registration number or password]
+2026-08-30 14:23:40 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/register
+2026-08-30 14:23:40 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/register
+2026-08-30 14:23:40 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:23:40 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/register
+2026-08-30 14:23:40 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AuthController - 📝 Registering new user: baraka@gmail.com
+2026-08-30 14:23:46 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka@gmail.com
+2026-08-30 14:23:46 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Welcome email sent to: baraka@gmail.com
+2026-08-30 14:23:46 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:23:46 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:23:46 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:23:46 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:23:46 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka@gmail.com
+2026-08-30 14:23:46 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka@gmail.com
+2026-08-30 14:23:46 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka@gmail.com with role: STUDENT
+2026-08-30 14:23:46 [http-nio-8080-exec-6] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 14:23:46 [http-nio-8080-exec-6] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka@gmail.com
+2026-08-30 14:23:50 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka@gmail.com
+2026-08-30 14:23:50 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka@gmail.com
+2026-08-30 14:33:23 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/register
+2026-08-30 14:33:23 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/register
+2026-08-30 14:33:23 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:33:23 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/register
+2026-08-30 14:33:24 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AuthController - 📝 Registering new user: baraka1@gmail.com
+2026-08-30 14:33:29 [http-nio-8080-exec-8] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka1@gmail.com
+2026-08-30 14:33:29 [http-nio-8080-exec-8] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Welcome email sent to: baraka1@gmail.com
+2026-08-30 14:33:30 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:33:30 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:33:30 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:33:30 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:33:30 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka1@gmail.com
+2026-08-30 14:33:30 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka1@gmail.com
+2026-08-30 14:33:30 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka1@gmail.com with role: CONVOCATION_OFFICER
+2026-08-30 14:33:30 [http-nio-8080-exec-1] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 14:33:30 [http-nio-8080-exec-1] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka1@gmail.com
+2026-08-30 14:33:35 [http-nio-8080-exec-1] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka1@gmail.com
+2026-08-30 14:33:35 [http-nio-8080-exec-1] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka1@gmail.com
+2026-08-30 14:35:52 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/register
+2026-08-30 14:35:52 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/register
+2026-08-30 14:35:52 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:35:52 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/register
+2026-08-30 14:35:52 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AuthController - 📝 Registering new user: baraka2@gmail.com
+2026-08-30 14:35:58 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka2@gmail.com
+2026-08-30 14:35:58 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Welcome email sent to: baraka2@gmail.com
+2026-08-30 14:35:58 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:35:58 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:35:58 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:35:58 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:35:58 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka2@gmail.com
+2026-08-30 14:35:58 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka2@gmail.com
+2026-08-30 14:35:58 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka2@gmail.com with role: ADMIN
+2026-08-30 14:35:58 [http-nio-8080-exec-6] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 14:35:58 [http-nio-8080-exec-6] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka2@gmail.com
+2026-08-30 14:36:02 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka2@gmail.com
+2026-08-30 14:36:02 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka2@gmail.com
+2026-08-30 14:36:04 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:36:04 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:36:04 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:36:04 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:36:04 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:36:04 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:36:04 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka2@gmail.com
+2026-08-30 14:36:04 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka2@gmail.com
+2026-08-30 14:36:04 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka2@gmail.com
+2026-08-30 14:36:04 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka2@gmail.com
+2026-08-30 14:36:05 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka2@gmail.com with role: ADMIN
+2026-08-30 14:36:05 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka2@gmail.com
+2026-08-30 14:36:05 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:36:05 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:36:05 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:36:05 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:36:05 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka2@gmail.com with role: ADMIN
+2026-08-30 14:36:05 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka2@gmail.com
+2026-08-30 14:36:05 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:36:05 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:36:05 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:36:05 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:38:23 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:23 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:23 [http-nio-8080-exec-4] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:23 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:35 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:35 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:35 [http-nio-8080-exec-6] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:35 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:37 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:37 [http-nio-8080-exec-7] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:37 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:37 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:37 [http-nio-8080-exec-9] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:37 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:39 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:39 [http-nio-8080-exec-10] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:39 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:39 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:39 [http-nio-8080-exec-8] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:39 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:56 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:38:56 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:38:56 [http-nio-8080-exec-1] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:38:56 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:11 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:39:11 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:39:11 [http-nio-8080-exec-4] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:11 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:23 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:39:23 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:39:23 [http-nio-8080-exec-6] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:23 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:31 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:39:31 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 14:39:31 [http-nio-8080-exec-9] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:39:31 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 14:41:26 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:41:26 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:41:26 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:41:26 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:41:26 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka1@gmail.com
+2026-08-30 14:41:26 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka1@gmail.com
+2026-08-30 14:41:26 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka1@gmail.com with role: CONVOCATION_OFFICER
+2026-08-30 14:41:26 [http-nio-8080-exec-2] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 14:41:26 [http-nio-8080-exec-2] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka1@gmail.com
+2026-08-30 14:41:31 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka1@gmail.com
+2026-08-30 14:41:31 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka1@gmail.com
+2026-08-30 14:43:23 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/register
+2026-08-30 14:43:23 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/register
+2026-08-30 14:43:23 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:43:23 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/register
+2026-08-30 14:43:23 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AuthController - 📝 Registering new user: baraka5@gmail.com
+2026-08-30 14:43:27 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka5@gmail.com
+2026-08-30 14:43:27 [http-nio-8080-exec-4] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Welcome email sent to: baraka5@gmail.com
+2026-08-30 14:43:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 14:43:27 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 14:43:27 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 14:43:27 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 14:43:27 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka5@gmail.com
+2026-08-30 14:43:27 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:43:27 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:43:27 [http-nio-8080-exec-6] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 14:43:27 [http-nio-8080-exec-6] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka5@gmail.com
+2026-08-30 14:43:32 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka5@gmail.com
+2026-08-30 14:43:32 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:43:34 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:43:34 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:43:34 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:43:34 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:43:34 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:43:34 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:43:34 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:43:34 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:43:34 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:43:34 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:51:07 [SpringApplicationShutdownHook] INFO  o.s.boot.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-08-30 14:51:07 [tomcat-shutdown] INFO  o.s.boot.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-08-30 14:51:07 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-08-30 14:51:08 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-08-30 14:51:08 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-08-30 14:51:20 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Starting BackendApplication using Java 21.0.12 with PID 198560 (/home/kali/e-CLEARENCE_UDSM/BACKEND/target/classes started by kali in /home/kali/e-CLEARENCE_UDSM)
+2026-08-30 14:51:20 [restartedMain] DEBUG com.UDSM.BACKEND.BackendApplication - Running with Spring Boot v4.1.0, Spring v7.0.8
+2026-08-30 14:51:20 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-08-30 14:51:20 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-08-30 14:51:20 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-08-30 14:51:22 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-30 14:51:22 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 75 ms. Found 8 JPA repository interfaces.
+2026-08-30 14:51:23 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-08-30 14:51:23 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-08-30 14:51:23 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-08-30 14:51:23 [restartedMain] INFO  o.s.b.w.c.s.WebApplicationContextInitializer - Root WebApplicationContext: initialization completed in 2869 ms
+2026-08-30 14:51:23 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-08-30 14:51:24 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@73987113
+2026-08-30 14:51:24 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-08-30 14:51:24 [restartedMain] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/clearance_db (PostgreSQL 18.4)
+2026-08-30 14:51:24 [restartedMain] INFO  o.f.core.internal.command.DbValidate - Successfully validated 1 migration (execution time 00:00.030s)
+2026-08-30 14:51:24 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 1
+2026-08-30 14:51:24 [restartedMain] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-08-30 14:51:25 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-30 14:51:25 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-08-30 14:51:26 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-30 14:51:27 [restartedMain] INFO  o.s.d.j.r.q.QueryEnhancerFactories - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-08-30 14:51:28 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Creating JwtAuthenticationFilter
+2026-08-30 14:51:28 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Disabled JwtAuthenticationFilter registration as normal servlet filter
+2026-08-30 14:51:28 [restartedMain] INFO  o.s.b.web.servlet.RegistrationBean - Filter jwtAuthenticationFilterRegistration was not registered (disabled)
+2026-08-30 14:51:29 [restartedMain] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-08-30 14:51:29 [restartedMain] WARN  o.s.b.j.a.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-08-30 14:51:29 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ Configuring SecurityFilterChain
+2026-08-30 14:51:29 [restartedMain] INFO  c.UDSM.BACKEND.config.SecurityConfig - ✅ SecurityFilterChain configured successfully
+2026-08-30 14:51:29 [restartedMain] DEBUG o.s.s.web.DefaultSecurityFilterChain - Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, CorsFilter, LogoutFilter, JwtAuthenticationFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-08-30 14:51:30 [restartedMain] INFO  o.s.boot.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api/v1'
+2026-08-30 14:51:30 [restartedMain] INFO  com.UDSM.BACKEND.BackendApplication - Started BackendApplication in 11.901 seconds (process running for 12.973)
+2026-08-30 14:51:44 [http-nio-8080-exec-2] INFO  o.a.c.c.C.[.[localhost].[/api/v1] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-08-30 14:51:44 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-08-30 14:51:44 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 5 ms
+2026-08-30 14:51:44 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:51:44 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:51:44 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:51:44 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:51:44 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:51:44 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:51:44 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:51:44 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:51:44 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:51:44 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:51:44 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:51:44 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:16 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:55:16 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:55:16 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:16 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:16 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:16 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:16 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:16 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:16 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:16 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:17 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:17 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:17 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:17 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:17 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:17 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:17 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:17 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:18 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:18 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:18 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:18 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:18 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:18 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:18 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:18 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:24 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:55:24 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:55:24 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-08-30 14:55:24 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:24 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:24 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:24 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:24 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:24 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:24 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:26 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:26 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:26 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:26 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:26 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:26 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:26 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:26 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:27 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:27 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-2] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:27 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:27 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:27 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:27 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:27 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:27 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:27 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:27 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:28 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:28 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:55:28 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:28 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:28 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:28 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:28 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:55:28 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:55:28 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:55:28 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:55:28 [http-nio-8080-exec-6] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:55:28 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:55:28 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:55:28 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:55:28 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:56:23 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:56:23 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:56:23 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-08-30 14:56:23 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:56:23 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:56:23 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:56:23 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:56:23 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:56:23 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:56:23 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:56:23 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:56:23 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:56:23 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:56:23 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:56:23 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:56:24 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:56:24 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:56:24 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:56:24 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:56:24 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:56:24 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:56:24 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:56:24 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:56:24 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:56:24 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:56:24 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:56:24 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:56:24 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 14:58:36 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:58:36 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:58:36 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:58:36 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:58:36 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:58:36 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:58:36 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:58:36 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured POST /admin/users
+2026-08-30 14:58:37 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:58:37 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:58:37 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Manually creating user: baraka1@gmail.com
+2026-08-30 14:58:37 [http-nio-8080-exec-9] ERROR c.U.B.e.GlobalExceptionHandler - Runtime exception: 
+java.lang.RuntimeException: Email is already registered
+	at com.UDSM.BACKEND.Service.AuthService.register(AuthService.java:175)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:133)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:371)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Service.AuthService$$SpringCGLIB$$0.register(<generated>)
+	at com.UDSM.BACKEND.Controller.AdminController.createUser(AdminController.java:44)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.proceed(AuthorizationManagerBeforeMethodInterceptor.java:271)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.attemptAuthorization(AuthorizationManagerBeforeMethodInterceptor.java:266)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.invoke(AuthorizationManagerBeforeMethodInterceptor.java:197)
+	at org.springframework.security.config.annotation.method.configuration.DeferringMethodInterceptor.invoke(DeferringMethodInterceptor.java:44)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Controller.AdminController$$SpringCGLIB$$0.createUser(<generated>)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:903)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:649)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:128)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$2(FilterChainProxy.java:235)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:376)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at com.UDSM.BACKEND.config.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:109)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:355)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:272)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:199)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:77)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:341)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:1272)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1801)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:946)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:480)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-08-30 14:58:37 [http-nio-8080-exec-9] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [java.lang.RuntimeException: Email is already registered]
+2026-08-30 14:58:40 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:58:40 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured POST /admin/users
+2026-08-30 14:58:40 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:58:40 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:58:40 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Manually creating user: baraka1@gmail.com
+2026-08-30 14:58:40 [http-nio-8080-exec-1] ERROR c.U.B.e.GlobalExceptionHandler - Runtime exception: 
+java.lang.RuntimeException: Email is already registered
+	at com.UDSM.BACKEND.Service.AuthService.register(AuthService.java:175)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:133)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:371)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Service.AuthService$$SpringCGLIB$$0.register(<generated>)
+	at com.UDSM.BACKEND.Controller.AdminController.createUser(AdminController.java:44)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.proceed(AuthorizationManagerBeforeMethodInterceptor.java:271)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.attemptAuthorization(AuthorizationManagerBeforeMethodInterceptor.java:266)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.invoke(AuthorizationManagerBeforeMethodInterceptor.java:197)
+	at org.springframework.security.config.annotation.method.configuration.DeferringMethodInterceptor.invoke(DeferringMethodInterceptor.java:44)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Controller.AdminController$$SpringCGLIB$$0.createUser(<generated>)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:903)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:649)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:128)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$2(FilterChainProxy.java:235)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:376)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at com.UDSM.BACKEND.config.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:109)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:355)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:272)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:199)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:77)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:341)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:1272)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1801)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:946)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:480)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-08-30 14:58:40 [http-nio-8080-exec-1] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [java.lang.RuntimeException: Email is already registered]
+2026-08-30 14:59:12 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 14:59:12 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 14:59:12 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-08-30 14:59:12 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 14:59:12 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 14:59:12 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-3] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 14:59:12 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 14:59:12 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 14:59:12 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 14:59:12 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 14:59:12 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 15:00:36 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:00:36 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:00:36 [http-nio-8080-exec-6] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 15:00:36 [http-nio-8080-exec-6] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 15:00:36 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:00:36 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:00:37 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 15:00:37 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:00:37 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:00:46 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:00:46 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 15:00:46 [http-nio-8080-exec-7] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:00:46 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:01:04 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:01:04 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 15:01:04 [http-nio-8080-exec-8] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:01:04 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:01:40 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:01:40 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: null...
+2026-08-30 15:01:40 [http-nio-8080-exec-4] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/admin/users
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:01:40 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-08-30 15:10:53 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 15:10:53 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 15:10:53 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:10:53 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 15:10:55 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka1@gmail.com
+2026-08-30 15:10:55 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka1@gmail.com
+2026-08-30 15:10:56 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka1@gmail.com with role: CONVOCATION_OFFICER
+2026-08-30 15:10:56 [http-nio-8080-exec-6] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 15:10:56 [http-nio-8080-exec-6] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka1@gmail.com
+2026-08-30 15:11:03 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka1@gmail.com
+2026-08-30 15:11:03 [http-nio-8080-exec-6] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka1@gmail.com
+2026-08-30 15:11:47 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 15:11:47 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 15:11:47 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:11:47 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 15:11:47 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka5@gmail.com
+2026-08-30 15:11:47 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:11:47 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:11:47 [http-nio-8080-exec-10] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 15:11:47 [http-nio-8080-exec-10] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-10] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-10] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:11:51 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-08-30 15:11:51 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 15:11:51 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:11:51 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 15:11:51 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 15:11:51 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 15:11:51 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:11:51 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 15:11:51 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:11:51 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 15:12:27 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:12:27 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:12:27 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured POST /admin/users
+2026-08-30 15:12:27 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:27 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:27 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Manually creating user: baraka90@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-8] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka90@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-8] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Welcome email sent to: baraka90@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:12:33 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-08-30 15:12:33 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-08-30 15:12:33 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:12:33 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-08-30 15:12:33 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:12:33 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-4] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:12:33 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-08-30 15:12:33 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-5] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:33 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-08-30 15:12:39 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-08-30 15:12:39 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing POST /admin/users
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: baraka5@gmail.com
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka5@gmail.com
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka5@gmail.com with role: ADMIN
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: baraka5@gmail.com
+2026-08-30 15:12:39 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured POST /admin/users
+2026-08-30 15:12:39 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:39 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.createUser(com.UDSM.BACKEND.dto.RegisterRequest); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-08-30 15:12:39 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Manually creating user: 
+2026-08-30 15:12:39 [http-nio-8080-exec-7] ERROR c.U.B.e.GlobalExceptionHandler - Runtime exception: 
+java.lang.IllegalArgumentException: Email is required
+	at com.UDSM.BACKEND.Service.AuthService.register(AuthService.java:169)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.transaction.interceptor.TransactionInterceptor$1.proceedWithInvocation(TransactionInterceptor.java:133)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:371)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:130)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Service.AuthService$$SpringCGLIB$$0.register(<generated>)
+	at com.UDSM.BACKEND.Controller.AdminController.createUser(AdminController.java:44)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:158)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.proceed(AuthorizationManagerBeforeMethodInterceptor.java:271)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.attemptAuthorization(AuthorizationManagerBeforeMethodInterceptor.java:266)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.invoke(AuthorizationManagerBeforeMethodInterceptor.java:197)
+	at org.springframework.security.config.annotation.method.configuration.DeferringMethodInterceptor.invoke(DeferringMethodInterceptor.java:44)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:719)
+	at com.UDSM.BACKEND.Controller.AdminController$$SpringCGLIB$$0.createUser(<generated>)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:252)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:184)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:934)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:853)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:86)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:963)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:866)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1000)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:903)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:649)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:874)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:710)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:128)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$2(FilterChainProxy.java:235)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:376)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:132)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:86)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:181)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at com.UDSM.BACKEND.config.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:109)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:110)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:96)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.FilterChainProxy$VirtualFilterChain.doFilter(FilterChainProxy.java:385)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:237)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:195)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.ServletRequestPathFilter.doFilter(ServletRequestPathFilter.java:52)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebSecurityConfiguration.java:317)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:355)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:272)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:199)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:107)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:165)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:77)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:492)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:113)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:83)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:72)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:341)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:1272)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1801)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:946)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:480)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:57)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+2026-08-30 15:12:39 [http-nio-8080-exec-7] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [java.lang.IllegalArgumentException: Email is required]
+2026-08-30 15:14:10 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-08-30 15:14:10 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-08-30 15:14:10 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-08-30 15:14:10 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-08-30 15:14:10 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: baraka90@gmail.com
+2026-08-30 15:14:10 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: baraka90@gmail.com
+2026-08-30 15:14:10 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: baraka90@gmail.com with role: DEAN_OF_STUDENTS
+2026-08-30 15:14:10 [http-nio-8080-exec-2] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-08-30 15:14:10 [http-nio-8080-exec-2] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: baraka90@gmail.com
+2026-08-30 15:14:14 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.EmailService - Email sent successfully to: baraka90@gmail.com
+2026-08-30 15:14:14 [http-nio-8080-exec-2] INFO  c.UDSM.BACKEND.Service.AuthService - ✅ Login notification email sent to: baraka90@gmail.com

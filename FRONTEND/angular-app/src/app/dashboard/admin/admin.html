@@ -95,12 +95,7 @@
             <div class="form-group">
               <label>Role</label>
               <select [(ngModel)]="newUser.role" name="role">
-                <option value="STUDENT">STUDENT</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="LIBRARY_OFFICER">LIBRARY_OFFICER</option>
-                <option value="FINANCE_OFFICER">FINANCE_OFFICER</option>
-                <option value="ICT_OFFICER">ICT_OFFICER</option>
-                <option value="DEPARTMENT_OFFICER">DEPARTMENT_OFFICER</option>
+                <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
               </select>
             </div>
           </div>
@@ -129,12 +124,7 @@
               <td>{{ user.registrationNumber || '-' }}</td>
               <td>
                 <select [value]="user.role" (change)="updateRole(user.id, $event)">
-                  <option value="STUDENT">STUDENT</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="LIBRARY_OFFICER">LIBRARY_OFFICER</option>
-                  <option value="FINANCE_OFFICER">FINANCE_OFFICER</option>
-                  <option value="ICT_OFFICER">ICT_OFFICER</option>
-                  <option value="DEPARTMENT_OFFICER">DEPARTMENT_OFFICER</option>
+                  <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
                 </select>
               </td>
               <td><span class="status-badge" [class.active]="user.isActive">{{ user.isActive ? 'Active' : 'Inactive' }}</span></td>

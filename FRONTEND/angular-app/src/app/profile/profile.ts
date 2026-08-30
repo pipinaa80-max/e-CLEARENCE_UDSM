@@ -23,17 +23,6 @@ export class ProfileComponent implements OnInit {
   profilePhoto: string | null = null;
   isLoading = true;
 
-  showChangePassword = false;
-  passwordMessage = '';
-  passwordError = '';
-  isPasswordLoading = false;
-
-  changePasswordForm = this.fb.nonNullable.group({
-    currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', Validators.required]
-  });
-
   /* =========================
      LOGGED-IN STUDENT
   ========================= */
@@ -283,36 +272,5 @@ export class ProfileComponent implements OnInit {
       user.photo = '';
       this.authService.updateCurrentUser(user);
     }
-  }
-
-  submitChangePassword(): void {
-    this.passwordMessage = '';
-    this.passwordError = '';
-
-    if (this.changePasswordForm.invalid) {
-      this.changePasswordForm.markAllAsTouched();
-      return;
-    }
-
-    const { currentPassword, newPassword, confirmPassword } = this.changePasswordForm.getRawValue();
-
-    if (newPassword !== confirmPassword) {
-      this.passwordError = 'Passwords do not match.';
-      return;
-    }
-
-    this.isPasswordLoading = true;
-    this.authService.changePassword({ currentPassword, newPassword }).subscribe({
-      next: (res) => {
-        this.isPasswordLoading = false;
-        this.passwordMessage = res.message || 'Password changed successfully. A confirmation email has been sent.';
-        this.changePasswordForm.reset();
-        setTimeout(() => this.showChangePassword = false, 3000);
-      },
-      error: (err) => {
-        this.isPasswordLoading = false;
-        this.passwordError = err.error?.message || 'Failed to change password. Please check your current password.';
-      }
-    });
   }
 }

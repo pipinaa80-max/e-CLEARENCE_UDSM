@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
+import { ToastService } from '../../core/services/toast.service';
 
 type StaffRole = Exclude<UserRole, 'Student'>;
 
@@ -17,6 +18,7 @@ type StaffRole = Exclude<UserRole, 'Student'>;
 export class StaffRegister {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'ICT', 'Laboratory', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
@@ -147,6 +149,7 @@ export class StaffRegister {
       next: (response) => {
         this.isLoading = false;
         this.successMessage = response.message || 'Registration successful!';
+        this.toastService.success('Registration Success', 'Staff account created successfully.');
 
         // Auto-login after registration
         this.authService.login(value.email, value.password).subscribe({
@@ -165,6 +168,7 @@ export class StaffRegister {
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Unable to create the staff account.';
+        this.toastService.error('Registration Failed', this.errorMessage);
       }
     });
   }

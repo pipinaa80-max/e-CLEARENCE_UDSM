@@ -22,6 +22,7 @@ export class AdminDashboard implements OnInit {
   activeTab: 'overview' | 'users' | 'clearance' | 'upload' = 'overview';
 
   users: any[] = [];
+  roles: string[] = [];
   clearanceRequests: any[] = [];
 
   userSearchTerm: string = '';
@@ -79,7 +80,13 @@ export class AdminDashboard implements OnInit {
 
   ngOnInit(): void {
     const token = this.authService.getToken();
-    if (token && token.startsWith('local-')) {
+    if (!token) {
+      console.warn('No token found. Redirecting to login.');
+      this.logout();
+      return;
+    }
+
+    if (token.startsWith('local-')) {
       console.warn('Mock token detected. Logging out to refresh session.');
       this.logout();
       return;
@@ -95,6 +102,14 @@ export class AdminDashboard implements OnInit {
       },
       error: (err) => console.error('Error loading users', err)
     });
+
+    this.adminService.getAllRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles;
+      },
+      error: (err) => console.error('Error loading roles', err)
+    });
+
     this.adminService.getAllClearanceRequests().subscribe({
       next: (requests) => {
         this.clearanceRequests = requests;

@@ -28,7 +28,15 @@ export class AuthService {
       map((response) => {
         const authenticatedUser = this.mapUserResponse(response);
         this.storage.save(this.currentUserKey, authenticatedUser);
-        this.storage.save(this.tokenKey, response.access_token);
+
+        // Support both snake_case and camelCase from backend
+        const token = response.access_token || response.accessToken;
+        if (token) {
+          this.storage.save(this.tokenKey, token);
+        } else {
+          console.error('No access token found in login response', response);
+        }
+
         return authenticatedUser;
       })
     );
@@ -161,7 +169,10 @@ export class AuthService {
   }
 
   private getAuthHeaders(): HttpHeaders {
-    const token = this.storage.get<string>(this.tokenKey);
+    const token = this.getToken();
+    if (!token) {
+      return new HttpHeaders();
+    }
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`
     });

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -14,6 +15,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class ForgotPassword {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   forgotPasswordForm = this.fb.nonNullable.group({
@@ -40,11 +42,13 @@ export class ForgotPassword {
       next: (response) => {
         this.isLoading = false;
         this.message = response.message || 'If an account exists with that email, a reset link has been sent.';
+        this.toastService.success('Email Sent', 'Please check your inbox for the reset link.');
         this.forgotPasswordForm.reset();
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Something went wrong. Please try again later.';
+        this.toastService.error('Error', this.errorMessage);
       }
     });
   }

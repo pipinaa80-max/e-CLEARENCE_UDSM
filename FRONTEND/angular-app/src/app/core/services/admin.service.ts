@@ -17,7 +17,8 @@ export class AdminService {
   private getAuthHeaders(): HttpHeaders {
     const token = this.storage.get<string>(this.tokenKey);
     if (!token) {
-        console.error('No auth token found in storage!');
+        console.warn('No auth token found in storage for AdminService call');
+        return new HttpHeaders();
     }
     return new HttpHeaders({
       'Authorization': `Bearer ${token}`
@@ -26,6 +27,10 @@ export class AdminService {
 
   getAllUsers(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/users`, { headers: this.getAuthHeaders() });
+  }
+
+  getAllRoles(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/roles`, { headers: this.getAuthHeaders() });
   }
 
   createUser(userData: any): Observable<any> {

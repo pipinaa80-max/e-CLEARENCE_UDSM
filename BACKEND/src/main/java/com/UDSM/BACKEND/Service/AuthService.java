@@ -187,39 +187,34 @@ public class AuthService {
         ERole userRole = ERole.STUDENT;
         if (request.getRole() != null) {
             try {
-                String roleStr = request.getRole().toUpperCase().replace(" ", "_");
-                switch(roleStr) {
-                    case "STUDENT": userRole = ERole.STUDENT; break;
-                    case "LIBRARY":
-                    case "LIBRARY_OFFICER": userRole = ERole.LIBRARY_OFFICER; break;
-                    case "FINANCE":
-                    case "FINANCE_OFFICER": userRole = ERole.FINANCE_OFFICER; break;
-                    case "ICT":
-                    case "ICT_OFFICER": userRole = ERole.ICT_OFFICER; break;
-                    case "DEPARTMENT":
-                    case "DEPARTMENT_OFFICER": userRole = ERole.DEPARTMENT_OFFICER; break;
-                    case "CONVOCATION":
-                    case "CONVOCATION_OFFICER": userRole = ERole.CONVOCATION_OFFICER; break;
-                    case "GAMES_COACH": userRole = ERole.GAMES_COACH; break;
-                    case "HALL_WARDEN": userRole = ERole.HALL_WARDEN; break;
-                    case "USAB":
-                    case "USAB_OFFICER": userRole = ERole.USAB_OFFICER; break;
-                    case "DARUSO":
-                    case "DARUSO_OFFICER": userRole = ERole.DARUSO_OFFICER; break;
-                    case "DEAN_OF_STUDENTS": userRole = ERole.DEAN_OF_STUDENTS; break;
-                    case "SMART_CARD":
-                    case "SMART_CARD_OFFICER": userRole = ERole.SMART_CARD_OFFICER; break;
-                    case "WORKSHOP":
-                    case "WORKSHOP_OFFICER": userRole = ERole.WORKSHOP_OFFICER; break;
-                    case "PRINCIPAL": userRole = ERole.PRINCIPAL; break;
-                    case "LABORATORY":
-                    case "LABORATORY_OFFICER": userRole = ERole.LABORATORY_OFFICER; break;
-                    case "ADMIN":
-                    case "ADMINISTRATOR": userRole = ERole.ADMIN; break;
-                    default: userRole = ERole.STUDENT; break;
+                String roleStr = request.getRole().toUpperCase().trim().replace(" ", "_");
+                if (!roleStr.startsWith("ROLE_")) {
+                    // Try direct match first
+                    userRole = ERole.valueOf(roleStr);
+                } else {
+                    userRole = ERole.valueOf(roleStr.substring(5));
                 }
-            } catch (Exception e) {
-                userRole = ERole.STUDENT;
+            } catch (IllegalArgumentException e) {
+                // Fallback for common aliases or defaults
+                String roleStr = request.getRole().toUpperCase().trim();
+                switch(roleStr) {
+                    case "LIBRARY": userRole = ERole.LIBRARY_OFFICER; break;
+                    case "FINANCE": userRole = ERole.FINANCE_OFFICER; break;
+                    case "ICT": userRole = ERole.ICT_OFFICER; break;
+                    case "DEPARTMENT": userRole = ERole.DEPARTMENT_OFFICER; break;
+                    case "CONVOCATION": userRole = ERole.CONVOCATION_OFFICER; break;
+                    case "USAB": userRole = ERole.USAB_OFFICER; break;
+                    case "DARUSO": userRole = ERole.DARUSO_OFFICER; break;
+                    case "SMART CARD": userRole = ERole.SMART_CARD_OFFICER; break;
+                    case "WORKSHOP": userRole = ERole.WORKSHOP_OFFICER; break;
+                    case "LABORATORY": userRole = ERole.LABORATORY_OFFICER; break;
+                    case "ADMIN": userRole = ERole.ADMIN; break;
+                    case "ADMINISTRATOR": userRole = ERole.ADMINISTRATOR; break;
+                    default: 
+                        log.warn("Unknown role: {}. Defaulting to STUDENT.", request.getRole());
+                        userRole = ERole.STUDENT; 
+                        break;
+                }
             }
         }
 

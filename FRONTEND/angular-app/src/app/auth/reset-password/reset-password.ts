@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -14,6 +15,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class ResetPassword implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -60,11 +62,13 @@ export class ResetPassword implements OnInit {
       next: (response) => {
         this.isLoading = false;
         this.message = response.message || 'Password has been successfully reset.';
+        this.toastService.success('Success', 'Your password has been updated. Redirecting...');
         setTimeout(() => this.router.navigate(['/login']), 3000);
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Failed to reset password. The link may have expired.';
+        this.toastService.error('Error', this.errorMessage);
       }
     });
   }

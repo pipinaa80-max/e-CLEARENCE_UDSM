@@ -5,11 +5,14 @@ import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.dto.RegisterRequest;
+import com.UDSM.BACKEND.exception.ApiException;
+import com.UDSM.BACKEND.exception.ResourceNotFoundException;
 import com.lowagie.text.Row;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,8 +21,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.sql.JDBCType.NUMERIC;
 import static javax.management.openmbean.SimpleType.STRING;
@@ -38,10 +43,16 @@ public class AdminService {
         return userRepository.findAll();
     }
 
+    public List<String> getAllRoles() {
+        return Arrays.stream(ERole.values())
+                .map(Enum::name)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void deleteUser(String userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
         
         // Deleting student record if it exists
         if (user.getRegistrationNumber() != null) {
@@ -60,15 +71,16 @@ public class AdminService {
     @Transactional
     public User updateUserRole(String userId, String roleName) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
         
         try {
-            ERole role = ERole.valueOf(roleName.toUpperCase());
+            ERole role = ERole.valueOf(roleName.toUpperCase().replace(" ", "_"));
             user.setRole(role);
             user.setUpdatedAt(LocalDateTime.now());
+            log.info("Admin: User {} role updated to {}", userId, role);
             return userRepository.save(user);
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid role: " + roleName);
+            throw new ApiException("Invalid role name: " + roleName, HttpStatus.BAD_REQUEST);
         }
     }
 

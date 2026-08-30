@@ -32,6 +32,12 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllUsers());
     }
 
+    @GetMapping("/roles")
+    public ResponseEntity<List<String>> getAllRoles() {
+        log.info("Admin: Fetching all available roles");
+        return ResponseEntity.ok(adminService.getAllRoles());
+    }
+
     @PostMapping("/users")
     public ResponseEntity<ApiResponse> createUser(@RequestBody RegisterRequest request) {
         log.info("Admin: Manually creating user: {}", request.getEmail());

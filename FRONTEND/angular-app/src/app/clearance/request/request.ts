@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -35,6 +36,7 @@ export class ClearanceRequestComponent implements OnInit {
   private readonly clearanceService = inject(ClearanceService);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   // =====================================================
@@ -658,6 +660,7 @@ export class ClearanceRequestComponent implements OnInit {
             `Your corrected request has been sent back to ${existingRequest.revisionOffice} for review.`,
             'success'
         );
+        this.toastService.success('Resubmitted', 'Your corrected request has been resubmitted successfully.');
         this.router.navigate(['/profile']);
         return;
       }
@@ -697,6 +700,7 @@ export class ClearanceRequestComponent implements OnInit {
           'Your clearance request is waiting for Convocation approval.',
           'success'
       );
+      this.toastService.success('Submitted', 'Your clearance request has been submitted successfully.');
 
       this.router.navigate(['/profile']);
 
@@ -712,6 +716,7 @@ export class ClearanceRequestComponent implements OnInit {
       }
 
       this.errorMessage = error.message || 'Failed to submit clearance request. Please try again.';
+      this.toastService.error('Submission Failed', this.errorMessage);
     } finally {
       this.isSubmitting = false;
     }
