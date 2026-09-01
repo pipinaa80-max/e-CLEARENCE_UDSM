@@ -1,5 +1,9 @@
 package com.UDSM.BACKEND.Service;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import com.UDSM.BACKEND.exception.ApiException;
 import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
@@ -67,7 +71,7 @@ public class AuthService {
 
         if (isAccountLocked(identifier)) {
             auditLogService.logLoginAttempt(identifier, false, clientIp);
-            throw new RuntimeException("Account is temporarily locked. Please try again later.");
+            throw new LockedException("Account is temporarily locked. Please try again later.");
         }
 
         try {
@@ -80,7 +84,7 @@ public class AuthService {
             User user = findUserByIdentifier(identifier);
 
             if (!user.isActive()) {
-                throw new RuntimeException("Your account is inactive. Please contact the administrator.");
+                throw new DisabledException("Your account is inactive. Please contact the administrator.");
             }
 
             clearLoginAttempts(identifier);
@@ -111,12 +115,14 @@ public class AuthService {
         } catch (BadCredentialsException e) {
             recordFailedLogin(identifier);
             auditLogService.logLoginAttempt(identifier, false, clientIp);
-            throw new RuntimeException("Invalid email/registration number or password");
+            throw new BadCredentialsException("Invalid email/registration number or password");
+        } catch (LockedException | DisabledException e) {
+            throw e;
         } catch (Exception e) {
             recordFailedLogin(identifier);
             auditLogService.logLoginAttempt(identifier, false, clientIp);
             log.error("Login error: {}", e.getMessage());
-            throw new RuntimeException("Unable to authenticate user", e);
+            throw new ApiException("Authentication failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -145,8 +151,6 @@ public class AuthService {
                     "email/login-notification",
                     variables
             );
-
-            log.info("✅ Login notification email sent to: {}", user.getEmail());
         } catch (Exception e) {
             // Don't block login if email fails
             log.warn("⚠️ Failed to send login notification to {}: {}", user.getEmail(), e.getMessage());
@@ -172,14 +176,14 @@ public class AuthService {
         String email = request.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email is already registered");
+            throw new ApiException("Email is already registered", HttpStatus.CONFLICT);
         }
 
         // Check registration number
         if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().trim().isEmpty()) {
             String registrationNumber = request.getRegistrationNumber().trim();
             if (userRepository.existsByRegistrationNumber(registrationNumber)) {
-                throw new RuntimeException("Registration number already exists");
+                throw new ApiException("Registration number already exists", HttpStatus.CONFLICT);
             }
         }
 
@@ -305,8 +309,6 @@ public class AuthService {
                     "email/welcome",
                     variables
             );
-
-            log.info("✅ Welcome email sent to: {}", user.getEmail());
         } catch (Exception e) {
             log.warn("⚠️ Failed to send welcome email to {}: {}", user.getEmail(), e.getMessage());
         }
@@ -332,6 +334,8 @@ public class AuthService {
         user.setResetToken(resetToken);
         user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
         userRepository.save(user);
+
+        log.info("🔑 Password reset requested for: {}. Reset link: {}", email, resetLink);
 
         // ========== SEND PASSWORD RESET EMAIL ==========
         sendPasswordResetEmail(user, resetLink, clientIp, userAgent);
@@ -365,8 +369,6 @@ public class AuthService {
                     "email/password-reset",
                     variables
             );
-
-            log.info("✅ Password reset email sent to: {}", user.getEmail());
         } catch (Exception e) {
             log.error("❌ Failed to send password reset email to {}: {}", user.getEmail(), e.getMessage());
             throw new RuntimeException("Failed to send password reset email. Please try again later.");
@@ -440,8 +442,6 @@ public class AuthService {
                     "email/password-changed",
                     variables
             );
-
-            log.info("✅ Password change confirmation sent to: {}", user.getEmail());
         } catch (Exception e) {
             log.warn("⚠️ Failed to send password change confirmation to {}: {}", user.getEmail(), e.getMessage());
         }
@@ -861,8 +861,6 @@ public class AuthService {
                     "email/account-activated",
                     variables
             );
-
-            log.info("✅ Account activation notification sent to: {}", user.getEmail());
         } catch (Exception e) {
             log.warn("⚠️ Failed to send account activation notification to {}: {}", user.getEmail(), e.getMessage());
         }
