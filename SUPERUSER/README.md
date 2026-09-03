@@ -1,6 +1,6 @@
 # Superuser Area
 
-This top-level area contains an isolated superuser control plane for e-CLEARENCE UDSM. All superuser backend and frontend code/configuration is contained here.
+This top-level area contains an isolated superuser control plane for the clearance project. All superuser backend and frontend code/configuration is contained here.
 
 ## Boundary
 
@@ -23,7 +23,7 @@ Terminal 1:
 
 ```powershell
 cd SUPERUSER/backend
-$env:SUPERUSER_EMAIL="superuser@udsm.ac.tz"
+$env:SUPERUSER_EMAIL="superuser@admin.local"
 $env:SUPERUSER_PASSWORD="ChangeMeImmediately!2026"
 npm start
 ```
