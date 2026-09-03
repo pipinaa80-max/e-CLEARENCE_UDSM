@@ -18,17 +18,22 @@
   --radius-control: 8px;
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--udsm-blue) 15%, transparent);
   --transition-fast: 160ms ease;
+  --app-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--app-font-family);
   background: var(--bg-light);
   color: var(--text-dark);
   font-size: 16px; /* Base font size */
   overflow-x: hidden;
+}
+
+body * {
+  font-family: inherit;
 }
 
 body {

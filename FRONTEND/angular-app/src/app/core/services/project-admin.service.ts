@@ -35,6 +35,10 @@ export class ProjectAdminService {
     return this.http.get<ProjectConfig>(`${this.apiUrl}/overview`, { headers: this.headers() });
   }
 
+  getPublicBranding(): Observable<ProjectConfig['branding']> {
+    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/public/branding`);
+  }
+
   createDashboard(data: Pick<ProjectDashboard, 'id' | 'name' | 'description'>): Observable<ProjectDashboard> {
     return this.http.post<ProjectDashboard>(`${this.apiUrl}/dashboards`, data, { headers: this.headers() });
   }
