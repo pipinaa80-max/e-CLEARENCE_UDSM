@@ -35,7 +35,10 @@ export class App {
   }
 
   private refreshBrandingNodes(): void {
-    if (this.branding.logoUrl) document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"]').forEach(image => image.src = this.branding.logoUrl);
+    if (this.branding.logoUrl) {
+      document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
+        .forEach(image => image.src = this.branding.logoUrl);
+    }
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
