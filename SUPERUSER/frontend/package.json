@@ -1,0 +1,7 @@
+{
+  "name": "eclearance-superuser-console",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": { "start": "npx serve . -l 8091" },
+  "dependencies": { "serve": "^14.2.4" }
+}

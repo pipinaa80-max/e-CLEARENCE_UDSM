@@ -1,0 +1,9 @@
+{
+  "name": "eclearance-superuser-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Isolated superuser control-plane API",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
