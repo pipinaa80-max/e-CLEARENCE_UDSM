@@ -21,6 +21,8 @@
       <a (click)="setTab('users')" [class.active]="activeTab === 'users'">User Management</a>
       <a (click)="setTab('clearance')" [class.active]="activeTab === 'clearance'">Clearance Requests</a>
       <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">Data Upload</a>
+      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">Project Dashboards</a>
+      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">Project Theme</a>
       <button type="button" class="logout-link" (click)="logout()">
         Log out
       </button>
@@ -189,6 +191,42 @@
           <code>FirstName, MiddleName, LastName, Email, RegistrationNumber, Password, Role, Department, Programme, College, YearOfStudy</code>
         </div>
       </div>
+    </div>
+
+    <div *ngIf="activeTab === 'dashboards'" class="tab-content">
+      <div class="section-header"><h3>Project Dashboards</h3></div>
+      <form (ngSubmit)="addDashboard()" class="form-container">
+        <div class="form-grid">
+          <div class="form-group"><label>Dashboard ID</label><input [(ngModel)]="newDashboard.id" name="dashboardId" required></div>
+          <div class="form-group"><label>Name</label><input [(ngModel)]="newDashboard.name" name="dashboardName" required></div>
+          <div class="form-group"><label>Description</label><input [(ngModel)]="newDashboard.description" name="dashboardDescription"></div>
+        </div>
+        <button type="submit" class="btn-primary">Add Dashboard</button>
+      </form>
+      <div class="table-container">
+        <table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Enabled</th><th>Actions</th></tr></thead>
+          <tbody><tr *ngFor="let dashboard of projectConfig?.dashboards">
+            <td>{{ dashboard.id }}</td><td><input [(ngModel)]="dashboard.name" [name]="'name-' + dashboard.id"></td>
+            <td><input [(ngModel)]="dashboard.description" [name]="'description-' + dashboard.id"></td>
+            <td><input type="checkbox" [(ngModel)]="dashboard.enabled" [name]="'enabled-' + dashboard.id"></td>
+            <td><button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button><button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button></td>
+          </tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'theme'" class="tab-content">
+      <div class="section-header"><h3>Project Theme</h3></div>
+      <form *ngIf="projectConfig" (ngSubmit)="saveTheme()" class="form-container">
+        <div class="form-grid">
+          <div class="form-group"><label>University name</label><input [(ngModel)]="projectConfig.branding.universityName" name="universityName" required></div>
+          <div class="form-group"><label>Short name</label><input [(ngModel)]="projectConfig.branding.shortName" name="shortName" required></div>
+          <div class="form-group"><label>Logo URL</label><input [(ngModel)]="projectConfig.branding.logoUrl" name="logoUrl"></div>
+          <div class="form-group"><label>Primary color</label><input type="color" [(ngModel)]="projectConfig.branding.primaryColor" name="primaryColor"></div>
+          <div class="form-group"><label>Font family</label><select [(ngModel)]="projectConfig.branding.fontFamily" name="fontFamily"><option>Georgia</option><option>Arial</option><option>Verdana</option><option>Trebuchet MS</option></select></div>
+        </div>
+        <button type="submit" class="btn-primary">Save Theme</button>
+      </form>
     </div>
 
   </main>

@@ -43,10 +43,10 @@ Open `http://localhost:8091`. The backend listens on `http://localhost:8090`.
 
 The first backend start creates `backend/data/control-plane.json`. That file contains the hashed superuser password and runtime configuration; keep it out of source control for production deployments. The default password is for local development only and must be replaced.
 
-## Integration boundary
+## Integration
 
-This control plane is intentionally separate from the existing application. It can manage its own project configuration now. To apply branding, dashboard availability, or delegated permissions to the existing application, the existing backend must later expose authenticated integration endpoints that consume this control plane's data.
+The existing Angular application now accepts project-admin accounts from this control plane and routes them to its administrator dashboard. Each project admin receives a unique project configuration, so branding and dashboards are isolated between companies.
 
-The superuser console does not expose dashboard editing. Dashboard management is reserved for the sub-admin created with the `PROJECT_ADMIN` permission, which represents the existing administrator workflow in the main project.
+Open the real project admin experience at `http://localhost:4200/dashboard/admin`. The `Project Dashboards` and `Project Theme` tabs are available to a sub-admin created with the `PROJECT_ADMIN` permission. The superuser console at `http://localhost:8091` does not expose dashboard editing.
 
 Passwords are never returned or displayed after they are stored. The reset action replaces the hash and returns a new temporary password once in the response; share it securely and require the administrator to change it in a production implementation.

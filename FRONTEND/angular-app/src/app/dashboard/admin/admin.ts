@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminService } from '../../core/services/admin.service';
+import { ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -16,10 +17,11 @@ export class AdminDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly adminService = inject(AdminService);
   private readonly router = inject(Router);
+  private readonly projectAdminService = inject(ProjectAdminService);
 
   sidebarOpen = false;
   showAddForm = false;
-  activeTab: 'overview' | 'users' | 'clearance' | 'upload' = 'overview';
+  activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' = 'overview';
 
   users: any[] = [];
   roles: string[] = [];
@@ -54,6 +56,8 @@ export class AdminDashboard implements OnInit {
   selectedFile: File | null = null;
   message: string = '';
   isError: boolean = false;
+  projectConfig: ProjectConfig | null = null;
+  newDashboard = { id: '', name: '', description: '' };
 
   get filteredUsers(): any[] {
     if (!this.userSearchTerm) return this.users;
@@ -92,6 +96,7 @@ export class AdminDashboard implements OnInit {
       return;
     }
     this.loadData();
+    this.loadProjectConfig();
   }
 
   loadData(): void {
@@ -128,9 +133,31 @@ export class AdminDashboard implements OnInit {
     this.stats.rejected = this.clearanceRequests.filter(r => r.status === 'REJECTED').length;
   }
 
-  setTab(tab: 'overview' | 'users' | 'clearance' | 'upload'): void {
+  loadProjectConfig(): void {
+    this.projectAdminService.getProjectConfig().subscribe({ next: (config) => this.projectConfig = config, error: () => undefined });
+  }
+
+  setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme'): void {
     this.activeTab = tab;
     this.message = '';
+  }
+
+  addDashboard(): void {
+    this.projectAdminService.createDashboard(this.newDashboard).subscribe({ next: () => { this.message = 'Dashboard added to this project'; this.isError = false; this.newDashboard = { id: '', name: '', description: '' }; this.loadProjectConfig(); }, error: (err) => { this.message = err.error?.message || 'Failed to add dashboard'; this.isError = true; } });
+  }
+
+  updateDashboard(dashboard: ProjectDashboard): void {
+    this.projectAdminService.updateDashboard(dashboard).subscribe({ next: () => { this.message = 'Dashboard updated'; this.isError = false; }, error: () => { this.message = 'Failed to update dashboard'; this.isError = true; } });
+  }
+
+  deleteDashboard(id: string): void {
+    if (!confirm('Delete this dashboard from your project?')) return;
+    this.projectAdminService.deleteDashboard(id).subscribe({ next: () => { this.message = 'Dashboard deleted'; this.isError = false; this.loadProjectConfig(); }, error: () => { this.message = 'Failed to delete dashboard'; this.isError = true; } });
+  }
+
+  saveTheme(): void {
+    if (!this.projectConfig) return;
+    this.projectAdminService.updateBranding(this.projectConfig.branding).subscribe({ next: () => { this.message = 'Project theme saved'; this.isError = false; }, error: () => { this.message = 'Failed to save project theme'; this.isError = true; } });
   }
 
   toggleSidebar(): void {
