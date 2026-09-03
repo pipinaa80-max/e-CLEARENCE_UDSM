@@ -13,7 +13,8 @@ This top-level area contains an isolated superuser control plane for the clearan
 
 - Superuser sign-in and protected dashboard
 - Create, update, suspend, and remove sub-admin accounts
-- Assign limited dashboard permissions to each sub-admin
+- Delegate one `PROJECT_ADMIN` sub-admin for the existing project administrator workflow
+- The delegated project admin owns dashboard creation, editing, and deletion
 - Manage university name, logo, contact details, and enabled dashboards
 - Audit privileged changes
 
@@ -43,3 +44,5 @@ The first backend start creates `backend/data/control-plane.json`. That file con
 ## Integration boundary
 
 This control plane is intentionally separate from the existing application. It can manage its own project configuration now. To apply branding, dashboard availability, or delegated permissions to the existing application, the existing backend must later expose authenticated integration endpoints that consume this control plane's data.
+
+The superuser console does not expose dashboard editing. Dashboard management is reserved for the sub-admin created with the `PROJECT_ADMIN` permission, which maps to the existing administrator workflow in the main project.
