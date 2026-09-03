@@ -84,6 +84,7 @@
                   *ngIf="!isLoading && hasPhoto()"
                   [src]="getPhotoSource()"
                   [alt]="currentUser?.fullName || 'Student'"
+                  [title]="currentUser?.fullName || 'Student'"
                   (error)="onImageError()"
           />
 
@@ -132,6 +133,7 @@
                 *ngIf="!isLoading && hasPhoto()"
                 [src]="getPhotoSource()"
                 [alt]="currentUser.fullName"
+                [title]="currentUser.fullName"
                 (error)="onImageError()"
         />
 
@@ -152,11 +154,11 @@
           </div>
           <div>
             <span>Programme</span>
-            <strong>{{ currentUser.programme || 'Not available' }}</strong>
+            <strong>{{ programme || 'Not available' }}</strong>
           </div>
           <div>
             <span>College</span>
-            <strong>{{ currentUser.college || 'Not available' }}</strong>
+            <strong>{{ college || 'Not available' }}</strong>
           </div>
         </div>
       </div>

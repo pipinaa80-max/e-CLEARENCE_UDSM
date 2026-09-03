@@ -93,7 +93,7 @@ export class TranscriptComponent implements OnInit {
 
     this.saveDecision('Approved');
     this.message = 'Transcript request approved. Continue to the payment dashboard to request a control number.';
-    this.router.navigate(['/transcript/payment']);
+    this.router.navigate(['/transcript/process']);
   }
 
   reject(): void {

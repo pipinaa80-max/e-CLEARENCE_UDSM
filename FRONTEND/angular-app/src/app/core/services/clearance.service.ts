@@ -27,10 +27,22 @@ export class ClearanceService {
     'DARUSO',
     'Library',
     'Dean of Students',
-    'Smart Card',
-    'Workshop',
-    'Laboratory'
+    'Smart Card'
   ];
+
+  getClearanceOffices(college: string): ClearanceOffice[] {
+    const offices = [...this.clearanceOffices];
+
+    if (college === 'College of Engineering and Technology (CoET)') {
+      offices.push('Workshop');
+    }
+
+    if (college === 'Mbeya College of Health and Allied Sciences (MCHAS)') {
+      offices.push('Laboratory');
+    }
+
+    return offices;
+  }
 
   // =====================================================
   // CREATE CLEARANCE REQUEST - ORIGINAL METHOD
@@ -57,7 +69,7 @@ export class ClearanceService {
           office: 'Convocation',
           status: 'Pending'
         },
-        ...this.clearanceOffices.map(office => ({
+        ...this.getClearanceOffices(college).map(office => ({
           office,
           status: 'Pending' as const
         })),
@@ -133,7 +145,7 @@ export class ClearanceService {
           office: 'Convocation',
           status: 'Pending'
         },
-        ...this.clearanceOffices.map(office => ({
+        ...this.getClearanceOffices(requestData.college).map(office => ({
           office,
           status: 'Pending' as const
         })),
@@ -305,7 +317,7 @@ export class ClearanceService {
       /*
        * The seven clearance offices can act independently during Step 2.
        */
-      if (this.clearanceOffices.includes(office)) {
+      if (this.getClearanceOffices(request.college).includes(office)) {
         return request.currentStage === 'Parallel';
       }
 
@@ -495,6 +507,7 @@ export class ClearanceService {
     approval.reviewedBy = staffName;
     approval.reviewedAt = new Date().toISOString();
 
+    this.moveToNextStage(request);
     this.save(request);
     return true;
   }
@@ -588,7 +601,7 @@ export class ClearanceService {
      * STEP 2: All seven offices must approve.
      */
     if (request.currentStage === 'Parallel') {
-      const allApproved = this.clearanceOffices.every(office =>
+      const allApproved = this.getClearanceOffices(request.college).every(office =>
           request.approvals.find(approval => approval.office === office)?.status === 'Approved'
       );
 

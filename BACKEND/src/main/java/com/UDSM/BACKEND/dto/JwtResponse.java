@@ -43,6 +43,8 @@ public class JwtResponse {
     private String faculty;
     @JsonProperty("programme")
     private String programme;
+    @JsonProperty("photo")
+    private String photo;
 
     @Generated
     public static JwtResponseBuilder builder() {

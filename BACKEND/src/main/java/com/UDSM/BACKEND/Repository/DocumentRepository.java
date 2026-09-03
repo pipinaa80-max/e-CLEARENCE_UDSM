@@ -4,6 +4,8 @@ import com.UDSM.BACKEND.Model.Document;
 import com.UDSM.BACKEND.Model.DocumentCategory;
 import com.UDSM.BACKEND.Model.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,6 +16,8 @@ import java.util.Optional;
 public interface DocumentRepository extends JpaRepository<Document, String> {
 
     List<Document> findByStudentId(String studentId);
+
+    Page<Document> findByStudentId(String studentId, Pageable pageable);
 
     List<Document> findByStudentIdAndCategory(String studentId, DocumentCategory category);
 

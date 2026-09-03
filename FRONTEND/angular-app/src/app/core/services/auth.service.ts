@@ -53,6 +53,7 @@ export class AuthService {
       id: response.user_id || response.id,
       fullName: response.full_name || response.fullName,
       registrationNumber: response.registration_number || response.registrationNumber,
+      college: response.college || response.faculty,
       phoneNumber: response.phone_number || response.phoneNumber || response.phone,
       isActive: response.is_active !== undefined ? response.is_active : response.isActive,
       lastLogin: response.last_login || response.lastLogin,
@@ -206,7 +207,8 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return this.storage.get<string>(this.tokenKey);
+    const token = this.storage.get<string>(this.tokenKey);
+    return token?.replace(/^"|"$/g, '') || null;
   }
 
   isLoggedIn(): boolean {

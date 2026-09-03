@@ -46,6 +46,7 @@ public class RegisterRequest {
     // ========== OPTIONAL STUDENT DETAILS ==========
     private String programme;
     private String faculty;
+    private String college;
     private String department;
     private String yearOfStudy;
     private String academicYear;

@@ -43,10 +43,12 @@ public class DocumentService {
     public ApiResponse uploadDocument(DocumentDTO documentDTO, MultipartFile file) {
         try {
             Student student = studentRepository.findById(documentDTO.getStudentId())
+                .or(() -> studentRepository.findByUserId(documentDTO.getStudentId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+            String studentId = student.getId();
 
             // Check if document already exists
-            if (documentRepository.existsByStudentIdAndFileType(documentDTO.getStudentId(), documentDTO.getFileType())) {
+            if (documentRepository.existsByStudentIdAndFileType(studentId, documentDTO.getFileType())) {
                 return ApiResponse.error(documentDTO.getFileType() + " has already been uploaded.");
             }
 
@@ -70,11 +72,11 @@ public class DocumentService {
             Document savedDocument = documentRepository.save(document);
 
             // Check if all required documents are uploaded
-            boolean hasAllDocuments = hasRequiredClearanceDocuments(student.getId());
+            boolean hasAllDocuments = hasRequiredClearanceDocuments(studentId);
 
             DocumentResponse response = DocumentResponse.fromDocument(savedDocument);
             response.setHasAllRequiredDocuments(hasAllDocuments);
-            response.setMissingDocuments(getMissingDocuments(student.getId()));
+            response.setMissingDocuments(getMissingDocuments(studentId));
 
             return ApiResponse.success("Document uploaded successfully", response);
 
@@ -88,17 +90,21 @@ public class DocumentService {
     }
 
     public Page<DocumentResponse> getStudentDocumentsWithPagination(String studentId, Pageable pageable) {
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+        Student student = findStudent(studentId);
 
-        Page<Document> documents = documentRepository.findAll(pageable);
+        Page<Document> documents = documentRepository.findByStudentId(student.getId(), pageable);
 
         List<DocumentResponse> responses = documents.getContent().stream()
-                .filter(doc -> doc.getStudent().getId().equals(studentId))
                 .map(DocumentResponse::fromDocument)
                 .collect(Collectors.toList());
 
         return new PageImpl<>(responses, pageable, documents.getTotalElements());
+    }
+
+    private Student findStudent(String studentId) {
+        return studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByUserId(studentId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
     }
 
     public boolean hasRequiredClearanceDocuments(String studentId) {
@@ -126,7 +132,7 @@ public class DocumentService {
     }
 
     public List<String> getUploadedDocumentCategories(String studentId) {
-        return documentRepository.findByStudentId(studentId)
+        return documentRepository.findByStudentId(findStudent(studentId).getId())
                 .stream()
                 .map(Document::getFileType)
                 .collect(Collectors.toList());

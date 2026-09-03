@@ -96,6 +96,8 @@ public class AuthService {
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
+            Student student = studentRepository.findByUserId(user.getId()).orElse(null);
+
             auditLogService.logLoginAttempt(user.getEmail(), true, clientIp);
 
             // ========== SEND LOGIN NOTIFICATION EMAIL ==========
@@ -109,7 +111,11 @@ public class AuthService {
                     .userId(user.getId())
                     .email(user.getEmail())
                     .fullName(user.getFullName())
+                    .registrationNumber(user.getRegistrationNumber())
                     .role(user.getRole().name())
+                    .department(user.getDepartment() != null ? user.getDepartment() : student != null ? student.getDepartment() : null)
+                    .faculty(user.getCollege() != null ? user.getCollege() : student != null ? student.getCollege() : null)
+                    .programme(user.getProgramme() != null ? user.getProgramme() : student != null ? student.getProgramme() : null)
                     .build();
 
         } catch (BadCredentialsException e) {
@@ -249,6 +255,7 @@ public class AuthService {
         user.setActive(true);
         user.setEmailVerified(true); // ✅ Auto-verify for now
         user.setPhoneNumber(request.getPhone());
+        user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
@@ -523,7 +530,11 @@ public class AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .registrationNumber(user.getRegistrationNumber())
                 .role(user.getRole().name())
+                .department(user.getDepartment())
+                .faculty(user.getCollege())
+                .programme(user.getProgramme())
                 .build();
     }
 
@@ -723,6 +734,7 @@ public class AuthService {
             // Update student record if exists
             if (user.getRegistrationNumber() != null) {
                 studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
+                        .or(() -> studentRepository.findByUserId(user.getId()))
                         .ifPresent(student -> {
                             student.setFullName(user.getFullName());
                             student.setPhoneNumber(user.getPhoneNumber());
@@ -730,6 +742,10 @@ public class AuthService {
                             student.setFaculty(user.getCollege());
                             student.setDepartment(user.getDepartment());
                             student.setAcademicYear(user.getAcademicYear());
+                            student.setPhoto(user.getPhoto());
+                            student.setHall(user.getHall());
+                            student.setRoomNumber(user.getRoomNumber());
+                            student.setSponsor(user.getSponsor());
                             student.setUpdatedAt(LocalDateTime.now());
                             studentRepository.save(student);
                         });
@@ -1063,12 +1079,12 @@ public class AuthService {
                 .isActive(user.isActive())
                 .phoneNumber(user.getPhoneNumber())
                 .department(user.getDepartment())
-                .college(user.getCollege())
-                .programme(user.getProgramme())
+                .college(user.getCollege() != null ? user.getCollege() : student != null ? student.getCollege() : null)
+                .programme(user.getProgramme() != null ? user.getProgramme() : student != null ? student.getProgramme() : null)
                 .hall(user.getHall())
                 .roomNumber(user.getRoomNumber())
                 .sponsor(user.getSponsor())
-                .photo(user.getPhoto())
+                .photo(user.getPhoto() != null ? user.getPhoto() : student != null ? student.getPhoto() : null)
                 .academicYear(user.getAcademicYear())
                 .graduationYear(user.getGraduationYear())
                 .semester(user.getSemester())

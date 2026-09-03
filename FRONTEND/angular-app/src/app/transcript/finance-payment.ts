@@ -6,6 +6,7 @@ import { AuthService } from '../core/services/auth.service';
 import { NotificationService } from '../core/services/notification.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { TranscriptPaymentRequest } from './transcript-payment.model';
+import { sortTranscriptRequestsForFinance } from './finance-payment.utils';
 
 @Component({
   selector: 'app-transcript-finance-payment',
@@ -21,19 +22,21 @@ export class TranscriptFinancePaymentComponent {
   private readonly router = inject(Router);
 
   controlNumbers: Record<string, string> = {};
+  private queuedRequests: TranscriptPaymentRequest[] = [];
   message = '';
   errorMessage = '';
 
   constructor() {
     if (this.authService.getCurrentUser()?.role !== 'Finance') {
       this.router.navigate(['/login']);
+      return;
     }
+
+    this.refreshRequests();
   }
 
   get requests(): TranscriptPaymentRequest[] {
-    return this.paymentService.getAllRequests()
-      .filter(request => request.status === 'Pending Control Number' || request.status === 'Receipt Submitted')
-      .sort((first, second) => second.requestedAt.localeCompare(first.requestedAt));
+    return this.queuedRequests;
   }
 
   get controlNumberRequests(): TranscriptPaymentRequest[] {
@@ -66,6 +69,7 @@ export class TranscriptFinancePaymentComponent {
     );
     this.controlNumbers[request.id] = '';
     this.message = `Control number issued to ${request.studentName}.`;
+    this.refreshRequests();
   }
 
   markPaid(request: TranscriptPaymentRequest): void {
@@ -74,5 +78,13 @@ export class TranscriptFinancePaymentComponent {
       return;
     }
     this.message = `Payment verified for ${request.studentName}.`;
+    this.refreshRequests();
+  }
+
+  private refreshRequests(): void {
+    this.queuedRequests = sortTranscriptRequestsForFinance(
+      this.paymentService.getAllRequests()
+        .filter(request => request.status === 'Pending Control Number' || request.status === 'Receipt Submitted')
+    );
   }
 }

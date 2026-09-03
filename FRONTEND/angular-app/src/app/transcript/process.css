@@ -1,0 +1,20 @@
+:host { display: block; min-height: 100vh; }
+.transcript-process-page { min-height: 100vh; padding: 36px 24px 60px; background: linear-gradient(135deg, #eaf4f8, #f7f8fa 52%, #fff8e8); color: #24323a; }
+.process-header, .process-card { width: min(100%, 960px); margin: 0 auto; }
+.process-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 28px; }
+.step-label { color: #00679b; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+h1 { margin: 7px 0; color: #003b5c; font-size: 30px; }
+p { color: #68757d; font-size: 14px; line-height: 1.6; }
+.secondary-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border-radius: 7px; font-size: 12px; font-weight: 800; text-decoration: none; cursor: pointer; }
+.secondary-button { border: 1px solid #b8ccd5; background: #fff; color: #003b5c; }
+.primary-button { border: 1px solid #00679b; background: #00679b; color: #fff; }
+.primary-button:hover { background: #003b5c; }
+.process-card { display: grid; gap: 14px; padding: 28px; border: 1px solid #e0e7eb; border-radius: 12px; background: #fff; box-shadow: 0 8px 26px rgba(0, 59, 92, .08); }
+.process-step { display: grid; grid-template-columns: 44px 1fr auto; gap: 18px; align-items: center; padding: 20px; border: 1px solid #e0e7eb; border-left: 4px solid #e5b83c; border-radius: 8px; background: #f8fbfc; }
+.process-step.complete { border-left-color: #218739; }
+.step-number { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #eaf4f8; color: #00679b; font-weight: 900; }
+.step-copy h2 { margin: 5px 0; color: #003b5c; font-size: 18px; }
+.step-copy p { margin: 5px 0 9px; }
+.status { color: #68757d; font-size: 12px; }
+.complete-mark { color: #218739; font-size: 12px; font-weight: 900; }
+@media (max-width: 700px) { .transcript-process-page { padding: 24px 14px 40px; } .process-header { flex-direction: column; } .process-step { grid-template-columns: 38px 1fr; } .process-step .primary-button, .complete-mark { grid-column: 2; justify-self: start; } .process-card { padding: 18px; } }

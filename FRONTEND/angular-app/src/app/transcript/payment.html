@@ -1,6 +1,6 @@
 <section class="payment-page">
   <main class="payment-card" *ngIf="hasApproval">
-    <span class="section-kicker">Step 03</span>
+    <span class="section-kicker">Step 1</span>
     <h1>Transcript Payment</h1>
     <p *ngIf="!request">Your transcript request is approved. Request a payment control number to continue.</p>
 
@@ -24,9 +24,8 @@
     </div>
 
     <section class="payment-step" *ngIf="request.status === 'Pending Control Number'">
-      <h2>Request payment control number</h2>
-      <p>Finance will issue a unique control number for this transcript payment.</p>
-      <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
+      <h2>Waiting for Finance</h2>
+      <p>Your control number request has been sent to the Finance transcript payment team. This button will reappear only for a new transcript request.</p>
     </section>
 
     <section class="payment-step" *ngIf="request.status === 'Awaiting Payment'">
@@ -40,8 +39,8 @@
     </section>
 
     <section class="payment-step success-step" *ngIf="request.status === 'Receipt Submitted' || request.status === 'Paid'">
-      <h2>Receipt submitted</h2>
-      <p>Your payment receipt has been sent to Finance for verification.</p>
+      <h2 *ngIf="request.status === 'Receipt Submitted'">Receipt submitted</h2>
+      <p *ngIf="request.status === 'Receipt Submitted'">Your payment receipt has been sent to Finance for verification. Please wait for approval before continuing.</p>
       <div *ngIf="request.status === 'Paid'" class="step-navigation">
         <span>Finance has approved your payment.</span>
         <a routerLink="/documents/transcript" class="primary-button">Next: Attach Documents</a>

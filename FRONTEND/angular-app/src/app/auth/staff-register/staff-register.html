@@ -33,16 +33,16 @@
         <option *ngFor="let role of staffRoles" [value]="role">{{ role }}</option>
       </select>
 
-      <ng-container *ngIf="isDepartmentStaff">
+      <ng-container *ngIf="isDepartmentStaff || isPrincipalStaff">
         <label for="college">College</label>
         <select id="college" formControlName="college" (change)="onCollegeChange()">
           <option value="" disabled>Select your college</option>
           <option *ngFor="let college of collegeDepartments | keyvalue" [value]="college.key">{{ college.key }}</option>
         </select>
-        <small class="department-help">Select your exact department. Your dashboard will only show applications assigned to that department.</small>
+        <small class="department-help" *ngIf="isDepartmentStaff">Select your exact department. Your dashboard will only show applications assigned to that department.</small>
 
-        <label for="department">Department</label>
-        <select id="department" formControlName="department" [disabled]="!form.controls.college.value">
+        <label for="department" *ngIf="isDepartmentStaff">Department</label>
+        <select id="department" *ngIf="isDepartmentStaff" formControlName="department" [disabled]="!form.controls.college.value">
           <option value="" disabled>Select your department</option>
           <option *ngFor="let department of departments" [value]="department">{{ department }}</option>
         </select>

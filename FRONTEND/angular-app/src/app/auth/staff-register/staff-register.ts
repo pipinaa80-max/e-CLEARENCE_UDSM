@@ -89,6 +89,10 @@ export class StaffRegister {
     return this.form.controls.role.value === 'Department';
   }
 
+  get isPrincipalStaff(): boolean {
+    return this.form.controls.role.value === 'Principal';
+  }
+
   get isLaboratoryStaff(): boolean {
     return this.form.controls.role.value === 'Laboratory';
   }
@@ -118,6 +122,8 @@ export class StaffRegister {
         this.errorMessage = 'You must accept the terms of service.';
       } else if (this.isDepartmentStaff && (controls.college.invalid || controls.department.invalid)) {
         this.errorMessage = 'Please select both your college and department.';
+      } else if (this.isPrincipalStaff && controls.college.invalid) {
+        this.errorMessage = 'Please select the Principal college.';
       } else {
         this.errorMessage = 'Please complete all required fields correctly.';
       }
@@ -140,7 +146,7 @@ export class StaffRegister {
       password: value.password,
       role: value.role,
       department: this.isDepartmentStaff ? value.department : value.role,
-      college: this.isDepartmentStaff ? value.college : 'Administration',
+      college: this.isDepartmentStaff || this.isPrincipalStaff ? value.college : 'Administration',
       laboratory: this.isLaboratoryStaff ? value.laboratory : ''
     };
 
@@ -174,12 +180,13 @@ export class StaffRegister {
   }
 
   private updateDepartmentValidators(): void {
-    const validators = this.isDepartmentStaff ? [Validators.required] : [];
-    this.form.controls.college.setValidators(validators);
-    this.form.controls.department.setValidators(validators);
+    const collegeValidators = this.isDepartmentStaff || this.isPrincipalStaff ? [Validators.required] : [];
+    const departmentValidators = this.isDepartmentStaff ? [Validators.required] : [];
+    this.form.controls.college.setValidators(collegeValidators);
+    this.form.controls.department.setValidators(departmentValidators);
     this.form.controls.laboratory.setValidators(this.isLaboratoryStaff ? [Validators.required] : []);
 
-    if (!this.isDepartmentStaff) {
+    if (!this.isDepartmentStaff && !this.isPrincipalStaff) {
       this.form.controls.college.setValue('');
       this.form.controls.department.setValue('');
     }

@@ -61,12 +61,19 @@ export class DepartmentOfficerComponent implements OnInit {
             return;
         }
 
-        const allRequests = this.clearanceService.getAllRequests();
+        const departmentRequests = this.clearanceService.getRequestsForOffice(
+            'Department',
+            user.college,
+            user.department
+        );
 
-        this.pendingRequests = allRequests.filter(request => {
+        this.pendingRequests = this.clearanceService.getAllRequests().filter(request => {
+            if (departmentRequests.some(departmentRequest => departmentRequest.id === request.id)) {
+                return true;
+            }
+
             if (request.department !== user.department) return false;
-            return request.currentStage === 'Department' ||
-                request.currentStage === 'Principal' ||
+            return request.currentStage === 'Principal' ||
                 request.currentStage === 'Finance' ||
                 request.status === 'Completed';
         });

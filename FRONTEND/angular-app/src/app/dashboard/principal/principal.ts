@@ -199,8 +199,21 @@ export class PrincipalComponent implements OnInit {
         return approval?.status || 'Pending';
     }
 
-    reviewRequest(requestId: string): void {
-        this.router.navigate(['/principal/review', requestId]);
+    approve(request: ClearanceRequest): void {
+        const staff = this.currentUser;
+        if (!staff || !this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
+            this.errorMessage = 'Failed to approve request. Please try again.';
+            return;
+        }
+
+        this.loadData();
+        this.notificationService.createNotification(
+            request.studentId,
+            'Principal clearance approved',
+            'The Principal has approved your clearance request.',
+            'success'
+        );
+        this.message = `Student ${this.getStudentName(request)} was approved successfully.`;
     }
 
     refreshData(): void {

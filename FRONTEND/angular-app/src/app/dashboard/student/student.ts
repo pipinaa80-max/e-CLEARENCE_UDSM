@@ -238,6 +238,14 @@ export class StudentDashboard implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get programme(): string | undefined {
+    return this.currentUser?.programme || this.currentRequest?.programme;
+  }
+
+  get college(): string | undefined {
+    return this.currentUser?.college || this.currentRequest?.college;
+  }
+
   // =====================================================
   // CLEARANCE STATUS
   // =====================================================

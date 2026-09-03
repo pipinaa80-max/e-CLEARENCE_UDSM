@@ -66,17 +66,9 @@ export class ClearanceStatusComponent {
   // SEVEN CLEARANCE OFFICES
   // =====================================================
 
-  readonly officeList: ClearanceOffice[] = [
-    'Games Coach',
-    'Hall Warden',
-    'USAB',
-    'DARUSO',
-    'Library',
-    'Dean of Students',
-    'Smart Card',
-    'Workshop',
-    'Laboratory'
-  ];
+  get officeList(): ClearanceOffice[] {
+    return this.clearanceService.getClearanceOffices(this.request?.college ?? '');
+  }
 
   // =====================================================
   // GET OFFICE APPROVAL
@@ -137,7 +129,7 @@ export class ClearanceStatusComponent {
     const request = this.request;
     if (!request) return false;
 
-    // Check if ALL seven offices are approved
+    // Check if all offices required by this student's college are approved
     const allApproved = this.officeList.every(office => {
       const status = this.getOfficeStatus(office);
       return status === 'Approved';
@@ -476,7 +468,7 @@ export class ClearanceStatusComponent {
       number: 2,
       label: 'Clearance Offices',
       office: 'Clearance Offices',
-      detail: 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students, Smart Card, Workshop and Laboratory.',
+      detail: this.officeList.join(', ') + '.',
       status: officesStatus
     });
 

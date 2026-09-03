@@ -50,6 +50,28 @@ export class TranscriptDocumentsComponent implements OnInit {
     for (const category of this.requiredDocuments) {
       this.uploaded[category] = false;
     }
+
+    this.documentService.getDocumentCategories(user.id).subscribe({
+      next: categories => {
+        const uploadedCategories = categories.map(category => String(category));
+        for (const category of categories) {
+          if (this.requiredDocuments.includes(category)) {
+            this.uploaded[category] = true;
+          }
+        }
+        if (uploadedCategories.length >= this.requiredDocuments.length) {
+          for (const category of this.requiredDocuments) {
+            this.uploaded[category] = true;
+          }
+        }
+        if (this.allUploaded) {
+          localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
+        }
+      },
+      error: () => {
+        this.errorMessage = 'Unable to load previously uploaded documents.';
+      }
+    });
   }
 
   onFileSelected(category: string, event: Event): void {
@@ -85,6 +107,9 @@ export class TranscriptDocumentsComponent implements OnInit {
     }, file).subscribe({
       next: () => {
         this.uploaded[category] = true;
+        if (this.allUploaded) {
+          localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
+        }
         this.uploading = '';
         this.message = `${category} uploaded successfully.`;
       },

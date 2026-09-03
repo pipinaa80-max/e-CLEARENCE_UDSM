@@ -71,6 +71,7 @@ export class ConvocationDashboardComponent implements OnInit {
     // 2. Load from Local (for legacy/mock continuity)
     const requests = this.clearanceService.getRequestsForOffice('Convocation');
     this.updateStats(requests);
+    this.isLoading = false;
   }
 
   updateStats(requests: ClearanceRequest[]): void {
@@ -175,24 +176,14 @@ export class ConvocationDashboardComponent implements OnInit {
       return;
     }
 
-    const controlNumber = window.prompt(
-        'Enter the control number for this student:\n\nFormat: UDSM-XXXXXXXX (8 digits)',
-        'UDSM-' + Date.now().toString().slice(-8)
-    );
-
-    if (controlNumber === null) return;
-
-    if (!controlNumber.trim()) {
-      this.errorMessage = 'Please enter a valid control number.';
-      return;
-    }
+    const controlNumber = 'UDSM-' + Date.now().toString().slice(-8);
 
     this.isLoading = true;
 
     try {
       this.clearanceService.issueControlNumber(
           request.id,
-          controlNumber.trim()
+          controlNumber
       );
 
       this.loadData();
@@ -200,11 +191,11 @@ export class ConvocationDashboardComponent implements OnInit {
       this.notificationService.createNotification(
           request.studentId,
           'Control Number Issued',
-          `Convocation has issued your control number: ${controlNumber.trim()}. Use this to make your payment.`,
+            `Convocation has issued your control number: ${controlNumber}. Use this to make your payment.`,
           'success'
       );
 
-      this.message = `✅ Control number ${controlNumber.trim()} issued successfully to ${this.getStudentName(request)}.`;
+          this.message = `✅ Control number ${controlNumber} issued successfully to ${this.getStudentName(request)}.`;
 
       setTimeout(() => {
         this.message = '';

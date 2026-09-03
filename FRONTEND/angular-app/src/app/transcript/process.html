@@ -1,0 +1,54 @@
+<section class="transcript-process-page">
+  <header class="process-header">
+    <div>
+      <span class="step-label">Transcript Clearance</span>
+      <h1>Transcript Clearance Process</h1>
+      <p>Complete each step to request and collect your transcript.</p>
+    </div>
+    <a routerLink="/transcript" class="secondary-button">Back to Terms</a>
+  </header>
+
+  <main class="process-card" *ngIf="hasApproval">
+    <article class="process-step" [class.complete]="paymentApproved">
+      <span class="step-number">1</span>
+      <div class="step-copy">
+        <span class="step-label">Step 1</span>
+        <h2>Transcript Payment</h2>
+        <p>Pay the required TSh 15,000 transcript fee. Finance must approve the payment before Step 2 begins.</p>
+        <strong class="status">{{ paymentStatus }}</strong>
+      </div>
+      <a routerLink="/transcript/payment" class="primary-button" *ngIf="!paymentApproved">Open Payment</a>
+      <span class="complete-mark" *ngIf="paymentApproved">Approved</span>
+    </article>
+
+    <article class="process-step" [class.complete]="documentsReady">
+      <span class="step-number">2</span>
+      <div class="step-copy">
+        <span class="step-label">Step 2</span>
+        <h2>Upload Documentation</h2>
+        <p>Upload and review your required documents. No staff approval is needed; continue when all files are uploaded.</p>
+        <strong class="status">{{ documentsReady ? 'Uploaded' : (paymentApproved ? 'Ready to upload' : 'Waiting for payment approval') }}</strong>
+      </div>
+      <a routerLink="/documents/transcript" class="primary-button" *ngIf="paymentApproved">Open Documents</a>
+      <span class="complete-mark" *ngIf="documentsReady">Uploaded</span>
+    </article>
+
+    <article class="process-step" [class.complete]="request?.collectionMethod">
+      <span class="step-number">3</span>
+      <div class="step-copy">
+        <span class="step-label">Step 3</span>
+        <h2>Transcript Collection</h2>
+        <p>Choose physical collection or have the transcript sent by post.</p>
+        <strong class="status">{{ request?.collectionMethod || 'Waiting for documents' }}</strong>
+      </div>
+      <a routerLink="/transcript/collection" class="primary-button" *ngIf="documentsReady">Choose Collection</a>
+      <span class="complete-mark" *ngIf="request?.collectionMethod">Saved</span>
+    </article>
+  </main>
+
+  <main class="process-card" *ngIf="!hasApproval">
+    <h2>Transcript request approval required</h2>
+    <p>Review and accept the transcript terms before starting this process.</p>
+    <a routerLink="/transcript" class="primary-button">Review Terms</a>
+  </main>
+</section>

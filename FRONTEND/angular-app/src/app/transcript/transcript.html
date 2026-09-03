@@ -77,6 +77,13 @@
           <span class="state-label">Request status</span>
           <strong>{{ decision }}</strong>
           <p *ngIf="decision === 'Approved'">Your request is approved. Continue to the Transcript Payment Dashboard.</p>
+          <a
+            *ngIf="decision === 'Approved'"
+            routerLink="/transcript/payment"
+            class="primary-button"
+          >
+            Continue to Payment
+          </a>
           <p *ngIf="decision === 'Rejected'">This transcript request has been rejected.</p>
         </div>
       </section>

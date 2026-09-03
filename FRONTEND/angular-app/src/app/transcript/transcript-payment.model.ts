@@ -23,4 +23,6 @@ export interface TranscriptPaymentRequest {
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;
   receiptSubmittedAt?: string;
+  collectionMethod?: 'Physical Collection' | 'Post';
+  postingAddress?: string;
 }

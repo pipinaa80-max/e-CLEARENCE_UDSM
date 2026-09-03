@@ -76,6 +76,15 @@ export class TranscriptPaymentService {
     return true;
   }
 
+  updateCollection(requestId: string, collectionMethod: 'Physical Collection' | 'Post', postingAddress?: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.collectionMethod = collectionMethod;
+    request.postingAddress = collectionMethod === 'Post' ? postingAddress?.trim() : undefined;
+    this.save(request);
+    return true;
+  }
+
   private save(request: TranscriptPaymentRequest): void {
     const requests = this.getAllRequests();
     const index = requests.findIndex(item => item.id === request.id);

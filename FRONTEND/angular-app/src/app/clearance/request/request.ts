@@ -676,6 +676,20 @@ export class ClearanceRequestComponent implements OnInit {
 
       this.authService.updateCurrentUser(user);
 
+      this.authService.updateProfile({
+        fullName: value.studentName,
+        college: value.college,
+        department: value.department,
+        programme: value.programme,
+        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
+        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+        sponsor: value.sponsor,
+        photo: value.photo
+      }).subscribe({
+        next: profile => this.authService.updateCurrentUser(profile),
+        error: error => console.error('Unable to persist student profile:', error)
+      });
+
       this.clearanceService.createFullRequest({
         studentId: user.id,
         studentName: value.studentName,

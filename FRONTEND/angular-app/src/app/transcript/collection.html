@@ -1,0 +1,39 @@
+<section class="collection-page">
+  <header class="collection-header">
+    <div>
+      <span class="step-label">Step 3</span>
+      <h1>Transcript Collection</h1>
+      <p>Choose how you would like to receive your transcript.</p>
+    </div>
+    <a routerLink="/transcript/process" class="secondary-button">Back to Process</a>
+  </header>
+
+  <main class="collection-card" *ngIf="request">
+    <div class="step-intro">
+      <span class="state-icon">3</span>
+      <div><span class="step-label">Payment approved</span><h2>Choose collection method</h2><p>No further staff approval is required for this step.</p></div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Physical Collection'">
+        <input type="radio" formControlName="collectionMethod" value="Physical Collection" />
+        <span><strong>Physical Collection</strong><small>Collect the transcript from the designated University office.</small></span>
+      </label>
+      <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Post'">
+        <input type="radio" formControlName="collectionMethod" value="Post" />
+        <span><strong>Post</strong><small>Have the transcript posted to your preferred address.</small></span>
+      </label>
+
+      <label class="address-field" *ngIf="isPost">
+        <span>Posting address</span>
+        <textarea formControlName="postingAddress" rows="4" placeholder="Explain where the transcript should be posted"></textarea>
+      </label>
+
+      <p class="message" *ngIf="message">{{ message }}</p>
+      <div class="step-navigation">
+        <a routerLink="/transcript/process" class="secondary-button">Back</a>
+        <button type="submit" class="primary-button">Save Collection Preference</button>
+      </div>
+    </form>
+  </main>
+</section>

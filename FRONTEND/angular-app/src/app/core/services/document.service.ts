@@ -1,8 +1,9 @@
 // document.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { ConfigService } from './config.service';
+import { AuthService } from './auth.service';
 
 export interface Document {
   id: string;
@@ -45,7 +46,8 @@ export class DocumentService {
 
   constructor(
       private http: HttpClient,
-      private configService: ConfigService
+      private configService: ConfigService,
+      private authService: AuthService
   ) {}
 
   uploadDocument(documentData: DocumentUploadRequest, file: File): Observable<Document> {
@@ -61,8 +63,16 @@ export class DocumentService {
 
     return this.http.post<{ success: boolean; message: string; data: Document }>(
         `${this.baseUrl}/upload`,
-        formData
+      formData,
+      { headers: this.authHeaders }
     ).pipe(map(response => response.data));
+  }
+
+  private get authHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   getStudentDocuments(studentId: string, page: number = 0, size: number = 10): Observable<PageableResponse<Document>> {
@@ -72,12 +82,14 @@ export class DocumentService {
 
     return this.http.get<PageableResponse<Document>>(
         `${this.baseUrl}/student/${studentId}`,
-        { params }
+      { params, headers: this.authHeaders }
     );
   }
 
   getDocumentCategories(studentId: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/student/${studentId}/categories`);
+    return this.http.get<string[]>(`${this.baseUrl}/student/${studentId}/categories`, {
+      headers: this.authHeaders
+    });
   }
 
   getMissingDocuments(studentId: string): Observable<string[]> {
