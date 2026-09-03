@@ -10,10 +10,10 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <img [src]="projectConfig?.branding?.logoUrl || '/public/udsm-logo.png'" alt="Project logo" />
       <div>
         <strong>ADMIN PANEL</strong>
-        <small>University of Dar es Salaam</small>
+        <small>{{ projectConfig?.branding?.universityName || 'University of Dar es Salaam' }}</small>
       </div>
     </div>
     <nav>
