@@ -16,8 +16,7 @@ This top-level area contains an isolated superuser control plane for the clearan
 - View sub-admin email, role, permissions, and status
 - Generate one-time temporary passwords for sub-admin recovery
 - Delegate one `PROJECT_ADMIN` sub-admin for the existing project administrator workflow
-- The delegated project admin owns dashboard creation, editing, and deletion
-- Manage university name, logo, contact details, and enabled dashboards
+- The delegated project admin owns dashboard creation, editing, deletion, and project branding
 - Audit privileged changes
 
 ## Run locally
@@ -45,7 +44,7 @@ The first backend start creates `backend/data/control-plane.json`. That file con
 
 ## Integration
 
-The existing Angular application now accepts project-admin accounts from this control plane and routes them to its administrator dashboard. Each project admin receives a unique project configuration, so branding and dashboards are isolated between companies.
+The existing Angular application now accepts project-admin accounts from this control plane and routes them to its administrator dashboard. Each project admin receives a unique project configuration, so branding and dashboards are isolated between companies. The superadmin does not manage branding; there is no Global Branding screen or global branding mutation API in the superadmin role.
 
 Open the real project admin experience at `http://localhost:4200/dashboard/admin`. The `Project Dashboards` and `Project Theme` tabs are available to a sub-admin created with the `PROJECT_ADMIN` permission. The superuser console at `http://localhost:8091` does not expose dashboard editing.
 
