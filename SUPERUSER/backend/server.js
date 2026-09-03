@@ -21,21 +21,44 @@ function verifyPassword(password, stored) {
 function initialData() {
   const password = process.env.SUPERUSER_PASSWORD || 'ChangeMeImmediately!2026';
   return {
-    branding: { universityName: 'University of Dar es Salaam', shortName: 'UDSM', logoUrl: '', primaryColor: '#123c69' },
+    branding: { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/assets/logo.png', primaryColor: '#123c69' },
     dashboards: [
       { id: 'student', name: 'Student Clearance', description: 'Student clearance requests and status', enabled: true },
       { id: 'finance', name: 'Finance', description: 'Finance clearance workflows', enabled: true },
       { id: 'library', name: 'Library', description: 'Library clearance workflows', enabled: true },
-      { id: 'transcript', name: 'Transcripts', description: 'Transcript requests and payments', enabled: true }
+      { id: 'transcript', name: 'Transcripts', description: 'Transcript requests and payments', enabled: true },
+      { id: 'department', name: 'Department', description: 'Department review and clearance', enabled: true },
+      { id: 'ict', name: 'ICT', description: 'ICT clearance workflows', enabled: true },
+      { id: 'academic', name: 'Academic Staff', description: 'Academic staff clearance workflows', enabled: true },
+      { id: 'administrator', name: 'Administrator', description: 'Administrative operations', enabled: true },
+      { id: 'convocation', name: 'Convocation', description: 'Convocation clearance workflows', enabled: true },
+      { id: 'games-coach', name: 'Games Coach', description: 'Games and sports clearance', enabled: true },
+      { id: 'hall-warden', name: 'Hall Warden', description: 'Accommodation clearance workflows', enabled: true },
+      { id: 'usab', name: 'USAB', description: 'USAB clearance workflows', enabled: true },
+      { id: 'daruso', name: 'DARUSO', description: 'DARUSO clearance workflows', enabled: true },
+      { id: 'dean-of-students', name: 'Dean of Students', description: 'Dean of Students clearance', enabled: true },
+      { id: 'smart-card', name: 'Smart Card', description: 'Smart card clearance workflows', enabled: true },
+      { id: 'workshop', name: 'Workshop', description: 'Workshop clearance workflows', enabled: true },
+      { id: 'laboratory', name: 'Laboratory', description: 'Laboratory clearance workflows', enabled: true },
+      { id: 'principal', name: 'Principal', description: 'Principal clearance workflows', enabled: true }
     ],
     subAdmins: [],
-    superuser: { email: process.env.SUPERUSER_EMAIL || 'superuser@udsm.ac.tz', passwordHash: hashPassword(password) }
+    superuser: { email: process.env.SUPERUSER_EMAIL || 'superuser@admin.local', passwordHash: hashPassword(password) }
   };
 }
 function readData() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify(initialData(), null, 2));
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  const defaults = initialData();
+  data.branding = { ...defaults.branding, ...data.branding };
+  data.dashboards = [...data.dashboards, ...defaults.dashboards.filter(item => !data.dashboards.some(existing => existing.id === item.id))];
+  if (!data.superuser?.email) data.superuser = defaults.superuser;
+  if (data.branding.shortName.toUpperCase() === 'UDSM') data.branding.shortName = 'Clearance';
+  if (!data.branding.logoUrl) data.branding.logoUrl = '/assets/logo.png';
+  if (data.superuser.email.toLowerCase() === 'superuser@udsm.ac.tz') data.superuser.email = 'superuser@admin.local';
+  writeData(data);
+  return data;
 }
 function writeData(data) { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
 function send(res, status, body) {
