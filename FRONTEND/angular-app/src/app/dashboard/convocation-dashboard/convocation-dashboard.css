@@ -11,8 +11,33 @@
 .dashboard-shell {
   min-height: 100vh;
   display: flex;
-  background: #f4f6f8;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: #26343d;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* =========================
@@ -97,6 +122,7 @@
   text-align: left;
 
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar nav a:hover,
@@ -104,6 +130,7 @@
 .logout-link:hover {
   background: rgba(255, 255, 255, 0.13);
   color: #fff;
+  transform: translateX(5px);
 }
 
 .logout-link {
@@ -151,7 +178,7 @@
 
   margin-bottom: 6px;
 
-  color: #0876a9;
+  color: var(--udsm-gold);
 
   font-size: 10px;
   font-weight: 800;
@@ -163,7 +190,7 @@
 .topbar-title h1 {
   margin: 0;
 
-  color: #073c59;
+  color: #ffffff;
 
   font-size: 27px;
   font-weight: 800;
@@ -174,7 +201,7 @@
 .topbar-title p {
   margin: 8px 0 0;
 
-  color: #7a858d;
+  color: rgba(255, 255, 255, 0.9);
 
   font-size: 11px;
 }
@@ -227,6 +254,18 @@
   background: #fff;
 
   box-shadow: 0 4px 16px rgba(0, 39, 60, 0.05);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 75, 112, 0.1);
+  border-color: #004b7033;
 }
 
 .stat-card span {
@@ -363,15 +402,14 @@
 
   box-shadow: 0 4px 18px rgba(0, 39, 60, 0.05);
 
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.6s ease-out both;
 }
 
 .request-card:hover {
-  transform: translateY(-1px);
-
-  box-shadow: 0 7px 24px rgba(0, 39, 60, 0.08);
+  transform: translateY(-3px) scale(1.002);
+  box-shadow: 0 12px 28px rgba(0, 39, 60, 0.09);
+  border-color: #0876a944;
 }
 
 
@@ -488,6 +526,13 @@
 .status-badge.control-requested {
   background: #fff7df;
   color: #997200;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .status-badge.control-issued {
@@ -696,17 +741,17 @@
 
   color: #fff;
 
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .final-approve-btn:hover:not(:disabled) {
   background: #256628;
+  transform: scale(1.06);
+  box-shadow: 0 6px 14px rgba(46, 125, 50, 0.3);
 }
 
 .final-approve-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: scale(0.96);
 }
 
 .final-approve-btn:disabled {

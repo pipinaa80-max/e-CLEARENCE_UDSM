@@ -1,13 +1,42 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: #f5f7fa;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .profile-page {
   max-width: 1050px;
   margin: 0 auto;
   padding: 35px 30px 50px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.profile-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 
@@ -23,28 +52,34 @@
   display: block;
   margin-bottom: 5px;
 
-  color: #0b5b94;
+  color: var(--udsm-gold);
 
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  animation: fadeInUp 0.5s ease-out both;
 }
 
 .profile-header h1 {
   margin: 0;
 
-  color: #073b68;
+  color: #ffffff;
 
-  font-size: 1.55rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.6s ease-out both;
 }
 
 .profile-header p {
   margin: 6px 0 0;
 
-  color: #718096;
+  color: rgba(255, 255, 255, 0.9);
 
-  font-size: 0.78rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: fadeInUp 0.7s ease-out both;
 }
 
 
@@ -66,6 +101,13 @@
   background: #ffffff;
 
   box-shadow: 0 3px 14px rgba(20, 45, 70, 0.05);
+  animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.student-profile-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
 .student-photo {
@@ -127,23 +169,33 @@
   gap: 25px;
 }
 
+.student-information h2 {
+  margin: 4px 0 18px;
+
+  color: #000000;
+
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
 .profile-details span {
   display: block;
 
   margin-bottom: 5px;
 
-  color: #7a8795;
+  color: #4b5563;
 
-  font-size: 0.62rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 800;
 
   text-transform: uppercase;
 }
 
 .profile-details strong {
-  color: #243b53;
+  color: #000000;
 
-  font-size: 0.78rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 
@@ -353,6 +405,12 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   margin-top: 30px;
   overflow: hidden;
+  animation: fadeInUp 0.9s ease-out both;
+  transition: all 0.3s ease;
+}
+
+.account-settings:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .settings-header {
@@ -412,9 +470,9 @@
 }
 
 .password-form label {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #4a5568;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #000000;
 }
 
 .password-form input {

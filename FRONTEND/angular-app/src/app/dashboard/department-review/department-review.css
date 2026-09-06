@@ -17,6 +17,23 @@
   background: #f4f6f8;
   color: #26343d;
   padding: 38px 45px 60px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
@@ -202,6 +219,7 @@
   background: #ffffff;
 
   box-shadow: 0 4px 18px rgba(0, 39, 60, 0.05);
+  animation: fadeInUp 0.6s ease-out both;
 }
 
 .student-photo {
@@ -368,17 +386,20 @@
 
   cursor: pointer;
 
-  transition: 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tab-btn:hover {
   background: #f1f5f7;
   color: #004b70;
+  transform: translateY(-1px);
 }
 
 .tab-btn.active {
   background: #004b70;
   color: #ffffff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 75, 112, 0.2);
 }
 
 
@@ -806,10 +827,17 @@
 
   background: #2e7d32;
   color: #ffffff;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .approve-btn:hover:not(:disabled) {
   background: #256628;
+  transform: scale(1.06);
+  box-shadow: 0 6px 14px rgba(46, 125, 50, 0.3);
+}
+
+.approve-btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .reject-btn:disabled,

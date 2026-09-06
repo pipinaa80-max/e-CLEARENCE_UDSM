@@ -3,6 +3,22 @@
   min-height: 100vh;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -10,9 +26,19 @@
 .office-page {
   min-height: 100vh;
   display: flex;
-  background: #f5f7fa;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  animation: fadeIn 0.5s ease-out;
 }
 
+/* SIDEBAR */
 .sidebar {
   width: 235px;
   min-height: 100vh;
@@ -71,6 +97,7 @@
   text-decoration: none;
   text-align: left;
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar nav a:hover,
@@ -78,14 +105,17 @@
 .sidebar nav button:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  transform: translateX(4px);
 }
 
+/* CONTENT */
 .content {
   flex: 1;
   min-width: 0;
   padding: 42px 42px 60px;
 }
 
+/* HEADER */
 .page-header {
   width: 100%;
   max-width: 1050px;
@@ -98,7 +128,7 @@
 
 .page-header p {
   margin: 0 0 5px;
-  color: #00679b;
+  color: var(--udsm-gold);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -107,16 +137,18 @@
 
 .page-header h1 {
   margin: 0;
-  color: #003b5c;
+  color: #ffffff;
   font-size: 25px;
   font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .page-description {
   display: block;
   margin-top: 7px;
-  color: #6b7780;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 11px;
+  font-weight: 500;
 }
 
 .pending-box {
@@ -131,14 +163,15 @@
 
 .pending-box strong {
   display: block;
-  color: #003b5c;
+  color: #000000;
   font-size: 18px;
+  font-weight: 800;
 }
 
 .pending-box small {
   display: block;
   margin-top: 3px;
-  color: #777f84;
+  color: #4b5563;
   font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
@@ -172,6 +205,14 @@
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 3px 13px rgba(0, 0, 0, 0.05);
+  animation: fadeInUp 0.6s ease-out both;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.request-card:hover {
+  transform: translateY(-4px) scale(1.002);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  border-color: #004b7033;
 }
 
 .request-header {
@@ -194,7 +235,7 @@
 
 .request-header h2 {
   margin: 0;
-  color: #003b5c;
+  color: #000000;
   font-size: 16px;
   font-weight: 800;
 }
@@ -206,6 +247,13 @@
   color: #9a7100;
   font-size: 9px;
   font-weight: 800;
+  animation: softPulse 2s infinite;
+}
+
+@keyframes softPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .student-details {
@@ -230,15 +278,16 @@
 .detail span {
   display: block;
   margin-bottom: 6px;
-  color: #7b858c;
+  color: #4b5563;
   font-size: 8px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .detail strong {
-  color: #26343d;
+  color: #000000;
   font-size: 11px;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -258,6 +307,7 @@
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .reject-button {
@@ -269,6 +319,7 @@
 .reject-button:hover {
   background: #c73535;
   color: #ffffff;
+  transform: scale(1.05);
 }
 
 .approve-button {
@@ -278,7 +329,9 @@
 }
 
 .approve-button:hover {
-  opacity: 0.9;
+  background: #1a6b2e;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(33, 135, 57, 0.3);
 }
 
 .empty-state {
@@ -306,13 +359,14 @@
 
 .empty-state h2 {
   margin: 0 0 7px;
-  color: #003b5c;
+  color: #000000;
   font-size: 16px;
+  font-weight: 800;
 }
 
 .empty-state p {
   margin: 0;
-  color: #707b82;
+  color: #4b5563;
   font-size: 11px;
 }
 
@@ -338,13 +392,14 @@
 
 .modal-card h2 {
   margin: 0 0 8px;
-  color: #003b5c;
+  color: #000000;
   font-size: 18px;
+  font-weight: 800;
 }
 
 .modal-card p {
   margin: 0 0 18px;
-  color: #6b7780;
+  color: #4b5563;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -352,7 +407,7 @@
 .modal-card label {
   display: block;
   margin-bottom: 7px;
-  color: #26343d;
+  color: #000000;
   font-size: 10px;
   font-weight: 800;
 }
@@ -367,7 +422,7 @@
   resize: vertical;
   font-family: inherit;
   font-size: 11px;
-  color: #26343d;
+  color: #000000;
 }
 
 .modal-card textarea:focus {
@@ -390,12 +445,17 @@
   font-size: 10px;
   font-weight: 800;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .cancel-button {
   border: 1px solid #d8dfe4;
   background: #ffffff;
-  color: #66727a;
+  color: #4b5563;
+}
+
+.cancel-button:hover {
+  background: #f1f5f9;
 }
 
 .return-button {
@@ -410,67 +470,21 @@
 }
 
 @media (max-width: 800px) {
-
-  .office-page {
-    display: block;
-  }
-
-  .sidebar {
-    width: 100%;
-    min-height: auto;
-  }
-
-  .content {
-    padding: 25px 16px 40px;
-  }
-
-  .page-header {
-    flex-direction: column;
-  }
-
-  .student-details {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .detail:nth-child(2) {
-    border-right: none;
-  }
-
-  .detail:nth-child(-n + 2) {
-    border-bottom: 1px solid #e3e8eb;
-  }
+  .office-page { display: block; }
+  .sidebar { width: 100%; min-height: auto; }
+  .content { padding: 25px 16px 40px; }
+  .page-header { flex-direction: column; }
+  .student-details { grid-template-columns: repeat(2, 1fr); }
+  .detail:nth-child(2) { border-right: none; }
+  .detail:nth-child(-n + 2) { border-bottom: 1px solid #e3e8eb; }
 }
 
 @media (max-width: 500px) {
-
-  .student-details {
-    grid-template-columns: 1fr;
-  }
-
-  .detail {
-    border-right: none;
-    border-bottom: 1px solid #e3e8eb;
-  }
-
-  .detail:last-child {
-    border-bottom: none;
-  }
-
-  .request-actions {
-    width: 100%;
-  }
-
-  .reject-button,
-  .approve-button {
-    flex: 1;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-  }
-
-  .cancel-button,
-  .return-button {
-    width: 100%;
-  }
+  .student-details { grid-template-columns: 1fr; }
+  .detail { border-right: none; border-bottom: 1px solid #e3e8eb; }
+  .detail:last-child { border-bottom: none; }
+  .request-actions { width: 100%; }
+  .reject-button, .approve-button { flex: 1; }
+  .modal-actions { flex-direction: column; }
+  .cancel-button, .return-button { width: 100%; }
 }

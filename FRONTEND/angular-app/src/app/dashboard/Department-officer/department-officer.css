@@ -6,7 +6,32 @@
 .department-page {
   min-height: 100vh;
   display: flex;
-  background: #f5f7fa;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
@@ -88,6 +113,7 @@
   text-decoration: none;
 
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar nav a.active,
@@ -95,6 +121,7 @@
 .sidebar nav button:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  transform: translateX(4px);
 }
 
 
@@ -126,7 +153,7 @@
 .page-header p {
   margin: 0 0 6px;
 
-  color: #0066a1;
+  color: var(--udsm-gold);
 
   font-size: 0.68rem;
   font-weight: 800;
@@ -138,10 +165,11 @@
 .page-header h1 {
   margin: 0;
 
-  color: #003b5c;
+  color: #ffffff;
 
-  font-size: 1.45rem;
+  font-size: 1.6rem;
   font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .page-description {
@@ -149,9 +177,11 @@
 
   margin-top: 7px;
 
-  color: #6c7780;
+  color: #ffffff;
 
-  font-size: 0.76rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.95;
 }
 
 .header-actions {
@@ -235,6 +265,18 @@
   background: #ffffff;
 
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 59, 92, 0.1);
+  border-color: #003b5c33;
 }
 
 .stat-card span {
@@ -253,9 +295,10 @@
 
   margin-top: 6px;
 
-  color: #003b5c;
+  color: #000000;
 
-  font-size: 1.3rem;
+  font-size: 1.5rem;
+  font-weight: 800;
 }
 
 
@@ -413,6 +456,14 @@
   background: #ffffff;
 
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.request-card:hover {
+  transform: translateY(-4px) scale(1.005);
+  box-shadow: 0 15px 35px rgba(0, 59, 92, 0.12);
+  border-color: #0066a144;
 }
 
 
@@ -507,25 +558,26 @@
 .student-title h2 {
   margin: 0;
 
-  color: #003b5c;
+  color: #000000;
 
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 800;
 }
 
 .student-title p {
   margin: 5px 0 0;
 
-  color: #6c7780;
+  color: #374151;
 
-  font-size: 0.72rem;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 
 /* STATUS */
 
 .status {
-  padding: 6px 10px;
+  padding: 6px 12px;
 
   border-radius: 999px;
 
@@ -539,6 +591,17 @@
   text-transform: uppercase;
 
   white-space: nowrap;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.status-approved, .status-rejected {
+  animation: none;
 }
 
 .status-approved {
@@ -582,9 +645,9 @@
 
   margin-bottom: 5px;
 
-  color: #6c7780;
+  color: #4b5563;
 
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -593,10 +656,10 @@
 .detail-item strong {
   display: block;
 
-  color: #26343d;
+  color: #000000;
 
-  font-size: 0.73rem;
-  font-weight: 800;
+  font-size: 0.85rem;
+  font-weight: 700;
 
   line-height: 1.4;
 
@@ -660,7 +723,7 @@
 .review-button {
   min-height: 40px;
 
-  padding: 0 18px;
+  padding: 0 22px;
 
   border: 1px solid #0066a1;
   border-radius: 7px;
@@ -673,10 +736,19 @@
   font-weight: 800;
 
   cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.review-button:hover {
-  opacity: 0.9;
+.review-button:hover:not(:disabled) {
+  background: #004b7d;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 102, 161, 0.3);
+}
+
+.review-button:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 

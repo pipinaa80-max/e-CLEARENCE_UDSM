@@ -11,9 +11,34 @@
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
-  background: var(--bg-light);
   color: var(--text-dark);
   position: relative;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .sidebar-toggle {
@@ -53,11 +78,13 @@
   color: color-mix(in srgb, #ffffff 88%, var(--udsm-gold));
   text-decoration: none;
   font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar a:hover {
   background: color-mix(in srgb, var(--udsm-blue) 58%, transparent);
   color: #ffffff;
+  transform: translateX(6px);
 }
 
 .logout-link {
@@ -76,22 +103,24 @@
 .topbar {
   margin-bottom: 24px;
   padding: 22px 24px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-left: 5px solid var(--udsm-gold);
   border-radius: 8px;
-  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(10px);
 }
 
 .topbar h2 {
   margin: 0;
-  color: var(--udsm-blue-dark);
+  color: #ffffff;
   font-size: 1.6rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .topbar p {
   margin: 6px 0 0;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 
 .stats-grid {
@@ -109,16 +138,23 @@
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 59, 92, 0.12);
 }
 
 .stat-card span {
-  color: var(--text-muted);
+  color: #4b5563;
   font-weight: 700;
 }
 
 .stat-card strong {
-  color: var(--udsm-blue-dark);
+  color: #000000;
   font-size: 2.2rem;
   line-height: 1;
 }

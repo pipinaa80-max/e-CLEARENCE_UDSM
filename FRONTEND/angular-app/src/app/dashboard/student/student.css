@@ -9,7 +9,43 @@
 
 .dashboard-shell {
   min-height: 100vh;
-  background: #f5f7fa;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 
@@ -126,9 +162,7 @@
 
   cursor: pointer;
 
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar nav a:hover,
@@ -136,6 +170,7 @@
 .logout-link:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  transform: translateX(6px);
 }
 
 .notification-badge {
@@ -214,10 +249,10 @@
 
   gap: 5px;
 
-  border: 1px solid #dce3eb;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 9px;
 
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 
   cursor: pointer;
 }
@@ -228,7 +263,7 @@
   width: 18px;
   height: 2px;
 
-  background: #073b68;
+  background: #ffffff;
   border-radius: 2px;
 }
 
@@ -240,7 +275,7 @@
 .section-label {
   display: block;
 
-  color: #0b5b94;
+  color: var(--udsm-gold);
 
   font-size: 0.85rem;
   font-weight: 800;
@@ -252,18 +287,21 @@
 .topbar-title h1 {
   margin: 4px 0 0;
 
-  color: #073b68;
+  color: #ffffff;
 
-  font-size: 1.45rem;
+  font-size: 1.6rem;
   font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .topbar-title p {
   margin: 5px 0 0;
 
-  color: #718096;
+  color: #ffffff;
 
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.95;
 }
 
 .topbar-profile {
@@ -406,6 +444,13 @@
   background: #ffffff;
 
   box-shadow: 0 3px 14px rgba(20, 45, 70, 0.05);
+  animation: fadeInUp 0.6s ease-out both;
+  transition: all 0.3s ease;
+}
+
+.student-summary:hover {
+  box-shadow: 0 8px 25px rgba(20, 45, 70, 0.1);
+  transform: translateY(-3px);
 }
 
 .student-photo {
@@ -443,9 +488,10 @@
 .student-details h2 {
   margin: 4px 0 17px;
 
-  color: #073b68;
+  color: #000000;
 
-  font-size: 1.25rem;
+  font-size: 1.4rem;
+  font-weight: 800;
 }
 
 .student-meta {
@@ -466,10 +512,10 @@
 
   margin-bottom: 5px;
 
-  color: #7a8795;
+  color: #4b5563;
 
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
 
   text-transform: uppercase;
 }
@@ -477,9 +523,10 @@
 .student-meta strong {
   display: block;
 
-  color: #243b53;
+  color: #000000;
 
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -512,7 +559,19 @@
   background: #ffffff;
 
   box-shadow: 0 3px 14px rgba(20, 45, 70, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.7s ease-out both;
 }
+
+.clearance-status-card:hover,
+.clearance-progress-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(20, 45, 70, 0.12);
+  border-color: #0b5b9444;
+}
+
+.clearance-status-card { animation-delay: 0.1s; }
+.clearance-progress-card { animation-delay: 0.2s; }
 
 .card-heading {
   display: flex;
@@ -525,9 +584,10 @@
 .card-heading h2 {
   margin: 4px 0 0;
 
-  color: #073b68;
+  color: #000000;
 
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .status-badge {
@@ -554,6 +614,13 @@
 .status-badge.in-progress {
   background: #e7f1fa;
   color: #0b5b94;
+  animation: softPulse 2s infinite;
+}
+
+@keyframes softPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 91, 148, 0.2); }
+  50% { transform: scale(1.03); box-shadow: 0 0 0 6px rgba(11, 91, 148, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 91, 148, 0); }
 }
 
 .status-badge.completed {
@@ -649,9 +716,16 @@
 
   border-radius: inherit;
 
-  background: #0b5b94;
+  background: linear-gradient(90deg, #0b5b94, #2d94d8, #0b5b94);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
 
-  transition: width 0.35s ease;
+  transition: width 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .progress-footer {
@@ -785,13 +859,14 @@
 
   background: linear-gradient(145deg, #ffffff, #f7fafc);
 
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 0.5s ease-out both;
 }
 
 .office-card:hover {
   border-color: #aecde1;
-  box-shadow: 0 8px 18px rgba(20, 73, 109, 0.1);
-  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(20, 73, 109, 0.12);
+  transform: translateY(-4px) scale(1.01);
 }
 .office-card-top {
   display: flex;

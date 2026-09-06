@@ -19,15 +19,13 @@
 
   background:
     linear-gradient(
-      135deg,
-      color-mix(
-        in srgb,
-        var(--udsm-blue) 10%,
-        transparent
-      ),
-      transparent 45%
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
     ),
-    var(--bg-light);
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 
@@ -74,7 +72,7 @@
 
   color: var(--udsm-blue);
 
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 
   font-weight: 800;
 
@@ -86,9 +84,9 @@
 .status-card > header h1 {
   margin: 0;
 
-  color: var(--udsm-blue-dark);
+  color: #000000;
 
-  font-size: 1.45rem;
+  font-size: 1.6rem;
 
   font-weight: 800;
 }
@@ -187,9 +185,9 @@
 }
 
 .current-stage strong {
-  color: var(--udsm-blue-dark);
+  color: #000000;
 
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 
   font-weight: 800;
 }
@@ -289,9 +287,9 @@
 }
 
 .step-content strong {
-  color: var(--udsm-blue-dark);
+  color: #000000;
 
-  font-size: 0.76rem;
+  font-size: 0.8rem;
 
   font-weight: 800;
 }
@@ -299,11 +297,12 @@
 .step-content small {
   min-height: 36px;
 
-  color: var(--text-muted);
+  color: #374151;
 
-  font-size: 0.68rem;
+  font-size: 0.72rem;
 
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .step-content > span {
@@ -492,9 +491,10 @@
 .approval-item strong {
   display: block;
 
-  color: var(--text-dark);
+  color: #000000;
 
-  font-size: 0.84rem;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .approval-item small {
@@ -502,11 +502,12 @@
 
   margin-top: 5px;
 
-  color: var(--text-muted);
+  color: #374151;
 
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .approval-item p {
