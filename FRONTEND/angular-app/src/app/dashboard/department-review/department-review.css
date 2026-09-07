@@ -14,7 +14,15 @@
 
 .review-page {
   min-height: 100vh;
-  background: #f4f6f8;
+  background:
+    linear-gradient(
+      rgba(5, 63, 112, 0.65),
+      rgba(5, 63, 112, 0.7)
+    ),
+    url('/public/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: #26343d;
   padding: 38px 45px 60px;
   animation: fadeIn 0.5s ease-out;
@@ -87,7 +95,7 @@
 
   margin-bottom: 6px;
 
-  color: #0876a9;
+  color: var(--udsm-gold);
 
   font-size: 10px;
   font-weight: 800;
@@ -99,16 +107,17 @@
 .page-header h1 {
   margin: 0;
 
-  color: #073c59;
+  color: #ffffff;
 
   font-size: 27px;
   font-weight: 800;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .page-header p {
   margin: 7px 0 0;
 
-  color: #7a858d;
+  color: rgba(255, 255, 255, 0.9);
 
   font-size: 11px;
 }
@@ -296,7 +305,7 @@
 
   margin-bottom: 5px;
 
-  color: #89939a;
+  color: #4b5563;
 
   font-size: 8px;
   font-weight: 800;
@@ -462,7 +471,7 @@
 }
 
 .field-label {
-  color: #89939a;
+  color: #4b5563;
 
   font-size: 9px;
   font-weight: 700;
@@ -613,7 +622,7 @@
 .stat-label {
   display: block;
 
-  color: #89939a;
+  color: #4b5563;
 
   font-size: 8px;
   font-weight: 800;
