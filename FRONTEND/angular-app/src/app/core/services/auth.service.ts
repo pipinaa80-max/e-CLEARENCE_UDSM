@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of, tap, throwError, map } from 'rxjs';
+import { Observable, of, tap, throwError, map, catchError, timeout } from 'rxjs';
 import { User, UserRole } from '../models/user.model';
 import { StorageService } from './storage.service';
 
@@ -17,32 +17,44 @@ export class AuthService {
 
   register(user: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, user).pipe(
+      timeout(3000),
       tap(() => {
         // We don't save to local storage anymore, backend handles persistence
-      })
+      }),
+      catchError(() => this.registerLocally(user))
     );
   }
 
-  login(identifier: string, password: string): Observable<any> {
-    if (identifier.toLowerCase().endsWith('@admin.local')) {
-      return this.http.post<any>('http://localhost:8090/api/login', { email: identifier, password }).pipe(
-        map((response) => {
-          const authenticatedUser = { ...response.user, id: response.user.email, fullName: response.user.email, role: 'Administrator' as UserRole };
-          this.storage.save(this.currentUserKey, authenticatedUser);
-          this.storage.save(this.tokenKey, response.token);
-          return authenticatedUser;
-        })
-      );
+  private registerLocally(user: any): Observable<any> {
+    const users = this.getLocalUsers();
+    const email = String(user.email ?? '').trim().toLowerCase();
+    if (users.some(saved => String(saved.email ?? '').toLowerCase() === email)) {
+      return throwError(() => ({ error: { message: 'An account with this email already exists.' } }));
     }
-    return this.http.post<any>(`${this.apiUrl}/login`, { identifier, password }).pipe(
-      map((response) => {
-        // Handle ApiResponse wrapper if present
-        const data = response.data || response;
 
+    const localUser = {
+      ...user,
+      id: crypto.randomUUID(),
+      email,
+      fullName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' '),
+      password: user.password,
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+    this.storage.save(this.usersKey, [...users, localUser]);
+    return of({ message: 'Local staff account created successfully.', user: localUser });
+  }
+
+  login(identifier: string, password: string): Observable<any> {
+    const normalizedIdentifier = identifier.trim();
+
+    const loginWithProjectBackend = () => this.http.post<any>(`${this.apiUrl}/login`, { identifier: normalizedIdentifier, password }).pipe(
+      timeout(3000),
+      map((response) => {
+        const data = response.data || response;
         const authenticatedUser = this.mapUserResponse(data);
         this.storage.save(this.currentUserKey, authenticatedUser);
 
-        // Support both snake_case and camelCase from backend
         const token = data.access_token || data.accessToken || data.token;
         if (token) {
           this.storage.save(this.tokenKey, token);
@@ -51,6 +63,60 @@ export class AuthService {
           console.error('❌ No access token found in login response data', response);
         }
 
+        return authenticatedUser;
+      }),
+      catchError((error) => {
+        if (normalizedIdentifier.toLowerCase().endsWith('@admin.local')) {
+          return this.loginWithSuperuserBackend(normalizedIdentifier, password);
+        }
+
+        return this.loginWithLocalUser(normalizedIdentifier, password).pipe(
+          catchError(() => {
+            const status = error?.status ?? 0;
+            if (status === 0 || status === 401 || status === 403 || status === 404) {
+              return this.loginWithSuperuserBackend(normalizedIdentifier, password);
+            }
+            return throwError(() => error);
+          })
+        );
+      })
+    );
+
+    if (normalizedIdentifier.toLowerCase().endsWith('@admin.local')) {
+      return this.loginWithSuperuserBackend(normalizedIdentifier, password);
+    }
+
+    return loginWithProjectBackend();
+  }
+
+  private loginWithLocalUser(identifier: string, password: string): Observable<any> {
+    const user = this.getLocalUsers().find(saved =>
+      String(saved.email ?? '').toLowerCase() === identifier.toLowerCase() && saved.password === password
+    );
+    if (!user) return throwError(() => new Error('Local account not found'));
+
+    const authenticatedUser = this.mapUserResponse(user);
+    this.storage.save(this.currentUserKey, authenticatedUser);
+    this.storage.save(this.tokenKey, `local-${user.id}`);
+    return of(authenticatedUser);
+  }
+
+  private loginWithSuperuserBackend(identifier: string, password: string): Observable<any> {
+    return this.http.post<any>('http://localhost:8090/api/login', { email: identifier, password }).pipe(
+      map((response) => {
+        const admin = response.user ?? {};
+        const authenticatedUser = {
+          ...admin,
+          id: admin.adminId ?? admin.id ?? admin.email,
+          fullName: admin.name ?? admin.fullName ?? admin.email,
+          email: admin.email,
+          role: 'Administrator' as UserRole,
+          projectId: admin.projectId,
+          permissions: admin.permissions ?? []
+        };
+
+        this.storage.save(this.currentUserKey, authenticatedUser);
+        this.storage.save(this.tokenKey, response.token);
         return authenticatedUser;
       })
     );

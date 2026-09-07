@@ -30,7 +30,7 @@ export class StaffRegister {
     'College of Social Sciences (CoSS)': ['Geography', 'Political Science and Public Administration', 'Sociology', 'Statistics'],
     'College of Engineering and Technology (CoET)': ['Chemical and Process Engineering', 'Electrical Engineering', 'Mechanical and Industrial Engineering', 'Structural and Construction Engineering', 'Transportation and Geotechnical Engineering', 'Water Resources Engineering'],
     'College of Natural and Applied Sciences (CoNAS)': ['Zoology and Wildlife Conservation', 'Molecular Biology and Biotechnology', 'Botany', 'Chemistry', 'Mathematics', 'Physics'],
-    'College of Information and Communication Technologies (CoICT)': ['Computer Science and Engineering', 'Electronics and Telecommunications Engineering'],
+    'College of Information and Communication Technologies (CoICT)': ['Department of Computer Science & Engineering', 'Department of Electronics and Telecommunications Engineering'],
     'College of Mines and Geosciences (SoMG)': ['Geosciences', 'Mining and Mineral Processing Engineering', 'Petroleum Science and Engineering'],
     'University of Dar es Salaam Business School (UDBS)': ['Accounting', 'Finance', 'General Management', 'Marketing'],
     'College of Education (SoED)': ['Educational Foundations, Management and Lifelong Learning', 'Educational Psychology and Curriculum Studies', 'Physical Education and Sport Sciences'],
