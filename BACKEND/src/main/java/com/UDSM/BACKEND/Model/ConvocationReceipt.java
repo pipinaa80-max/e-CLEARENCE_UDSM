@@ -22,6 +22,9 @@ public class ConvocationReceipt {
     @Column(name = "student_id", nullable = false)
     private String studentId;
 
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @Column(name = "control_number", nullable = false)
     private String controlNumber;
 

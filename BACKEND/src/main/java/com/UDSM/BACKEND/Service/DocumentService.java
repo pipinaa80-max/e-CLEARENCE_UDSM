@@ -9,6 +9,7 @@ import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.dto.ApiResponse;
 import com.UDSM.BACKEND.dto.DocumentDTO;
 import com.UDSM.BACKEND.dto.DocumentResponse;
+import com.UDSM.BACKEND.config.ProjectScope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -42,13 +43,13 @@ public class DocumentService {
     @Transactional
     public ApiResponse uploadDocument(DocumentDTO documentDTO, MultipartFile file) {
         try {
-            Student student = studentRepository.findById(documentDTO.getStudentId())
-                .or(() -> studentRepository.findByUserId(documentDTO.getStudentId()))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+            Student student = findStudent(documentDTO.getStudentId());
             String studentId = student.getId();
+            String projectId = ProjectScope.currentProjectId();
 
             // Check if document already exists
-            if (documentRepository.existsByStudentIdAndFileType(studentId, documentDTO.getFileType())) {
+            if ((projectId == null && documentRepository.existsByStudentIdAndFileType(studentId, documentDTO.getFileType()))
+                    || (projectId != null && documentRepository.existsByStudentIdAndFileTypeAndProjectId(studentId, documentDTO.getFileType(), projectId))) {
                 return ApiResponse.error(documentDTO.getFileType() + " has already been uploaded.");
             }
 
@@ -68,6 +69,7 @@ public class DocumentService {
                     .description(documentDTO.getDescription())
                     .uploadDate(LocalDateTime.now())
                     .build();
+            document.setProjectId(projectId);
 
             Document savedDocument = documentRepository.save(document);
 
@@ -86,13 +88,18 @@ public class DocumentService {
     }
 
     public List<Document> getStudentDocuments(String studentId) {
-        return documentRepository.findByStudentId(studentId);
+        String projectId = ProjectScope.currentProjectId();
+        return projectId == null ? documentRepository.findByStudentId(studentId)
+                : documentRepository.findByStudentIdAndProjectId(studentId, projectId);
     }
 
     public Page<DocumentResponse> getStudentDocumentsWithPagination(String studentId, Pageable pageable) {
         Student student = findStudent(studentId);
 
-        Page<Document> documents = documentRepository.findByStudentId(student.getId(), pageable);
+        String projectId = ProjectScope.currentProjectId();
+        Page<Document> documents = projectId == null
+                ? documentRepository.findByStudentId(student.getId(), pageable)
+                : documentRepository.findByStudentIdAndProjectId(student.getId(), projectId, pageable);
 
         List<DocumentResponse> responses = documents.getContent().stream()
                 .map(DocumentResponse::fromDocument)
@@ -102,13 +109,15 @@ public class DocumentService {
     }
 
     private Student findStudent(String studentId) {
-        return studentRepository.findById(studentId)
-                .or(() -> studentRepository.findByUserId(studentId))
+        String projectId = ProjectScope.currentProjectId();
+        return (projectId == null
+                ? studentRepository.findById(studentId).or(() -> studentRepository.findByUserId(studentId))
+                : studentRepository.findByIdAndProjectId(studentId, projectId).or(() -> studentRepository.findByUserIdAndProjectId(studentId, projectId)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
     }
 
     public boolean hasRequiredClearanceDocuments(String studentId) {
-        List<String> uploadedCategories = documentRepository.findByStudentId(studentId)
+        List<String> uploadedCategories = getStudentDocuments(studentId)
                 .stream()
                 .map(Document::getFileType)
                 .collect(Collectors.toList());
@@ -117,7 +126,7 @@ public class DocumentService {
     }
 
     public List<String> getMissingDocuments(String studentId) {
-        List<String> uploadedCategories = documentRepository.findByStudentId(studentId)
+        List<String> uploadedCategories = getStudentDocuments(studentId)
                 .stream()
                 .map(Document::getFileType)
                 .collect(Collectors.toList());
@@ -132,7 +141,7 @@ public class DocumentService {
     }
 
     public List<String> getUploadedDocumentCategories(String studentId) {
-        return documentRepository.findByStudentId(findStudent(studentId).getId())
+        return getStudentDocuments(findStudent(studentId).getId())
                 .stream()
                 .map(Document::getFileType)
                 .collect(Collectors.toList());
@@ -140,7 +149,9 @@ public class DocumentService {
 
     @Transactional
     public ApiResponse verifyDocument(String documentId, String officerId, boolean verified, String comment) {
+        String projectId = ProjectScope.currentProjectId();
         Document document = documentRepository.findById(documentId)
+                .filter(item -> projectId == null || projectId.equals(item.getProjectId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
         document.setVerified(verified);
@@ -154,7 +165,7 @@ public class DocumentService {
     }
 
     public ApiResponse getDocumentVerificationStatus(String studentId) {
-        List<Document> documents = documentRepository.findByStudentId(studentId);
+        List<Document> documents = getStudentDocuments(studentId);
 
         boolean allVerified = documents.stream()
                 .filter(doc -> REQUIRED_CLEARANCE_DOCUMENTS.contains(doc.getFileType()))
@@ -166,7 +177,9 @@ public class DocumentService {
 
     @Transactional
     public ApiResponse deleteDocument(String documentId, String studentId) {
+        String projectId = ProjectScope.currentProjectId();
         Document document = documentRepository.findById(documentId)
+                .filter(item -> projectId == null || projectId.equals(item.getProjectId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
 
         if (!document.getStudent().getId().equals(studentId)) {

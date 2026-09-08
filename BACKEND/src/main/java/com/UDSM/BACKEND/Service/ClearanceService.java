@@ -47,7 +47,9 @@ public class ClearanceService {
                 .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + requestDTO.getRegistrationNumber()));
 
         // Check if student already has a pending request
-        Optional<ClearanceRequest> existingRequest = clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING);
+        Optional<ClearanceRequest> existingRequest = projectId == null
+                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING)
+                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING, projectId);
         if (existingRequest.isPresent()) {
             return ApiResponse.error("You already have a pending clearance request");
         }
@@ -138,17 +140,24 @@ public class ClearanceService {
     }
 
     public ClearanceResponse getClearanceStatus(String studentId) {
-        Student student = studentRepository.findById(studentId)
+        String projectId = ProjectScope.currentProjectId();
+        Student student = (projectId == null
+                ? studentRepository.findById(studentId)
+                : studentRepository.findByIdAndProjectId(studentId, projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         // Check for pending request first
-        Optional<ClearanceRequest> pendingRequest = clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING);
+        Optional<ClearanceRequest> pendingRequest = projectId == null
+                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING)
+                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING, projectId);
         ClearanceRequest request;
 
         if (pendingRequest.isPresent()) {
             request = pendingRequest.get();
         } else {
-            List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
+            List<ClearanceRequest> requests = projectId == null
+                    ? clearanceRequestRepository.findByStudent(student)
+                    : clearanceRequestRepository.findByStudentIdAndProjectId(student.getId(), projectId);
             if (requests.isEmpty()) {
                 return ClearanceResponse.builder()
                         .studentName(student.getFullName())
@@ -165,16 +174,25 @@ public class ClearanceService {
     }
 
     public ClearanceResponse getClearanceStatusByRegistrationNumber(String registrationNumber) {
-        Student student = studentRepository.findByRegistrationNumber(registrationNumber)
+        String projectId = ProjectScope.currentProjectId();
+        Student student = (projectId == null
+                ? studentRepository.findByRegistrationNumber(registrationNumber)
+                : studentRepository.findByRegistrationNumberAndProjectId(registrationNumber, projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + registrationNumber));
         return getClearanceStatus(student.getId());
     }
 
     public Page<ClearanceResponse> getStudentClearanceHistory(String studentId, Pageable pageable) {
-        Student student = studentRepository.findById(studentId)
+        String projectId = ProjectScope.currentProjectId();
+        Student student = (projectId == null
+                ? studentRepository.findById(studentId)
+                : studentRepository.findByIdAndProjectId(studentId, projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        Page<ClearanceRequest> requestPage = clearanceRequestRepository.findByStudent(student, pageable);
+        Page<ClearanceRequest> requestPage = projectId == null
+                ? clearanceRequestRepository.findByStudent(student, pageable)
+                : new PageImpl<>(clearanceRequestRepository.findByStudentIdAndProjectId(student.getId(), projectId),
+                pageable, clearanceRequestRepository.findByStudentIdAndProjectId(student.getId(), projectId).size());
         List<ClearanceResponse> responses = requestPage.getContent().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -183,12 +201,17 @@ public class ClearanceService {
     }
 
     public Page<ClearanceResponse> getDepartmentClearanceRequests(String department, String status, Pageable pageable) {
+        String projectId = ProjectScope.currentProjectId();
         Page<ClearanceRequest> requestPage;
         if (status != null && !status.isEmpty()) {
             ClearanceStatus clearanceStatus = ClearanceStatus.valueOf(status.toUpperCase());
-            requestPage = clearanceRequestRepository.findByStudentDepartmentAndStatus(department, clearanceStatus, pageable);
+            requestPage = projectId == null
+                    ? clearanceRequestRepository.findByStudentDepartmentAndStatus(department, clearanceStatus, pageable)
+                    : clearanceRequestRepository.findByStudentDepartmentAndStatusAndProjectId(department, clearanceStatus, projectId, pageable);
         } else {
-            requestPage = clearanceRequestRepository.findByStudentDepartment(department, pageable);
+            requestPage = projectId == null
+                    ? clearanceRequestRepository.findByStudentDepartment(department, pageable)
+                    : clearanceRequestRepository.findByStudentDepartmentAndProjectId(department, projectId, pageable);
         }
 
         List<ClearanceResponse> responses = requestPage.getContent().stream()
@@ -200,7 +223,10 @@ public class ClearanceService {
 
     public ApiResponse approveClearance(String requestId, String department, String comments) {
         Long id = Long.parseLong(requestId);
-        ClearanceRequest request = clearanceRequestRepository.findById(id)
+        String projectId = ProjectScope.currentProjectId();
+        ClearanceRequest request = (projectId == null
+                ? clearanceRequestRepository.findById(id)
+                : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())))
                 .orElseThrow(() -> new RuntimeException("Clearance request not found"));
 
         DepartmentApproval approval = departmentApprovalRepository
@@ -255,7 +281,10 @@ public class ClearanceService {
 
     public ApiResponse rejectClearance(String requestId, String department, String reason) {
         Long id = Long.parseLong(requestId);
-        ClearanceRequest request = clearanceRequestRepository.findById(id)
+        String projectId = ProjectScope.currentProjectId();
+        ClearanceRequest request = (projectId == null
+                ? clearanceRequestRepository.findById(id)
+                : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())))
                 .orElseThrow(() -> new RuntimeException("Clearance request not found"));
 
         DepartmentApproval approval = departmentApprovalRepository

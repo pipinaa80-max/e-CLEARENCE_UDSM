@@ -5,6 +5,7 @@ import com.UDSM.BACKEND.Repository.*;
 import com.UDSM.BACKEND.dto.ApiResponse;
 import com.UDSM.BACKEND.dto.ConvocationReceiptRequest;
 import com.UDSM.BACKEND.dto.ConvocationReceiptResponse;
+import com.UDSM.BACKEND.config.ProjectScope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,10 @@ public class ConvocationService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         // Check if receipt already exists
-        if (receiptRepository.findByStudentIdAndStatus(request.getStudentId(), ClearanceStatus.PENDING).isPresent()) {
+        String projectId = ProjectScope.currentProjectId();
+        if ((projectId == null
+                ? receiptRepository.findByStudentIdAndStatus(request.getStudentId(), ClearanceStatus.PENDING)
+                : receiptRepository.findByStudentIdAndStatusAndProjectId(request.getStudentId(), ClearanceStatus.PENDING, projectId)).isPresent()) {
             return ApiResponse.error("You already have a pending receipt submission");
         }
 
@@ -63,6 +67,7 @@ public class ConvocationService {
                 .fileType(file.getContentType())
                 .fileSize(file.getSize())
                 .status(ClearanceStatus.PENDING)
+                .projectId(projectId)
                 .submittedAt(LocalDateTime.now())
                 .build();
 

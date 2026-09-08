@@ -577,7 +577,7 @@ public class AuthService {
     // =========================================================
 
     public UserProfileResponse getUserProfile(String userId) {
-        User user = userRepository.findById(userId)
+        User user = scopedUser(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return mapToUserProfileResponse(user);
     }
@@ -807,7 +807,7 @@ public class AuthService {
 
     @Transactional
     public ApiResponse activateAccount(String userId, String clientIp, String userAgent) {
-        User user = userRepository.findById(userId)
+        User user = scopedUser(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setActive(true);
@@ -840,7 +840,7 @@ public class AuthService {
 
     @Transactional
     public ApiResponse deactivateAccount(String userId, String clientIp, String userAgent) {
-        User user = userRepository.findById(userId)
+        User user = scopedUser(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setActive(false);
@@ -951,6 +951,11 @@ public class AuthService {
     // =========================================================
     // HELPER METHODS
     // =========================================================
+
+    private java.util.Optional<User> scopedUser(String userId) {
+        String projectId = ProjectScope.currentProjectId();
+        return projectId == null ? userRepository.findById(userId) : userRepository.findByIdAndProjectId(userId, projectId);
+    }
 
     private User findUserByIdentifier(String identifier) {
         if (identifier == null || identifier.trim().isEmpty()) {

@@ -40,7 +40,7 @@ npm start
 
 Open `http://localhost:8091`. The backend listens on `http://localhost:8090`.
 
-The first backend start creates `backend/data/control-plane.json`. That file contains the hashed superuser password and runtime configuration; keep it out of source control for production deployments. The default password is for local development only and must be replaced.
+Superuser and sub-admin accounts are stored in the main PostgreSQL `clearance_db` through the Spring Boot control-plane API. The default password is for local development only and must be replaced.
 
 ## Integration
 
@@ -49,3 +49,5 @@ The existing Angular application now accepts project-admin accounts from this co
 Open the real project admin experience at `http://localhost:4200/dashboard/admin`. The `Project Dashboards` and `Project Theme` tabs are available to a sub-admin created with the `PROJECT_ADMIN` permission. The superuser console at `http://localhost:8091` does not expose dashboard editing.
 
 Passwords are never returned or displayed after they are stored. The reset action replaces the hash and returns a new temporary password once in the response; share it securely and require the administrator to change it in a production implementation.
+
+Existing browser data is not imported automatically. Sign in as the project administrator, open **Data Upload**, and select **Import existing browser data**. Users are normalized into the `users`/`students` tables; other legacy local-storage values are preserved in `project_local_storage` under that project ID for review and later normalization.

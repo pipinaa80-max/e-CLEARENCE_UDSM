@@ -284,4 +284,18 @@ export class AdminDashboard implements OnInit {
       }
     });
   }
+
+  importBrowserData(): void {
+    this.adminService.importCurrentLocalStorage().subscribe({
+      next: (result) => {
+        this.message = result.message || 'Browser data imported into clearance_db';
+        this.isError = false;
+        this.loadData();
+      },
+      error: (err) => {
+        this.message = 'Browser data import failed: ' + (err.error?.message || err.message);
+        this.isError = true;
+      }
+    });
+  }
 }

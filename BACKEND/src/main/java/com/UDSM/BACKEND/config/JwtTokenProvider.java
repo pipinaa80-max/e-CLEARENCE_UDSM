@@ -10,6 +10,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.UDSM.BACKEND.Model.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,12 +34,14 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpiration);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
+                .setExpiration(expiryDate);
+        if (userDetails instanceof User user && user.getProjectId() != null) {
+            builder.claim("projectId", user.getProjectId());
+        }
+        return builder.signWith(getSigningKey(), SignatureAlgorithm.HS256).compact();
     }
 
     public String generateRefreshToken(Authentication authentication) {

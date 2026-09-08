@@ -1,6 +1,7 @@
 package com.UDSM.BACKEND.Controller;
 
 import com.UDSM.BACKEND.Model.ClearanceRequest;
+import com.UDSM.BACKEND.Model.ProjectLocalStorage;
 import com.UDSM.BACKEND.Model.User;
 import com.UDSM.BACKEND.Service.AdminService;
 import com.UDSM.BACKEND.dto.ApiResponse;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -73,5 +75,16 @@ public class AdminController {
             log.error("Bulk upload failed: ", e);
             return ResponseEntity.badRequest().body(ApiResponse.error("Bulk upload failed: " + e.getMessage()));
         }
+
+    }
+
+    @PostMapping("/import/local-storage")
+    public ResponseEntity<?> importLocalStorage(@RequestBody JsonNode export) {
+        return ResponseEntity.ok(adminService.importLocalStorage(export));
+    }
+
+    @GetMapping("/import/local-storage")
+    public ResponseEntity<List<ProjectLocalStorage>> getImportedLocalStorage() {
+        return ResponseEntity.ok(adminService.getImportedLocalStorage());
     }
 }

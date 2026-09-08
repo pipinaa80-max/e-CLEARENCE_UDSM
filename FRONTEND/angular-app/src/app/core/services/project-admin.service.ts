@@ -25,21 +25,20 @@ export interface ProjectConfig {
 export class ProjectAdminService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8090/api';
-  private readonly brandingKey = 'udsm-project-branding';
 
   private headers(): HttpHeaders {
     const token = localStorage.getItem('udsm-auth-token')?.replace(/^"|"$/g, '');
-    return new HttpHeaders({ Authorization: `Bearer ${token ?? ''}` });
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
-  setSavedBranding(branding: Partial<ProjectConfig['branding']>): void {
-    localStorage.setItem(this.brandingKey, JSON.stringify(branding));
-  }
-
+  /** @deprecated Branding is now read from clearance_db; retained for API compatibility. */
   getSavedBranding(): Partial<ProjectConfig['branding']> | null {
-    const raw = localStorage.getItem(this.brandingKey);
-    if (!raw) return null;
-    try { return JSON.parse(raw) as Partial<ProjectConfig['branding']>; } catch { return null; }
+    return null;
+  }
+
+  /** @deprecated Branding is persisted through updateBranding(). */
+  setSavedBranding(_branding: Partial<ProjectConfig['branding']>): void {
+    // Intentionally no local fallback.
   }
 
   getProjectConfig(): Observable<ProjectConfig> {

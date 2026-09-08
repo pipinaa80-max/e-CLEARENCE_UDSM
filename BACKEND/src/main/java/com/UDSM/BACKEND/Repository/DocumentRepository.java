@@ -17,7 +17,11 @@ public interface DocumentRepository extends JpaRepository<Document, String> {
 
     List<Document> findByStudentId(String studentId);
 
+    List<Document> findByStudentIdAndProjectId(String studentId, String projectId);
+
     Page<Document> findByStudentId(String studentId, Pageable pageable);
+
+    Page<Document> findByStudentIdAndProjectId(String studentId, String projectId, Pageable pageable);
 
     List<Document> findByStudentIdAndCategory(String studentId, DocumentCategory category);
 
@@ -31,5 +35,6 @@ public interface DocumentRepository extends JpaRepository<Document, String> {
 
     boolean existsByStudentIdAndFileType(String studentId, String fileType);
 
+    boolean existsByStudentIdAndFileTypeAndProjectId(String studentId, String fileType, String projectId);
     long countByStudentId(String studentId);
 }

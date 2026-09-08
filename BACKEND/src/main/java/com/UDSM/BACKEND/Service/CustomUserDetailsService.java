@@ -41,15 +41,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         log.info("✅ User found: {} with role: {}", user.getEmail(), user.getRole());
 
-        // Return Spring Security User with authorities
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),  // username
-                user.getPassword(),  // password
-                user.isActive(),  // enabled
-                true,  // accountNonExpired
-                true,  // credentialsNonExpired
-                true,  // accountNonLocked
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
-        );
+        // Keep the domain user as the principal so projectId is available to every
+        // authenticated request and can be carried into a project-scoped query.
+        return user;
     }
 }

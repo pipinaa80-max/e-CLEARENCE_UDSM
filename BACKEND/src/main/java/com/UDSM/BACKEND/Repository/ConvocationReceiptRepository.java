@@ -14,6 +14,8 @@ public interface ConvocationReceiptRepository extends JpaRepository<ConvocationR
 
     Optional<ConvocationReceipt> findByStudentIdAndStatus(String studentId, ClearanceStatus status);
 
+    Optional<ConvocationReceipt> findByStudentIdAndStatusAndProjectId(String studentId, ClearanceStatus status, String projectId);
+
     List<ConvocationReceipt> findByStatus(ClearanceStatus status);
 
     List<ConvocationReceipt> findByStudentIdOrderBySubmittedAtDesc(String studentId);

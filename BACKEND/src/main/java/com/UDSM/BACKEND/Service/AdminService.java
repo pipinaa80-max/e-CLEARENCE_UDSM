@@ -4,6 +4,7 @@ import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
+import com.UDSM.BACKEND.Repository.ProjectLocalStorageRepository;
 import com.UDSM.BACKEND.dto.RegisterRequest;
 import com.UDSM.BACKEND.exception.ApiException;
 import com.UDSM.BACKEND.exception.ResourceNotFoundException;
@@ -17,6 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -39,6 +45,8 @@ public class AdminService {
     private final StudentRepository studentRepository;
     private final ClearanceRequestRepository clearanceRequestRepository;
     private final AuthService authService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ProjectLocalStorageRepository projectLocalStorageRepository;
 
     public List<User> getAllUsers() {
         String projectId = ProjectScope.currentProjectId();
@@ -91,6 +99,64 @@ public class AdminService {
     public List<ClearanceRequest> getAllClearanceRequests() {
         String projectId = ProjectScope.currentProjectId();
         return projectId == null ? clearanceRequestRepository.findAll() : clearanceRequestRepository.findByProjectId(projectId);
+    }
+
+    @Transactional
+    public Map<String, Object> importLocalStorage(JsonNode export) {
+        String projectId = ProjectScope.currentProjectId();
+        if (projectId == null) {
+            throw new ApiException("A project administrator token is required", HttpStatus.FORBIDDEN);
+        }
+        if (export == null || !export.isObject()) {
+            throw new ApiException("Export must be a JSON object", HttpStatus.BAD_REQUEST);
+        }
+        int imported = 0;
+        JsonNode users = export.get("users");
+        if (users != null && !users.isArray()) {
+            throw new ApiException("users must be an array", HttpStatus.BAD_REQUEST);
+        }
+        if (users != null) {
+            for (JsonNode user : users) {
+                RegisterRequest request = objectMapper.treeToValue(user, RegisterRequest.class);
+                if (request.getPassword() == null || request.getPassword().isBlank()) {
+                    throw new ApiException("Every imported user must include a password", HttpStatus.UNPROCESSABLE_ENTITY);
+                }
+                authService.register(request);
+                imported++;
+            }
+        }
+
+        int legacyRecords = 0;
+        var fields = export.fields();
+        while (fields.hasNext()) {
+            var entry = fields.next();
+            ProjectLocalStorage record = new ProjectLocalStorage();
+            record.setProjectId(projectId);
+            record.setStorageKey(entry.getKey());
+            try {
+                record.setStorageValue(objectMapper.writeValueAsString(entry.getValue()));
+            } catch (JsonProcessingException exception) {
+                throw new ApiException("Unable to serialize imported local-storage data", HttpStatus.BAD_REQUEST);
+            }
+            projectLocalStorageRepository.save(record);
+            legacyRecords++;
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("projectId", projectId);
+        result.put("usersImported", imported);
+        result.put("legacyRecordsImported", legacyRecords);
+        result.put("message", "Local-storage data imported into clearance_db. Normalized users are available in users/students; other legacy records are preserved for review.");
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectLocalStorage> getImportedLocalStorage() {
+        String projectId = ProjectScope.currentProjectId();
+        if (projectId == null) {
+            throw new ApiException("A project administrator token is required", HttpStatus.FORBIDDEN);
+        }
+        return projectLocalStorageRepository.findByProjectIdOrderByImportedAtDesc(projectId);
     }
 
     @Transactional

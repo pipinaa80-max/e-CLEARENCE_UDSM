@@ -3,6 +3,7 @@
 package com.UDSM.BACKEND.Model;
 
 public enum ERole {
+    SUPERUSER,
     STUDENT,
     DEPARTMENT_OFFICER,
     FINANCE_OFFICER,

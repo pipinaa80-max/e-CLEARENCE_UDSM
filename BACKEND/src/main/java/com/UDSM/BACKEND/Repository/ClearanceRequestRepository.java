@@ -28,6 +28,10 @@ public interface ClearanceRequestRepository extends JpaRepository<ClearanceReque
 
     List<ClearanceRequest> findByStudentId(String studentId);
 
+    List<ClearanceRequest> findByStudentIdAndProjectId(String studentId, String projectId);
+
+    Optional<ClearanceRequest> findByStudentAndStatusAndProjectId(Student student, ClearanceStatus status, String projectId);
+
     // Add: Find by student ID with pagination
     Page<ClearanceRequest> findByStudentId(String studentId, Pageable pageable);
 
@@ -57,8 +61,19 @@ public interface ClearanceRequestRepository extends JpaRepository<ClearanceReque
     @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.department = :department")
     Page<ClearanceRequest> findByStudentDepartment(@Param("department") String department, Pageable pageable);
 
+    @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.department = :department AND cr.projectId = :projectId")
+    Page<ClearanceRequest> findByStudentDepartmentAndProjectId(@Param("department") String department,
+                                                                @Param("projectId") String projectId,
+                                                                Pageable pageable);
+
     @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.department = :department AND cr.status = :status")
     Page<ClearanceRequest> findByStudentDepartmentAndStatus(@Param("department") String department, @Param("status") ClearanceStatus status, Pageable pageable);
+
+    @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.department = :department AND cr.status = :status AND cr.projectId = :projectId")
+    Page<ClearanceRequest> findByStudentDepartmentAndStatusAndProjectId(@Param("department") String department,
+                                                                         @Param("status") ClearanceStatus status,
+                                                                         @Param("projectId") String projectId,
+                                                                         Pageable pageable);
 
     //  Add: Find by student college
     @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.college = :college")
