@@ -117,7 +117,12 @@ public class AdminService {
         }
         if (users != null) {
             for (JsonNode user : users) {
-                RegisterRequest request = objectMapper.treeToValue(user, RegisterRequest.class);
+                RegisterRequest request;
+                try {
+                    request = objectMapper.treeToValue(user, RegisterRequest.class);
+                } catch (JsonProcessingException exception) {
+                    throw new ApiException("Each imported user must be a valid registration object", HttpStatus.BAD_REQUEST);
+                }
                 if (request.getPassword() == null || request.getPassword().isBlank()) {
                     throw new ApiException("Every imported user must include a password", HttpStatus.UNPROCESSABLE_ENTITY);
                 }
