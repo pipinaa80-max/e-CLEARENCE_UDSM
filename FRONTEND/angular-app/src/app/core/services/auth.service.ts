@@ -38,7 +38,7 @@ export class AuthService {
       email,
       fullName: [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' '),
       password: user.password,
-      isActive: true,
+      isActive: false,
       createdAt: new Date().toISOString()
     };
     this.storage.save(this.usersKey, [...users, localUser]);
@@ -94,6 +94,7 @@ export class AuthService {
       String(saved.email ?? '').toLowerCase() === identifier.toLowerCase() && saved.password === password
     );
     if (!user) return throwError(() => new Error('Local account not found'));
+    if (user.isActive === false) return throwError(() => new Error('This account is inactive. Contact an administrator.'));
 
     const authenticatedUser = this.mapUserResponse(user);
     this.storage.save(this.currentUserKey, authenticatedUser);

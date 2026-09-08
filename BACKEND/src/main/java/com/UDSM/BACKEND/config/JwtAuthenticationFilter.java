@@ -79,7 +79,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.info("✅ JWT validated for user: {}", username);
 
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UserDetails userDetails;
+                    try {
+                        userDetails = userDetailsService.loadUserByUsername(username);
+                    } catch (Exception ignored) {
+                        String projectId = tokenProvider.getProjectIdFromToken(jwt);
+                        userDetails = StringUtils.hasText(projectId)
+                                ? new ProjectAdminPrincipal(username, projectId, List.of())
+                                : null;
+                    }
 
                     if (userDetails != null) {
                         UsernamePasswordAuthenticationToken authentication =

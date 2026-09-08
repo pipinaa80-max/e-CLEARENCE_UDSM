@@ -8,6 +8,7 @@ import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.config.JwtTokenProvider;
+import com.UDSM.BACKEND.config.ProjectScope;
 import com.UDSM.BACKEND.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -252,13 +253,14 @@ public class AuthService {
         user.setRegistrationNumber(request.getRegistrationNumber());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(userRole);
-        user.setActive(true);
+        user.setActive(false);
         user.setEmailVerified(true); // ✅ Auto-verify for now
         user.setPhoneNumber(request.getPhone());
         user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+        user.setProjectId(ProjectScope.currentProjectId());
 
         User savedUser = userRepository.save(user);
         String userId = savedUser.getId();
@@ -280,6 +282,7 @@ public class AuthService {
             student.setClearanceStatus(ClearanceStatus.PENDING);
             student.setCreatedAt(LocalDateTime.now());
             student.setUpdatedAt(LocalDateTime.now());
+            student.setProjectId(ProjectScope.currentProjectId());
             studentRepository.save(student);
         }
 

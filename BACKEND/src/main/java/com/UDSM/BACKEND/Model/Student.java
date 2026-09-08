@@ -107,6 +107,9 @@ public class Student {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @OneToOne
     @JoinColumn(name = "user_id")
     private User user;

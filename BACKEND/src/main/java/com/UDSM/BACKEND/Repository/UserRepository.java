@@ -33,6 +33,10 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findByIdAndIsActiveTrue(String id);
 
+        List<User> findByProjectId(String projectId);
+
+        Optional<User> findByIdAndProjectId(String id, String projectId);
+
     // =========================================================
     // EXISTS CHECKS
     // =========================================================

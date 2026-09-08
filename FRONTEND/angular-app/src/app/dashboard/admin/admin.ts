@@ -28,6 +28,8 @@ export class AdminDashboard implements OnInit {
   clearanceRequests: any[] = [];
 
   userSearchTerm: string = '';
+  userRoleFilter: string = '';
+  userStatusFilter: '' | 'active' | 'inactive' = '';
   requestSearchTerm: string = '';
 
   stats = {
@@ -60,14 +62,22 @@ export class AdminDashboard implements OnInit {
   newDashboard = { id: '', name: '', description: '' };
 
   get filteredUsers(): any[] {
-    if (!this.userSearchTerm) return this.users;
     const term = this.userSearchTerm.toLowerCase();
     return this.users.filter(u =>
-      u.fullName?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term) ||
-      u.registrationNumber?.toLowerCase().includes(term) ||
-      u.role?.toLowerCase().includes(term)
+      (!term ||
+        u.fullName?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term) ||
+        u.registrationNumber?.toLowerCase().includes(term) ||
+        u.role?.toLowerCase().includes(term)) &&
+      (!this.userRoleFilter || u.role === this.userRoleFilter) &&
+      (!this.userStatusFilter || (this.userStatusFilter === 'active' ? u.isActive !== false : u.isActive === false))
     );
+  }
+
+  clearUserFilters(): void {
+    this.userSearchTerm = '';
+    this.userRoleFilter = '';
+    this.userStatusFilter = '';
   }
 
   get filteredRequests(): any[] {
@@ -90,11 +100,6 @@ export class AdminDashboard implements OnInit {
       return;
     }
 
-    if (token.startsWith('local-')) {
-      console.warn('Mock token detected. Logging out to refresh session.');
-      this.logout();
-      return;
-    }
     this.loadData();
     this.loadProjectConfig();
   }
@@ -125,12 +130,12 @@ export class AdminDashboard implements OnInit {
   }
 
   calculateStats(): void {
-    this.stats.totalStudents = this.users.filter(u => u.role === 'STUDENT').length;
-    this.stats.totalStaff = this.users.filter(u => u.role !== 'STUDENT').length;
+    this.stats.totalStudents = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT').length;
+    this.stats.totalStaff = this.users.filter(u => String(u.role ?? '').toUpperCase() !== 'STUDENT').length;
     this.stats.totalRequests = this.clearanceRequests.length;
-    this.stats.completed = this.clearanceRequests.filter(r => r.status === 'COMPLETED' || r.status === 'APPROVED' || r.status === 'CLEARED').length;
-    this.stats.pending = this.clearanceRequests.filter(r => r.status === 'PENDING').length;
-    this.stats.rejected = this.clearanceRequests.filter(r => r.status === 'REJECTED').length;
+    this.stats.completed = this.clearanceRequests.filter(r => ['COMPLETED', 'APPROVED', 'CLEARED'].includes(String(r.status ?? '').toUpperCase())).length;
+    this.stats.pending = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'PENDING').length;
+    this.stats.rejected = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'REJECTED').length;
   }
 
   loadProjectConfig(): void {
@@ -157,7 +162,16 @@ export class AdminDashboard implements OnInit {
 
   saveTheme(): void {
     if (!this.projectConfig) return;
-    this.projectAdminService.updateBranding(this.projectConfig.branding).subscribe({ next: () => { this.message = 'Project theme saved'; this.isError = false; }, error: () => { this.message = 'Failed to save project theme'; this.isError = true; } });
+    this.projectAdminService.updateBranding(this.projectConfig.branding).subscribe({
+      next: (branding) => {
+        this.projectConfig = this.projectConfig ? { ...this.projectConfig, branding } : { projectId: '', branding, dashboards: [] };
+        this.projectAdminService.setSavedBranding(branding);
+        window.dispatchEvent(new CustomEvent('project-branding-updated', { detail: { branding } }));
+        this.message = 'Project theme saved';
+        this.isError = false;
+      },
+      error: () => { this.message = 'Failed to save project theme'; this.isError = true; }
+    });
   }
 
   toggleSidebar(): void {
@@ -222,8 +236,7 @@ export class AdminDashboard implements OnInit {
     }
   }
 
-  updateRole(userId: string, event: any): void {
-    const newRole = event.target.value;
+  updateRole(userId: string, newRole: string): void {
     this.adminService.updateUserRole(userId, newRole).subscribe({
       next: () => {
         this.message = 'Role updated successfully';
@@ -233,6 +246,20 @@ export class AdminDashboard implements OnInit {
       error: (err) => {
         this.message = 'Failed to update role';
         this.isError = true;
+      }
+    });
+  }
+
+  updateStatus(userId: string, isActive: boolean): void {
+    this.adminService.updateUserStatus(userId, isActive).subscribe({
+      next: () => {
+        this.message = `User ${isActive ? 'activated' : 'deactivated'} successfully`;
+        this.isError = false;
+      },
+      error: () => {
+        this.message = 'Failed to update user status';
+        this.isError = true;
+        this.loadData();
       }
     });
   }

@@ -54,6 +54,9 @@ public class Document {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @PrePersist
     protected void onCreate() {
         this.uploadDate = LocalDateTime.now();

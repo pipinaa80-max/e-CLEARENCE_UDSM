@@ -55,12 +55,19 @@ public class JwtTokenProvider {
     }
 
     public String getUsernameFromToken(String token) {
-        Claims claims = Jwts.parser()
+        return getClaims(token).getSubject();
+    }
+
+    public String getProjectIdFromToken(String token) {
+        return getClaims(token).get("projectId", String.class);
+    }
+
+    public Claims getClaims(String token) {
+        return Jwts.parser()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        return claims.getSubject();
     }
 
     public boolean validateToken(String token) {

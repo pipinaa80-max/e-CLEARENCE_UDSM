@@ -138,6 +138,9 @@ public class User implements UserDetails {
     @Column(name = "updated_by")
     private String updatedBy;
 
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @Column(name = "last_login_ip")
     private String lastLoginIp;
 

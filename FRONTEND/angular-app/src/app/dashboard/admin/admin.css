@@ -196,6 +196,13 @@ th { background: var(--udsm-blue-dark); color: white; padding: 12px; font-weight
 td { padding: 12px; border-bottom: 1px solid var(--border-soft); color: #000000; }
 tr:hover { background: rgba(0,0,0,0.02); transition: background 0.15s ease; }
 
+.status-active { border-color: #198754; background: #e8f7ee; color: #146c43; font-weight: 700; }
+.status-inactive { border-color: #dc3545; background: #fdebec; color: #b02a37; font-weight: 700; }
+
+.filter-select { min-width: 130px; }
+.btn-secondary { background: #6c757d; color: #ffffff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+.btn-secondary:hover { background: #5c636a; }
+
 .btn-primary { background: var(--udsm-blue); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }
 .btn-primary:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
 .btn-success { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }

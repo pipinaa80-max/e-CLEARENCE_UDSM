@@ -49,6 +49,9 @@ public class ClearanceRequest {
     @Column(name = "programme")
     private String programme;
 
+    @Column(name = "project_id", length = 100)
+    private String projectId;
+
     @PrePersist
     protected void onCreate() {
         submittedAt = LocalDateTime.now();

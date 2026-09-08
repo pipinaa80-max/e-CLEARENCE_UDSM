@@ -16,6 +16,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClearanceRequestRepository extends JpaRepository<ClearanceRequest, Long> {
 
+    List<ClearanceRequest> findByProjectId(String projectId);
+
     // =========================================================
     // STUDENT QUERIES
     // =========================================================

@@ -10,6 +10,7 @@ import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.Repository.DepartmentApprovalRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
+import com.UDSM.BACKEND.config.ProjectScope;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.dto.ApiResponse;
 import com.UDSM.BACKEND.dto.ClearanceRequestDTO;
@@ -39,7 +40,10 @@ public class ClearanceService {
 
     public ApiResponse submitClearanceRequest(ClearanceRequestDTO requestDTO) {
         // Find student by registration number
-        Student student = studentRepository.findByRegistrationNumber(requestDTO.getRegistrationNumber())
+        String projectId = ProjectScope.currentProjectId();
+        Student student = (projectId == null
+                ? studentRepository.findByRegistrationNumber(requestDTO.getRegistrationNumber())
+                : studentRepository.findByRegistrationNumberAndProjectId(requestDTO.getRegistrationNumber(), projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + requestDTO.getRegistrationNumber()));
 
         // Check if student already has a pending request
@@ -51,6 +55,7 @@ public class ClearanceService {
         // Create new clearance request
         ClearanceRequest clearanceRequest = ClearanceRequest.builder()
                 .student(student)
+                .projectId(projectId)
                 .status(ClearanceStatus.PENDING.name())
                 .submittedAt(LocalDateTime.now())
                 .build();

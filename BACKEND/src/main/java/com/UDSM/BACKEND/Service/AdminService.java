@@ -7,6 +7,7 @@ import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.dto.RegisterRequest;
 import com.UDSM.BACKEND.exception.ApiException;
 import com.UDSM.BACKEND.exception.ResourceNotFoundException;
+import com.UDSM.BACKEND.config.ProjectScope;
 import com.lowagie.text.Row;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,8 @@ public class AdminService {
     private final AuthService authService;
 
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        String projectId = ProjectScope.currentProjectId();
+        return projectId == null ? userRepository.findAll() : userRepository.findByProjectId(projectId);
     }
 
     public List<String> getAllRoles() {
@@ -51,12 +53,13 @@ public class AdminService {
 
     @Transactional
     public void deleteUser(String userId) {
-        User user = userRepository.findById(userId)
+        String projectId = ProjectScope.currentProjectId();
+        User user = (projectId == null ? userRepository.findById(userId) : userRepository.findByIdAndProjectId(userId, projectId))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
         
         // Deleting student record if it exists
         if (user.getRegistrationNumber() != null) {
-            studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
+            (projectId == null ? studentRepository.findByRegistrationNumber(user.getRegistrationNumber()) : studentRepository.findByRegistrationNumberAndProjectId(user.getRegistrationNumber(), projectId))
                     .ifPresent(student -> {
                         // Also delete clearance requests
                         List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
@@ -70,7 +73,8 @@ public class AdminService {
 
     @Transactional
     public User updateUserRole(String userId, String roleName) {
-        User user = userRepository.findById(userId)
+        String projectId = ProjectScope.currentProjectId();
+        User user = (projectId == null ? userRepository.findById(userId) : userRepository.findByIdAndProjectId(userId, projectId))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
         
         try {
@@ -85,7 +89,8 @@ public class AdminService {
     }
 
     public List<ClearanceRequest> getAllClearanceRequests() {
-        return clearanceRequestRepository.findAll();
+        String projectId = ProjectScope.currentProjectId();
+        return projectId == null ? clearanceRequestRepository.findAll() : clearanceRequestRepository.findByProjectId(projectId);
     }
 
     @Transactional

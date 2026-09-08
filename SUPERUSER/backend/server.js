@@ -4,6 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const PORT = Number(process.env.SUPERUSER_PORT || 8090);
+const TOKEN_SECRET = process.env.SUPERUSER_TOKEN_SECRET || 'smartclearance-udsm-super-secret-key-2024-min-256-bits-long-secure-key';
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'control-plane.json');
 const sessions = new Map();
@@ -43,6 +44,7 @@ function initialData() {
       { id: 'principal', name: 'Principal', description: 'Principal clearance workflows', enabled: true }
     ],
     projects: { default: { branding: { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/assets/logo.png', primaryColor: '#123c69', fontFamily: 'Georgia' }, dashboards: [] } },
+    auditLog: [],
     subAdmins: [],
     superuser: { email: process.env.SUPERUSER_EMAIL || 'superuser@admin.local', passwordHash: hashPassword(password) }
   };
@@ -53,6 +55,7 @@ function readData() {
   const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
   const defaults = initialData();
   data.projects = data.projects || { default: { branding: data.branding, dashboards: data.dashboards } };
+  data.auditLog = Array.isArray(data.auditLog) ? data.auditLog : [];
   data.branding = { ...defaults.branding, ...data.branding };
   data.dashboards = [...data.dashboards, ...defaults.dashboards.filter(item => !data.dashboards.some(existing => existing.id === item.id))];
   if (!data.superuser?.email) data.superuser = defaults.superuser;
@@ -80,9 +83,18 @@ function auth(req, res) {
 function safeAdmin(admin) { const { passwordHash, ...safe } = admin; return safe; }
 function id() { return crypto.randomUUID(); }
 function temporaryPassword() { return `${crypto.randomBytes(6).toString('base64url')}A9!`; }
+function base64Url(value) { return Buffer.from(value).toString('base64url'); }
+function projectToken(identity) { const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' })); const payload = base64Url(JSON.stringify({ sub: identity.email, role: identity.role, projectId: identity.projectId, permissions: identity.permissions, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })); const input = `${header}.${payload}`; const signature = crypto.createHmac('sha256', TOKEN_SECRET).update(input).digest('base64url'); return `${input}.${signature}`; }
 function session(req) { const token = req.headers.authorization?.replace(/^Bearer\s+/i, ''); return token ? sessions.get(token) : null; }
 function requireRole(req, res, role) { const current = session(req); if (!current || (role && current.role !== role)) { send(res, 403, { message: 'Insufficient permission' }); return null; } return current; }
 function globalBranding(data) { return { ...data.branding, ...data.projects?.default?.branding }; }
+function recordActivity(data, event) { data.auditLog.unshift({ id: id(), createdAt: new Date().toISOString(), ...event }); data.auditLog = data.auditLog.slice(0, 500); }
+function adminMetrics(data, admin) {
+  const project = data.projects[admin.projectId] || { dashboards: [] };
+  const events = data.auditLog.filter(event => event.adminId === admin.id);
+  const activityByType = events.reduce((counts, event) => { counts[event.action] = (counts[event.action] || 0) + 1; return counts; }, {});
+  return { staff: { total: null, active: null, pending: null }, dashboards: { total: project.dashboards.length, enabled: project.dashboards.filter(item => item.enabled).length, disabled: project.dashboards.filter(item => !item.enabled).length }, activity: { total: events.length, last7Days: events.filter(event => Date.now() - Date.parse(event.createdAt) < 7 * 86400000).length, byType: activityByType }, project: { name: project.branding?.universityName || admin.name, projectId: admin.projectId } };
+}
 
 async function route(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, {});
@@ -95,16 +107,19 @@ async function route(req, res) {
       const isSuperuser = input.email === data.superuser.email && verifyPassword(input.password, data.superuser.passwordHash);
       if (!isSuperuser && (!admin || !verifyPassword(input.password, admin.passwordHash))) return send(res, 401, { message: 'Invalid credentials' });
       const identity = isSuperuser ? { role: 'SUPERUSER', email: data.superuser.email, permissions: ['ALL'] } : { role: 'PROJECT_ADMIN', email: admin.email, adminId: admin.id, projectId: admin.projectId, permissions: admin.permissions };
-      const token = crypto.randomBytes(32).toString('hex'); sessions.set(token, identity);
+      if (!isSuperuser) { admin.lastLoginAt = new Date().toISOString(); recordActivity(data, { adminId: admin.id, adminName: admin.name, projectId: admin.projectId, action: 'LOGIN', description: 'Signed in to the project workspace' }); writeData(data); }
+      const token = isSuperuser ? crypto.randomBytes(32).toString('hex') : projectToken(identity); sessions.set(token, identity);
       return send(res, 200, { token, user: { email: identity.email, role: identity.role, permissions: identity.permissions, projectId: identity.projectId } });
     }
     if (url.pathname === '/api/public/branding' && req.method === 'GET') return send(res, 200, globalBranding(data));
     if (url.pathname === '/api/public/logo' && req.method === 'GET') { const logo = data.branding.logoData; if (!logo) return res.writeHead(404).end(); const match = logo.match(/^data:(image\/(?:png|jpeg|jpg|webp));base64,(.+)$/); if (!match) return res.writeHead(415).end(); res.writeHead(200, { 'Content-Type': match[1] === 'image/jpg' ? 'image/jpeg' : match[1], 'Cache-Control': 'no-store' }); return res.end(Buffer.from(match[2], 'base64')); }
     const current = session(req); if (!current) { send(res, 401, { message: 'Authentication required' }); return; }
-    if (url.pathname === '/api/overview' && req.method === 'GET') { if (current.role === 'SUPERUSER') return send(res, 200, { role: current.role, branding: globalBranding(data), dashboards: data.dashboards, subAdmins: data.subAdmins.map(safeAdmin) }); const project = data.projects[current.projectId]; return send(res, 200, { role: current.role, projectId: current.projectId, branding: project.branding, dashboards: project.dashboards.filter(item => item.enabled), subAdmins: [] }); }
+    if (url.pathname === '/api/overview' && req.method === 'GET') { if (current.role === 'SUPERUSER') return send(res, 200, { role: current.role, branding: globalBranding(data), dashboards: data.dashboards, subAdmins: data.subAdmins.map(admin => ({ ...safeAdmin(admin), metrics: adminMetrics(data, admin) })), activity: data.auditLog.slice(0, 12) }); const project = data.projects[current.projectId]; return send(res, 200, { role: current.role, projectId: current.projectId, branding: project.branding, dashboards: project.dashboards.filter(item => item.enabled), subAdmins: [] }); }
+    const activityMatch = url.pathname.match(/^\/api\/sub-admins\/([^/]+)\/activity$/);
+    if (activityMatch && req.method === 'GET') { if (!requireRole(req, res, 'SUPERUSER')) return; const admin = data.subAdmins.find(item => item.id === activityMatch[1]); if (!admin) return send(res, 404, { message: 'Sub-admin not found' }); return send(res, 200, { admin: safeAdmin(admin), metrics: adminMetrics(data, admin), activity: data.auditLog.filter(event => event.adminId === admin.id).slice(0, 100) }); }
     if (url.pathname === '/api/branding' && req.method === 'PUT') { if (!requireRole(req, res, 'PROJECT_ADMIN')) return; const input = await body(req); const project = data.projects[current.projectId]; const fonts = ['Georgia', 'Arial', 'Verdana', 'Trebuchet MS']; project.branding = { ...project.branding, universityName: String(input.universityName || project.branding.universityName).trim(), shortName: String(input.shortName || project.branding.shortName).trim(), logoUrl: String(input.logoUrl || '').trim(), primaryColor: /^#[0-9a-f]{6}$/i.test(input.primaryColor || '') ? input.primaryColor : project.branding.primaryColor, fontFamily: fonts.includes(input.fontFamily) ? input.fontFamily : project.branding.fontFamily }; writeData(data); return send(res, 200, project.branding); }
     if (url.pathname === '/api/sub-admins' && req.method === 'GET') { if (!requireRole(req, res, 'SUPERUSER')) return; return send(res, 200, data.subAdmins.map(safeAdmin)); }
-    if (url.pathname === '/api/sub-admins' && req.method === 'POST') { if (!requireRole(req, res, 'SUPERUSER')) return; const input = await body(req); if (!input.email || !input.name || !input.password) return send(res, 400, { message: 'Name, email, and password are required' }); if (data.subAdmins.some(s => s.email === input.email.trim().toLowerCase())) return send(res, 409, { message: 'Email already exists' }); const projectId = `project-${id()}`; const admin = { id: id(), name: input.name.trim(), email: input.email.trim().toLowerCase(), passwordHash: hashPassword(input.password), role: 'PROJECT_ADMIN', projectId, permissions: Array.isArray(input.permissions) ? input.permissions : [], active: true, createdAt: new Date().toISOString() }; data.projects[projectId] = { branding: { ...data.branding, shortName: input.name.trim(), universityName: input.name.trim() }, dashboards: data.dashboards.map(item => ({ ...item })) }; data.subAdmins.push(admin); writeData(data); return send(res, 201, safeAdmin(admin)); }
+    if (url.pathname === '/api/sub-admins' && req.method === 'POST') { if (!requireRole(req, res, 'SUPERUSER')) return; const input = await body(req); if (!input.email || !input.name || !input.password) return send(res, 400, { message: 'Name, email, and password are required' }); if (data.subAdmins.some(s => s.email === input.email.trim().toLowerCase())) return send(res, 409, { message: 'Email already exists' }); const projectId = `project-${id()}`; const admin = { id: id(), name: input.name.trim(), email: input.email.trim().toLowerCase(), passwordHash: hashPassword(input.password), role: 'PROJECT_ADMIN', projectId, permissions: Array.isArray(input.permissions) ? input.permissions : [], active: true, createdAt: new Date().toISOString() }; data.projects[projectId] = { branding: { ...data.branding, shortName: input.name.trim(), universityName: input.name.trim() }, dashboards: data.dashboards.map(item => ({ ...item })) }; data.subAdmins.push(admin); recordActivity(data, { adminId: admin.id, adminName: admin.name, projectId, action: 'ADMIN_CREATED', description: 'Project administrator account created' }); writeData(data); return send(res, 201, safeAdmin(admin)); }
     const adminMatch = url.pathname.match(/^\/api\/sub-admins\/([^/]+)$/);
     const resetMatch = url.pathname.match(/^\/api\/sub-admins\/([^/]+)\/reset-password$/);
     if (resetMatch && req.method === 'POST') { if (!requireRole(req, res, 'SUPERUSER')) return; const admin = data.subAdmins.find(s => s.id === resetMatch[1]); if (!admin) return send(res, 404, { message: 'Sub-admin not found' }); const password = temporaryPassword(); admin.passwordHash = hashPassword(password); writeData(data); return send(res, 200, { email: admin.email, temporaryPassword: password, message: 'Temporary password generated. Store it securely and share it directly.' }); }
