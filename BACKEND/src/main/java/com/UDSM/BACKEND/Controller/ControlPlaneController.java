@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/control-plane")
-@CrossOrigin(origins = "*")
+@CrossOrigin(
+        origins = {"http://localhost:4200", "http://localhost:8091"},
+        allowCredentials = "true"
+)
 @RequiredArgsConstructor
 public class ControlPlaneController {
     private final ControlPlaneService service;
