@@ -68,7 +68,7 @@
 
   padding: 24px 18px;
 
-  background: #073b68;
+  background: var(--udsm-blue-dark);
   color: #ffffff;
 
   transform: translateX(-100%);

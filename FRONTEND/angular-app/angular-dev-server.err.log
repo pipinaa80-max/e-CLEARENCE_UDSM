@@ -1,0 +1,671 @@
+npm warn Unknown env config "min-release-age". This will stop working in the next major version of npm.
+Prebundling has been configured but will not be used because scripts optimization is enabled.
+▲ [WARNING] NG8113: RouterLink is not used within the template of AdminDashboard [plugin angular-compiler]
+
+    src/app/dashboard/admin/admin.ts:12:39:
+      12 │   imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                        ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of DepartmentReviewComponent [plugin angular-compiler]
+
+    src/app/dashboard/department-review/department-review.component.ts:15:41:
+      15 │     imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                          ~~~~~~~~~~
+
+
+▲ [WARNING] NG8103: NG8103: The `*ngIf` directive was used in the template, but neither the `NgIf` directive nor the `CommonModule` was imported. Use Angular's built-in control flow @if or make sure that either the `NgIf` directive or the `CommonModule` is included in the `@Component.imports` array of this component. Find more at https://v21.angular.dev/extended-diagnostics/NG8103 [plugin angular-compiler]
+
+    src/app/dashboard/ict/ict.html:4:32:
+      4 │   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleS...
+        ╵                                 ~~~~
+
+  Warning occurs in the template of component IctDashboard.
+
+    src/app/dashboard/ict/ict.ts:9:15:
+      9 │   templateUrl: './ict.html',
+        ╵                ~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of Landing [plugin angular-compiler]
+
+    src/app/landing/landing.ts:10:26:
+      10 │   imports: [CommonModule, RouterLink],
+         ╵                           ~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'latestNotifications' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:52:45:
+      52 │ ...ass="notifications-banner" *ngIf="latestNotifications.length > 0">
+         ╵                                      ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'latestNotifications' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:53:65:
+      53 │ ...m" *ngFor="let notification of latestNotifications; let i = index"
+         ╵                                   ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'markAsRead' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:63:52:
+      63 │ ...ose-notification" (click)="markAsRead(notification.id)">×</but...
+         ╵                               ~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8002: Can't bind to 'routerLinkActiveOptions' since it isn't a known property of 'a'. [plugin angular-compiler]
+
+    src/app/dashboard/ict/ict.html:18:63:
+      18 │ ...uterLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+         ╵                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component IctDashboard.
+
+    src/app/dashboard/ict/ict.ts:9:15:
+      9 │   templateUrl: './ict.html',
+        ╵                ~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:46:23:
+      46 │             <strong>{{ requests.length }}</strong>
+         ╵                        ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:58:50:
+      58 │       <section class="request-list-modern" *ngIf="requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:59:68:
+      59 │ ...quest-card-modern" *ngFor="let request of requests; let i = index"
+         ╵                                              ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'openRejectForm' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:86:62:
+      86 │ ...ype="button" class="btn-return" (click)="openRejectForm(request)">
+         ╵                                             ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:97:50:
+      97 │       <section class="empty-state-modern" *ngIf="!requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:107:44:
+      107 │       <section class="modal-overlay" *ngIf="selectedRequest">
+          ╵                                             ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:111:47:
+      111 │ ...on class="btn-close" (click)="selectedRequest = null">×</button>
+          ╵                                  ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:127:62:
+      127 │ ...ass="btn-cancel" (click)="selectedRequest = null">Cancel</button>
+          ╵                              ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'reject' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:129:29:
+      129 │                     (click)="reject()"
+          ╵                              ~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:130:33:
+      130 │                     [disabled]="!rejectionComment.trim()">
+          ╵                                  ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of AdminDashboard [plugin angular-compiler]
+
+    src/app/dashboard/admin/admin.ts:12:39:
+      12 │   imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                        ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of DepartmentReviewComponent [plugin angular-compiler]
+
+    src/app/dashboard/department-review/department-review.component.ts:15:41:
+      15 │     imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                          ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of Landing [plugin angular-compiler]
+
+    src/app/landing/landing.ts:10:26:
+      10 │   imports: [CommonModule, RouterLink],
+         ╵                           ~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'latestNotifications' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:52:45:
+      52 │ ...ass="notifications-banner" *ngIf="latestNotifications.length > 0">
+         ╵                                      ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'latestNotifications' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:53:65:
+      53 │ ...m" *ngFor="let notification of latestNotifications; let i = index"
+         ╵                                   ~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'markAsRead' does not exist on type 'DepartmentOfficerComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/Department-officer/department-officer.html:63:52:
+      63 │ ...ose-notification" (click)="markAsRead(notification.id)">×</but...
+         ╵                               ~~~~~~~~~~
+
+  Error occurs in the template of component DepartmentOfficerComponent.
+
+    src/app/dashboard/Department-officer/department-officer.component.ts:16:17:
+      16 │     templateUrl: './department-officer.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:46:23:
+      46 │             <strong>{{ requests.length }}</strong>
+         ╵                        ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:58:50:
+      58 │       <section class="request-list-modern" *ngIf="requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:59:68:
+      59 │ ...quest-card-modern" *ngFor="let request of requests; let i = index"
+         ╵                                              ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'openRejectForm' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:86:62:
+      86 │ ...ype="button" class="btn-return" (click)="openRejectForm(request)">
+         ╵                                             ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:97:50:
+      97 │       <section class="empty-state-modern" *ngIf="!requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:107:44:
+      107 │       <section class="modal-overlay" *ngIf="selectedRequest">
+          ╵                                             ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:111:47:
+      111 │ ...on class="btn-close" (click)="selectedRequest = null">×</button>
+          ╵                                  ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:127:62:
+      127 │ ...ass="btn-cancel" (click)="selectedRequest = null">Cancel</button>
+          ╵                              ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'reject' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:129:29:
+      129 │                     (click)="reject()"
+          ╵                              ~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:130:33:
+      130 │                     [disabled]="!rejectionComment.trim()">
+          ╵                                  ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of AdminDashboard [plugin angular-compiler]
+
+    src/app/dashboard/admin/admin.ts:12:39:
+      12 │   imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                        ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of DepartmentReviewComponent [plugin angular-compiler]
+
+    src/app/dashboard/department-review/department-review.component.ts:15:41:
+      15 │     imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                          ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of Landing [plugin angular-compiler]
+
+    src/app/landing/landing.ts:10:26:
+      10 │   imports: [CommonModule, RouterLink],
+         ╵                           ~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:46:23:
+      46 │             <strong>{{ requests.length }}</strong>
+         ╵                        ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:58:50:
+      58 │       <section class="request-list-modern" *ngIf="requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:59:68:
+      59 │ ...quest-card-modern" *ngFor="let request of requests; let i = index"
+         ╵                                              ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'openRejectForm' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:86:62:
+      86 │ ...ype="button" class="btn-return" (click)="openRejectForm(request)">
+         ╵                                             ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'requests' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:97:50:
+      97 │       <section class="empty-state-modern" *ngIf="!requests.length">
+         ╵                                                   ~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:107:44:
+      107 │       <section class="modal-overlay" *ngIf="selectedRequest">
+          ╵                                             ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:111:47:
+      111 │ ...on class="btn-close" (click)="selectedRequest = null">×</button>
+          ╵                                  ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:120:29:
+      120 │                 [(ngModel)]="rejectionComment"
+          ╵                              ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'selectedRequest' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:127:62:
+      127 │ ...ass="btn-cancel" (click)="selectedRequest = null">Cancel</button>
+          ╵                              ~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'reject' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:129:29:
+      129 │                     (click)="reject()"
+          ╵                              ~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'rejectionComment' does not exist on type 'PrincipalComponent'. [plugin angular-compiler]
+
+    src/app/dashboard/principal/principal.html:130:33:
+      130 │                     [disabled]="!rejectionComment.trim()">
+          ╵                                  ~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component PrincipalComponent.
+
+    src/app/dashboard/principal/principal.ts:16:17:
+      16 │     templateUrl: './principal.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of AdminDashboard [plugin angular-compiler]
+
+    src/app/dashboard/admin/admin.ts:12:39:
+      12 │   imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                        ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of DepartmentReviewComponent [plugin angular-compiler]
+
+    src/app/dashboard/department-review/department-review.component.ts:15:41:
+      15 │     imports: [CommonModule, FormsModule, RouterLink],
+         ╵                                          ~~~~~~~~~~
+
+
+▲ [WARNING] NG8113: RouterLink is not used within the template of Landing [plugin angular-compiler]
+
+    src/app/landing/landing.ts:10:26:
+      10 │   imports: [CommonModule, RouterLink],
+         ╵                           ~~~~~~~~~~
+
+
+An unhandled exception occurred: Port 4200 is already in use
+See "C:\Users\user\AppData\Local\Temp\ng-0vZxsc\angular-errors.log" for further details.
+C:\Users\user\Desktop\e-CLEARENCE_UDSM\FRONTEND\angular-app\node_modules\rxjs\dist\cjs\internal\util\reportUnhandledError.js:13
+            throw err;
+            ^
+
+Error: Port 4200 is already in use
+    at Server.onError$1 (file:///C:/Users/user/Desktop/e-CLEARENCE_UDSM/FRONTEND/angular-app/node_modules/vite/dist/node/chunks/config.js:15006:28)
+    at Server.emit (node:events:508:28)
+    at emitErrorNT (node:net:1976:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+
+Node.js v24.13.0

@@ -93,24 +93,13 @@ export class Register {
       next: (response) => {
         console.log('✅ Registration Success:', response);
         this.isLoading = false;
-        this.successMessage = response.message || 'Registration successful! Redirecting to login...';
-        this.toastService.success('Registration Success', 'Your account has been created successfully.');
+        this.successMessage = response.message || 'Registration successful! Your account is pending administrator activation.';
+        this.toastService.success('Registration Success', 'Your account has been created and is pending activation.');
 
-        // Auto-login after registration
-        this.authService.login(value.email, value.password).subscribe({
-          next: (user) => {
-            console.log('✅ Auto-login Success');
-            setTimeout(() => {
-              this.router.navigate(['/dashboard']);
-            }, 1500);
-          },
-          error: (err) => {
-            console.error(' Auto-login Error:', err);
-            setTimeout(() => {
-              this.router.navigate(['/login']);
-            }, 2000);
-          }
-        });
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          this.router.navigate(['/login']);
+        }, 3000);
       },
       error: (err) => {
         console.error('❌ Registration Error:', err);

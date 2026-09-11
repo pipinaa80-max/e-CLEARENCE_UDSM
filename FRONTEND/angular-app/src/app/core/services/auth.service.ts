@@ -13,13 +13,13 @@ export class AuthService {
   private readonly tokenKey = 'udsm-auth-token';
 
   register(user: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/register`, user).pipe(timeout(3000));
+    return this.http.post(`${this.apiUrl}/register`, user).pipe(timeout(30000));
   }
 
   login(identifier: string, password: string): Observable<any> {
     const normalized = identifier.trim();
     return this.http.post<any>(`${this.apiUrl}/login`, { identifier: normalized, password }).pipe(
-      timeout(5000),
+      timeout(15000),
       map(response => {
         const data = response.data || response;
         const user = this.mapUserResponse(data);
@@ -54,7 +54,45 @@ export class AuthService {
     );
   }
 
-  private mapUserResponse(response: any): any {
+  public mapRole(roleInput: any): UserRole {
+    // Safety check: deeply unwrap role if it's nested as an object (due to previous bug)
+    let current = roleInput;
+    let depth = 0;
+    while (current && typeof current === 'object' && depth < 5) {
+      current = current.role;
+      depth++;
+    }
+
+    const roleString = String(current || '').trim().toUpperCase();
+    const map: Record<string, UserRole> = {
+      STUDENT: 'Student',
+      CONVOCATION_OFFICER: 'Convocation',
+      GAMES_COACH: 'Games Coach',
+      HALL_WARDEN: 'Hall Warden',
+      USAB_OFFICER: 'USAB',
+      DARUSO_OFFICER: 'DARUSO',
+      LIBRARY_OFFICER: 'Library',
+      DEAN_OF_STUDENTS: 'Dean of Students',
+      SMART_CARD_OFFICER: 'Smart Card',
+      WORKSHOP_OFFICER: 'Workshop',
+      PRINCIPAL: 'Principal',
+      FINANCE_OFFICER: 'Finance',
+      ICT_OFFICER: 'ICT',
+      DEPARTMENT_OFFICER: 'Department',
+      LABORATORY_OFFICER: 'Laboratory',
+      ADMINISTRATOR: 'Administrator',
+      ADMIN: 'Administrator',
+      SUPERUSER: 'Administrator'
+    };
+
+    if (map[roleString]) return map[roleString];
+    if (roleString === 'ACADEMIC STAFF') return 'Academic Staff';
+
+    // Default to Student to prevent infinite redirect loops if role is invalid
+    return 'Student';
+  }
+
+  public mapUserResponse(response: any): any {
     const user = {
       ...response,
       id: response.user_id || response.id,
@@ -62,29 +100,15 @@ export class AuthService {
       registrationNumber: response.registration_number || response.registrationNumber,
       college: response.college || response.faculty,
       phoneNumber: response.phone_number || response.phoneNumber || response.phone,
-      isActive: response.is_active !== undefined ? response.is_active : response.isActive,
+      isActive: response.isActive !== undefined ? response.isActive : (response.active !== undefined ? response.active : response.is_active),
       lastLogin: response.last_login || response.lastLogin,
       createdAt: response.created_at || response.createdAt,
       updatedAt: response.updated_at || response.updatedAt,
       clearanceStatus: response.clearance_status || response.clearanceStatus,
-      isFinalYear: response.is_final_year !== undefined ? response.is_final_year : response.isFinalYear
+      isFinalYear: response.isFinalYear !== undefined ? response.isFinalYear : (response.finalYear !== undefined ? response.finalYear : response.is_final_year)
     };
-    if (user.role) user.role = this.mapRole(user);
+    if (user.role) user.role = this.mapRole(user.role);
     return user;
-  }
-
-  private mapRole(user: any): UserRole {
-    const role = String(user.role ?? '').trim().toUpperCase();
-    const map: Record<string, UserRole> = {
-      STUDENT: 'Student', CONVOCATION_OFFICER: 'Convocation', GAMES_COACH: 'Games Coach',
-      HALL_WARDEN: 'Hall Warden', USAB_OFFICER: 'USAB', DARUSO_OFFICER: 'DARUSO',
-      LIBRARY_OFFICER: 'Library', DEAN_OF_STUDENTS: 'Dean of Students',
-      SMART_CARD_OFFICER: 'Smart Card', WORKSHOP_OFFICER: 'Workshop', PRINCIPAL: 'Principal',
-      FINANCE_OFFICER: 'Finance', ICT_OFFICER: 'ICT', DEPARTMENT_OFFICER: 'Department',
-      LABORATORY_OFFICER: 'Laboratory', ADMINISTRATOR: 'Administrator', ADMIN: 'Administrator',
-      SUPERUSER: 'Administrator'
-    };
-    return map[role] || user.role as UserRole;
   }
 
   refreshToken(refreshToken: string): Observable<any> {
@@ -131,12 +155,16 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/deactivate/${userId}`, {}, { headers: this.getAuthHeaders() });
   }
 
+  private cachedUser: any | null = null;
+
   getCurrentUser(): any | null {
+    if (this.cachedUser) return this.cachedUser;
+
     const user = this.storage.get<any>(this.currentUserKey);
     if (!user) return null;
-    const normalized = { ...user, role: this.mapRole(user) };
-    this.storage.save(this.currentUserKey, normalized);
-    return normalized;
+
+    this.cachedUser = { ...user, role: this.mapRole(user.role) };
+    return this.cachedUser;
   }
 
   getToken(): string | null {
@@ -148,10 +176,12 @@ export class AuthService {
   }
 
   updateCurrentUser(user: any): void {
-    this.storage.save(this.currentUserKey, user);
+    this.cachedUser = this.mapUserResponse(user);
+    this.storage.save(this.currentUserKey, this.cachedUser);
   }
 
   logoutLocal(): void {
+    this.cachedUser = null;
     this.storage.remove(this.currentUserKey);
     this.storage.remove(this.tokenKey);
   }
@@ -162,6 +192,7 @@ export class AuthService {
   }
 
   private persist(user: any, token: string | undefined): void {
+    this.cachedUser = user;
     this.storage.save(this.currentUserKey, user);
     if (token) this.storage.save(this.tokenKey, token);
   }

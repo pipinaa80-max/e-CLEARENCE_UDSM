@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { UserRole } from '../core/models/user.model';
+import { ProjectAdminService, ProjectConfig } from '../core/services/project-admin.service';
 
 @Component({
   selector: 'app-landing',
@@ -12,12 +13,33 @@ import { UserRole } from '../core/models/user.model';
 export class Landing implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private readonly projectAdminService = inject(ProjectAdminService);
+
+  branding: ProjectConfig['branding'] = {
+    universityName: 'University of Dar es Salaam',
+    shortName: 'Clearance',
+    logoUrl: '/public/udsm-logo.png',
+    primaryColor: '#0864af',
+    fontFamily: 'Segoe UI'
+  };
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.router.navigate([this.redirectPathFor(user.role)]);
+      return;
     }
+
+    const saved = this.projectAdminService.getSavedBranding();
+    if (saved) this.branding = { ...this.branding, ...saved };
+
+    this.projectAdminService.getPublicBranding().subscribe({
+      next: (config) => {
+        this.branding = config;
+        this.projectAdminService.setSavedBranding(config);
+      },
+      error: (err) => console.error('Error fetching public branding', err)
+    });
   }
 
   goToLogin(): void {

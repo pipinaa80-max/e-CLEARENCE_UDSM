@@ -31,11 +31,14 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findByVerificationToken(String verificationToken);
 
-    Optional<User> findByIdAndIsActiveTrue(String id);
+    Optional<User> findByIdAndActiveTrue(String id);
 
-        List<User> findByProjectId(String projectId);
+    List<User> findByProjectId(String projectId);
 
-        Optional<User> findByIdAndProjectId(String id, String projectId);
+    @Query("SELECT u FROM User u WHERE u.projectId = :projectId OR u.projectId IS NULL OR u.projectId = ''")
+    List<User> findByProjectIdIncludeGlobal(@Param("projectId") String projectId);
+
+    Optional<User> findByIdAndProjectId(String id, String projectId);
 
     // =========================================================
     // EXISTS CHECKS
@@ -50,9 +53,9 @@ public interface UserRepository extends JpaRepository<User, String> {
             message = "Registration number must not exceed 50 characters"
     ) String registrationNumber);
 
-    boolean existsByEmailAndIsActiveTrue(String email);
+    boolean existsByEmailAndActiveTrue(String email);
 
-    boolean existsByRegistrationNumberAndIsActiveTrue(String registrationNumber);
+    boolean existsByRegistrationNumberAndActiveTrue(String registrationNumber);
 
     // =========================================================
     // FIND BY ROLE AND STATUS
@@ -60,21 +63,21 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findByRole(ERole role);
 
-    List<User> findByIsActiveTrue();
+    List<User> findByActiveTrue();
 
-    List<User> findByIsActiveFalse();
+    List<User> findByActiveFalse();
 
-    List<User> findByIsEmailVerifiedFalse();
+    List<User> findByEmailVerifiedFalse();
 
-    List<User> findByIsLockedTrue();
+    List<User> findByLockedTrue();
 
-    List<User> findByRoleAndIsActiveTrue(ERole role);
+    List<User> findByRoleAndActiveTrue(ERole role);
 
-    List<User> findByRoleAndIsActiveFalse(ERole role);
+    List<User> findByRoleAndActiveFalse(ERole role);
 
-    List<User> findByIsActiveTrueAndIsEmailVerifiedTrue();
+    List<User> findByActiveTrueAndEmailVerifiedTrue();
 
-    List<User> findByIsActiveTrueAndIsEmailVerifiedFalse();
+    List<User> findByActiveTrueAndEmailVerifiedFalse();
 
     // =========================================================
     // FIND BY TOKENS WITH EXPIRY
@@ -114,20 +117,20 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("SELECT u FROM User u WHERE " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-            "AND u.isActive = true")
+            "AND u.active = true")
     List<User> searchActiveUsers(@Param("searchTerm") String searchTerm);
 
     // =========================================================
     // COUNT METHODS
     // =========================================================
 
-    long countByIsActiveTrue();
+    long countByActiveTrue();
 
-    long countByIsActiveFalse();
+    long countByActiveFalse();
 
-    long countByIsEmailVerifiedFalse();
+    long countByEmailVerifiedFalse();
 
-    long countByIsLockedTrue();
+    long countByLockedTrue();
 
     long countByRole(ERole role);
 
@@ -153,14 +156,14 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isActive = :active, u.updatedAt = :updatedAt WHERE u.id = :userId")
+    @Query("UPDATE User u SET u.active = :active, u.updatedAt = :updatedAt WHERE u.id = :userId")
     int updateAccountStatus(@Param("userId") String userId,
                             @Param("active") boolean active,
                             @Param("updatedAt") LocalDateTime updatedAt);
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isLocked = :locked, u.lockReason = :reason, u.lockTime = :lockTime WHERE u.id = :userId")
+    @Query("UPDATE User u SET u.locked = :locked, u.lockReason = :reason, u.lockTime = :lockTime WHERE u.id = :userId")
     int updateAccountLockStatus(@Param("userId") String userId,
                                 @Param("locked") boolean locked,
                                 @Param("reason") String reason,
@@ -168,7 +171,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isEmailVerified = true, u.verificationToken = null, u.verificationTokenExpiry = null WHERE u.id = :userId")
+    @Query("UPDATE User u SET u.emailVerified = true, u.verificationToken = null, u.verificationTokenExpiry = null WHERE u.id = :userId")
     int verifyEmail(@Param("userId") String userId);
 
     @Modifying
@@ -204,43 +207,32 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isActive = false, u.updatedAt = :updatedAt WHERE u.createdAt < :date AND u.isActive = true")
+    @Query("UPDATE User u SET u.active = false, u.updatedAt = :updatedAt WHERE u.createdAt < :date AND u.active = true")
     int deactivateInactiveUsers(@Param("date") LocalDateTime date,
                                 @Param("updatedAt") LocalDateTime updatedAt);
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isLocked = false, u.lockReason = null, u.lockTime = null WHERE u.isLocked = true AND u.lockTime < :date")
+    @Query("UPDATE User u SET u.locked = false, u.lockReason = null, u.lockTime = null WHERE u.locked = true AND u.lockTime < :date")
     int unlockExpiredLocks(@Param("date") LocalDateTime date);
 
     // =========================================================
     // FIND BY COMPLEX CONDITIONS
     // =========================================================
 
-    @Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = :active AND u.isEmailVerified = :verified")
+    @Query("SELECT u FROM User u WHERE u.role = :role AND u.active = :active AND u.emailVerified = :verified")
     List<User> findByRoleAndActiveAndVerified(@Param("role") ERole role,
                                               @Param("active") boolean active,
                                               @Param("verified") boolean verified);
 
-    @Query("SELECT u FROM User u WHERE u.department = :department AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE u.department = :department AND u.active = true")
     List<User> findActiveUsersByDepartment(@Param("department") String department);
 
-    @Query("SELECT u FROM User u WHERE u.college = :college AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE u.college = :college AND u.active = true")
     List<User> findActiveUsersByCollege(@Param("college") String college);
 
-    @Query("SELECT u FROM User u WHERE u.programme = :programme AND u.isActive = true")
+    @Query("SELECT u FROM User u WHERE u.programme = :programme AND u.active = true")
     List<User> findActiveUsersByProgramme(@Param("programme") String programme);
-
-    // =========================================================
-    // PAGINATION SUPPORT (if needed, add Pageable parameter)
-    // =========================================================
-
-    /*
-    // Example with pagination:
-    Page<User> findByIsActiveTrue(Pageable pageable);
-    Page<User> findByRole(ERole role, Pageable pageable);
-    Page<User> findByIsActiveTrueAndIsEmailVerifiedTrue(Pageable pageable);
-    */
 
     // =========================================================
     // DELETE METHODS
@@ -248,12 +240,12 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM User u WHERE u.isActive = false AND u.createdAt < :date")
+    @Query("DELETE FROM User u WHERE u.active = false AND u.createdAt < :date")
     int deleteInactiveUsersOlderThan(@Param("date") LocalDateTime date);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM User u WHERE u.isEmailVerified = false AND u.createdAt < :date")
+    @Query("DELETE FROM User u WHERE u.emailVerified = false AND u.createdAt < :date")
     int deleteUnverifiedUsersOlderThan(@Param("date") LocalDateTime date);
 
     // =========================================================
@@ -282,7 +274,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Query("SELECT u FROM User u ORDER BY u.lastLogin DESC")
     List<User> findRecentLogins();
 
-    @Query("SELECT u FROM User u WHERE u.isActive = true ORDER BY u.createdAt DESC")
+    @Query("SELECT u FROM User u WHERE u.active = true ORDER BY u.createdAt DESC")
     List<User> findRecentActiveUsers();
 
     // =========================================================
@@ -296,10 +288,10 @@ public interface UserRepository extends JpaRepository<User, String> {
     // FIND BY PARTIAL MATCH (for autocomplete)
     // =========================================================
 
-    @Query("SELECT u.email FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT(:prefix, '%')) AND u.isActive = true")
+    @Query("SELECT u.email FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT(:prefix, '%')) AND u.active = true")
     List<String> findEmailsByPrefix(@Param("prefix") String prefix);
 
-    @Query("SELECT u.registrationNumber FROM User u WHERE LOWER(u.registrationNumber) LIKE LOWER(CONCAT(:prefix, '%')) AND u.isActive = true")
+    @Query("SELECT u.registrationNumber FROM User u WHERE LOWER(u.registrationNumber) LIKE LOWER(CONCAT(:prefix, '%')) AND u.active = true")
     List<String> findRegistrationNumbersByPrefix(@Param("prefix") String prefix);
 
     // =========================================================
@@ -308,13 +300,13 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isActive = :active WHERE u.id IN :userIds")
+    @Query("UPDATE User u SET u.active = :active WHERE u.id IN :userIds")
     int bulkUpdateActiveStatus(@Param("userIds") List<String> userIds,
                                @Param("active") boolean active);
 
     @Modifying
     @Transactional
-    @Query("UPDATE User u SET u.isEmailVerified = :verified WHERE u.id IN :userIds")
+    @Query("UPDATE User u SET u.emailVerified = :verified WHERE u.id IN :userIds")
     int bulkUpdateEmailVerification(@Param("userIds") List<String> userIds,
                                     @Param("verified") boolean verified);
 }

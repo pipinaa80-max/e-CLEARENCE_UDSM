@@ -101,8 +101,8 @@ public class AuthService {
 
             auditLogService.logLoginAttempt(user.getEmail(), true, clientIp);
 
-            // ========== SEND LOGIN NOTIFICATION EMAIL ==========
-            sendLoginNotification(user, clientIp, userAgent);
+            // ========== SEND LOGIN NOTIFICATION EMAIL (ASYNC) ==========
+            new Thread(() -> sendLoginNotification(user, clientIp, userAgent)).start();
 
             return JwtResponse.builder()
                     .accessToken(accessToken)
@@ -260,9 +260,25 @@ public class AuthService {
         user.setDepartment(request.getDepartment());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        user.setProjectId(ProjectScope.currentProjectId());
+        
+        // Attempt to associate with a project based on email domain if not logged in
+        String currentProjectId = com.UDSM.BACKEND.config.ProjectScope.currentProjectId();
+        if (currentProjectId == null && email.contains("@")) {
+            String domain = email.substring(email.indexOf("@") + 1);
+            // Look for any admin with this domain to find their projectId
+            userRepository.findAll().stream()
+                    .filter(u -> (u.getRole() == ERole.ADMINISTRATOR || u.getRole() == ERole.ADMIN) 
+                            && u.getEmail().endsWith("@" + domain) 
+                            && u.getProjectId() != null)
+                    .findFirst()
+                    .ifPresent(admin -> user.setProjectId(admin.getProjectId()));
+        } else {
+            user.setProjectId(currentProjectId);
+        }
 
         User savedUser = userRepository.save(user);
+        log.info("📝 Registered user saved: {}, ID: {}, Project: {}, Active: {}", 
+                savedUser.getEmail(), savedUser.getId(), savedUser.getProjectId(), savedUser.isActive());
         String userId = savedUser.getId();
 
         // Create student record
@@ -282,7 +298,7 @@ public class AuthService {
             student.setClearanceStatus(ClearanceStatus.PENDING);
             student.setCreatedAt(LocalDateTime.now());
             student.setUpdatedAt(LocalDateTime.now());
-            student.setProjectId(ProjectScope.currentProjectId());
+            student.setProjectId(user.getProjectId()); // Inherit from user
             studentRepository.save(student);
         }
 
@@ -293,10 +309,10 @@ public class AuthService {
             log.error("Failed to log audit: {}", e.getMessage());
         }
 
-        // ========== SEND WELCOME EMAIL ==========
-        sendWelcomeEmail(savedUser);
+        // ========== SEND WELCOME EMAIL (ASYNC) ==========
+        new Thread(() -> sendWelcomeEmail(savedUser)).start();
 
-        return ApiResponse.success("Registration successful. Welcome email sent! Please login to continue.");
+        return ApiResponse.success("Registration successful. Admin will review your account soon.");
     }
 
     // =========================================================
@@ -807,12 +823,31 @@ public class AuthService {
 
     @Transactional
     public ApiResponse activateAccount(String userId, String clientIp, String userAgent) {
-        User user = scopedUser(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // If the user currently has no project, associate them with the admin's project
+        String currentAdminProjectId = ProjectScope.currentProjectId();
+        if (user.getProjectId() == null && currentAdminProjectId != null) {
+            user.setProjectId(currentAdminProjectId);
+        }
+
         user.setActive(true);
+        user.setEmailVerified(true); // ✅ Ensure email is verified during activation to allow login
         user.setUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
+
+        // Update student record too if it exists
+        if (user.getRegistrationNumber() != null) {
+            studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
+                    .ifPresent(student -> {
+                        if (student.getProjectId() == null && currentAdminProjectId != null) {
+                            student.setProjectId(currentAdminProjectId);
+                        }
+                        student.setUpdatedAt(LocalDateTime.now());
+                        studentRepository.save(student);
+                    });
+        }
 
         auditLogService.logAction(
                 getCurrentUserId(),

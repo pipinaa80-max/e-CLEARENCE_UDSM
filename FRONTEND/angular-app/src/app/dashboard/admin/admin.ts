@@ -38,7 +38,8 @@ export class AdminDashboard implements OnInit {
     completed: 0,
     pending: 0,
     rejected: 0,
-    totalStaff: 0
+    totalStaff: 0,
+    pendingUsers: 0
   };
 
   newUser = {
@@ -48,7 +49,7 @@ export class AdminDashboard implements OnInit {
     email: '',
     registrationNumber: '',
     password: '',
-    role: 'STUDENT',
+    role: 'Student',
     department: '',
     programme: '',
     faculty: '',
@@ -63,15 +64,23 @@ export class AdminDashboard implements OnInit {
 
   get filteredUsers(): any[] {
     const term = this.userSearchTerm.toLowerCase();
-    return this.users.filter(u =>
-      (!term ||
+    return this.users.filter(u => {
+      const matchesSearch = !term ||
         u.fullName?.toLowerCase().includes(term) ||
         u.email?.toLowerCase().includes(term) ||
         u.registrationNumber?.toLowerCase().includes(term) ||
-        u.role?.toLowerCase().includes(term)) &&
-      (!this.userRoleFilter || u.role === this.userRoleFilter) &&
-      (!this.userStatusFilter || (this.userStatusFilter === 'active' ? u.isActive !== false : u.isActive === false))
-    );
+        u.role?.toLowerCase().includes(term);
+
+      // Normalize roles for comparison
+      const userRole = String(u.role ?? '').toUpperCase();
+      const filterRole = String(this.userRoleFilter ?? '').toUpperCase();
+      const matchesRole = !filterRole || userRole === filterRole;
+
+      const matchesStatus = !this.userStatusFilter ||
+        (this.userStatusFilter === 'active' ? u.isActive !== false : u.isActive === false);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
   }
 
   clearUserFilters(): void {
@@ -107,15 +116,29 @@ export class AdminDashboard implements OnInit {
   loadData(): void {
     this.adminService.getAllUsers().subscribe({
       next: (users) => {
-        this.users = users;
-        this.calculateStats();
+        console.log('📦 Admin fetched users:', users);
+        if (Array.isArray(users)) {
+          this.users = users.map(u => this.authService.mapUserResponse(u));
+          console.log('📦 Admin mapped users:', this.users);
+          this.calculateStats();
+        } else {
+          console.error('📦 Admin users data is not an array:', users);
+          this.users = [];
+        }
       },
-      error: (err) => console.error('Error loading users', err)
+      error: (err) => {
+        console.error('Error loading users', err);
+        this.message = 'Failed to load users. Please check backend connection.';
+        this.isError = true;
+      }
     });
 
     this.adminService.getAllRoles().subscribe({
       next: (roles) => {
-        this.roles = roles;
+        // Map raw enum strings to user-friendly roles and ensure uniqueness
+        const mappedRoles = roles.map(r => this.authService.mapRole(r));
+        this.roles = Array.from(new Set(mappedRoles)).sort();
+        console.log('📦 Admin unique roles:', this.roles);
       },
       error: (err) => console.error('Error loading roles', err)
     });
@@ -132,6 +155,7 @@ export class AdminDashboard implements OnInit {
   calculateStats(): void {
     this.stats.totalStudents = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT').length;
     this.stats.totalStaff = this.users.filter(u => String(u.role ?? '').toUpperCase() !== 'STUDENT').length;
+    this.stats.pendingUsers = this.users.filter(u => u.isActive === false).length;
     this.stats.totalRequests = this.clearanceRequests.length;
     this.stats.completed = this.clearanceRequests.filter(r => ['COMPLETED', 'APPROVED', 'CLEARED'].includes(String(r.status ?? '').toUpperCase())).length;
     this.stats.pending = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'PENDING').length;
@@ -139,7 +163,13 @@ export class AdminDashboard implements OnInit {
   }
 
   loadProjectConfig(): void {
-    this.projectAdminService.getProjectConfig().subscribe({ next: (config) => this.projectConfig = config, error: () => undefined });
+    this.projectAdminService.getProjectConfig().subscribe({
+      next: (config) => {
+        console.log('Project config loaded:', config);
+        this.projectConfig = config;
+      },
+      error: (err) => console.error('Error loading project config', err)
+    });
   }
 
   setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme'): void {

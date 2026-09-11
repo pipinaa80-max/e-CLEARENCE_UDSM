@@ -28,6 +28,13 @@ export class Login implements OnInit {
   isLoading = false;
 
   ngOnInit(): void {
+    // If the page was previously stuck in a loop, clear local storage once
+    // when manually visiting /login to break the cycle.
+    if (localStorage.getItem('udsm-recovery-mode')) {
+      this.authService.logoutLocal();
+      localStorage.removeItem('udsm-recovery-mode');
+    }
+
     const user = this.authService.getCurrentUser();
     if (user) {
       this.router.navigate([this.redirectPathFor(user.role)]);

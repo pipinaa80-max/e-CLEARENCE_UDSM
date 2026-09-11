@@ -31,14 +31,20 @@ export class ProjectAdminService {
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
-  /** @deprecated Branding is now read from clearance_db; retained for API compatibility. */
+  /** Retrieves branding from localStorage for immediate UI application. */
   getSavedBranding(): Partial<ProjectConfig['branding']> | null {
-    return null;
+    const raw = localStorage.getItem('udsm-project-branding');
+    try {
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
   }
 
-  /** @deprecated Branding is persisted through updateBranding(). */
-  setSavedBranding(_branding: Partial<ProjectConfig['branding']>): void {
-    // Intentionally no local fallback.
+  /** Persists branding to localStorage. */
+  setSavedBranding(branding: Partial<ProjectConfig['branding']>): void {
+    const current = this.getSavedBranding() || {};
+    localStorage.setItem('udsm-project-branding', JSON.stringify({ ...current, ...branding }));
   }
 
   getProjectConfig(): Observable<ProjectConfig> {

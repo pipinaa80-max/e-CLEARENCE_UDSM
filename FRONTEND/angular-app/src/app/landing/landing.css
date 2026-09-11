@@ -98,7 +98,7 @@
   text-align: center;
   color: #ffffff;
   background:
-    linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9)),
+    var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9))),
     url('/public/background.png');
   background-size: cover;
   background-position: center;

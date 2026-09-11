@@ -45,7 +45,7 @@
   padding: 26px 18px;
   box-sizing: border-box;
 
-  background: #003b5c;
+  background: var(--udsm-blue-dark);
   color: #ffffff;
 }
 

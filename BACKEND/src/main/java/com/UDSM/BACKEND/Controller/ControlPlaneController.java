@@ -35,6 +35,12 @@ public class ControlPlaneController {
         return ResponseEntity.ok(service.admins());
     }
 
+    @GetMapping("/sub-admins/{id}/activity")
+    @PreAuthorize("hasRole('SUPERUSER')")
+    public ResponseEntity<Map<String, Object>> adminActivity(@PathVariable String id) {
+        return ResponseEntity.ok(service.adminActivity(id));
+    }
+
     @PostMapping("/sub-admins")
     @PreAuthorize("hasRole('SUPERUSER')")
     public ResponseEntity<Map<String, Object>> createAdmin(@RequestBody Map<String, Object> input) {

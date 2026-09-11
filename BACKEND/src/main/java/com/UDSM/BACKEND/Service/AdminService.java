@@ -50,7 +50,16 @@ public class AdminService {
 
     public List<User> getAllUsers() {
         String projectId = ProjectScope.currentProjectId();
-        return projectId == null ? userRepository.findAll() : userRepository.findByProjectId(projectId);
+        log.info("Admin: Fetching users for project scope: {}", projectId);
+        List<User> users = (projectId == null || projectId.trim().isEmpty()) 
+                ? userRepository.findAll() 
+                : userRepository.findByProjectIdIncludeGlobal(projectId);
+        
+        log.info("Admin: Query returned {} users", users.size());
+        if (!users.isEmpty()) {
+            log.debug("Admin: First user found: {}, project: {}", users.get(0).getEmail(), users.get(0).getProjectId());
+        }
+        return users;
     }
 
     public List<String> getAllRoles() {
@@ -61,13 +70,18 @@ public class AdminService {
 
     @Transactional
     public void deleteUser(String userId) {
-        String projectId = ProjectScope.currentProjectId();
-        User user = (projectId == null ? userRepository.findById(userId) : userRepository.findByIdAndProjectId(userId, projectId))
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        String projectId = ProjectScope.currentProjectId();
+        // Security check: Institutional admins can only delete their own project users or global users
+        if (projectId != null && user.getProjectId() != null && !user.getProjectId().equals(projectId)) {
+             throw new ApiException("You do not have permission to delete this user", HttpStatus.FORBIDDEN);
+        }
         
         // Deleting student record if it exists
         if (user.getRegistrationNumber() != null) {
-            (projectId == null ? studentRepository.findByRegistrationNumber(user.getRegistrationNumber()) : studentRepository.findByRegistrationNumberAndProjectId(user.getRegistrationNumber(), projectId))
+            studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
                     .ifPresent(student -> {
                         // Also delete clearance requests
                         List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
@@ -81,19 +95,46 @@ public class AdminService {
 
     @Transactional
     public User updateUserRole(String userId, String roleName) {
-        String projectId = ProjectScope.currentProjectId();
-        User user = (projectId == null ? userRepository.findById(userId) : userRepository.findByIdAndProjectId(userId, projectId))
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
-        
-        try {
-            ERole role = ERole.valueOf(roleName.toUpperCase().replace(" ", "_"));
-            user.setRole(role);
-            user.setUpdatedAt(LocalDateTime.now());
-            log.info("Admin: User {} role updated to {}", userId, role);
-            return userRepository.save(user);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException("Invalid role name: " + roleName, HttpStatus.BAD_REQUEST);
+
+        String projectId = ProjectScope.currentProjectId();
+        if (projectId != null && user.getProjectId() != null && !user.getProjectId().equals(projectId)) {
+            throw new ApiException("You do not have permission to modify this user", HttpStatus.FORBIDDEN);
         }
+        
+        ERole role;
+        try {
+            role = ERole.valueOf(roleName.toUpperCase().replace(" ", "_"));
+        } catch (IllegalArgumentException e) {
+            // Mapping for human-readable frontend strings to backend enums
+            String normalized = roleName.toUpperCase().trim();
+            switch(normalized) {
+                case "CONVOCATION": role = ERole.CONVOCATION_OFFICER; break;
+                case "LIBRARY": role = ERole.LIBRARY_OFFICER; break;
+                case "ICT": role = ERole.ICT_OFFICER; break;
+                case "DEPARTMENT": role = ERole.DEPARTMENT_OFFICER; break;
+                case "USAB": role = ERole.USAB_OFFICER; break;
+                case "DARUSO": role = ERole.DARUSO_OFFICER; break;
+                case "SMART CARD": role = ERole.SMART_CARD_OFFICER; break;
+                case "WORKSHOP": role = ERole.WORKSHOP_OFFICER; break;
+                case "LABORATORY": role = ERole.LABORATORY_OFFICER; break;
+                case "DEAN OF STUDENTS": role = ERole.DEAN_OF_STUDENTS; break;
+                case "GAMES COACH": role = ERole.GAMES_COACH; break;
+                case "HALL WARDEN": role = ERole.HALL_WARDEN; break;
+                case "ACADEMIC STAFF": role = ERole.PRINCIPAL; break; // Fallback or specific mapping
+                case "ADMINISTRATOR": 
+                case "ADMIN": role = ERole.ADMINISTRATOR; break;
+                default: 
+                    log.error("Failed to map role: {}", roleName);
+                    throw new ApiException("Invalid role name: " + roleName, HttpStatus.BAD_REQUEST);
+            }
+        }
+        
+        user.setRole(role);
+        user.setUpdatedAt(LocalDateTime.now());
+        log.info("Admin: User {} role updated to {}", userId, role);
+        return userRepository.save(user);
     }
 
     public List<ClearanceRequest> getAllClearanceRequests() {

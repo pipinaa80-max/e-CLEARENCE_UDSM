@@ -61,8 +61,10 @@ export class App {
     const root = document.documentElement;
     if (config.primaryColor) {
       root.style.setProperty('--udsm-blue', config.primaryColor);
-      root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${config.primaryColor} 76%, #000000)`);
-      root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 12%, #ffffff)`);
+      root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${config.primaryColor} 80%, #000000)`);
+      root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 10%, #ffffff)`);
+      // Update hero gradients globally
+      root.style.setProperty('--hero-gradient', `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.7)), linear-gradient(${config.primaryColor}CC, ${config.primaryColor}DD)`);
     }
     if (config.fontFamily) root.style.setProperty('--app-font-family', config.fontFamily);
     if (config.logoUrl) root.style.setProperty('--app-logo-url', `url("${config.logoUrl}")`);
@@ -72,11 +74,19 @@ export class App {
   private refreshBrandingNodes(): void {
     if (this.branding.logoUrl) {
       document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
-        .forEach(image => image.src = this.branding.logoUrl);
+        .forEach(image => {
+          if (image.src !== this.branding.logoUrl) image.src = this.branding.logoUrl;
+        });
     }
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-    textNodes.forEach(node => { if (node.nodeValue?.trim() === 'University of Dar es Salaam') node.nodeValue = node.nodeValue.replace('University of Dar es Salaam', this.branding.universityName); });
+
+    const targetName = 'University of Dar es Salaam';
+    textNodes.forEach(node => {
+      if (node.nodeValue?.includes(targetName)) {
+        node.nodeValue = node.nodeValue.replaceAll(targetName, this.branding.universityName);
+      }
+    });
   }
 }

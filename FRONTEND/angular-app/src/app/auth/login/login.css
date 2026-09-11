@@ -86,7 +86,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)), url('/public/background.png');
+  background-image: var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7))), url('/public/background.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

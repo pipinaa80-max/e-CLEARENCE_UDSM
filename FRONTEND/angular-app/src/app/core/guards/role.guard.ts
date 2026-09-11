@@ -18,7 +18,16 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
       return true;
     }
 
-    return router.createUrlTree([thisRoleRedirect(currentUser.role)]);
+    const redirectPath = thisRoleRedirect(currentUser.role);
+    const currentPath = router.url;
+
+    // Prevent infinite redirect loops if the user is already on their assigned dashboard
+    if (currentPath.includes(redirectPath)) {
+      console.warn(`🛑 RoleGuard: Loop detected. User with role ${currentUser.role} already on ${currentPath}.`);
+      return true;
+    }
+
+    return router.createUrlTree([redirectPath]);
   };
 };
 

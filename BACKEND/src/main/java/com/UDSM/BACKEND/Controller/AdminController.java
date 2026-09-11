@@ -30,7 +30,7 @@ public class AdminController {
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
-        log.info("Admin: Fetching all users");
+        log.info("Admin: Fetching all users via service");
         return ResponseEntity.ok(adminService.getAllUsers());
     }
 

@@ -1,19 +1,25 @@
 <section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+  <!-- Toggle button visible only when sidebar is closed -->
   <button
+    *ngIf="!sidebarOpen"
     type="button"
-    class="sidebar-toggle"
-    aria-label="Toggle navigation"
+    class="sidebar-toggle-float"
     (click)="toggleSidebar()"
   >
     ☰
   </button>
 
   <aside class="sidebar">
-    <div class="brand">
-      <img [src]="projectConfig?.branding?.logoUrl || '/udsm-logo.png'" alt="Project logo" />
-      <div>
-        <small>{{ projectConfig?.branding?.universityName || 'University of Dar es Salaam' }}</small>
-        <strong>ADMIN PANEL</strong>
+    <div class="sidebar-header">
+      <!-- Toggle button inside sidebar when open -->
+      <button type="button" class="sidebar-toggle-in" (click)="toggleSidebar()">☰</button>
+
+      <div class="brand">
+        <img [src]="projectConfig?.branding?.logoUrl || '/udsm-logo.png'" alt="Project logo" />
+        <div class="brand-text">
+          <div class="uni-name">{{ projectConfig?.branding?.universityName || 'University of Dar es Salaam' }}</div>
+          <strong class="panel-label">ADMIN PANEL</strong>
+        </div>
       </div>
     </div>
     <nav>
@@ -21,8 +27,8 @@
       <a (click)="setTab('users')" [class.active]="activeTab === 'users'">User Management</a>
       <a (click)="setTab('clearance')" [class.active]="activeTab === 'clearance'">Clearance Requests</a>
       <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">Data Upload</a>
-      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">Project Dashboards</a>
-      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">Project Theme</a>
+      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">Institutional Dashboards</a>
+      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">Institutional Theme</a>
       <button type="button" class="logout-link" (click)="logout()">
         Log out
       </button>
@@ -31,9 +37,21 @@
 
   <main class="content-panel">
     <header class="topbar">
-      <div>
-        <h2>Administrator Dashboard</h2>
-        <p>Manage users, offices, requests, and reports</p>
+      <div class="topbar-left">
+        <!-- Toggle button now part of the topbar flow when sidebar is closed -->
+        <button
+          *ngIf="!sidebarOpen"
+          type="button"
+          class="sidebar-toggle-inline"
+          (click)="toggleSidebar()"
+        >
+          ☰
+        </button>
+
+        <div class="header-titles">
+          <h2>Administrator Dashboard</h2>
+          <p>Manage users, offices, requests, and reports</p>
+        </div>
       </div>
       <div *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
         {{ message }}
@@ -58,6 +76,9 @@
         <article class="stat-card danger">
           <span>Rejected</span><strong>{{ stats.rejected }}</strong>
         </article>
+        <article class="stat-card warning">
+          <span>Pending Activation</span><strong>{{ stats.pendingUsers }}</strong>
+        </article>
         <article class="stat-card">
           <span>Total Staff</span><strong>{{ stats.totalStaff }}</strong>
         </article>
@@ -67,7 +88,7 @@
     <!-- Users Tab -->
     <div *ngIf="activeTab === 'users'" class="tab-content">
       <div class="section-header">
-        <h3>User Management</h3>
+        <h3>User Management (Total: {{ users.length }})</h3>
         <div class="header-actions">
           <input type="text" [(ngModel)]="userSearchTerm" placeholder="Search users..." class="search-input">
           <select [(ngModel)]="userRoleFilter" name="userRoleFilter" title="Filter users by role" class="filter-select">
@@ -141,7 +162,8 @@
               <td>{{ user.email }}</td>
               <td>{{ user.registrationNumber || '-' }}</td>
               <td>
-                <select [(ngModel)]="user.role" [name]="'role-' + user.id" (ngModelChange)="updateRole(user.id, $event)">
+                <select [(ngModel)]="user.role" [name]="'role-' + user.id" (ngModelChange)="updateRole(user.id, $event)" class="role-select">
+                  <option [value]="undefined" disabled>Select Role</option>
                   <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
                 </select>
               </td>
@@ -213,7 +235,7 @@
     </div>
 
     <div *ngIf="activeTab === 'dashboards'" class="tab-content">
-      <div class="section-header"><h3>Project Dashboards</h3></div>
+      <div class="section-header"><h3>Institutional Dashboards</h3></div>
       <form (ngSubmit)="addDashboard()" class="form-container">
         <div class="form-grid">
           <div class="form-group"><label>Dashboard ID</label><input [(ngModel)]="newDashboard.id" name="dashboardId" required></div>
@@ -223,19 +245,41 @@
         <button type="submit" class="btn-primary">Add Dashboard</button>
       </form>
       <div class="table-container">
-        <table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Enabled</th><th>Actions</th></tr></thead>
-          <tbody><tr *ngFor="let dashboard of projectConfig?.dashboards">
-            <td>{{ dashboard.id }}</td><td><input [(ngModel)]="dashboard.name" [name]="'name-' + dashboard.id"></td>
-            <td><input [(ngModel)]="dashboard.description" [name]="'description-' + dashboard.id"></td>
-            <td><input type="checkbox" [(ngModel)]="dashboard.enabled" [name]="'enabled-' + dashboard.id"></td>
-            <td><button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button><button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button></td>
-          </tr></tbody>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Enabled</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let dashboard of projectConfig?.dashboards">
+              <td><code style="font-weight: 800; color: var(--udsm-blue);">{{ dashboard.id }}</code></td>
+              <td><input [(ngModel)]="dashboard.name" [name]="'name-' + dashboard.id" class="table-input"></td>
+              <td><input [(ngModel)]="dashboard.description" [name]="'description-' + dashboard.id" class="table-input"></td>
+              <td>
+                <input type="checkbox" [(ngModel)]="dashboard.enabled" [name]="'enabled-' + dashboard.id" style="width: 20px; height: 20px; cursor: pointer;">
+              </td>
+              <td style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button>
+                <button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="!projectConfig?.dashboards?.length">
+              <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                No dashboards found. The system will seed default offices on next refresh.
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
 
     <div *ngIf="activeTab === 'theme'" class="tab-content">
-      <div class="section-header"><h3>Project Theme</h3></div>
+      <div class="section-header"><h3>Institutional Theme</h3></div>
       <form *ngIf="projectConfig" (ngSubmit)="saveTheme()" class="form-container">
         <div class="form-grid">
           <div class="form-group"><label>University name</label><input [(ngModel)]="projectConfig.branding.universityName" name="universityName" required></div>

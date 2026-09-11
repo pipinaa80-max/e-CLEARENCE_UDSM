@@ -1,0 +1,29 @@
+
+> udsm-clearance-mis@0.0.0 start
+> ng serve --port 4200 --host 127.0.0.1
+
+> Building...
+√ Building...
+Application bundle generation failed. [219.305 seconds] - 2026-09-09T10:41:40.844Z
+
+Watch mode enabled. Watching for file changes...
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Application bundle generation failed. [94.419 seconds] - 2026-09-09T10:54:02.694Z
+
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Application bundle generation failed. [27.644 seconds] - 2026-09-09T10:54:30.511Z
+
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size | Estimated transfer size
+main.js             | main          | 967.93 kB |               161.90 kB
+polyfills.js        | polyfills     |  35.78 kB |                11.63 kB
+styles.css          | styles        |   4.33 kB |                 1.33 kB
+
+                    | Initial total |   1.01 MB |               174.87 kB
+
+Application bundle generation complete. [20.637 seconds] - 2026-09-09T10:54:51.230Z
+
+NOTE: Raw file sizes do not reflect development server per-request transformations.
