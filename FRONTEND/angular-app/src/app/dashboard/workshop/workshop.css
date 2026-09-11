@@ -44,7 +44,7 @@
   min-height: 100vh;
   flex-shrink: 0;
   padding: 26px 18px;
-  background: #004b70;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 
@@ -163,7 +163,7 @@
 
 .pending-box strong {
   display: block;
-  color: #000000;
+  color: var(--udsm-blue-dark);
   font-size: 18px;
   font-weight: 800;
 }
@@ -235,7 +235,7 @@
 
 .request-header h2 {
   margin: 0;
-  color: #000000;
+  color: var(--udsm-blue-dark);
   font-size: 16px;
   font-weight: 800;
 }
@@ -359,7 +359,7 @@
 
 .empty-state h2 {
   margin: 0 0 7px;
-  color: #000000;
+  color: var(--udsm-blue-dark);
   font-size: 16px;
   font-weight: 800;
 }
@@ -392,7 +392,7 @@
 
 .modal-card h2 {
   margin: 0 0 8px;
-  color: #000000;
+  color: var(--udsm-blue-dark);
   font-size: 18px;
   font-weight: 800;
 }

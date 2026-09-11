@@ -50,7 +50,7 @@
 
   padding: 26px 18px;
 
-  background: #004b70;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 

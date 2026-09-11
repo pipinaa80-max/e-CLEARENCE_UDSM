@@ -45,7 +45,7 @@
   padding: 26px 18px;
   box-sizing: border-box;
 
-  background: var(--udsm-blue-dark);
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 
@@ -199,7 +199,7 @@
 
   background: #ffffff;
 
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
 
   font-size: 0.72rem;
   font-weight: 800;
@@ -276,7 +276,7 @@
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(0, 59, 92, 0.1);
-  border-color: #003b5c33;
+  border-color: var(--udsm-blue-dark);
 }
 
 .stat-card span {
@@ -417,7 +417,7 @@
 .empty-state h2 {
   margin: 0 0 7px;
 
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
 
   font-size: 1rem;
 }
@@ -692,7 +692,7 @@
 }
 
 .document-summary strong {
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
 
   font-size: 0.7rem;
 }

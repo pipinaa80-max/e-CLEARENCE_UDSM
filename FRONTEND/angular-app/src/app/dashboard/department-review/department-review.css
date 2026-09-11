@@ -86,7 +86,7 @@
 
 .back-btn:hover {
   background: #eef4f7;
-  color: #004b70;
+  color: var(--udsm-blue-dark);
   border-color: #b9cbd5;
 }
 
@@ -246,7 +246,7 @@
 
   background: #e8f1f5;
 
-  color: #004b70;
+  color: var(--udsm-blue-dark);
 
   font-size: 23px;
   font-weight: 800;
@@ -267,7 +267,7 @@
 .student-info h2 {
   margin: 2px 0 15px;
 
-  color: #173b4d;
+  color: var(--udsm-blue-dark);
 
   font-size: 19px;
   font-weight: 800;
@@ -315,7 +315,7 @@
 }
 
 .detail-item strong {
-  color: #294654;
+  color: var(--udsm-blue-dark);
 
   font-size: 10px;
   font-weight: 700;
@@ -400,12 +400,12 @@
 
 .tab-btn:hover {
   background: #f1f5f7;
-  color: #004b70;
+  color: var(--udsm-blue-dark);
   transform: translateY(-1px);
 }
 
 .tab-btn.active {
-  background: #004b70;
+  background: var(--udsm-blue-dark);
   color: #ffffff;
   transform: scale(1.05);
   box-shadow: 0 4px 10px rgba(0, 75, 112, 0.2);
@@ -454,7 +454,7 @@
 
   background: #f7f9fa;
 
-  color: #073c59;
+  color: var(--udsm-blue-dark);
 
   font-size: 11px;
   font-weight: 800;
@@ -478,7 +478,7 @@
 }
 
 .field-value {
-  color: #294654;
+  color: var(--udsm-blue-dark);
 
   font-size: 10px;
   font-weight: 700;
@@ -533,7 +533,7 @@
 .doc-info h4 {
   margin: 0 0 5px;
 
-  color: #294654;
+  color: var(--udsm-blue-dark);
 
   font-size: 10px;
 }
@@ -635,7 +635,7 @@
 
   margin-top: 5px;
 
-  color: #004b70;
+  color: var(--udsm-blue-dark);
 
   font-size: 18px;
   font-weight: 800;
@@ -669,7 +669,7 @@
 }
 
 .approval-info strong {
-  color: #294654;
+  color: var(--udsm-blue-dark);
 
   font-size: 11px;
 }
@@ -732,7 +732,7 @@
 .action-header h3 {
   margin: 0;
 
-  color: #073c59;
+  color: var(--udsm-blue-dark);
 
   font-size: 14px;
   font-weight: 800;

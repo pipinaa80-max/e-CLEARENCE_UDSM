@@ -61,10 +61,11 @@ export class App {
     const root = document.documentElement;
     if (config.primaryColor) {
       root.style.setProperty('--udsm-blue', config.primaryColor);
-      root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${config.primaryColor} 80%, #000000)`);
-      root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 10%, #ffffff)`);
-      // Update hero gradients globally
-      root.style.setProperty('--hero-gradient', `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.7)), linear-gradient(${config.primaryColor}CC, ${config.primaryColor}DD)`);
+      root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${config.primaryColor} 85%, #000)`);
+      root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 12%, #fff)`);
+      // Explicitly set sidebar background to match primary or dark version for better UI
+      root.style.setProperty('--sidebar-bg', config.primaryColor);
+      root.style.setProperty('--hero-gradient', `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.75)), linear-gradient(${config.primaryColor}CC, ${config.primaryColor}EE)`);
     }
     if (config.fontFamily) root.style.setProperty('--app-font-family', config.fontFamily);
     if (config.logoUrl) root.style.setProperty('--app-logo-url', `url("${config.logoUrl}")`);

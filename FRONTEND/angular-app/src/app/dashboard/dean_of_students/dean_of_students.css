@@ -44,7 +44,7 @@
   min-height: 100vh;
   flex-shrink: 0;
   padding: 26px 18px;
-  background: #004b70;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 

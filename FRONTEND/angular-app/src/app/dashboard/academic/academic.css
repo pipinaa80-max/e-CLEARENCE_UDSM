@@ -47,7 +47,7 @@
 
 .sidebar {
   padding: 26px 18px;
-  background: var(--udsm-blue-dark);
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 

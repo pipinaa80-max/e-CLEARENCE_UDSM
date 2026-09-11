@@ -39,7 +39,7 @@
 .sidebar {
   width: 280px;
   flex-shrink: 0;
-  background: var(--udsm-blue-dark);
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -260,7 +260,7 @@
 .stat-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 28px rgba(0, 59, 92, 0.12);
-  border-color: var(--udsm-gold);
+  border-color: var(--udsm-blue-dark);
 }
 
 .stat-card span {

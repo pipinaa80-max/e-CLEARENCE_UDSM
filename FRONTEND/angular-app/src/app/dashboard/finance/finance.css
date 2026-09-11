@@ -42,7 +42,7 @@
   flex: 0 0 235px;
   padding: 26px 18px;
   box-sizing: border-box;
-  background: #003b5c;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 

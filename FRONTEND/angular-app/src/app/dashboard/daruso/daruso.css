@@ -50,7 +50,7 @@
   padding: 26px 18px;
   box-sizing: border-box;
 
-  background: #003b5c;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 
@@ -209,7 +209,7 @@
 }
 
 .count strong {
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
   font-size: 1.1rem;
   line-height: 1;
 }
@@ -289,7 +289,7 @@
 .empty-state h2 {
   margin: 0 0 7px;
 
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
 
   font-size: 1rem;
 }
@@ -649,7 +649,7 @@
 .modal-card h2 {
   margin: 0 0 8px;
 
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
 
   font-size: 1.05rem;
   font-weight: 800;

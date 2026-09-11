@@ -42,7 +42,7 @@
   flex: 0 0 235px;
   padding: 26px 18px;
   box-sizing: border-box;
-  background: #003b5c;
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
 }
 
@@ -163,7 +163,7 @@
   border: 1px solid #d8e0e5;
   border-radius: 7px;
   background: #ffffff;
-  color: #003b5c;
+  color: var(--udsm-blue-dark);
   font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
@@ -227,7 +227,7 @@
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px rgba(0, 59, 92, 0.1);
-  border-color: #003b5c33;
+  border-color: var(--udsm-blue-dark);
 }
 
 .stat-card span {

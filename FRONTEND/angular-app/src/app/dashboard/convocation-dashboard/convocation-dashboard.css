@@ -54,7 +54,7 @@
 
   padding: 28px 18px;
 
-  background: linear-gradient(180deg, #004b70 0%, #003b59 100%);
+  background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #fff;
 }
 
@@ -222,7 +222,7 @@
 
   background: #e7f1f6;
 
-  color: #004b70;
+  color: var(--udsm-blue-dark);
 
   font-size: 14px;
   font-weight: 800;
@@ -282,7 +282,7 @@
 
   margin-top: 8px;
 
-  color: #073c59;
+  color: var(--udsm-blue-dark);
 
   font-size: 27px;
   font-weight: 800;
@@ -368,7 +368,7 @@
 .section-header h2 {
   margin: 0;
 
-  color: #073c59;
+  color: var(--udsm-blue-dark);
 
   font-size: 17px;
   font-weight: 800;
@@ -442,7 +442,7 @@
 
   background: #e8f1f5;
 
-  color: #004b70;
+  color: var(--udsm-blue-dark);
 
   font-size: 16px;
   font-weight: 800;
@@ -595,7 +595,7 @@
 .receipt-received strong {
   display: block;
 
-  color: #294654;
+  color: var(--udsm-blue-dark);
 
   font-size: 11px;
 }
@@ -667,7 +667,7 @@
 
   background: #eaf4fa;
 
-  color: #004b70;
+  color: var(--udsm-blue-dark);
 
   font-size: 16px;
   letter-spacing: 0.04em;
@@ -841,7 +841,7 @@
 .empty-state h3 {
   margin: 0 0 7px;
 
-  color: #073c59;
+  color: var(--udsm-blue-dark);
 
   font-size: 16px;
 }
@@ -967,7 +967,7 @@
 
     display: block;
 
-    background: #004b70;
+    background: var(--sidebar-bg, var(--udsm-blue-dark));
   }
 
   .topbar-title h1 {
