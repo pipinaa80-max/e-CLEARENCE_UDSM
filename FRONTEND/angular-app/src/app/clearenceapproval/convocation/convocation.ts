@@ -45,7 +45,6 @@ export class ConvocationComponent implements OnInit {
 
   form = this.fb.nonNullable.group({
     controlNumber: [''],
-    receiptNumber: ['', Validators.required],
     file: [null as File | null]
   });
 
@@ -421,7 +420,7 @@ export class ConvocationComponent implements OnInit {
     this.convocationService.submitReceipt({
       studentId: user.id,
       controlNumber: this.controlNumber,
-      receiptNumber: this.form.controls.receiptNumber.value || ('REC-' + Date.now().toString().slice(-6)),
+      receiptNumber: 'REC-' + Date.now().toString().slice(-6),
       paymentDate: new Date().toISOString() // Required by backend validation
     }, file).subscribe({
       next: (res) => {
