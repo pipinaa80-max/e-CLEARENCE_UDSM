@@ -570,12 +570,29 @@
   min-height: 90px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px;
+  gap: 24px;
+  padding: 24px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 16px;
   background: #f8fafc;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.control-number-box {
+  border-left: 5px solid #f6b418;
+}
+
+.issued-control {
+  border-left: 5px solid var(--udsm-blue);
+  background: linear-gradient(to right, #f0f7ff, #ffffff);
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.receipt-received {
+  border-left: 5px solid #10b981;
+  background: linear-gradient(to right, #f0fdf4, #ffffff);
 }
 
 .requested-info {
@@ -585,7 +602,8 @@
   flex: 1;
 }
 
-.requested-icon {
+.requested-icon,
+.success-icon {
   font-size: 24px;
   background: #fff;
   width: 48px;
@@ -599,21 +617,18 @@
 .requested-info strong,
 .receipt-received strong {
   display: block;
-
   color: var(--udsm-blue-dark);
-
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .requested-info small,
 .receipt-received small {
   display: block;
-
   margin-top: 4px;
-
-  color: #8a949b;
-
-  font-size: 9px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .issue-btn,
@@ -657,25 +672,44 @@
 }
 
 .control-label {
-  color: #7b858c;
-
-  font-size: 9px;
+  display: block;
+  color: #64748b;
+  font-size: 10px;
   font-weight: 800;
-
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
 }
 
 .control-number {
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
   background: var(--udsm-blue-dark);
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   font-family: 'Courier New', Courier, monospace;
-  box-shadow: 0 4px 10px rgba(5, 63, 112, 0.25);
+  box-shadow: 0 4px 12px rgba(5, 63, 112, 0.2);
   display: inline-block;
+}
+
+.instruction-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.info-icon {
+  font-size: 16px;
 }
 
 
@@ -683,12 +717,6 @@
 
 .receipt-received {
   border-color: #cfe8d5;
-
-  background: #f1faf3;
-}
-
-.success-icon {
-  font-size: 22px;
 }
 
 

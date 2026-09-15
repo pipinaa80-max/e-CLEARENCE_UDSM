@@ -171,7 +171,10 @@
                   <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
                 </div>
               </div>
-              <small>Student should upload payment receipt</small>
+              <div class="instruction-box">
+                <span class="info-icon">ℹ️</span>
+                <span>Student should upload payment receipt</span>
+              </div>
             </div>
 
             <div *ngIf="request.convocation?.receiptSubmittedAt" class="receipt-received">
