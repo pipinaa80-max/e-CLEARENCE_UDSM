@@ -162,6 +162,18 @@ export class ConvocationDashboardComponent implements OnInit {
 
   viewReceipt(request: ClearanceRequest): void {
     const data = this.getReceiptFile(request);
+
+    // Fallback: If it's a legacy request marked as received but no data, show a verification message
+    if (!data && request.convocation?.receiptSubmittedAt) {
+        this.receiptToView = {
+            name: this.getStudentName(request),
+            reg: this.getStudentRegNumber(request),
+            data: 'Manual Verification: Student has been manually verified by an officer. No digital file was uploaded.'
+        };
+        this.showReceiptModal = true;
+        return;
+    }
+
     if (data) {
       this.receiptToView = {
         name: this.getStudentName(request),
@@ -170,22 +182,21 @@ export class ConvocationDashboardComponent implements OnInit {
       };
       this.showReceiptModal = true;
     } else {
-      alert('The student has not uploaded a digital receipt yet.');
+      alert('This student has not submitted a digital receipt for viewing.');
     }
   }
 
   viewBackendReceipt(receipt: any): void {
-    if (!receipt || !receipt.fileUrl) {
-      alert('No receipt file found.');
+    const url = receipt.fileUrl || receipt.receiptData;
+
+    if (!url) {
+      alert('Digital evidence is missing for this submission.');
       return;
     }
 
-    // Ensure URL is handled correctly (relative or absolute)
-    let url = receipt.fileUrl;
-
     this.receiptToView = {
       name: receipt.studentName || 'Student',
-      reg: receipt.registrationNumber || '',
+      reg: receipt.registrationNumber || 'N/A',
       data: url
     };
     this.showReceiptModal = true;
