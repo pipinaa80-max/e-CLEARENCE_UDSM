@@ -30,6 +30,7 @@ export interface ConvocationPayment {
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;
   receiptFileName?: string;
+  receiptData?: string;
   receiptSubmittedAt?: string;
 }
 
