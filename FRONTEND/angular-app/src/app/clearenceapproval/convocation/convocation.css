@@ -101,24 +101,28 @@
 }
 
 .back-link {
-  margin-top: 22px;
-
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
-
-  font-size: 0.75rem;
-
+  font-size: 0.72rem;
   font-weight: 800;
-
   text-decoration: none;
-
   white-space: nowrap;
+  transition: all 0.2s ease;
   animation: fadeInUp 0.5s ease-out both;
 }
 
 .back-link:hover {
-  color: var(--udsm-blue-dark);
-
-  text-decoration: underline;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #ffffff;
+  transform: translateY(-2px);
 }
 
 
@@ -480,25 +484,30 @@
 ===================================================== */
 
 .status-link {
-  display: block;
-
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
-
-  margin: 24px auto 0;
-
-  color: var(--udsm-blue);
-
-  font-size: 0.74rem;
-
-  font-weight: 800;
-
+  margin: 32px auto 0;
+  padding: 10px 20px;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
   text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .status-link:hover {
-  color: var(--udsm-blue-dark);
+  color: var(--udsm-blue);
+  background: var(--surface-soft);
+  transform: translateY(-1px);
+}
 
-  text-decoration: underline;
+.status-link::before {
+  content: '←';
+  margin-right: 8px;
+  font-size: 1rem;
 }
 
 

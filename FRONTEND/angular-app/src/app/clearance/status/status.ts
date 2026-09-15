@@ -355,7 +355,7 @@ export class ClearanceStatusComponent {
   }
 
   goBack(): void {
-    window.history.back();
+    this.router.navigate(['/dashboard']);
   }
 
   // =====================================================
