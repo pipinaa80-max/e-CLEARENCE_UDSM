@@ -168,6 +168,15 @@ export class ConvocationDashboardComponent implements OnInit {
     return !!photo && photo.startsWith('data:image');
   }
 
+  onImageError(request: ClearanceRequest): void {
+    console.error('Image failed to load for request:', request.id);
+    // Optionally clear the photo in cache if needed
+    if (request.studentId) {
+      this.studentCache.delete(request.studentId);
+    }
+    request.photo = '';
+  }
+
   issueControlNumber(request: ClearanceRequest): void {
     this.errorMessage = '';
     this.message = '';

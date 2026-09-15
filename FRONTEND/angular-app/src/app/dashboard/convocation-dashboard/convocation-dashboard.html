@@ -36,6 +36,12 @@
       [user]="currentUser"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="refreshData()" [disabled]="isLoading">
+          <span *ngIf="!isLoading">🔄 Refresh</span>
+          <span *ngIf="isLoading">...</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
     <section class="stats-grid">
@@ -68,12 +74,12 @@
 
     <section class="request-section" *ngIf="backendReceipts.length > 0">
       <div class="section-header">
-        <h2 style="color: #0864af;">Online Payment Submissions (New)</h2>
+        <h2>Online Payment Submissions</h2>
         <span class="request-count">{{ backendReceipts.length }} pending verification</span>
       </div>
 
       <div class="request-list">
-        <div class="request-card" *ngFor="let receipt of backendReceipts" style="border-left: 5px solid #f6b418;">
+        <div class="request-card online-submission" *ngFor="let receipt of backendReceipts">
           <div class="student-header">
             <div class="student-avatar">
               <span class="initials">{{ receipt.studentName?.charAt(0) }}</span>
@@ -91,14 +97,14 @@
             </div>
           </div>
 
-          <div class="action-buttons" style="margin-top: 15px; display: flex; gap: 10px;">
-            <a [href]="receipt.fileUrl" target="_blank" class="view-btn" style="padding: 8px 15px; background: #e9f3fb; border-radius: 4px; text-decoration: none; color: #0864af; font-weight: bold;">
+          <div class="action-buttons">
+            <a [href]="receipt.fileUrl" target="_blank" class="view-btn">
               👁️ View Receipt
             </a>
-            <button (click)="approveBackendReceipt(receipt.id)" class="approve-btn" style="background: #2e7d32; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            <button (click)="approveBackendReceipt(receipt.id)" class="approve-btn">
               ✅ Verify & Approve
             </button>
-            <button (click)="rejectBackendReceipt(receipt.id)" class="reject-btn" style="background: #c62828; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            <button (click)="rejectBackendReceipt(receipt.id)" class="reject-btn">
               ❌ Reject
             </button>
           </div>
@@ -108,7 +114,7 @@
 
     <section class="request-section">
       <div class="section-header">
-        <h2>Pending Control Number Requests</h2>
+        <h2>Student Clearance Requests</h2>
         <span class="request-count">{{ requests.length }} requests</span>
       </div>
 
@@ -128,7 +134,7 @@
 
           <div class="student-header">
             <div class="student-avatar">
-              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" (error)="getStudentPhoto(request)" />
+              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" (error)="onImageError(request)" />
               <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
             </div>
 
@@ -154,29 +160,24 @@
 
           <div class="control-section">
             <div *ngIf="!request.convocation?.controlNumber" class="control-number-box">
-              <div *ngIf="!request.convocation?.controlNumberRequestedAt">
-                <p class="info-text">Student has not requested a control number yet.</p>
-              </div>
-              <div *ngIf="request.convocation?.controlNumberRequestedAt" class="requested-info">
-                <span class="requested-icon">📨</span>
+              <div class="requested-info">
+                <span class="requested-icon">{{ request.convocation?.controlNumberRequestedAt ? '📨' : 'ℹ️' }}</span>
                 <div>
-                  <strong>Control Number Requested</strong>
-                  <small>Student is waiting for control number issuance</small>
+                  <strong>{{ request.convocation?.controlNumberRequestedAt ? 'Control Number Requested' : 'Awaiting Request' }}</strong>
+                  <small>{{ request.convocation?.controlNumberRequestedAt ? 'Student is waiting for control number issuance' : 'Student has not requested a control number yet.' }}</small>
                 </div>
               </div>
-              <button type="button" class="issue-btn" (click)="issueControlNumber(request)" [disabled]="isLoading || !request.convocation?.controlNumberRequestedAt">
-                <span *ngIf="!isLoading">🔑 Issue Control Number</span>
-                <span *ngIf="isLoading">Processing...</span>
-              </button>
             </div>
 
             <div *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" class="issued-control">
-              <span class="control-label">Control Number Issued</span>
-              <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
-              <small>Waiting for payment receipt</small>
-              <button type="button" class="receipt-btn" (click)="markReceiptReceived(request)" [disabled]="isLoading">
-                📄 Mark Receipt Received
-              </button>
+              <div class="requested-info">
+                <span class="requested-icon">🔢</span>
+                <div>
+                  <span class="control-label">Control Number Issued</span>
+                  <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
+                </div>
+              </div>
+              <small>Student should upload payment receipt</small>
             </div>
 
             <div *ngIf="request.convocation?.receiptSubmittedAt" class="receipt-received">
@@ -189,28 +190,39 @@
           </div>
 
           <div class="action-buttons">
+            <!-- STEP 1: ISSUE CONTROL NUMBER -->
             <button
-              *ngIf="!request.convocation?.receiptSubmittedAt"
+              *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber"
+              type="button"
+              class="issue-btn"
+              (click)="issueControlNumber(request)"
+              [disabled]="isLoading"
+            >
+              <span *ngIf="!isLoading">🔑 Issue Control Number</span>
+              <span *ngIf="isLoading">Processing...</span>
+            </button>
+
+            <!-- STEP 2: MARK RECEIPT RECEIVED (If student paid but didn't upload) -->
+            <button
+              *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt"
               type="button"
               class="approve-btn"
               (click)="markReceiptReceived(request)"
-              [disabled]="!request.convocation?.controlNumber || isLoading"
+              [disabled]="isLoading"
             >
-              ✅ Mark Receipt Received
+              📄 Mark Receipt Received
             </button>
 
+            <!-- STEP 3: FINAL APPROVAL -->
             <button
               *ngIf="request.convocation?.receiptSubmittedAt"
               type="button"
               class="final-approve-btn"
               (click)="approveRequest(request)"
               [disabled]="isLoading"
-              style="background-color: #2e7d32; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"
             >
-               Final Approval
+               ✅ Final Approval
             </button>
-
-
           </div>
 
         </div>

@@ -229,6 +229,34 @@
 }
 
 
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* =========================
    STATISTICS
 ========================= */
@@ -299,15 +327,18 @@
 }
 
 .stat-card.pending {
-  border-top: 3px solid #d49b00;
+  border-top: 4px solid #f6b418;
+  background: linear-gradient(to bottom, #fff9e6, #fff);
 }
 
 .stat-card.issued {
-  border-top: 3px solid #0876a9;
+  border-top: 4px solid #0876a9;
+  background: linear-gradient(to bottom, #f0f7ff, #fff);
 }
 
 .stat-card.completed {
-  border-top: 3px solid #2e7d32;
+  border-top: 4px solid #10b981;
+  background: linear-gradient(to bottom, #f0fdf4, #fff);
 }
 
 
@@ -353,31 +384,33 @@
 .request-section {
   width: 100%;
   max-width: 1100px;
-
-  margin: 0 auto;
+  margin: 0 auto 40px;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(8, 100, 175, 0.1);
 }
 
 .section-header h2 {
   margin: 0;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 17px;
+  color: var(--udsm-blue);
+  font-size: 1.1rem;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .request-count {
-  color: #7b858c;
-
-  font-size: 10px;
+  background: var(--udsm-blue-light);
+  color: var(--udsm-blue);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -393,23 +426,35 @@
 }
 
 .request-card {
-  padding: 23px;
-
-  border: 1px solid #e1e6ea;
-  border-radius: 11px;
-
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   background: #fff;
-
-  box-shadow: 0 4px 18px rgba(0, 39, 60, 0.05);
-
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeInUp 0.6s ease-out both;
+  border-left: 6px solid #e2e8f0;
 }
 
 .request-card:hover {
-  transform: translateY(-3px) scale(1.002);
-  box-shadow: 0 12px 28px rgba(0, 39, 60, 0.09);
-  border-color: #0876a944;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.request-card.online-submission {
+  border-left-color: var(--udsm-gold);
+}
+
+.request-card:has(.status-badge.control-requested) {
+  border-left-color: var(--udsm-gold);
+}
+
+.request-card:has(.status-badge.control-issued) {
+  border-left-color: var(--udsm-blue);
+}
+
+.request-card:has(.status-badge.receipt-received) {
+  border-left-color: #10b981;
 }
 
 
@@ -419,33 +464,26 @@
 
 .student-header {
   display: flex;
-  align-items: flex-start;
-  gap: 15px;
-
-  padding-bottom: 18px;
-
-  border-bottom: 1px solid #edf0f2;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .student-avatar {
-  width: 52px;
-  height: 52px;
-
+  width: 60px;
+  height: 60px;
   flex-shrink: 0;
-
   display: grid;
   place-items: center;
-
   overflow: hidden;
-
-  border-radius: 50%;
-
-  background: #e8f1f5;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 16px;
+  border-radius: 14px;
+  background: var(--udsm-blue-light, #eef6ff);
+  color: var(--udsm-blue);
+  font-size: 20px;
   font-weight: 800;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .student-avatar img {
@@ -485,11 +523,11 @@
 }
 
 .academic-info {
-  margin: 7px 0 0;
-
-  color: #7a858d;
-
-  font-size: 10px;
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .submitted-date {
@@ -557,38 +595,33 @@
 .control-number-box,
 .issued-control,
 .receipt-received {
-  min-height: 80px;
-
+  min-height: 90px;
   display: flex;
   align-items: center;
-  gap: 15px;
-
-  padding: 16px;
-
-  border: 1px solid #e3e8eb;
-  border-radius: 8px;
-
-  background: #fafcfd;
-}
-
-.info-text {
-  margin: 0;
-
-  color: #7b858c;
-
-  font-size: 10px;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  margin-bottom: 5px;
 }
 
 .requested-info {
   display: flex;
   align-items: center;
-  gap: 11px;
-
+  gap: 15px;
   flex: 1;
 }
 
 .requested-icon {
-  font-size: 22px;
+  font-size: 24px;
+  background: #fff;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .requested-info strong,
@@ -661,16 +694,16 @@
 }
 
 .control-number {
-  padding: 8px 13px;
-
-  border-radius: 6px;
-
-  background: #eaf4fa;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 16px;
-  letter-spacing: 0.04em;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--udsm-blue-dark);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 4px 10px rgba(5, 63, 112, 0.25);
+  display: inline-block;
 }
 
 
@@ -693,70 +726,120 @@
 
 .action-buttons {
   display: flex;
-
   justify-content: flex-end;
-
-  gap: 10px;
-
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #f0f2f5;
 }
 
 .approve-btn,
-.final-approve-btn {
-  min-height: 40px;
-
-  padding: 0 18px;
-
-  border-radius: 6px;
-
+.final-approve-btn,
+.reject-btn,
+.issue-btn,
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 8px;
   font-family: inherit;
-
-  font-size: 10px;
-  font-weight: 800;
-
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+
+.issue-btn {
+  background: var(--udsm-blue);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(8, 100, 175, 0.2);
+}
+
+.issue-btn:hover:not(:disabled) {
+  background: var(--udsm-blue-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(8, 100, 175, 0.3);
+}
+
+.view-btn {
+  background: #f1f5f9;
+  color: #475569;
+  text-decoration: none;
+}
+
+.view-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
 }
 
 .approve-btn {
-  border: 1px solid #0876a9;
-
-  background: #0876a9;
-
+  background: #10b981;
   color: #fff;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
 }
 
 .approve-btn:hover:not(:disabled) {
-  background: #06648f;
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
 }
 
-.approve-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.reject-btn {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+}
+
+.reject-btn:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
 }
 
 .final-approve-btn {
-  border: 1px solid #2e7d32;
-
-  background: #2e7d32;
-
+  background: #059669;
   color: #fff;
-
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 24px;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
 }
 
 .final-approve-btn:hover:not(:disabled) {
-  background: #256628;
-  transform: scale(1.06);
-  box-shadow: 0 6px 14px rgba(46, 125, 50, 0.3);
+  background: #047857;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(5, 150, 105, 0.35);
 }
 
-.final-approve-btn:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
+.issue-btn:disabled,
+.approve-btn:disabled,
+.reject-btn:disabled,
 .final-approve-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
+  background: #cbd5e1;
+  color: #64748b;
+  box-shadow: none;
   cursor: not-allowed;
+  transform: none;
+}
+
+.receipt-btn {
+  background: #0ea5e9;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.receipt-btn:hover:not(:disabled) {
+  background: #0284c7;
+  transform: scale(1.05);
 }
 
 
