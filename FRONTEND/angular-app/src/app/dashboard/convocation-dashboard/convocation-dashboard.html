@@ -155,7 +155,6 @@
           <div class="control-section">
             <div *ngIf="!request.convocation?.controlNumber" class="control-number-box">
               <div class="requested-info">
-                <span class="requested-icon">{{ request.convocation?.controlNumberRequestedAt ? '📨' : 'ℹ️' }}</span>
                 <div>
                   <strong>{{ request.convocation?.controlNumberRequestedAt ? 'Control Number Requested' : 'Awaiting Request' }}</strong>
                   <small>{{ request.convocation?.controlNumberRequestedAt ? 'Student is waiting for control number issuance' : 'Student has not requested a control number yet.' }}</small>
@@ -165,14 +164,12 @@
 
             <div *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" class="issued-control">
               <div class="requested-info">
-                <span class="requested-icon">🔢</span>
                 <div>
                   <span class="control-label">Control Number Issued</span>
                   <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
                 </div>
               </div>
               <div class="instruction-box">
-                <span class="info-icon">ℹ️</span>
                 <span>Student should upload payment receipt</span>
               </div>
             </div>
