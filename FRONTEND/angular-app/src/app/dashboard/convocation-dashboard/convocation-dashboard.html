@@ -176,10 +176,13 @@
 
             <div *ngIf="request.convocation?.receiptSubmittedAt" class="receipt-received">
               <span class="success-icon">✅</span>
-              <div>
+              <div style="flex: 1;">
                 <strong>Receipt Received</strong>
                 <small>Awaiting final Convocation approval</small>
               </div>
+              <button type="button" class="view-btn" (click)="viewReceipt(request)" style="margin-left: auto;">
+                👁️ View Receipt
+              </button>
             </div>
           </div>
 

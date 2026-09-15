@@ -343,37 +343,17 @@ export class ConvocationComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     this.errorMessage = '';
-
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
 
-    this.selectedFileName = '';
-    this.form.controls.file.setValue(null);
+    if (!file) return;
 
-    if (!file) {
-      return;
-    }
-
-    const allowedTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/png'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      this.errorMessage = 'Please upload a PDF, JPG, JPEG or PNG receipt.';
-      input.value = '';
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      this.errorMessage = 'Receipt must not exceed 5 MB.';
-      input.value = '';
-      return;
-    }
-
-    this.selectedFileName = file.name;
-    this.form.controls.file.setValue(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.selectedFileName = file.name;
+      this.form.controls.file.setValue(reader.result as any);
+    };
+    reader.readAsDataURL(file);
   }
 
   // =====================================================
@@ -386,76 +366,34 @@ export class ConvocationComponent implements OnInit {
     this.isLoading = true;
 
     const user = this.currentUser;
-
-    if (!user) {
-      this.router.navigate(['/login']);
-      this.isLoading = false;
-      return;
-    }
-
     const request = this.studentRequest;
+    const receiptData = this.form.controls.file.value as unknown as string;
 
-    if (!request) {
-      this.errorMessage = 'No active clearance request was found.';
+    if (!user || !request || !receiptData) {
+      this.errorMessage = 'Please select a receipt file first.';
       this.isLoading = false;
       return;
     }
 
-    // The student must have a control number first
-    if (!this.controlNumber) {
-      this.errorMessage = 'Please wait for Convocation to issue your control number.';
-      this.isLoading = false;
-      return;
-    }
+    // 1. Update local storage with the actual receipt data
+    this.clearanceService.submitConvocationReceipt(
+        request.id,
+        receiptData
+    );
 
-    const file = this.form.controls.file.value;
+    this.notificationService.createNotification(
+        user.id,
+        'Payment receipt submitted',
+        'Your payment receipt has been submitted to Convocation for verification.',
+        'success'
+    );
 
-    if (!file) {
-      this.errorMessage = 'Please upload your payment receipt.';
-      this.isLoading = false;
-      return;
-    }
+    this.message = '✅ Payment receipt submitted successfully. Redirecting to status...';
+    this.isLoading = false;
 
-    // 1. Submit to Real Backend
-    this.convocationService.submitReceipt({
-      studentId: user.id,
-      controlNumber: this.controlNumber,
-      receiptNumber: 'REC-' + Date.now().toString().slice(-6),
-      paymentDate: new Date().toISOString() // Required by backend validation
-    }, file).subscribe({
-      next: (res) => {
-        console.log('Backend receipt submission successful:', res);
-
-        // 2. Also update local storage for continuity
-        this.clearanceService.submitConvocationReceipt(
-          request.id,
-          file.name
-        );
-
-        this.notificationService.createNotification(
-          user.id,
-          'Payment receipt submitted',
-          'Your payment receipt has been submitted to Convocation for verification.',
-          'success'
-        );
-
-        this.message = 'Payment receipt submitted successfully. Redirecting to status...';
-        this.form.controls.file.setValue(null);
-        this.selectedFileName = '';
-
-        this.isLoading = false;
-
-        // Auto-navigate to status after success
-        setTimeout(() => {
-          this.router.navigate(['/clearance/status']);
-        }, 2000);
-      },
-      error: (err) => {
-        console.error('Backend submission error:', err);
-        this.errorMessage = 'Failed to submit receipt to office: ' + (err.error?.message || err.message);
-        this.isLoading = false;
-      }
-    });
+    setTimeout(() => {
+      this.router.navigate(['/clearance/status']);
+    }, 2000);
   }
 
   // =====================================================

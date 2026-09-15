@@ -411,7 +411,7 @@ export class ClearanceService {
   // STEP 1 - STUDENT SUBMITS PAYMENT RECEIPT
   // =====================================================
 
-  submitConvocationReceipt(requestId: string, fileName: string): void {
+  submitConvocationReceipt(requestId: string, receiptData: string): void {
     const request = this.getRequest(requestId);
 
     if (!request) {
@@ -431,7 +431,8 @@ export class ClearanceService {
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      receiptFileName: fileName,
+      receiptFileName: 'Payment Receipt', // Display name
+      receiptData: receiptData, // Store the base64 or reference
       receiptSubmittedAt: new Date().toISOString()
     };
 
