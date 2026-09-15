@@ -1,7 +1,7 @@
 // profile.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthService } from '../core/services/auth.service';
@@ -20,6 +20,7 @@ export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
 
   sidebarOpen = false;
   profilePhoto: string | null = null;

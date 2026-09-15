@@ -1,10 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
-@Component({ selector: 'app-clearance-confirmation', standalone: true, imports: [CommonModule, RouterLink, DashboardHeaderComponent], templateUrl: './confirmation.html', styleUrl: './confirmation.css' })
+@Component({
+  selector: 'app-clearance-confirmation',
+  standalone: true,
+  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  templateUrl: './confirmation.html',
+  styleUrl: './confirmation.css'
+})
 export class ClearanceConfirmationComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);

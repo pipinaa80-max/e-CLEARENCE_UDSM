@@ -1,16 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
-@Component({ selector: 'app-clearance-history', standalone: true, imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent], templateUrl: './history.html', styleUrl: './history.css' })
+@Component({ selector: 'app-clearance-history', standalone: true, imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent], templateUrl: './history.html', styleUrl: './history.css' })
 export class ClearanceHistoryComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly router = inject(Router);
   filter = 'All';
   sidebarOpen = false;
 

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
@@ -11,7 +11,7 @@ import { DashboardHeaderComponent } from '../shared/components/dashboard-header/
 @Component({
   selector: 'app-transcript',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './transcript.html',
   styleUrl: './transcript.css'
 })

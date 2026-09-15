@@ -155,13 +155,11 @@
 .history-card {
   width: min(100%, 1050px);
   margin: 32px auto;
-  padding: 32px;
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-soft);
-}
-  box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }
 
 .history-card > header {

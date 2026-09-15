@@ -1,13 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { NotificationService } from '../core/services/notification.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 
-@Component({ selector: 'app-notifications', standalone: true, imports: [CommonModule, RouterLink, DashboardHeaderComponent], templateUrl: './notifications.html', styleUrl: './notifications.css' })
+@Component({ selector: 'app-notifications', standalone: true, imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent], templateUrl: './notifications.html', styleUrl: './notifications.css' })
 export class NotificationListComponent {
-  private readonly authService = inject(AuthService); private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly router = inject(Router);
   sidebarOpen = false;
   get user() { return this.authService.getCurrentUser(); }
   get currentUser() { return this.user; }

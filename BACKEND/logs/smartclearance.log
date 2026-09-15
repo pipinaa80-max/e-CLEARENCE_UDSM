@@ -3304,3 +3304,134 @@ Unconditional classes:
 2026-09-15 17:09:12 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AuthController - 👤 Get current user profile
 2026-09-15 17:09:12 [http-nio-8080-exec-10] INFO  c.UDSM.BACKEND.Service.AuthService - Getting current user: china@udom.ac.tz
 2026-09-15 17:09:12 [http-nio-8080-exec-10] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: china@udom.ac.tz
+2026-09-15 20:19:42 [HikariPool-7:housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-7 - Thread starvation or clock leap detected (housekeeper delta=3h30s675ms852µs900ns).
+2026-09-15 20:47:44 [HikariPool-7:housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-7 - Thread starvation or clock leap detected (housekeeper delta=28m13s956ms867µs900ns).
+2026-09-15 21:50:08 [HikariPool-7:housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-7 - Thread starvation or clock leap detected (housekeeper delta=51s470ms137µs900ns).
+2026-09-15 22:22:35 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/profile
+2026-09-15 22:22:35 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /auth/profile
+2026-09-15 22:22:35 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:22:35 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: china@udom.ac.tz
+2026-09-15 22:22:35 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: china@udom.ac.tz
+2026-09-15 22:22:36 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: china@udom.ac.tz with role: STUDENT
+2026-09-15 22:22:36 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: china@udom.ac.tz
+2026-09-15 22:22:36 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /auth/profile
+2026-09-15 22:22:36 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AuthController - 👤 Get current user profile
+2026-09-15 22:22:36 [http-nio-8080-exec-3] INFO  c.UDSM.BACKEND.Service.AuthService - Getting current user: china@udom.ac.tz
+2026-09-15 22:22:36 [http-nio-8080-exec-3] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: china@udom.ac.tz
+2026-09-15 22:22:45 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-15 22:22:45 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-15 22:22:45 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 22:22:45 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-15 22:22:46 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: admin@udom.ac.tz
+2026-09-15 22:22:46 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:46 [http-nio-8080-exec-2] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:22:46 [http-nio-8080-exec-2] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-09-15 22:22:46 [http-nio-8080-exec-2] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/users
+2026-09-15 22:22:48 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/clearance-requests
+2026-09-15 22:22:48 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /admin/roles
+2026-09-15 22:22:48 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/users
+2026-09-15 22:22:48 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/clearance-requests
+2026-09-15 22:22:48 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /admin/roles
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/users
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:22:48 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/clearance-requests
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /admin/roles
+2026-09-15 22:22:48 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /control-plane/overview
+2026-09-15 22:22:48 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:22:48 [http-nio-8080-exec-9] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllRoles(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-8] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllClearanceRequests(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-7] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.AdminController.getAllUsers(); target is of class [com.UDSM.BACKEND.Controller.AdminController]
+2026-09-15 22:22:48 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AdminController - Admin: Fetching all clearance requests
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AdminController - Admin: Fetching all users via service
+2026-09-15 22:22:48 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AdminController - Admin: Fetching all available roles
+2026-09-15 22:22:48 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:22:48 [http-nio-8080-exec-7] INFO  c.UDSM.BACKEND.Service.AdminService - Admin: Fetching users for project scope: project-50194d03-eada-4e34-9518-37b328c325c2
+2026-09-15 22:22:48 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: admin@udom.ac.tz
+2026-09-15 22:22:48 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /control-plane/overview
+2026-09-15 22:22:48 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.overview(); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
+2026-09-15 22:22:48 [http-nio-8080-exec-10] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.overview(); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
+2026-09-15 22:22:49 [http-nio-8080-exec-7] INFO  c.UDSM.BACKEND.Service.AdminService - Admin: Query returned 116 users
+2026-09-15 22:22:49 [http-nio-8080-exec-7] DEBUG c.UDSM.BACKEND.Service.AdminService - Admin: First user found: smaganga@udom.ac.tz, project: project-50194d03-eada-4e34-9518-37b328c325c2
+2026-09-15 22:22:55 [Thread-40] ERROR c.UDSM.BACKEND.Service.EmailService - ❌ Failed to send email to admin@udom.ac.tz: Authentication failed
+2026-09-15 22:23:06 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing PUT /control-plane/branding
+2026-09-15 22:23:06 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:23:06 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: admin@udom.ac.tz
+2026-09-15 22:23:06 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: admin@udom.ac.tz
+2026-09-15 22:23:06 [http-nio-8080-exec-1] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: admin@udom.ac.tz with role: ADMINISTRATOR
+2026-09-15 22:23:06 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: admin@udom.ac.tz
+2026-09-15 22:23:06 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured PUT /control-plane/branding
+2026-09-15 22:23:06 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.branding(java.util.Map); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
+2026-09-15 22:23:06 [http-nio-8080-exec-1] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.branding(java.util.Map); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
+2026-09-15 22:23:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-15 22:23:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-15 22:23:27 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 22:23:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-15 22:23:27 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: CHINA@udom.ac.tz
+2026-09-15 22:23:27 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: CHINA@udom.ac.tz
+2026-09-15 22:23:27 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: china@udom.ac.tz with role: STUDENT
+2026-09-15 22:23:28 [http-nio-8080-exec-5] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-09-15 22:23:28 [http-nio-8080-exec-5] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: CHINA@udom.ac.tz
+2026-09-15 22:23:28 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/profile
+2026-09-15 22:23:28 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /auth/profile
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: china@udom.ac.tz
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: china@udom.ac.tz
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: china@udom.ac.tz with role: STUDENT
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: china@udom.ac.tz
+2026-09-15 22:23:28 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /auth/profile
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AuthController - 👤 Get current user profile
+2026-09-15 22:23:28 [http-nio-8080-exec-8] INFO  c.UDSM.BACKEND.Service.AuthService - Getting current user: china@udom.ac.tz
+2026-09-15 22:23:28 [http-nio-8080-exec-8] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: china@udom.ac.tz
+2026-09-15 22:23:33 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing GET /auth/profile
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: china@udom.ac.tz
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: china@udom.ac.tz
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: china@udom.ac.tz with role: STUDENT
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: china@udom.ac.tz
+2026-09-15 22:23:33 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured GET /auth/profile
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AuthController - 👤 Get current user profile
+2026-09-15 22:23:33 [http-nio-8080-exec-10] INFO  c.UDSM.BACKEND.Service.AuthService - Getting current user: china@udom.ac.tz
+2026-09-15 22:23:33 [http-nio-8080-exec-10] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: china@udom.ac.tz
+2026-09-15 22:23:35 [Thread-41] ERROR c.UDSM.BACKEND.Service.EmailService - ❌ Failed to send email to china@udom.ac.tz: Authentication failed
+2026-09-15 22:24:06 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /control-plane/overview
+2026-09-15 22:24:06 [http-nio-8080-exec-1] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:24:06 [http-nio-8080-exec-1] WARN  c.U.B.config.JwtAuthenticationFilter - ⚠️ Invalid JWT token for: /api/v1/control-plane/overview
+2026-09-15 22:24:06 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 22:24:06 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-09-15 22:24:07 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /error
+2026-09-15 22:24:07 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 22:24:07 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.Http403ForbiddenEntryPoint - Pre-authenticated entry point called. Rejecting access
+2026-09-15 22:24:08 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /control-plane/login
+2026-09-15 22:24:08 [http-nio-8080-exec-2] DEBUG c.U.B.config.JwtAuthenticationFilter - ⚠️ No JWT token found in request for: /api/v1/control-plane/login
+2026-09-15 22:24:08 [http-nio-8080-exec-2] DEBUG c.U.B.config.JwtAuthenticationFilter - ℹ️ No JWT token provided for: /api/v1/control-plane/login
+2026-09-15 22:24:08 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 22:24:08 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /control-plane/login
+2026-09-15 22:24:09 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /control-plane/overview
+2026-09-15 22:24:09 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 22:24:09 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: superuser@admin.local
+2026-09-15 22:24:09 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: superuser@admin.local
+2026-09-15 22:24:09 [http-nio-8080-exec-4] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: superuser@admin.local with role: SUPERUSER
+2026-09-15 22:24:09 [http-nio-8080-exec-4] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: superuser@admin.local
+2026-09-15 22:24:09 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /control-plane/overview
+2026-09-15 22:24:09 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorizing method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.overview(); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
+2026-09-15 22:24:09 [http-nio-8080-exec-4] DEBUG o.s.s.a.m.AuthorizationManagerBeforeMethodInterceptor - Authorized method invocation ReflectiveMethodInvocation: public org.springframework.http.ResponseEntity com.UDSM.BACKEND.Controller.ControlPlaneController.overview(); target is of class [com.UDSM.BACKEND.Controller.ControlPlaneController]
