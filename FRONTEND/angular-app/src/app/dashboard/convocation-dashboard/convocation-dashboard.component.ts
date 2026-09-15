@@ -174,9 +174,38 @@ export class ConvocationDashboardComponent implements OnInit {
     }
   }
 
+  viewBackendReceipt(receipt: any): void {
+    if (!receipt || !receipt.fileUrl) {
+      alert('No receipt file found.');
+      return;
+    }
+
+    // Ensure URL is handled correctly (relative or absolute)
+    let url = receipt.fileUrl;
+
+    this.receiptToView = {
+      name: receipt.studentName || 'Student',
+      reg: receipt.registrationNumber || '',
+      data: url
+    };
+    this.showReceiptModal = true;
+  }
+
   closeReceiptModal(): void {
     this.showReceiptModal = false;
     this.receiptToView = null;
+  }
+
+  isImageUrl(data: string | undefined): boolean {
+    if (!data) return false;
+    if (data.startsWith('data:image')) return true;
+    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    return extensions.some(ext => data.toLowerCase().endsWith(ext)) || data.toLowerCase().includes('image');
+  }
+
+  isPdf(data: string | undefined): boolean {
+    if (!data) return false;
+    return data.startsWith('data:application/pdf') || data.toLowerCase().endsWith('.pdf');
   }
 
   getStudentInitials(request: ClearanceRequest): string {

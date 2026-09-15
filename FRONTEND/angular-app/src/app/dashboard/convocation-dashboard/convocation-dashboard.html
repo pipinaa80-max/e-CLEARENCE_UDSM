@@ -92,9 +92,9 @@
           </div>
 
           <div class="action-buttons">
-            <a [href]="receipt.fileUrl" target="_blank" class="view-btn">
+            <button type="button" (click)="viewBackendReceipt(receipt)" class="view-btn">
               👁️ View Receipt
-            </a>
+            </button>
             <button (click)="approveBackendReceipt(receipt.id)" class="approve-btn">
               ✅ Verify & Approve
             </button>
@@ -242,14 +242,20 @@
       </header>
 
       <div class="receipt-body">
+        <!-- BASE64 IMAGE -->
         <img *ngIf="receiptToView?.data?.startsWith('data:image')" [src]="receiptToView?.data" alt="Payment Receipt" />
 
-        <div *ngIf="receiptToView?.data?.startsWith('data:application/pdf')" class="pdf-viewer">
+        <!-- EXTERNAL URL IMAGE (BACKEND) -->
+        <img *ngIf="receiptToView?.data && !receiptToView?.data?.startsWith('data:image') && isImageUrl(receiptToView?.data)" [src]="receiptToView?.data" alt="Payment Receipt" />
+
+        <!-- PDF VIEWER (BASE64 or URL) -->
+        <div *ngIf="isPdf(receiptToView?.data)" class="pdf-viewer">
           <p>📄 PDF Receipt Uploaded</p>
-          <a [href]="receiptToView?.data" download="receipt.pdf" class="download-link">Download PDF to View</a>
+          <a [href]="receiptToView?.data" [attr.download]="'receipt-' + (receiptToView?.reg || 'doc') + '.pdf'" class="download-link">View / Download Document</a>
         </div>
 
-        <div *ngIf="!receiptToView?.data?.startsWith('data:')" class="text-receipt">
+        <!-- FALLBACK FOR TEXT -->
+        <div *ngIf="receiptToView?.data && !receiptToView?.data?.startsWith('data:image') && !isImageUrl(receiptToView?.data) && !isPdf(receiptToView?.data)" class="text-receipt">
           <p>{{ receiptToView?.data }}</p>
         </div>
       </div>
