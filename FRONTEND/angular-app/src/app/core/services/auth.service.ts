@@ -99,6 +99,8 @@ export class AuthService {
       fullName: response.full_name || response.fullName,
       registrationNumber: response.registration_number || response.registrationNumber,
       college: response.college || response.faculty,
+      programme: response.programme,
+      department: response.department,
       phoneNumber: response.phone_number || response.phoneNumber || response.phone,
       isActive: response.isActive !== undefined ? response.isActive : (response.active !== undefined ? response.active : response.is_active),
       lastLogin: response.last_login || response.lastLogin,

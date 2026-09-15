@@ -9,11 +9,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-games-coach',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './games_coach.html',
   styleUrl: './games_coach.css'
 })
@@ -23,9 +24,18 @@ export class GamesCoachComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
 
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Games Coach');

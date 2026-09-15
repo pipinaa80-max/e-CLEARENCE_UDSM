@@ -9,11 +9,12 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-convocation-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive], // Added RouterLinkActive
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './convocation-dashboard.html',
   styleUrl: './convocation-dashboard.css'
 })

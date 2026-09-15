@@ -23,12 +23,13 @@
 
     <!-- STUDENT VIEW -->
     <ng-container *ngIf="!isOfficer">
-      <header class="page-header">
-        <div>
-          <p>Department Clearance</p>
-          <h1>Your Status</h1>
-        </div>
-      </header>
+      <app-dashboard-header
+        eyebrow="Department Clearance"
+        title="Your Status"
+        [user]="currentUser"
+        (toggleSidebar)="toggleSidebar()"
+      >
+      </app-dashboard-header>
 
       <section class="card" style="margin-top: 24px; padding: 24px; background: white; border-radius: 8px; box-shadow: var(--shadow-soft);">
         <div *ngIf="studentRequest" class="student-status">
@@ -60,14 +61,16 @@
 
     <!-- OFFICER VIEW -->
     <ng-container *ngIf="isOfficer">
-      <header class="page-header">
-        <div>
-          <p>Clearance Office</p>
-          <h1>Department Approval</h1>
+      <app-dashboard-header
+        eyebrow="Clearance Office"
+        title="Department Approval"
+        [user]="currentUser"
+        (toggleSidebar)="toggleSidebar()"
+      >
+        <div header-actions class="count">
+          <strong>{{ requests.length }}</strong> Pending
         </div>
-
-        <span class="count">{{ requests.length }} Pending</span>
-      </header>
+      </app-dashboard-header>
 
       <p class="message" *ngIf="message">{{ message }}</p>
 

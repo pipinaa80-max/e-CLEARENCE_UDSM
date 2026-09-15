@@ -8,11 +8,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
     selector: 'app-department-officer',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink],
+    imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
     templateUrl: './department-officer.html',
     styleUrl: './department-officer.css'
 })

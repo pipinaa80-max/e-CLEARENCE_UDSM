@@ -42,39 +42,18 @@
   <!-- MAIN CONTENT -->
   <main class="content">
 
-    <!-- HEADER -->
-    <header class="page-header">
-
-      <div>
-
-        <p>
-          Clearance Office
-        </p>
-
-        <h1>
-          Hall Warden Approval
-        </h1>
-
-        <span class="page-description">
-          Review and process student clearance applications.
-        </span>
-
+    <app-dashboard-header
+      eyebrow="Clearance Office"
+      title="Hall Warden Approval"
+      subtitle="Review and process student clearance applications."
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="pending-box">
+        <strong>{{ requests.length }}</strong>
+        <small>Pending</small>
       </div>
-
-
-      <div class="pending-box">
-
-        <strong>
-          {{ requests.length }}
-        </strong>
-
-        <small>
-          Pending
-        </small>
-
-      </div>
-
-    </header>
+    </app-dashboard-header>
 
 
     <!-- MESSAGE -->
@@ -281,7 +260,6 @@
       </div>
 
     </section>
-
   </main>
 
 </section>

@@ -1,12 +1,15 @@
 <section class="transcript-documents-page">
-  <header class="documents-header">
-    <div>
-      <span class="step-label">Clearance Step 4</span>
-      <h1>Transcript Documents</h1>
-      <p>Attach the documents required to complete your transcript request.</p>
+  <app-dashboard-header
+    eyebrow="Clearance Step 4"
+    title="Transcript Documents"
+    subtitle="Attach the documents required to complete your transcript request."
+    [user]="currentUser"
+    (toggleSidebar)="toggleSidebar()"
+  >
+    <div header-actions>
+      <a routerLink="/transcript/payment" class="back-link">Back to Transcript Payment</a>
     </div>
-    <a routerLink="/transcript/payment" class="back-link">Back to Transcript Payment</a>
-  </header>
+  </app-dashboard-header>
 
   <main class="documents-card">
     <div class="step-intro">
@@ -19,11 +22,11 @@
 
     <div class="document-list">
       <article class="document-item" *ngFor="let category of requiredDocuments">
-        <div><span class="document-number">0{{ requiredDocuments.indexOf(category) + 1 }}</span><h3>{{ category }}</h3><p>{{ uploaded[category] ? 'Document uploaded successfully.' : 'Choose the required document to continue.' }}</p></div>
+        <div><span class="document-number">0{{ requiredDocuments.indexOf(category) + 1 }}</span><h3>{{ category }}</h3><p>{{ uploaded[category] ? 'Document uploaded successfully.' : (isSubmitted ? 'Documentation period ended.' : 'Choose the required document to continue.') }}</p></div>
         <div class="document-action">
           <span class="uploaded-badge" *ngIf="uploaded[category]">Uploaded</span>
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" [attr.aria-label]="'Upload ' + category" (change)="onFileSelected(category, $event)" [disabled]="uploaded[category]" />
-          <button type="button" class="primary-button" (click)="upload(category)" [disabled]="uploaded[category] || uploading === category">
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" [attr.aria-label]="'Upload ' + category" (change)="onFileSelected(category, $event)" [disabled]="uploaded[category] || isSubmitted" />
+          <button type="button" class="primary-button" (click)="upload(category)" [disabled]="uploaded[category] || uploading === category || isSubmitted">
             {{ uploading === category ? 'Uploading...' : 'Upload' }}
           </button>
         </div>
@@ -31,9 +34,10 @@
     </div>
 
     <div class="step-navigation">
-      <a routerLink="/transcript/payment" class="secondary-button">Back</a>
-      <span class="completion-note" *ngIf="!allUploaded">Upload all required documents</span>
-      <a routerLink="/transcript/collection" class="primary-button" *ngIf="allUploaded">Next: Collection</a>
+      <a routerLink="/transcript/process" class="secondary-button">Back</a>
+      <span class="completion-note" *ngIf="!allUploaded && !isSubmitted">Upload all required documents</span>
+      <button type="button" class="primary-button" *ngIf="allUploaded && !isSubmitted" (click)="submit()">Next: Collection</button>
+      <span class="success-text" *ngIf="isSubmitted">✓ Documents Submitted</span>
     </div>
   </main>
 </section>

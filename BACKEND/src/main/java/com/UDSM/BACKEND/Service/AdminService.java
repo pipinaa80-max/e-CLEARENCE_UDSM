@@ -79,18 +79,35 @@ public class AdminService {
              throw new ApiException("You do not have permission to delete this user", HttpStatus.FORBIDDEN);
         }
         
-        // Deleting student record if it exists
-        if (user.getRegistrationNumber() != null) {
-            studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
-                    .ifPresent(student -> {
-                        // Also delete clearance requests
-                        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
-                        clearanceRequestRepository.deleteAll(requests);
-                        studentRepository.delete(student);
-                    });
-        }
+        // Deleting student record if it exists (check by reg number and user id)
+        studentRepository.findByUserId(userId)
+                .or(() -> (user.getRegistrationNumber() != null && !user.getRegistrationNumber().isBlank()) 
+                        ? studentRepository.findByRegistrationNumber(user.getRegistrationNumber()) 
+                        : java.util.Optional.empty())
+                .ifPresent(student -> {
+                    // Also delete clearance requests
+                    List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
+                    clearanceRequestRepository.deleteAll(requests);
+                    studentRepository.delete(student);
+                    log.info("Admin: Deleted student record and {} clearance requests for user {}", requests.size(), userId);
+                });
         
         userRepository.delete(user);
+        log.info("Admin: User {} successfully deleted", userId);
+    }
+
+    @Transactional
+    public void deleteUsers(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) return;
+        
+        log.info("Admin: Bulk deleting {} users", userIds.size());
+        for (String id : userIds) {
+            try {
+                deleteUser(id);
+            } catch (Exception e) {
+                log.error("Admin: Failed to delete user {} during bulk operation: {}", id, e.getMessage());
+            }
+        }
     }
 
     @Transactional

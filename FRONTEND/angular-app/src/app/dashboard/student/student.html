@@ -55,51 +55,14 @@
 
   <main class="content-panel">
 
-    <!-- =========================
-         TOP BAR
-    ========================== -->
-
-    <header class="topbar">
-      <button type="button" class="sidebar-toggle" aria-label="Open navigation" [attr.aria-expanded]="sidebarOpen" (click)="toggleSidebar()">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      <div class="topbar-title">
-        <span class="eyebrow">Student Dashboard</span>
-        <h1>Welcome back, {{ currentUser?.fullName ?? 'Student' }}</h1>
-        <p>Manage your student information and clearance process.</p>
-      </div>
-
-      <div class="topbar-profile">
-        <div class="profile-avatar">
-          <!-- Show loading state -->
-          <div *ngIf="isLoading" class="avatar-loading">
-            <span class="spinner"></span>
-          </div>
-
-          <!-- Show photo if available -->
-          <img
-                  *ngIf="!isLoading && hasPhoto()"
-                  [src]="getPhotoSource()"
-                  [alt]="currentUser?.fullName || 'Student'"
-                  [title]="currentUser?.fullName || 'Student'"
-                  (error)="onImageError()"
-          />
-
-          <!-- Show initials if no photo -->
-          <span *ngIf="!isLoading && !hasPhoto()">
-            {{ currentUser?.fullName ? currentUser?.fullName?.charAt(0) : 'S' }}
-          </span>
-
-          <!-- Refresh button (small, subtle) -->
-          <button *ngIf="!isLoading" class="photo-refresh-btn" (click)="refreshPhoto()" title="Refresh photo">
-            ↻
-          </button>
-        </div>
-      </div>
-    </header>
+    <app-dashboard-header
+      eyebrow="Student Dashboard"
+      [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
+      subtitle="Manage your student information and clearance process."
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
 
     <!-- =========================
          NOTIFICATIONS BANNER
@@ -297,7 +260,6 @@
         <span>Follow each clearance stage</span>
       </a>
     </section>
-
   </main>
 
 </section>

@@ -23,6 +23,6 @@ export interface TranscriptPaymentRequest {
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;
   receiptSubmittedAt?: string;
-  collectionMethod?: 'Physical Collection' | 'Post';
+  collectionMethod?: 'Physical Collection' | 'Post by DHL';
   postingAddress?: string;
 }

@@ -15,6 +15,7 @@ export interface ProjectConfig {
     universityName: string;
     shortName: string;
     logoUrl: string;
+    backgroundUrl: string;
     primaryColor: string;
     fontFamily: string;
   };
@@ -53,6 +54,10 @@ export class ProjectAdminService {
 
   getPublicBranding(): Observable<ProjectConfig['branding']> {
     return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/public/branding`);
+  }
+
+  getMyBranding(): Observable<ProjectConfig['branding']> {
+    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/branding/current`, { headers: this.headers() });
   }
 
   createDashboard(data: Pick<ProjectDashboard, 'id' | 'name' | 'description'>): Observable<ProjectDashboard> {

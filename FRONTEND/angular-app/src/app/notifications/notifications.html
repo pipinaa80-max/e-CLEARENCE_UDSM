@@ -1,13 +1,67 @@
-<section class="notifications-shell">
-<div class="notifications-page">
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
+
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
+
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
     <div class="notifications-card">
-        <header>
-            <div>
-                <h1>Notifications</h1>
-                <p>Updates about your documents and clearance application.</p>
-            </div>    
-            <button *ngIf="notifications.length" type="button" (click)="markAllRead()">Mark all as read</button>
-        </header>
+        <app-dashboard-header
+            title="Notifications"
+            subtitle="Updates about your documents and clearance application."
+            [user]="null"
+            (toggleSidebar)="toggleSidebar()"
+        >
+            <div header-actions>
+                <button *ngIf="notifications.length" type="button" (click)="markAllRead()">Mark all as read</button>
+            </div>
+        </app-dashboard-header>
         
         <div class="empty-state" *ngIf="!notifications.length">You have no notifications yet. Updates will appear here as you upload documents and submit clearance.</div>
         <ul class="notification-list" *ngIf="notifications.length">
@@ -22,5 +76,6 @@
         </ul>
 <a routerLink="/dashboard" class="back-link">Back to dashboard</a>
     </div>
-</div>
+
+  </main>
 </section>

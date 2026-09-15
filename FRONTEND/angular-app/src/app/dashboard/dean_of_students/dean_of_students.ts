@@ -8,11 +8,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-dean-of-students',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './dean_of_students.html',
   styleUrl: './dean_of_students.css'
 })
@@ -22,11 +23,20 @@ export class DeanOfStudentsComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
   isLoading = false;
   pendingRequests: ClearanceRequest[] = [];
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
 
   // Cache for student data to avoid repeated lookups
   private studentCache: Map<string, any> = new Map();

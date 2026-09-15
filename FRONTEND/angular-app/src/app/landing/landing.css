@@ -97,13 +97,23 @@
   padding: 76px 24px 84px;
   text-align: center;
   color: #ffffff;
-  background:
-    var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9))),
-    url('/public/background.png');
+  background-image: var(--app-bg-url, url('/public/background.png'));
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   border-bottom: 5px solid var(--udsm-gold);
+  z-index: 1;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9)));
+  z-index: -1;
 }
 
 .hero-logo {

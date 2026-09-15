@@ -19,9 +19,9 @@
         <input type="radio" formControlName="collectionMethod" value="Physical Collection" />
         <span><strong>Physical Collection</strong><small>Collect the transcript from the designated University office.</small></span>
       </label>
-      <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Post'">
-        <input type="radio" formControlName="collectionMethod" value="Post" />
-        <span><strong>Post</strong><small>Have the transcript posted to your preferred address.</small></span>
+      <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Post by DHL'">
+        <input type="radio" formControlName="collectionMethod" value="Post by DHL" />
+        <span><strong>Post by DHL</strong><small>Have the transcript posted to your preferred address.</small></span>
       </label>
 
       <label class="address-field" *ngIf="isPost">

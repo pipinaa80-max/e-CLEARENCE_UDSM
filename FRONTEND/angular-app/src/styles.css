@@ -20,6 +20,8 @@
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--udsm-blue) 15%, transparent);
   --transition-fast: 160ms ease;
   --app-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --app-bg-url: url('/background_image.png');
+  --hero-gradient: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25));
 }
 
 html,
@@ -179,6 +181,27 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--udsm-gold) 85%, #ffffff);
   outline-offset: 3px;
+}
+
+/* Ensure dashboard content containers are flexboxes to push footer to bottom */
+.content-panel,
+.content,
+.documents-card,
+.history-card,
+.profile-card,
+.notifications-card,
+.request-card,
+.request-page,
+.profile-page,
+.notifications-page,
+.history-page,
+.transcript-documents-page,
+.transcript-page,
+.collection-page,
+.status-page-container {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: calc(100vh - 60px);
 }
 
 @media (max-width: 600px) {

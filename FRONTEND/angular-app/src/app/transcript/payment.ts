@@ -23,6 +23,7 @@ export class TranscriptPaymentComponent {
   errorMessage = '';
   isSubmitting = false;
   transcriptCount = 1;
+  selectedFile: File | null = null;
 
   get hasApproval(): boolean {
     const user = this.authService.getCurrentUser();
@@ -76,6 +77,77 @@ export class TranscriptPaymentComponent {
 
     if (this.request.status !== 'Pending Control Number') return;
     this.message = 'Your control number request has already been sent to Finance.';
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.errorMessage = '';
+    this.message = '';
+
+    if (file && file.size > 1.5 * 1024 * 1024) {
+      this.errorMessage = 'This photo is too large for the system to process. Please upload a smaller file or a compressed JPG (Max 1.5MB).';
+      this.selectedFile = null;
+      input.value = '';
+      return;
+    }
+
+    this.selectedFile = file;
+  }
+
+  submitReceipt(): void {
+    if (!this.selectedFile || !this.request) return;
+
+    this.isSubmitting = true;
+    this.errorMessage = '';
+    this.message = '';
+
+    // Safety timeout to prevent permanent "Submitting..." hang
+    const safetyTimeout = setTimeout(() => {
+      if (this.isSubmitting) {
+        this.isSubmitting = false;
+        this.errorMessage = 'The submission is taking too long. Please try a smaller photo or a screenshot.';
+      }
+    }, 10000);
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const submitted = this.paymentService.submitReceipt(
+            this.request!.id,
+            this.selectedFile!.name,
+            reader.result as string
+        );
+
+        clearTimeout(safetyTimeout);
+
+        if (submitted) {
+          this.message = 'Payment receipt submitted successfully to Finance.';
+          // Refresh local request state immediately
+          const user = this.authService.getCurrentUser();
+          if (user) {
+            this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
+          }
+          this.selectedFile = null;
+        } else {
+          this.errorMessage = 'Finance could not receive the receipt. Please try a smaller photo.';
+        }
+      } catch (error) {
+        console.error('Submission failed:', error);
+        this.errorMessage = 'The photo data is too heavy for the browser. Please use a screenshot instead.';
+      } finally {
+        this.isSubmitting = false;
+      }
+    };
+
+    reader.onerror = () => {
+      clearTimeout(safetyTimeout);
+      this.errorMessage = 'Unable to read the receipt photo.';
+      this.isSubmitting = false;
+    };
+
+    reader.readAsDataURL(this.selectedFile);
   }
 
   onReceiptSelected(event: Event): void {

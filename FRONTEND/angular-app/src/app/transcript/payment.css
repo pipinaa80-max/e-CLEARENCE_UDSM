@@ -8,7 +8,7 @@
       rgba(5, 63, 112, 0.65),
       rgba(5, 63, 112, 0.7)
     ),
-    url('/public/background.png');
+    var(--app-bg-url, url('/public/background.png'));
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -52,6 +52,53 @@ p { color: #68757d; font-size: 14px; line-height: 1.6; }
 .receipt-upload { display: flex; flex-direction: column; gap: 8px; color: #35434a; font-size: 12px; font-weight: 800; }
 .receipt-upload input { padding: 10px; border: 1px dashed #9fb5bf; border-radius: 7px; background: #fff; }
 .success-step { border-left-color: #218739; background: #f0f8f2; }
+
+.step-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.approval-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 17px;
+  border-radius: var(--radius-control);
+  background: var(--udsm-blue);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.approval-button:hover {
+  background: var(--udsm-blue-dark);
+}
+
+.back-button {
+  min-height: 44px;
+  padding: 0 17px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--udsm-blue-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-button:hover {
+  background: var(--surface-soft);
+}
+
 .message { margin: 18px 0; padding: 12px; border-left: 4px solid; font-size: 13px; }
 .success-message { border-color: #218739; background: #f0f8f2; color: #218739; }
 .error-message { border-color: #c73535; background: #fff4f4; color: #a52222; }

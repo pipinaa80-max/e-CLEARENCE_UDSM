@@ -1,0 +1,30 @@
+# Logs
+logs/
+*.log
+*.log.*
+BACKEND/logs/
+
+# Build artifacts
+target/
+dist/
+.angular/
+node_modules/
+FRONTEND/angular-app/dist/
+FRONTEND/angular-app/.angular/
+FRONTEND/angular-app/node_modules/
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other
+.artifacts/
+uploads/
+BACKEND/uploads/

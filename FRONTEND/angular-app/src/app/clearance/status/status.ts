@@ -1,11 +1,12 @@
 // clearance-status.component.ts - Fixed for parallel offices
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 import {
   ClearanceRequest,
@@ -25,7 +26,9 @@ interface ProcessStep {
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink
+    RouterLink,
+    RouterLinkActive,
+    DashboardHeaderComponent
   ],
   templateUrl: './status.html',
   styleUrl: './status.css'
@@ -34,10 +37,30 @@ export class ClearanceStatusComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly router = inject(Router);
 
+  sidebarOpen = false;
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+
+  get currentUser() {
+    return this.student;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    console.log('Sidebar toggle in status page:', this.sidebarOpen);
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
 
   // =====================================================
   // CURRENT STUDENT REQUEST

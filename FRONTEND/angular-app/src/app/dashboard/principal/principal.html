@@ -60,29 +60,14 @@
 
   <main class="content">
 
-    <!-- HEADER -->
-
-    <header class="page-header">
-
-      <div>
-
-        <p>
-          Clearance Office
-        </p>
-
-        <h1>
-          {{ collegeName }} Principal
-        </h1>
-
-        <span class="page-description">
-          Review and process student clearance applications for the college.
-        </span>
-
-      </div>
-
-
-      <div class="header-actions">
-
+    <app-dashboard-header
+      eyebrow="Clearance Office"
+      [title]="collegeName + ' Principal'"
+      subtitle="Review and process student clearance applications for the college."
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="header-actions">
         <button
           type="button"
           class="refresh-button"
@@ -90,10 +75,8 @@
         >
           Refresh
         </button>
-
       </div>
-
-    </header>
+    </app-dashboard-header>
 
 
     <!-- MESSAGE -->
@@ -420,7 +403,6 @@
       </article>
 
     </section>
-
   </main>
 
 </section>

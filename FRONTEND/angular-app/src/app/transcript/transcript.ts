@@ -6,11 +6,12 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
 import { ClearanceRequest } from '../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-transcript',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './transcript.html',
   styleUrl: './transcript.css'
 })
@@ -20,6 +21,7 @@ export class TranscriptComponent implements OnInit {
   private readonly clearanceService = inject(ClearanceService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   request: ClearanceRequest | null = null;
   isSubmitted = false;
   decision: 'Approved' | 'Rejected' | null = null;
@@ -115,5 +117,22 @@ export class TranscriptComponent implements OnInit {
     localStorage.setItem(`udsm-transcript-decision-${user.id}`, decision);
     localStorage.setItem(`udsm-transcript-request-${user.id}`, JSON.stringify(this.transcriptForm.getRawValue()));
     this.transcriptForm.disable();
+  }
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

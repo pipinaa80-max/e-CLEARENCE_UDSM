@@ -44,37 +44,18 @@
 
   <main class="content">
 
-    <!-- HEADER -->
-
-    <header class="page-header">
-
-      <div>
-
-        <p>Clearance Office</p>
-
-        <h1>DARUSO Approval</h1>
-
-        <span class="page-description">
-          Review student clearance applications
-          and approve or reject requests.
-        </span>
-
+    <app-dashboard-header
+      eyebrow="Clearance Office"
+      title="DARUSO Approval"
+      subtitle="Review student clearance applications and approve or reject requests."
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="count">
+        <strong>{{ requests.length }}</strong>
+        <small>Pending</small>
       </div>
-
-
-      <div class="count">
-
-        <strong>
-          {{ requests.length }}
-        </strong>
-
-        <small>
-          Pending
-        </small>
-
-      </div>
-
-    </header>
+    </app-dashboard-header>
 
 
     <!-- MESSAGE -->
@@ -330,7 +311,6 @@
       </div>
 
     </section>
-
   </main>
 
 </section>

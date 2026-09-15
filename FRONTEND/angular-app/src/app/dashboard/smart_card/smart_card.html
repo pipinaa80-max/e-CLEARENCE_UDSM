@@ -19,14 +19,16 @@
   </aside>
 
   <main class="content">
-    <header class="page-header">
-      <div>
-        <p>Clearance Office</p>
-        <h1>Smart Card Approval</h1>
+    <app-dashboard-header
+      eyebrow="Clearance Office"
+      title="Smart Card Approval"
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="count">
+        <strong>{{ requests.length }}</strong> Pending
       </div>
-
-      <span class="count">{{ requests.length }} Pending</span>
-    </header>
+    </app-dashboard-header>
 
     <p class="message" *ngIf="message">{{ message }}</p>
 

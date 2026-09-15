@@ -1,16 +1,17 @@
 // profile.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
+import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ReactiveFormsModule, DashboardHeaderComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
@@ -20,8 +21,27 @@ export class ProfileComponent implements OnInit {
   private readonly clearanceService = inject(ClearanceService);
   private readonly fb = inject(FormBuilder);
 
+  sidebarOpen = false;
   profilePhoto: string | null = null;
   isLoading = true;
+
+  get currentUser() {
+    return this.user;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+    console.log('Sidebar toggled. Current state:', this.sidebarOpen);
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
 
   /* =========================
      LOGGED-IN STUDENT
@@ -36,7 +56,21 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   ngOnInit(): void {
-    this.loadProfilePhoto();
+    this.refreshInformation();
+  }
+
+  refreshInformation(): void {
+    this.isLoading = true;
+    this.authService.getProfile().subscribe({
+      next: (user) => {
+        console.log('Profile - Updated from backend');
+        this.loadProfilePhoto();
+      },
+      error: (err) => {
+        console.error('Profile - Failed to refresh profile:', err);
+        this.loadProfilePhoto(); // Fallback to local
+      }
+    });
   }
 
   loadProfilePhoto(): void {
@@ -252,11 +286,9 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   refreshPhoto(): void {
-    console.log('Refreshing photo...');
-    // Clear cached photo
+    console.log('Refreshing all information...');
     this.profilePhoto = null;
-    // Reload
-    this.loadProfilePhoto();
+    this.refreshInformation();
   }
 
   /* =========================

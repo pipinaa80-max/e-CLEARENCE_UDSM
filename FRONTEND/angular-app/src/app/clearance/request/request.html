@@ -1,15 +1,68 @@
 <!-- request.html -->
-<div class="request-page">
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
-  <!-- HEADER -->
-  <header class="request-header">
-    <span>Student Clearance</span>
-    <h1>Clearance Request</h1>
-    <p>Complete the information below to submit your clearance request.</p>
-  </header>
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
 
-  <!-- MAIN CARD -->
-  <section class="request-card">
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
+
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
+    <app-dashboard-header
+      eyebrow="Student Clearance"
+      title="Clearance Request"
+      subtitle="Complete the information below to submit your clearance request."
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
+
+    <!-- MAIN CARD -->
+    <section class="request-card">
 
     <div class="error-message" *ngIf="hasSubmittedRequest">
       You have already submitted a clearance request.
@@ -195,7 +248,7 @@
       </div>
 
     </form>
-
   </section>
 
-</div>
+  </main>
+</section>

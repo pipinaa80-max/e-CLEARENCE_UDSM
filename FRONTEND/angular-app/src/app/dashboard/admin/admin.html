@@ -36,27 +36,16 @@
   </aside>
 
   <main class="content-panel">
-    <header class="topbar">
-      <div class="topbar-left">
-        <!-- Toggle button now part of the topbar flow when sidebar is closed -->
-        <button
-          *ngIf="!sidebarOpen"
-          type="button"
-          class="sidebar-toggle-inline"
-          (click)="toggleSidebar()"
-        >
-          ☰
-        </button>
-
-        <div class="header-titles">
-          <h2>Administrator Dashboard</h2>
-          <p>Manage users, offices, requests, and reports</p>
-        </div>
-      </div>
-      <div *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
+    <app-dashboard-header
+      title="Administrator Dashboard"
+      subtitle="Manage users, offices, requests, and reports"
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
         {{ message }}
       </div>
-    </header>
+    </app-dashboard-header>
 
     <!-- Overview Tab -->
     <div *ngIf="activeTab === 'overview'">
@@ -101,6 +90,11 @@
             <option value="inactive">Inactive</option>
           </select>
           <button type="button" class="btn-secondary" (click)="clearUserFilters()">Clear Filters</button>
+
+          <button *ngIf="selectedUserIds.size > 0" class="btn-danger" (click)="deleteSelectedUsers()">
+            Delete Selected ({{ selectedUserIds.size }})
+          </button>
+
           <button class="btn-primary" (click)="showAddForm = !showAddForm">
             {{ showAddForm ? 'Close Form' : 'Add New User' }}
           </button>
@@ -137,6 +131,27 @@
                 <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>College</label>
+              <select [(ngModel)]="newUser.college" name="college" (change)="onCollegeChange()">
+                <option value="">Select College</option>
+                <option *ngFor="let college of collegeList" [value]="college">{{ college }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Department</label>
+              <select [(ngModel)]="newUser.department" name="department" (change)="onDepartmentChange()">
+                <option value="">Select Department</option>
+                <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Programme</label>
+              <select [(ngModel)]="newUser.programme" name="programme">
+                <option value="">Select Programme</option>
+                <option *ngFor="let prog of programmeOptions" [value]="prog">{{ prog }}</option>
+              </select>
+            </div>
           </div>
           <div class="form-actions">
             <button type="submit" class="btn-success" [disabled]="!userForm.form.valid">Save User</button>
@@ -148,6 +163,9 @@
         <table>
           <thead>
             <tr>
+              <th style="width: 40px;">
+                <input type="checkbox" [checked]="isAllSelected" (change)="toggleSelectAll($event)" title="Select all filtered users">
+              </th>
               <th>Name</th>
               <th>Email</th>
               <th>Reg No</th>
@@ -157,7 +175,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of filteredUsers">
+            <tr *ngFor="let user of filteredUsers" [class.row-selected]="selectedUserIds.has(user.id)">
+              <td>
+                <input type="checkbox" [checked]="selectedUserIds.has(user.id)" (change)="toggleSelection(user.id)">
+              </td>
               <td>{{ user.fullName }}</td>
               <td>{{ user.email }}</td>
               <td>{{ user.registrationNumber || '-' }}</td>
@@ -285,12 +306,12 @@
           <div class="form-group"><label>University name</label><input [(ngModel)]="projectConfig.branding.universityName" name="universityName" required></div>
           <div class="form-group"><label>Short name</label><input [(ngModel)]="projectConfig.branding.shortName" name="shortName" required></div>
           <div class="form-group"><label>Logo URL</label><input [(ngModel)]="projectConfig.branding.logoUrl" name="logoUrl"></div>
+          <div class="form-group"><label>Background URL</label><input [(ngModel)]="projectConfig.branding.backgroundUrl" (ngModelChange)="previewBackground($event)" name="backgroundUrl" placeholder="Enter background image URL"></div>
           <div class="form-group"><label>Primary color</label><input type="color" [(ngModel)]="projectConfig.branding.primaryColor" name="primaryColor"></div>
           <div class="form-group"><label>Font family</label><select [(ngModel)]="projectConfig.branding.fontFamily" name="fontFamily"><option>Georgia</option><option>Arial</option><option>Verdana</option><option>Trebuchet MS</option></select></div>
         </div>
         <button type="submit" class="btn-primary">Save Theme</button>
       </form>
     </div>
-
   </main>
 </section>

@@ -6,12 +6,13 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { ClearanceService } from '../../core/services/clearance.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -26,7 +27,10 @@ interface AcademicUnitData {
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    RouterLink,
+    RouterLinkActive,
+    DashboardHeaderComponent
   ],
   templateUrl: './request.html',
   styleUrl: './request.css'
@@ -39,6 +43,7 @@ export class ClearanceRequestComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   // =====================================================
   // CLEARANCE FORM
   // =====================================================
@@ -340,6 +345,23 @@ export class ClearanceRequestComponent implements OnInit {
     const department = this.requestForm.controls.department.value;
     if (!college || !department) return [];
     return this.academicUnits[college]?.[department] || [];
+  }
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   // =====================================================

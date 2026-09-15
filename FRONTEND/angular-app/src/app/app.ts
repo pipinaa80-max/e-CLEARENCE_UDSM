@@ -17,7 +17,7 @@ export class App {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly currentYear = new Date().getFullYear();
-  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', primaryColor: '#0864af', fontFamily: 'Segoe UI' };
+  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/public/udsm-logo.png', backgroundUrl: '/public/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI' };
   private brandingObserver?: MutationObserver;
 
   constructor() {
@@ -43,10 +43,10 @@ export class App {
     }
 
     if (this.authService.getToken()) {
-      this.projectAdminService.getProjectConfig().subscribe({
-        next: (config) => {
-          this.projectAdminService.setSavedBranding(config.branding);
-          this.applyBranding(config.branding);
+      this.projectAdminService.getMyBranding().subscribe({
+        next: (branding) => {
+          this.projectAdminService.setSavedBranding(branding);
+          this.applyBranding(branding);
         },
         error: () => this.projectAdminService.getPublicBranding().subscribe({ next: (config) => this.applyBranding(config), error: () => undefined })
       });
@@ -57,6 +57,10 @@ export class App {
   }
 
   private applyBranding(config: Partial<typeof this.branding>): void {
+    // Sanitize URLs to handle Windows-style slashes
+    if (config.logoUrl) config.logoUrl = config.logoUrl.trim().replace(/\\/g, '/');
+    if (config.backgroundUrl) config.backgroundUrl = config.backgroundUrl.trim().replace(/\\/g, '/');
+
     this.branding = { ...this.branding, ...config };
     const root = document.documentElement;
     if (config.primaryColor) {
@@ -65,10 +69,43 @@ export class App {
       root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 12%, #fff)`);
       // Explicitly set sidebar background to match primary or dark version for better UI
       root.style.setProperty('--sidebar-bg', config.primaryColor);
-      root.style.setProperty('--hero-gradient', `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.75)), linear-gradient(${config.primaryColor}CC, ${config.primaryColor}EE)`);
     }
     if (config.fontFamily) root.style.setProperty('--app-font-family', config.fontFamily);
-    if (config.logoUrl) root.style.setProperty('--app-logo-url', `url("${config.logoUrl}")`);
+
+    if (this.branding.logoUrl) {
+      root.style.setProperty('--app-logo-url', `url("${this.branding.logoUrl}")`);
+    }
+
+    // Robustly handle the background image URL
+    if (this.branding.backgroundUrl === '' || !this.branding.backgroundUrl) {
+      // Use default background if empty
+      root.style.setProperty('--app-bg-url', 'url("/background_image.png")');
+      root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7))');
+    } else if (this.branding.backgroundUrl.toLowerCase() === 'none') {
+      root.style.setProperty('--app-bg-url', 'none');
+      root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7))');
+    } else {
+      let bgUrl = this.branding.backgroundUrl;
+
+      // Format path for public assets
+      if (!bgUrl.startsWith('http') && !bgUrl.startsWith('/') && !bgUrl.startsWith('data:')) {
+        bgUrl = '/' + bgUrl;
+      }
+      // Resolve workspace paths to the URL exposed by the Angular dev server.
+      const publicAssetIndex = bgUrl.toLowerCase().lastIndexOf('/public/');
+      if (publicAssetIndex >= 0) bgUrl = bgUrl.substring(publicAssetIndex);
+      if (bgUrl.toLowerCase().startsWith('public/')) bgUrl = '/' + bgUrl;
+      if (!bgUrl.startsWith('/') && !bgUrl.startsWith('http') && !bgUrl.startsWith('data:')) {
+        bgUrl = '/' + bgUrl;
+      }
+
+      console.log('🖼️ Dynamic Background Updated to:', bgUrl);
+      root.style.setProperty('--app-bg-url', `url("${bgUrl}")`);
+
+      // Set the overlay to be transparent (0% tint) for custom backgrounds
+      root.style.setProperty('--hero-gradient', 'none');
+    }
+
     this.refreshBrandingNodes();
   }
 

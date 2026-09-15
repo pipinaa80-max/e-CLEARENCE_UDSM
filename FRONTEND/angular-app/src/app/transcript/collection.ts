@@ -20,7 +20,7 @@ export class TranscriptCollectionComponent {
 
   message = '';
   form = this.fb.nonNullable.group({
-    collectionMethod: ['' as 'Physical Collection' | 'Post' | '', Validators.required],
+    collectionMethod: ['' as 'Physical Collection' | 'Post by DHL' | '', Validators.required],
     postingAddress: ['']
   });
 
@@ -30,7 +30,7 @@ export class TranscriptCollectionComponent {
   }
 
   get isPost(): boolean {
-    return this.form.controls.collectionMethod.value === 'Post';
+    return this.form.controls.collectionMethod.value === 'Post by DHL';
   }
 
   constructor() {
@@ -46,7 +46,7 @@ export class TranscriptCollectionComponent {
     }
 
     this.form.patchValue({
-      collectionMethod: this.request.collectionMethod ?? '',
+      collectionMethod: (this.request.collectionMethod as any === 'Post' ? 'Post by DHL' : this.request.collectionMethod) ?? '',
       postingAddress: this.request.postingAddress ?? ''
     });
   }
@@ -56,9 +56,9 @@ export class TranscriptCollectionComponent {
     const method = this.form.controls.collectionMethod.value;
     const address = this.form.controls.postingAddress.value.trim();
 
-    if (!method || (method === 'Post' && !address)) {
+    if (!method || (method === 'Post by DHL' && !address)) {
       this.form.markAllAsTouched();
-      this.message = method === 'Post'
+      this.message = method === 'Post by DHL'
         ? 'Enter the address where the transcript should be posted.'
         : 'Select a transcript collection method.';
       return;
@@ -70,5 +70,6 @@ export class TranscriptCollectionComponent {
     }
 
     this.message = 'Transcript collection preference saved successfully.';
+    setTimeout(() => this.router.navigate(['/transcript/process']), 2000);
   }
 }

@@ -1,6 +1,12 @@
 export class StorageService {
-  save<T>(key: string, value: T): void {
-    localStorage.setItem(key, JSON.stringify(value));
+  save<T>(key: string, value: T): boolean {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.error('Storage full or error:', e);
+      return false;
+    }
   }
 
   get<T>(key: string): T | null {

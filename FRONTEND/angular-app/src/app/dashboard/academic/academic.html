@@ -27,12 +27,13 @@
   </aside>
 
   <main class="content-panel">
-    <header class="topbar">
-      <div>
-        <h2>Academic Staff Dashboard</h2>
-        <p>Review academic clearance records</p>
-      </div>
-    </header>
+    <app-dashboard-header
+      title="Academic Staff Dashboard"
+      subtitle="Review academic clearance records"
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
 
     <div class="stats-grid">
       <article class="stat-card">

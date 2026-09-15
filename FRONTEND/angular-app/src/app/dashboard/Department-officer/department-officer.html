@@ -57,29 +57,14 @@
 
   <main class="content">
 
-    <!-- HEADER -->
-
-    <header class="page-header">
-
-      <div>
-
-        <p>
-          Clearance Office
-        </p>
-
-        <h1>
-          {{ departmentName }} Department
-        </h1>
-
-        <span class="page-description">
-          Review and process student clearance applications.
-        </span>
-
-      </div>
-
-
-      <div class="header-actions">
-
+    <app-dashboard-header
+      eyebrow="Clearance Office"
+      [title]="departmentName + ' Department'"
+      subtitle="Review and process student clearance applications."
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="header-actions">
         <button
           type="button"
           class="refresh-button"
@@ -87,10 +72,8 @@
         >
           Refresh
         </button>
-
       </div>
-
-    </header>
+    </app-dashboard-header>
 
 
     <!-- MESSAGE -->
@@ -417,7 +400,6 @@
       </article>
 
     </section>
-
   </main>
 
 </section>

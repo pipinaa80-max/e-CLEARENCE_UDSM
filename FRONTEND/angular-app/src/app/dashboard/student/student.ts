@@ -7,11 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationItem } from '../../core/models/notification.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -26,7 +27,21 @@ export class StudentDashboard implements OnInit {
   isLoading = true;
 
   ngOnInit(): void {
-    this.loadProfilePhoto();
+    this.refreshInformation();
+  }
+
+  refreshInformation(): void {
+    this.isLoading = true;
+    this.authService.getProfile().subscribe({
+      next: (user) => {
+        console.log('Dashboard - Profile updated from backend');
+        this.loadProfilePhoto();
+      },
+      error: (err) => {
+        console.error('Dashboard - Failed to refresh profile:', err);
+        this.loadProfilePhoto(); // Fallback to local
+      }
+    });
   }
 
   toggleSidebar(): void {
@@ -339,9 +354,9 @@ export class StudentDashboard implements OnInit {
   // =====================================================
 
   refreshPhoto(): void {
-    console.log('Dashboard - Refreshing photo...');
+    console.log('Dashboard - Refreshing all information...');
     this.profilePhoto = null;
-    this.loadProfilePhoto();
+    this.refreshInformation();
   }
 
   // =====================================================

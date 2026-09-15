@@ -55,7 +55,8 @@ export class TranscriptPaymentService {
   }
 
   submitReceipt(requestId: string, fileName: string, receiptData: string): boolean {
-    const request = this.getAllRequests().find(item => item.id === requestId);
+    const all = this.getAllRequests();
+    const request = all.find(item => item.id === requestId);
     if (!request || request.status !== 'Awaiting Payment' || !request.controlNumber) {
       return false;
     }
@@ -64,7 +65,18 @@ export class TranscriptPaymentService {
     request.receiptData = receiptData;
     request.receiptSubmittedAt = new Date().toISOString();
     request.status = 'Receipt Submitted';
-    this.save(request);
+
+    const index = all.findIndex(item => item.id === request.id);
+    all[index] = request;
+
+    const saved = this.storage.save(this.requestKey, all);
+    if (!saved) {
+      // Fallback: If storage is full, save without the heavy image data so the process can at least continue
+      console.warn('Storage quota exceeded. Saving receipt without full image data.');
+      request.receiptData = 'IMAGE_TOO_LARGE_PLACEHOLDER';
+      all[index] = request;
+      return this.storage.save(this.requestKey, all);
+    }
     return true;
   }
 
@@ -76,11 +88,11 @@ export class TranscriptPaymentService {
     return true;
   }
 
-  updateCollection(requestId: string, collectionMethod: 'Physical Collection' | 'Post', postingAddress?: string): boolean {
+  updateCollection(requestId: string, collectionMethod: 'Physical Collection' | 'Post by DHL', postingAddress?: string): boolean {
     const request = this.getAllRequests().find(item => item.id === requestId);
     if (!request) return false;
     request.collectionMethod = collectionMethod;
-    request.postingAddress = collectionMethod === 'Post' ? postingAddress?.trim() : undefined;
+    request.postingAddress = collectionMethod === 'Post by DHL' ? postingAddress?.trim() : undefined;
     this.save(request);
     return true;
   }

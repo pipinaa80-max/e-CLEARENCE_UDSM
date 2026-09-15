@@ -2,17 +2,18 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
     selector: 'app-department-review',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink],
+    imports: [CommonModule, FormsModule, DashboardHeaderComponent],
     templateUrl: './department-review.html',
     styleUrl: './department-review.css'
 })
@@ -23,6 +24,7 @@ export class DepartmentReviewComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
 
+    sidebarOpen = false;
     requestId: string = '';
     request: ClearanceRequest | null = null;
     studentData: any = null;
@@ -270,5 +272,13 @@ export class DepartmentReviewComponent implements OnInit {
 
     selectTab(tab: 'profile' | 'documents' | 'approvals'): void {
         this.selectedTab = tab;
+    }
+
+    toggleSidebar(): void {
+        this.sidebarOpen = !this.sidebarOpen;
+    }
+
+    closeSidebar(): void {
+        this.sidebarOpen = false;
     }
 }

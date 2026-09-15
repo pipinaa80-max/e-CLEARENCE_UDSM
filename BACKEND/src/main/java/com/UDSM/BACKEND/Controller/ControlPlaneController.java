@@ -101,4 +101,9 @@ public class ControlPlaneController {
     public ResponseEntity<Map<String, Object>> publicBranding() {
         return ResponseEntity.ok(service.publicBranding());
     }
+
+    @GetMapping("/branding/current")
+    public ResponseEntity<Map<String, Object>> myBranding() {
+        return ResponseEntity.ok(service.myBranding());
+    }
 }

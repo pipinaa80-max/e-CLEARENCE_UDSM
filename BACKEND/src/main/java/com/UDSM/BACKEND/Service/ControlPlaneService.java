@@ -185,6 +185,16 @@ public class ControlPlaneService {
         return branding("default");
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> myBranding() {
+        User user = currentUser();
+        String projectId = user.getProjectId();
+        if (projectId == null || projectId.isBlank()) {
+            return publicBranding();
+        }
+        return branding(projectId);
+    }
+
     @Transactional
     public Map<String, Object> createAdmin(Map<String, Object> input) {
         requireSuperuser();
@@ -254,11 +264,14 @@ public class ControlPlaneService {
     public Map<String, Object> saveBranding(Map<String, Object> input) {
         String projectId = currentUser().getRole() == ERole.SUPERUSER ? "default" : requireProjectId();
         ProjectSetting setting = setting(projectId);
-        setting.setUniversityName(String.valueOf(input.getOrDefault("universityName", setting.getUniversityName())));
-        setting.setShortName(String.valueOf(input.getOrDefault("shortName", setting.getShortName())));
-        setting.setLogoUrl(String.valueOf(input.getOrDefault("logoUrl", setting.getLogoUrl())));
-        setting.setPrimaryColor(String.valueOf(input.getOrDefault("primaryColor", setting.getPrimaryColor())));
-        setting.setFontFamily(String.valueOf(input.getOrDefault("fontFamily", setting.getFontFamily())));
+        
+        if (input.containsKey("universityName")) setting.setUniversityName(String.valueOf(input.get("universityName")));
+        if (input.containsKey("shortName")) setting.setShortName(String.valueOf(input.get("shortName")));
+        if (input.containsKey("logoUrl")) setting.setLogoUrl(String.valueOf(input.get("logoUrl")));
+        if (input.containsKey("backgroundUrl")) setting.setBackgroundUrl(String.valueOf(input.get("backgroundUrl")));
+        if (input.containsKey("primaryColor")) setting.setPrimaryColor(String.valueOf(input.get("primaryColor")));
+        if (input.containsKey("fontFamily")) setting.setFontFamily(String.valueOf(input.get("fontFamily")));
+        
         projectSettingRepository.save(setting);
         return branding(projectId);
     }
@@ -322,24 +335,41 @@ public class ControlPlaneService {
     }
 
     private ProjectSetting setting(String projectId) {
-        return projectSettingRepository.findById(projectId).orElseGet(() -> {
+        ProjectSetting setting = projectSettingRepository.findById(projectId).orElseGet(() -> {
             ProjectSetting value = new ProjectSetting();
             value.setProjectId(projectId);
             value.setUniversityName("University of Dar es Salaam");
             value.setShortName("Clearance");
             value.setLogoUrl("/assets/logo.png");
+            value.setBackgroundUrl("/public/background.png");
             value.setPrimaryColor("#123c69");
             value.setFontFamily("Georgia");
             value.setDashboardsJson("[]");
             return value;
         });
+        
+        // Ensure defaults if fields are empty
+        if (setting.getBackgroundUrl() == null || setting.getBackgroundUrl().isBlank()) {
+            setting.setBackgroundUrl("/public/background.png");
+        }
+        if (setting.getLogoUrl() == null || setting.getLogoUrl().isBlank()) {
+            setting.setLogoUrl("/udsm-logo.png");
+        }
+        
+        return setting;
     }
 
     private Map<String, Object> branding(String projectId) {
         ProjectSetting value = setting(projectId);
-        return Map.of("universityName", value.getUniversityName(), "shortName", value.getShortName(),
-                "logoUrl", value.getLogoUrl(), "primaryColor", value.getPrimaryColor(),
-                "fontFamily", value.getFontFamily(), "projectId", projectId);
+        Map<String, Object> branding = new LinkedHashMap<>();
+        branding.put("universityName", value.getUniversityName());
+        branding.put("shortName", value.getShortName());
+        branding.put("logoUrl", value.getLogoUrl());
+        branding.put("backgroundUrl", value.getBackgroundUrl());
+        branding.put("primaryColor", value.getPrimaryColor());
+        branding.put("fontFamily", value.getFontFamily());
+        branding.put("projectId", projectId);
+        return branding;
     }
 
     private List<Map<String, Object>> dashboards(String projectId) {

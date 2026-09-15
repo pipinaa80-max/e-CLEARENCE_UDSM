@@ -1,140 +1,181 @@
 <!-- profile.html -->
-<div class="profile-shell">
-<div class="profile-page">
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
-  <header class="profile-header">
-    <div>
-      <span>Student Account</span>
-      <h1>My Profile</h1>
-      <p>View your student information and clearance account.</p>
-    </div>
-  </header>
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
 
-  <!-- STUDENT INFORMATION -->
-  <section class="student-profile-card">
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-    <div class="student-photo">
-      <!-- Show loading state -->
-      <div *ngIf="isLoading" class="photo-loading">
-        <span class="spinner"></span>
-      </div>
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
 
-      <!-- Show photo if available -->
-      <img
-              *ngIf="!isLoading && hasPhoto()"
-              [src]="getPhotoSource()"
-              [alt]="user?.fullName || 'Student'"
-              (error)="onImageError()"
-              class="profile-image"
-      />
-
-      <!-- Show initials if no photo -->
-      <span *ngIf="!isLoading && !hasPhoto()" class="initials">
-        {{ initials }}
-      </span>
-
-      <!-- Refresh button (hidden in production) -->
-      <button *ngIf="!isLoading" class="refresh-btn" (click)="refreshPhoto()" title="Refresh photo">
-        🔄
-      </button>
-    </div>
-
-    <div class="student-information">
-      <span class="label">Student</span>
-      <h2>{{ user?.fullName || 'Student' }}</h2>
-
-      <div class="profile-details">
-        <div>
-          <span>Registration Number</span>
-          <strong>{{ user?.registrationNumber || 'Not available' }}</strong>
-        </div>
-
-        <div>
-          <span>Programme</span>
-          <strong>{{ user?.programme || 'Not available' }}</strong>
-        </div>
-
-        <div *ngIf="user?.college">
-          <span>College</span>
-          <strong>{{ user?.college }}</strong>
-        </div>
-
-        <div *ngIf="user?.department">
-          <span>Department</span>
-          <strong>{{ user?.department }}</strong>
-        </div>
-
-        <div *ngIf="user?.hall">
-          <span>Hall</span>
-          <strong>{{ user?.hall }}</strong>
-        </div>
-
-        <div *ngIf="user?.roomNumber">
-          <span>Room Number</span>
-          <strong>{{ user?.roomNumber }}</strong>
-        </div>
-
-        <div *ngIf="user?.sponsor">
-          <span>Sponsor</span>
-          <strong>{{ user?.sponsor }}</strong>
-        </div>
-
-        <!-- Debug info - remove in production -->
-        <div *ngIf="!hasPhoto()" class="debug-info">
-          <span>Photo Status</span>
-          <strong style="color: #e53e3e;">No photo found</strong>
-          <small style="color: #718096; font-size: 11px;">
-            Check console for details
-          </small>
-        </div>
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
       </div>
     </div>
 
-  </section>
-
-  <!-- CLEARANCE STATUS BADGE -->
-  <section class="clearance-status-badge" *ngIf="hasClearanceRequest">
-    <div class="status-container">
-      <span class="status-label">Clearance Status</span>
-      <span class="status-value" [class]="clearanceStatus.toLowerCase().replace(' ', '-')">
-        {{ clearanceStatus }}
-      </span>
-    </div>
-  </section>
-
-  <!-- CLEARANCE REQUEST REQUIRED -->
-  <section class="request-warning" *ngIf="needsClearanceRequest">
-    <div class="warning-icon">!</div>
-    <div class="warning-content">
-      <span>Clearance Request Required</span>
-      <h2>Complete your clearance request first</h2>
-      <p>
-        Before you can start the clearance process,
-        you must first complete your Clearance Request.
-        The information you provide will be used
-        throughout your clearance process.
-      </p>
-      <a routerLink="/clearance/request" class="primary-button">
-        Complete Clearance Request
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
       </a>
-    </div>
-  </section>
-
-  <!-- REQUEST COMPLETED -->
-  <section class="request-completed" *ngIf="hasClearanceRequest">
-    <div class="completed-icon">✓</div>
-    <div class="completed-content">
-      <span>Clearance Request Completed</span>
-      <h2>Your clearance request has been submitted</h2>
-      <p>
-        Your information has been saved successfully.
-        You can now start the clearance process.
-      </p>
-      <a routerLink="/convocation" class="primary-button">
-        Start Clearance Process
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
       </a>
-    </div>
-  </section>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
 
-</div>
-</div>
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
+    <app-dashboard-header
+      eyebrow="Student Account"
+      title="My Profile"
+      subtitle="View your student information and clearance account."
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
+
+    <div class="profile-content">
+      <!-- STUDENT INFORMATION -->
+      <section class="student-profile-card">
+
+        <div class="student-photo">
+          <!-- Show loading state -->
+          <div *ngIf="isLoading" class="photo-loading">
+            <span class="spinner"></span>
+          </div>
+
+          <!-- Show photo if available -->
+          <img
+                  *ngIf="!isLoading && hasPhoto()"
+                  [src]="getPhotoSource()"
+                  [alt]="user?.fullName || 'Student'"
+                  (error)="onImageError()"
+                  class="profile-image"
+          />
+
+          <!-- Show initials if no photo -->
+          <span *ngIf="!isLoading && !hasPhoto()" class="initials">
+            {{ initials }}
+          </span>
+
+          <!-- Refresh button -->
+          <button *ngIf="!isLoading" class="refresh-photo-overlay" (click)="refreshPhoto()" title="Refresh photo">
+            ↻
+          </button>
+        </div>
+
+        <div class="student-information">
+          <span class="label">Student</span>
+          <h2>{{ user?.fullName || 'Student' }}</h2>
+
+          <div class="profile-details">
+            <div>
+              <span>Registration Number</span>
+              <strong>{{ user?.registrationNumber || 'Not available' }}</strong>
+            </div>
+
+            <div>
+              <span>Programme</span>
+              <strong>{{ user?.programme || 'Not available' }}</strong>
+            </div>
+
+            <div *ngIf="user?.college">
+              <span>College</span>
+              <strong>{{ user?.college }}</strong>
+            </div>
+
+            <div *ngIf="user?.department">
+              <span>Department</span>
+              <strong>{{ user?.department }}</strong>
+            </div>
+
+            <div *ngIf="user?.hall">
+              <span>Hall</span>
+              <strong>{{ user?.hall }}</strong>
+            </div>
+
+            <div *ngIf="user?.roomNumber">
+              <span>Room Number</span>
+              <strong>{{ user?.roomNumber }}</strong>
+            </div>
+
+            <div *ngIf="user?.sponsor">
+              <span>Sponsor</span>
+              <strong>{{ user?.sponsor }}</strong>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- CLEARANCE STATUS BADGE -->
+      <section class="clearance-status-badge" *ngIf="hasClearanceRequest">
+        <div class="status-container">
+          <span class="status-label">Clearance Status</span>
+          <span class="status-value" [class]="clearanceStatus.toLowerCase().replace(' ', '-')">
+            {{ clearanceStatus }}
+          </span>
+        </div>
+      </section>
+
+      <!-- CLEARANCE REQUEST REQUIRED -->
+      <section class="request-warning" *ngIf="needsClearanceRequest">
+        <div class="warning-icon">!</div>
+        <div class="warning-content">
+          <span>Clearance Request Required</span>
+          <h2>Complete your clearance request first</h2>
+          <p>
+            Before you can start the clearance process,
+            you must first complete your Clearance Request.
+          </p>
+          <a routerLink="/clearance/request" class="primary-button">
+            Complete Clearance Request
+          </a>
+        </div>
+      </section>
+
+      <!-- REQUEST COMPLETED -->
+      <section class="request-completed" *ngIf="hasClearanceRequest">
+        <div class="completed-icon">✓</div>
+        <div class="completed-content">
+          <span>Clearance Request Completed</span>
+          <h2>Your clearance request has been submitted</h2>
+          <p>
+            Your information has been saved successfully.
+          </p>
+          <a routerLink="/clearance/status" class="primary-button">
+            View Clearance Process
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+</section>

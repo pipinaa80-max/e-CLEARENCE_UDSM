@@ -3,17 +3,18 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ConfigService } from './config.service';
 import { StorageService } from './storage.service';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly authService = inject(AuthService);
   private readonly storage = new StorageService();
   private readonly apiUrl = `${this.config.apiUrl}/admin`;
-  private readonly tokenKey = 'udsm-auth-token';
 
   private getAuthHeaders(): HttpHeaders {
-    const token = this.storage.get<string>(this.tokenKey);
+    const token = this.authService.getToken();
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
@@ -31,6 +32,13 @@ export class AdminService {
 
   deleteUser(userId: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/users/${userId}`, { headers: this.getAuthHeaders() });
+  }
+
+  deleteUsers(userIds: string[]): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/users`, {
+      headers: this.getAuthHeaders(),
+      body: userIds
+    });
   }
 
   updateUserRole(userId: string, role: string): Observable<any> {

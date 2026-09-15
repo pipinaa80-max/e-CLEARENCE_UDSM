@@ -40,22 +40,41 @@
       <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your receipt.</p>
       <label class="receipt-upload">
         <span>Upload payment receipt photo</span>
-        <input type="file" accept="image/*" (change)="onReceiptSelected($event)" />
+        <input type="file" accept="image/*" (change)="onFileSelected($event)" />
       </label>
+
+      <div *ngIf="selectedFile" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <p style="margin: 0; color: #00679b; font-weight: 700;">Selected: {{ selectedFile.name }}</p>
+        <button type="button" class="primary-button" (click)="submitReceipt()" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit and Continue' }}
+        </button>
+      </div>
     </section>
 
     <section class="payment-step success-step" *ngIf="request.status === 'Receipt Submitted' || request.status === 'Paid'">
       <h2 *ngIf="request.status === 'Receipt Submitted'">Receipt submitted</h2>
-      <p *ngIf="request.status === 'Receipt Submitted'">Your payment receipt has been sent to Finance for verification. Please wait for approval before continuing.</p>
-      <div *ngIf="request.status === 'Paid'" class="step-navigation">
-        <span>Finance has approved your payment.</span>
-        <a routerLink="/documents/transcript" class="primary-button">Next: Attach Documents</a>
+
+      <div *ngIf="request.status === 'Receipt Submitted'">
+        <p>Your payment receipt has been sent to Finance for verification. Please wait for approval before continuing.</p>
+        <div class="step-navigation">
+          <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+          <a routerLink="/transcript/process" class="approval-button">Next</a>
+        </div>
+      </div>
+
+      <div *ngIf="request.status === 'Paid'">
+        <p>Finance has approved your payment. You can now proceed to attach your required documents.</p>
+        <div class="step-navigation">
+          <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+          <a routerLink="/transcript/process" class="approval-button">Next</a>
+        </div>
       </div>
     </section>
 
     <p class="message success-message" *ngIf="message">{{ message }}</p>
     <p class="message error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
     </ng-container>
-    <a routerLink="/dashboard" class="back-link">Back to Dashboard</a>
+
+    <a *ngIf="!request || (request.status !== 'Paid' && request.status !== 'Receipt Submitted')" routerLink="/dashboard" class="back-link">Back to Dashboard</a>
   </main>
 </section>

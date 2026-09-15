@@ -53,6 +53,13 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
 
+    @DeleteMapping("/users")
+    public ResponseEntity<ApiResponse> deleteUsers(@RequestBody List<String> userIds) {
+        log.info("Admin: Bulk deleting {} users", userIds.size());
+        adminService.deleteUsers(userIds);
+        return ResponseEntity.ok(ApiResponse.success("Selected users deleted successfully"));
+    }
+
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<User> updateUserRole(@PathVariable String userId, @RequestParam String role) {
         log.info("Admin: Updating user role: {} to {}", userId, role);

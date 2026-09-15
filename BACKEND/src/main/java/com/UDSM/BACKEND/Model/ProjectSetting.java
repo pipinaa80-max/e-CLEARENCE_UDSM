@@ -30,6 +30,9 @@ public class ProjectSetting {
     @Column(name = "logo_url", length = 1000)
     private String logoUrl;
 
+    @Column(name = "background_url", length = 1000)
+    private String backgroundUrl;
+
     @Column(name = "primary_color", length = 20)
     private String primaryColor;
 

@@ -29,26 +29,14 @@
 
   <main class="content-panel">
 
-    <header class="topbar">
-      <button type="button" class="sidebar-toggle" aria-label="Open navigation" [attr.aria-expanded]="sidebarOpen" (click)="toggleSidebar()">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-      <div class="topbar-title">
-        <span class="eyebrow">Convocation Office</span>
-        <h1>Control Number Dashboard</h1>
-        <p>Manage student control number requests and payment receipts</p>
-      </div>
-
-      <div class="topbar-actions">
-
-        <div class="staff-avatar">
-          <span>{{ currentUser?.fullName?.charAt(0) || 'C' }}</span>
-        </div>
-      </div>
-    </header>
+    <app-dashboard-header
+      eyebrow="Convocation Office"
+      title="Control Number Dashboard"
+      subtitle="Manage student control number requests and payment receipts"
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
 
     <section class="stats-grid">
       <article class="stat-card pending">
@@ -228,7 +216,6 @@
         </div>
       </div>
     </section>
-
   </main>
 
 </section>

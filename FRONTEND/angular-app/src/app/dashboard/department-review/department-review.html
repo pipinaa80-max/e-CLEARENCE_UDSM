@@ -1,15 +1,18 @@
 <!-- department-review.html - Fixed all status comparisons -->
 <section class="review-page">
-    <header class="page-header">
+    <app-dashboard-header
+      eyebrow="Department Review"
+      title="Clearance Request Review"
+      subtitle="Review student information, documents, and approve or reject"
+      [user]="currentUser"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
         <button type="button" class="back-btn" (click)="goBack()">
-            ← Back to Dashboard
+          ← Back to Dashboard
         </button>
-        <div>
-            <span class="eyebrow">Department Review</span>
-            <h1>Clearance Request Review</h1>
-            <p>Review student information, documents, and approve or reject</p>
-        </div>
-    </header>
+      </div>
+    </app-dashboard-header>
 
     <div *ngIf="isLoading" class="loading-state">
         <div class="spinner"></div>

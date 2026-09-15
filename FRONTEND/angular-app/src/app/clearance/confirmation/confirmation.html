@@ -1,9 +1,68 @@
-<section class="confirmation-page">
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
-  <div
-    class="confirmation-card"
-    *ngIf="request; else noRequest"
-  >
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
+
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
+
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
+    <app-dashboard-header
+      eyebrow="Graduation Clearance"
+      title="Clearance Completed"
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
+
+    <div
+      class="confirmation-card"
+      *ngIf="request; else noRequest"
+    >
 
     <!-- SUCCESS -->
 
@@ -224,4 +283,5 @@
 
   </ng-template>
 
+  </main>
 </section>

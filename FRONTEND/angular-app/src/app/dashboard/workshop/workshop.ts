@@ -7,11 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-workshop',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './workshop.html',
   styleUrl: './workshop.css'
 })
@@ -21,12 +22,17 @@ export class WorkshopComponent {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
 
   get currentUser() {
     return this.authService.getCurrentUser();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
   }
 
   get workshopName(): string {

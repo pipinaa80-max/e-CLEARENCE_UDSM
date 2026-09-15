@@ -4,11 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-transcript-documents',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './transcript-documents.html',
   styleUrl: './transcript-documents.css'
 })
@@ -18,6 +19,7 @@ export class TranscriptDocumentsComponent implements OnInit {
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   readonly requiredDocuments = [
     'Birth Certificate',
     'O-Level Certificate',
@@ -30,8 +32,17 @@ export class TranscriptDocumentsComponent implements OnInit {
   uploading = '';
   paymentId = '';
 
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  get isSubmitted(): boolean {
+    const user = this.currentUser;
+    return !!user && localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+  }
+
   ngOnInit(): void {
-    const user = this.authService.getCurrentUser();
+    const user = this.currentUser;
     const payment = user
       ? this.paymentService.getStudentRequests(user.id).at(-1)
       : null;
@@ -75,6 +86,7 @@ export class TranscriptDocumentsComponent implements OnInit {
   }
 
   onFileSelected(category: string, event: Event): void {
+    if (this.isSubmitted) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     this.errorMessage = '';
@@ -89,7 +101,8 @@ export class TranscriptDocumentsComponent implements OnInit {
   }
 
   upload(category: string): void {
-    const user = this.authService.getCurrentUser();
+    if (this.isSubmitted) return;
+    const user = this.currentUser;
     const file = this.selectedFiles[category];
     if (!user || !file) {
       this.errorMessage = `Select the ${category} file first.`;
@@ -120,7 +133,19 @@ export class TranscriptDocumentsComponent implements OnInit {
     });
   }
 
+  submit(): void {
+    const user = this.currentUser;
+    if (!user || !this.allUploaded) return;
+
+    localStorage.setItem(`udsm-transcript-documents-submitted-${user.id}`, 'true');
+    this.router.navigate(['/transcript/process']);
+  }
+
   get allUploaded(): boolean {
     return this.requiredDocuments.every(category => this.uploaded[category]);
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
   }
 }
