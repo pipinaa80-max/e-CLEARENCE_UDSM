@@ -227,4 +227,37 @@
     </section>
   </main>
 
+  <!-- =========================
+       RECEIPT MODAL
+  ========================== -->
+
+  <div class="receipt-modal-overlay" *ngIf="showReceiptModal" (click)="closeReceiptModal()">
+    <div class="receipt-modal-card" (click)="$event.stopPropagation()">
+      <header>
+        <div>
+          <h3>Digital Receipt</h3>
+          <p>{{ receiptToView?.name }} · {{ receiptToView?.reg }}</p>
+        </div>
+        <button type="button" class="close-btn" (click)="closeReceiptModal()">✕</button>
+      </header>
+
+      <div class="receipt-body">
+        <img *ngIf="receiptToView?.data?.startsWith('data:image')" [src]="receiptToView?.data" alt="Payment Receipt" />
+
+        <div *ngIf="receiptToView?.data?.startsWith('data:application/pdf')" class="pdf-viewer">
+          <p>📄 PDF Receipt Uploaded</p>
+          <a [href]="receiptToView?.data" download="receipt.pdf" class="download-link">Download PDF to View</a>
+        </div>
+
+        <div *ngIf="!receiptToView?.data?.startsWith('data:')" class="text-receipt">
+          <p>{{ receiptToView?.data }}</p>
+        </div>
+      </div>
+
+      <footer>
+        <button type="button" class="primary-button" (click)="closeReceiptModal()">Close Viewer</button>
+      </footer>
+    </div>
+  </div>
+
 </section>

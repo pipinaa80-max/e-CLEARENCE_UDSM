@@ -33,6 +33,9 @@ export class ConvocationDashboardComponent implements OnInit {
 
   backendReceipts: any[] = [];
 
+  showReceiptModal = false;
+  receiptToView: { name: string, data: string, reg: string } | null = null;
+
   totalPending = 0;
   totalIssued = 0;
   totalCompleted = 0;
@@ -158,40 +161,22 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   viewReceipt(request: ClearanceRequest): void {
-    const receipt = this.getReceiptFile(request);
-    if (receipt) {
-      if (receipt.startsWith('data:')) {
-        // Create a dedicated viewer window for the image
-        const win = window.open("", "_blank");
-        if (win) {
-          win.document.write(`
-            <html>
-              <head>
-                <title>Receipt Viewer - ${this.getStudentName(request)}</title>
-                <style>
-                  body { margin: 0; display: grid; place-items: center; background: #1a1a1a; min-height: 100vh; font-family: sans-serif; }
-                  .container { max-width: 90%; text-align: center; }
-                  img { max-width: 100%; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
-                  .info { color: #fff; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 30px; display: inline-block; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <img src="${receipt}" alt="Student Receipt" />
-                  <br>
-                  <div class="info">Student: ${this.getStudentName(request)} | ${this.getStudentRegNumber(request)}</div>
-                </div>
-              </body>
-            </html>
-          `);
-          win.document.close();
-        }
-      } else {
-        alert(`Viewing reference: ${receipt}`);
-      }
+    const data = this.getReceiptFile(request);
+    if (data) {
+      this.receiptToView = {
+        name: this.getStudentName(request),
+        reg: this.getStudentRegNumber(request),
+        data: data
+      };
+      this.showReceiptModal = true;
     } else {
       alert('The student has not uploaded a digital receipt yet.');
     }
+  }
+
+  closeReceiptModal(): void {
+    this.showReceiptModal = false;
+    this.receiptToView = null;
   }
 
   getStudentInitials(request: ClearanceRequest): string {

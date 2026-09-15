@@ -955,11 +955,116 @@
 
 
 /* =========================
-   MOBILE OVERLAY
+   RECEIPT MODAL
 ========================= */
 
-.sidebar-overlay {
-  display: none;
+.receipt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 15, 30, 0.7);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.receipt-modal-card {
+  width: min(100%, 700px);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.receipt-modal-card header {
+  padding: 20px 24px;
+  background: var(--udsm-blue-light);
+  border-bottom: 1px solid rgba(8, 100, 175, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.receipt-modal-card header h3 {
+  margin: 0;
+  color: var(--udsm-blue-dark);
+  font-size: 1.1rem;
+}
+
+.receipt-modal-card header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: #475569;
+}
+
+.receipt-body {
+  padding: 30px;
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+}
+
+.receipt-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.text-receipt {
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.pdf-viewer {
+  text-align: center;
+  padding: 40px;
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 12px 24px;
+  background: var(--udsm-blue);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.receipt-modal-card footer {
+  padding: 18px 24px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
 }
 
 
