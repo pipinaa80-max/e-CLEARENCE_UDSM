@@ -36,12 +36,6 @@
       [user]="currentUser"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions>
-        <button type="button" class="refresh-btn" (click)="refreshData()" [disabled]="isLoading">
-          <span *ngIf="!isLoading">🔄 Refresh</span>
-          <span *ngIf="isLoading">...</span>
-        </button>
-      </div>
     </app-dashboard-header>
 
     <section class="stats-grid">

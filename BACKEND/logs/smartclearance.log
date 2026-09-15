@@ -4077,3 +4077,34 @@ org.springframework.web.server.ResponseStatusException: 401 UNAUTHORIZED "Invali
 2026-09-15 23:14:51 [http-nio-8080-exec-5] INFO  c.U.B.C.ConvocationController - 📋 Getting pending convocation receipts for officer: convocation@udom.ac.tz
 2026-09-15 23:14:51 [http-nio-8080-exec-5] INFO  c.U.B.Service.ConvocationService - 📋 Getting all pending convocation receipts
 2026-09-15 23:14:55 [Thread-49] ERROR c.UDSM.BACKEND.Service.EmailService - ❌ Failed to send email to convocation@udom.ac.tz: Authentication failed
+2026-09-15 23:39:23 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/profile
+2026-09-15 23:39:28 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /auth/profile
+2026-09-15 23:39:28 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 23:39:28 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: convocation@udom.ac.tz
+2026-09-15 23:39:28 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: convocation@udom.ac.tz
+2026-09-15 23:39:33 [http-nio-8080-exec-3] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: convocation@udom.ac.tz with role: CONVOCATION_OFFICER
+2026-09-15 23:39:33 [http-nio-8080-exec-3] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: convocation@udom.ac.tz
+2026-09-15 23:39:33 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /auth/profile
+2026-09-15 23:39:33 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AuthController - 👤 Get current user profile
+2026-09-15 23:39:33 [http-nio-8080-exec-3] INFO  c.UDSM.BACKEND.Service.AuthService - Getting current user: convocation@udom.ac.tz
+2026-09-15 23:39:33 [http-nio-8080-exec-3] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: convocation@udom.ac.tz
+2026-09-15 23:39:39 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-15 23:39:39 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-15 23:39:39 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-15 23:39:39 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-15 23:39:39 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: CONVOCATION@udom.ac.tz
+2026-09-15 23:39:39 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: CONVOCATION@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-9] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: convocation@udom.ac.tz with role: CONVOCATION_OFFICER
+2026-09-15 23:39:40 [http-nio-8080-exec-9] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2026-09-15 23:39:40 [http-nio-8080-exec-9] DEBUG c.UDSM.BACKEND.Service.AuthService -  Finding user by identifier: CONVOCATION@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /convocation/pending
+2026-09-15 23:39:40 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /convocation/pending
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - 🔑 JWT found in request: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiO...
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ JWT validated for user: convocation@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: convocation@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.S.CustomUserDetailsService - ✅ User found: convocation@udom.ac.tz with role: CONVOCATION_OFFICER
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.config.JwtAuthenticationFilter - ✅ Authentication set for user: convocation@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /convocation/pending
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.C.ConvocationController - 📋 Getting pending convocation receipts for officer: convocation@udom.ac.tz
+2026-09-15 23:39:40 [http-nio-8080-exec-7] INFO  c.U.B.Service.ConvocationService - 📋 Getting all pending convocation receipts
+2026-09-15 23:39:45 [Thread-50] ERROR c.UDSM.BACKEND.Service.EmailService - ❌ Failed to send email to convocation@udom.ac.tz: Authentication failed
