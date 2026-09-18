@@ -18,6 +18,7 @@ export interface ProjectConfig {
     backgroundUrl: string;
     primaryColor: string;
     fontFamily: string;
+    footerLinks?: { label: string; url: string }[];
   };
   dashboards: ProjectDashboard[];
 }

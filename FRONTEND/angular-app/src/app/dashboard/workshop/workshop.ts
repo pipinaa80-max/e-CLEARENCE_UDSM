@@ -27,6 +27,9 @@ export class WorkshopComponent {
   rejectionComment = '';
   message = '';
 
+  searchTerm = '';
+  filterStatus = 'all';
+
   get currentUser() {
     return this.authService.getCurrentUser();
   }
@@ -41,6 +44,102 @@ export class WorkshopComponent {
 
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Workshop');
+  }
+
+  get filteredRequests(): ClearanceRequest[] {
+    let list = this.requests;
+
+    if (this.searchTerm.trim()) {
+      const s = this.searchTerm.toLowerCase();
+      list = list.filter(r =>
+        this.getStudentName(r).toLowerCase().includes(s) ||
+        this.getStudentRegNumber(r).toLowerCase().includes(s) ||
+        r.programme.toLowerCase().includes(s)
+      );
+    }
+
+    if (this.filterStatus !== 'all') {
+      if (this.filterStatus === 'pending') {
+        list = list.filter(r => r.status === 'Pending');
+      } else if (this.filterStatus === 'approved') {
+        list = list.filter(r => r.status === 'Completed');
+      } else if (this.filterStatus === 'rejected') {
+        list = list.filter(r => r.status === 'Rejected');
+      }
+    }
+
+    return list;
+  }
+
+  // Cache for student data to avoid repeated lookups
+  private studentCache: Map<string, any> = new Map();
+
+  private getStudentData(studentId: string): any | null {
+    if (this.studentCache.has(studentId)) {
+      return this.studentCache.get(studentId);
+    }
+    try {
+      const usersJson = localStorage.getItem('udsm-local-users');
+      if (usersJson) {
+        const users = JSON.parse(usersJson);
+        const user = users.find((u: any) => u.id === studentId);
+        if (user) {
+          this.studentCache.set(studentId, user);
+          return user;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+    }
+    return null;
+  }
+
+  getStudentName(request: ClearanceRequest): string {
+    if (request.studentName) return request.studentName;
+    const user = this.getStudentData(request.studentId);
+    if (user) {
+      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
+    }
+    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
+  }
+
+  getStudentRegNumber(request: ClearanceRequest): string {
+    return request.registrationNumber || request.studentId;
+  }
+
+  getStudentPhoto(request: ClearanceRequest): string | null {
+    let photo = request.photo;
+    if (!photo) {
+      const user = this.getStudentData(request.studentId);
+      if (user) {
+        photo = user.photo || user.profilePhoto || user.profileImageUrl;
+      }
+    }
+    if (!photo) return null;
+
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
+    }
+    if (photo.length > 50) {
+      return 'data:image/jpeg;base64,' + photo;
+    }
+    return photo;
+  }
+
+  getStudentInitials(request: ClearanceRequest): string {
+    const name = this.getStudentName(request);
+    if (!name || name === 'Student') return 'ST';
+    const parts = name.split(' ');
+    let initials = '';
+    for (let i = 0; i < parts.length && i < 2; i++) {
+      if (parts[i]) initials += parts[i].charAt(0);
+    }
+    return initials.toUpperCase();
+  }
+
+  hasPhoto(request: ClearanceRequest): boolean {
+    const photo = this.getStudentPhoto(request);
+    return !!photo;
   }
 
   approve(request: ClearanceRequest): void {

@@ -5,6 +5,7 @@
       title="Clearance Request Review"
       subtitle="Review student information, documents, and approve or reject"
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions>

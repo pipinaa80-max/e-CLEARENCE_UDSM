@@ -17,12 +17,12 @@
   >
 
     <div class="brand">
-
-      <img
-        src="/public/udsm-logo.png"
-        alt="UDSM Logo"
-      />
-
+      <a routerLink="/">
+        <img
+          src="/public/udsm-logo.png"
+          alt="Institutional Logo"
+        />
+      </a>
       <div>
         <strong>DEPARTMENT</strong>
         <small>Clearance Workspace</small>
@@ -62,6 +62,7 @@
       [title]="departmentName + ' Department'"
       subtitle="Review and process student clearance applications."
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="header-actions">

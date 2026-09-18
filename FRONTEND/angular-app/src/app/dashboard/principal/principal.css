@@ -1,6 +1,8 @@
 :host {
-  display: block;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 @keyframes fadeIn {
@@ -20,17 +22,8 @@
 }
 
 .principal-page {
-  min-height: 100vh;
   display: flex;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  flex: 1;
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -38,7 +31,6 @@
 /* SIDEBAR */
 .sidebar {
   width: 235px;
-  min-height: 100vh;
   flex: 0 0 235px;
   padding: 26px 18px;
   box-sizing: border-box;
@@ -250,14 +242,17 @@
 /* TOOLBAR */
 .toolbar {
   width: min(100%, 1050px);
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
   align-items: center;
   gap: 12px;
   margin: 0 auto 18px;
 }
 
 .search-box {
-  flex: 1;
+  flex: 1 !important;
 }
 
 .search-box input,
@@ -551,7 +546,7 @@
   .content { padding: 22px 14px 40px; }
   .page-header { flex-direction: column; }
   .stats { grid-template-columns: 1fr; }
-  .toolbar { align-items: stretch; flex-direction: column; }
+  .toolbar { align-items: stretch; flex-direction: column !important; }
   .toolbar select { width: 100%; }
   .request-header { align-items: flex-start; flex-direction: column; }
   .student-details { grid-template-columns: 1fr; }

@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast';
 import { ProjectAdminService, ProjectConfig } from './core/services/project-admin.service';
@@ -8,7 +9,7 @@ import { AuthService } from './core/services/auth.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, ToastComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -17,7 +18,7 @@ export class App {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly currentYear = new Date().getFullYear();
-  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/public/udsm-logo.png', backgroundUrl: '/public/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI' };
+  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/public/udsm-logo.png', backgroundUrl: '/public/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI', footerLinks: [] };
   private brandingObserver?: MutationObserver;
 
   constructor() {
@@ -37,10 +38,6 @@ export class App {
 
   private refreshBranding(): void {
     const saved = this.projectAdminService.getSavedBranding();
-    if (saved) {
-      this.applyBranding(saved);
-      return;
-    }
 
     if (this.authService.getToken()) {
       this.projectAdminService.getMyBranding().subscribe({
@@ -48,12 +45,29 @@ export class App {
           this.projectAdminService.setSavedBranding(branding);
           this.applyBranding(branding);
         },
-        error: () => this.projectAdminService.getPublicBranding().subscribe({ next: (config) => this.applyBranding(config), error: () => undefined })
+        error: () => {
+          if (saved) this.applyBranding(saved);
+        }
       });
       return;
     }
 
-    this.projectAdminService.getPublicBranding().subscribe({ next: (config) => this.applyBranding(config), error: () => undefined });
+    // If logged out, prefer the last used institutional branding saved in this browser
+    if (saved && saved.primaryColor && saved.primaryColor !== '#0864af') {
+      this.applyBranding(saved);
+      return;
+    }
+
+    // Only fallback to public/global branding if no custom theme is found locally
+    this.projectAdminService.getPublicBranding().subscribe({
+      next: (config) => {
+        this.projectAdminService.setSavedBranding(config);
+        this.applyBranding(config);
+      },
+      error: () => {
+        if (saved) this.applyBranding(saved);
+      }
+    });
   }
 
   private applyBranding(config: Partial<typeof this.branding>): void {
@@ -121,9 +135,24 @@ export class App {
     while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
 
     const targetName = 'University of Dar es Salaam';
+    const currentName = this.branding.universityName;
+
     textNodes.forEach(node => {
-      if (node.nodeValue?.includes(targetName)) {
-        node.nodeValue = node.nodeValue.replaceAll(targetName, this.branding.universityName);
+      const parent = node.parentElement;
+      if (!parent) return;
+
+      // Use a data attribute to store the original text so we can always revert/re-replace correctly
+      let originalText = parent.getAttribute('data-original-text');
+      if (!originalText && node.nodeValue?.includes(targetName)) {
+        originalText = node.nodeValue;
+        parent.setAttribute('data-original-text', originalText);
+      }
+
+      if (originalText) {
+        const newText = originalText.replaceAll(targetName, currentName);
+        if (node.nodeValue !== newText) {
+          node.nodeValue = newText;
+        }
       }
     });
   }

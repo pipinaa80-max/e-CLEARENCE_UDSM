@@ -2,7 +2,9 @@
 <section class="register-page">
   <div class="register-card">
     <div class="card-header">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
+      <a routerLink="/">
+        <img src="/public/udsm-logo.png" alt="Institutional Logo" class="brand-badge" />
+      </a>
       <h1>University of Dar es Salaam</h1>
       <p>
         Academic details are required for a complete profile and will be used during clearance.
@@ -54,36 +56,6 @@
                   formControlName="phone"
                   placeholder="e.g., 0712-345-678"
           />
-        </label>
-
-        <label class="field full-width">
-          <span>College *</span>
-          <select formControlName="college" (change)="onCollegeChange()">
-            <option value="" disabled selected>Select College</option>
-            <option *ngFor="let college of collegeList" [value]="college">
-              {{ college }}
-            </option>
-          </select>
-        </label>
-
-        <label class="field full-width">
-          <span>Department *</span>
-          <select formControlName="department" (change)="onDepartmentChange()" [disabled]="!registerForm.controls.college.value">
-            <option value="" disabled selected>Select Department</option>
-            <option *ngFor="let department of departments" [value]="department">
-              {{ department }}
-            </option>
-          </select>
-        </label>
-
-        <label class="field full-width">
-          <span>Programme *</span>
-          <select formControlName="programme" [disabled]="!registerForm.controls.department.value">
-            <option value="" disabled selected>Select Programme</option>
-            <option *ngFor="let programme of programmeOptions" [value]="programme">
-              {{ programme }}
-            </option>
-          </select>
         </label>
 
         <label class="field full-width">

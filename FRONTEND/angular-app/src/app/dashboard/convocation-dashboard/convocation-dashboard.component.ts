@@ -129,9 +129,9 @@ export class ConvocationDashboardComponent implements OnInit {
     if (request.studentName) return request.studentName;
     const user = this.getStudentData(request.studentId);
     if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || 'Student';
+      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
     }
-    return 'Student #' + request.studentId.substring(0, 8);
+    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
   }
 
   getStudentRegNumber(request: ClearanceRequest): string {
@@ -144,15 +144,22 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   getStudentPhoto(request: ClearanceRequest): string | null {
-    if (request.photo && request.photo.startsWith('data:image')) {
-      return request.photo;
+    let photo = request.photo;
+    if (!photo) {
+      const user = this.getStudentData(request.studentId);
+      if (user) {
+        photo = user.photo || user.profilePhoto || user.profileImageUrl;
+      }
     }
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      if (user.photo && user.photo.startsWith('data:image')) return user.photo;
-      if (user.profilePhoto && user.profilePhoto.startsWith('data:image')) return user.profilePhoto;
+    if (!photo) return null;
+
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
     }
-    return null;
+    if (photo.length > 50) {
+      return 'data:image/jpeg;base64,' + photo;
+    }
+    return photo;
   }
 
   getReceiptFile(request: ClearanceRequest): string | null {
@@ -232,7 +239,7 @@ export class ConvocationDashboardComponent implements OnInit {
 
   hasPhoto(request: ClearanceRequest): boolean {
     const photo = this.getStudentPhoto(request);
-    return !!photo && photo.startsWith('data:image');
+    return !!photo;
   }
 
   onImageError(request: ClearanceRequest): void {

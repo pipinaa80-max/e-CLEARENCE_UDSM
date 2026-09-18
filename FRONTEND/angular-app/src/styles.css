@@ -45,6 +45,21 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: subpixel-antialiased; /* Better for clarity on some screens */
   -moz-osx-font-smoothing: auto;
+
+  /* Fixed background applied globally to prevent cut-off issues */
+  background-image: var(--app-bg-url, url('/background_image.png'));
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--hero-gradient, linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)));
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* Ensure all text is at least a readable size unless explicitly tiny */
@@ -201,7 +216,8 @@ textarea:focus-visible {
 .status-page-container {
   display: flex !important;
   flex-direction: column !important;
-  min-height: calc(100vh - 60px);
+  flex: 1 !important;
+  min-height: 0 !important;
 }
 
 @media (max-width: 600px) {

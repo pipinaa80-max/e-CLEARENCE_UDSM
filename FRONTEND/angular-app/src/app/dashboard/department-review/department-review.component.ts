@@ -83,9 +83,9 @@ export class DepartmentReviewComponent implements OnInit {
     getStudentName(): string {
         if (this.request?.studentName) return this.request.studentName;
         if (this.studentData) {
-            return this.studentData.fullName || this.studentData.firstName + ' ' + this.studentData.lastName || 'Student';
+            return this.studentData.fullName || this.studentData.firstName + ' ' + this.studentData.lastName || this.studentData.registrationNumber || 'Student';
         }
-        return 'Student';
+        return this.request?.registrationNumber || 'Student';
     }
 
     getStudentRegNumber(): string {
@@ -97,14 +97,19 @@ export class DepartmentReviewComponent implements OnInit {
     }
 
     getStudentPhoto(): string | null {
-        if (this.request?.photo && this.request.photo.startsWith('data:image')) {
-            return this.request.photo;
+        let photo = this.request?.photo;
+        if (!photo && this.studentData) {
+            photo = this.studentData.photo || this.studentData.profilePhoto || this.studentData.profileImageUrl;
         }
-        if (this.studentData) {
-            if (this.studentData.photo && this.studentData.photo.startsWith('data:image')) return this.studentData.photo;
-            if (this.studentData.profilePhoto && this.studentData.profilePhoto.startsWith('data:image')) return this.studentData.profilePhoto;
+        if (!photo) return null;
+
+        if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+            return photo;
         }
-        return null;
+        if (photo.length > 50) {
+            return 'data:image/jpeg;base64,' + photo;
+        }
+        return photo;
     }
 
     getStudentInitials(): string {
@@ -120,7 +125,7 @@ export class DepartmentReviewComponent implements OnInit {
 
     hasPhoto(): boolean {
         const photo = this.getStudentPhoto();
-        return !!photo && photo.startsWith('data:image');
+        return !!photo;
     }
 
     getStudentEmail(): string {

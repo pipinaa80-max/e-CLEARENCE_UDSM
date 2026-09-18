@@ -5,7 +5,9 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <a routerLink="/">
+        <img src="/public/udsm-logo.png" alt="Institutional Logo" />
+      </a>
       <div>
         <strong>UDSM</strong>
         <small>Convocation Office</small>
@@ -34,6 +36,7 @@
       title="Control Number Dashboard"
       subtitle="Manage student control number requests and payment receipts"
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
     </app-dashboard-header>

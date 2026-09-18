@@ -52,6 +52,38 @@ export class ProfileComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get programme(): string | undefined {
+    const p = this.user?.programme;
+    if (p && p !== 'Not selected' && p !== 'Not available') return p;
+    return this.clearanceRequest?.programme;
+  }
+
+  get college(): string | undefined {
+    const c = this.user?.college;
+    if (c && c !== 'Not selected' && c !== 'Not available') return c;
+    return this.clearanceRequest?.college;
+  }
+
+  get department(): string | undefined {
+    const d = this.user?.department;
+    if (d && d !== 'Not selected' && d !== 'Not available') return d;
+    return this.clearanceRequest?.department;
+  }
+
+  get hall(): string | undefined {
+    const h = this.user?.hall;
+    if (h && h !== 'Off Campus') return h;
+    return this.clearanceRequest?.hall;
+  }
+
+  get roomNumber(): string | undefined {
+    return this.user?.roomNumber || this.clearanceRequest?.roomNumber;
+  }
+
+  get sponsor(): string | undefined {
+    return this.user?.sponsor || this.clearanceRequest?.sponsor;
+  }
+
   /* =========================
      INIT - LOAD PROFILE PHOTO
   ========================= */
@@ -113,19 +145,14 @@ export class ProfileComponent implements OnInit {
     if (requests.length > 0) {
       // Get the latest request
       const latestRequest = requests[requests.length - 1];
-      console.log('Latest request:', {
-        id: latestRequest.id,
-        hasPhoto: !!latestRequest.photo,
-        photoLength: latestRequest.photo ? latestRequest.photo.length : 0,
-        status: latestRequest.status
-      });
+      const photoData = latestRequest.photo;
 
-      if (latestRequest.photo && latestRequest.photo.startsWith('data:image')) {
-        this.profilePhoto = latestRequest.photo;
+      if (photoData && (photoData.startsWith('data:image') || photoData.length > 100)) {
+        this.profilePhoto = photoData.startsWith('data:image') ? photoData : 'data:image/jpeg;base64,' + photoData;
         console.log('Photo loaded from clearance request');
 
         // Update the user object with this photo for future use
-        user.photo = latestRequest.photo;
+        user.photo = this.profilePhoto;
         this.authService.updateCurrentUser(user);
         this.isLoading = false;
         return;
@@ -240,46 +267,32 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   getPhotoSource(): string | null {
-    // Debug logging
-    console.log('getPhotoSource called');
-    console.log('profilePhoto:', this.profilePhoto ? 'exists' : 'null');
-    console.log('user.photo:', this.user?.photo ? 'exists' : 'null');
-    console.log('user.profilePhoto:', this.user?.profilePhoto ? 'exists' : 'null');
-    console.log('clearanceRequest.photo:', this.clearanceRequest?.photo ? 'exists' : 'null');
-
-    // Check all sources in priority order
-    if (this.profilePhoto && this.profilePhoto.startsWith('data:image')) {
-      console.log('Returning profilePhoto');
-      return this.profilePhoto;
+    // Check local component state first (loaded during init)
+    if (this.profilePhoto && (this.profilePhoto.startsWith('data:image') || this.profilePhoto.length > 100)) {
+      return this.profilePhoto.startsWith('data:image') ? this.profilePhoto : 'data:image/jpeg;base64,' + this.profilePhoto;
     }
 
-    if (this.user?.profilePhoto && this.user.profilePhoto.startsWith('data:image')) {
-      console.log('Returning user.profilePhoto');
-      return this.user.profilePhoto;
+    // Check current user object
+    const user = this.user;
+    if (user) {
+      const uPhoto = user.profilePhoto || user.photo || user.profileImageUrl;
+      if (uPhoto && (uPhoto.startsWith('data:image') || uPhoto.length > 100)) {
+        return uPhoto.startsWith('data:image') ? uPhoto : 'data:image/jpeg;base64,' + uPhoto;
+      }
     }
 
-    if (this.user?.photo && this.user.photo.startsWith('data:image')) {
-      console.log('Returning user.photo');
-      return this.user.photo;
-    }
-
+    // Check latest clearance request
     const request = this.clearanceRequest;
-    if (request?.photo && request.photo.startsWith('data:image')) {
-      console.log('Returning request.photo');
-      return request.photo;
+    if (request?.photo && (request.photo.startsWith('data:image') || request.photo.length > 100)) {
+      return request.photo.startsWith('data:image') ? request.photo : 'data:image/jpeg;base64,' + request.photo;
     }
 
-    console.log('No valid photo source found');
     return null;
   }
 
-  /* =========================
-     HAS PHOTO
-  ========================= */
-
   hasPhoto(): boolean {
     const source = this.getPhotoSource();
-    return !!source && source.startsWith('data:image');
+    return !!source && (source.startsWith('data:image') || source.length > 100);
   }
 
   /* =========================

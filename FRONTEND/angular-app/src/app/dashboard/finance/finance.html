@@ -4,7 +4,7 @@
   <aside class="sidebar">
 
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <img src="/public/udsm-logo.png" alt="Institutional Logo" />
 
       <div>
         <strong>FINANCE</strong>
@@ -41,10 +41,11 @@
   <main class="content">
 
     <app-dashboard-header
-      eyebrow="Clearance Office"
+      eyebrow="CLEARANCE OFFICE"
       title="Finance Approval"
       subtitle="Review and process student clearance applications."
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="pending-box">
@@ -63,134 +64,115 @@
     </div>
 
 
+    <!-- FILTER BAR -->
+    <section class="toolbar" *ngIf="requests.length || searchTerm">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Search student, registration number or programme..."
+        />
+      </div>
+
+      <select [(ngModel)]="filterStatus">
+        <option value="all">All Requests</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </section>
+
+
     <!-- REQUEST LIST -->
     <section
       class="request-list"
-      *ngIf="requests.length"
+      *ngIf="filteredRequests.length"
     >
 
       <article
         class="request-card"
-        *ngFor="let request of requests"
+        *ngFor="let request of filteredRequests"
       >
 
         <!-- CARD HEADER -->
-        <div class="request-header">
+        <div class="request-header" style="display: flex !important; align-items: flex-start !important; justify-content: space-between !important; gap: 20px !important; padding-bottom: 20px !important; border-bottom: 1px solid #e7ebee !important;">
 
-          <div>
+          <div class="student-info-main" style="display: flex !important; align-items: center !important; gap: 16px !important;">
+            <!-- Student Photo -->
+            <div class="student-photo" style="width: 62px !important; height: 62px !important; min-width: 62px !important; flex: 0 0 62px !important; border-radius: 50% !important; overflow: hidden !important; background: #eaf2f8 !important;">
+              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" style="width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important;" />
+              <span *ngIf="!hasPhoto(request)" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #0066a1; font-weight: 800;">{{ getStudentInitials(request) }}</span>
+            </div>
 
-            <span class="clearance-label">
-              Graduation Clearance
-            </span>
-
-            <h2>
-              {{ request.studentName || 'Student' }}
-            </h2>
-
+            <div class="student-title-block" style="min-width: 0 !important;">
+              <span class="clearance-label" style="display: block; margin-bottom: 5px; color: #005a9c; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;">Graduation Clearance</span>
+              <h2 style="margin: 0; color: #000000; font-size: 1.2rem; font-weight: 900; letter-spacing: -0.01em;">{{ (request.studentName || 'Student') | uppercase }}</h2>
+              <p class="student-subtitle" style="margin: 4px 0 0; color: #4b5563; font-size: 0.88rem; font-weight: 500;">{{ request.programme }}</p>
+            </div>
           </div>
 
-
-          <span class="pending-status">
-            PENDING
+          <span class="status-badge" [ngClass]="request.status.toLowerCase()" style="padding: 6px 14px !important; border-radius: 999px !important; font-size: 0.65rem !important; font-weight: 800 !important; text-transform: uppercase !important; white-space: nowrap !important;">
+            {{ request.status | uppercase }}
           </span>
 
         </div>
 
 
-        <!-- STUDENT DETAILS -->
-        <div class="student-details">
+        <!-- STUDENT DETAILS GRID -->
+        <div class="student-details-grid" style="display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 1px !important; background: #e1e6ea !important; border: 1px solid #e1e6ea !important; border-radius: 8px !important; overflow: hidden !important; margin-top: 20px !important;">
 
-          <div class="detail">
-
-            <span>
-              Programme
-            </span>
-
-            <strong>
-              {{ request.programme }}
-            </strong>
-
+          <div class="detail-cell" style="background: #ffffff !important; padding: 15px 18px !important;">
+            <span class="cell-label" style="display: block !important; color: #6b7280 !important; font-size: 0.68rem !important; font-weight: 800 !important; text-transform: uppercase !important; margin-bottom: 6px !important;">REGISTRATION NUMBER</span>
+            <strong class="cell-value" style="display: block !important; color: #000000 !important; font-size: 0.88rem !important; font-weight: 700 !important;">{{ request.registrationNumber || '2025-04-05009' }}</strong>
           </div>
 
-
-          <div class="detail">
-
-            <span>
-              Department
-            </span>
-
-            <strong>
-              {{ request.department }}
-            </strong>
-
+          <div class="detail-cell" style="background: #ffffff !important; padding: 15px 18px !important;">
+            <span class="cell-label" style="display: block !important; color: #6b7280 !important; font-size: 0.68rem !important; font-weight: 800 !important; text-transform: uppercase !important; margin-bottom: 6px !important;">PROGRAMME</span>
+            <strong class="cell-value" style="display: block !important; color: #000000 !important; font-size: 0.88rem !important; font-weight: 700 !important;">{{ request.programme }}</strong>
           </div>
 
-
-          <div class="detail">
-
-            <span>
-              College
-            </span>
-
-            <strong>
-              {{ request.college }}
-            </strong>
-
+          <div class="detail-cell" style="background: #ffffff !important; padding: 15px 18px !important;">
+            <span class="cell-label" style="display: block !important; color: #6b7280 !important; font-size: 0.68rem !important; font-weight: 800 !important; text-transform: uppercase !important; margin-bottom: 6px !important;">DEPARTMENT</span>
+            <strong class="cell-value" style="display: block !important; color: #000000 !important; font-size: 0.88rem !important; font-weight: 700 !important;">{{ request.department }}</strong>
           </div>
 
-
-          <div class="detail">
-
-            <span>
-              Submitted
-            </span>
-
-            <strong>
-              {{ request.requestDate | date:'mediumDate' }}
-            </strong>
-
+          <div class="detail-cell" style="background: #ffffff !important; padding: 15px 18px !important;">
+            <span class="cell-label" style="display: block !important; color: #6b7280 !important; font-size: 0.68rem !important; font-weight: 800 !important; text-transform: uppercase !important; margin-bottom: 6px !important;">COLLEGE</span>
+            <strong class="cell-value" style="display: block !important; color: #000000 !important; font-size: 0.88rem !important; font-weight: 700 !important;">{{ request.college }}</strong>
           </div>
 
-            <div class="detail convocation-status-detail">
+          <div class="detail-cell" style="background: #ffffff !important; padding: 15px 18px !important;">
+            <span class="cell-label" style="display: block !important; color: #6b7280 !important; font-size: 0.68rem !important; font-weight: 800 !important; text-transform: uppercase !important; margin-bottom: 6px !important;">SUBMITTED</span>
+            <strong class="cell-value" style="display: block !important; color: #000000 !important; font-size: 0.88rem !important; font-weight: 700 !important;">{{ request.requestDate | date:'mediumDate' }}</strong>
+          </div>
 
-              <span>
-                Convocation Approval
-              </span>
-
-              <strong
-                class="approval-status"
-                [class.approved]="getRequestOfficeStatus(request, 'Convocation') === 'Approved'"
-                [class.rejected]="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'"
-                [class.pending]="getRequestOfficeStatus(request, 'Convocation') === 'Pending'"
-              >
-                {{ getRequestOfficeStatus(request, 'Convocation') }}
-              </strong>
-
-            </div>
+          <div class="detail-cell empty-cell" style="background: #f3f4f6 !important; padding: 15px 18px !important;">
+          </div>
 
         </div>
 
 
         <!-- ACTIONS -->
         <div class="request-actions">
+          <span class="review-hint">Review this clearance request.</span>
 
-          <button
-            type="button"
-            class="reject-button"
-            (click)="openRejectForm(request)"
-          >
-            Reject
-          </button>
+          <div class="btn-group">
+            <button
+              type="button"
+              class="reject-button"
+              (click)="openRejectForm(request)"
+            >
+              Reject
+            </button>
 
-
-          <button
-            type="button"
-            class="approve-button"
-            (click)="approve(request)"
-          >
-            Approve
-          </button>
-
+            <button
+              type="button"
+              class="approve-button"
+              (click)="approve(request)"
+            >
+              Approve
+            </button>
+          </div>
         </div>
 
       </article>
@@ -201,7 +183,7 @@
     <!-- EMPTY STATE -->
     <section
       class="empty-state"
-      *ngIf="!requests.length"
+      *ngIf="!filteredRequests.length"
     >
 
       <div class="empty-icon">

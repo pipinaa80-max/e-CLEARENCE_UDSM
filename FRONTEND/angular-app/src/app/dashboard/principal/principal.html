@@ -17,12 +17,12 @@
   >
 
     <div class="brand">
-
-      <img
-        src="/public/udsm-logo.png"
-        alt="UDSM Logo"
-      />
-
+      <a routerLink="/">
+        <img
+          src="/public/udsm-logo.png"
+          alt="Institutional Logo"
+        />
+      </a>
       <div>
         <strong>PRINCIPAL</strong>
 
@@ -65,6 +65,7 @@
       [title]="collegeName + ' Principal'"
       subtitle="Review and process student clearance applications for the college."
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="header-actions">

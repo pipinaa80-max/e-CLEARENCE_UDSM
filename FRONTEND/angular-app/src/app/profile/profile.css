@@ -1,6 +1,8 @@
 :host {
-  display: block;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 @keyframes fadeIn {
@@ -20,6 +22,8 @@
 }
 
 .profile-page {
+  display: flex;
+  flex: 1;
   max-width: 1050px;
   margin: 0 auto;
   padding: 35px 30px 50px;
@@ -27,21 +31,12 @@
 }
 
 .profile-shell {
-  min-height: 100vh;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  flex: 1;
 }
 
 .dashboard-shell {
-  min-height: 100vh;
   display: flex;
+  flex: 1;
 }
 
 

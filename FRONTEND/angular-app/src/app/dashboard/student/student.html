@@ -13,7 +13,9 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <a routerLink="/">
+        <img src="/public/udsm-logo.png" alt="Institutional Logo" />
+      </a>
       <div>
         <strong>STUDENT PORTAL</strong>
         <small>University of Dar es Salaam</small>
@@ -60,6 +62,7 @@
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
       subtitle="Manage your student information and clearance process."
       [user]="null"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
     </app-dashboard-header>
@@ -115,13 +118,13 @@
             <span>Registration Number</span>
             <strong>{{ currentUser.registrationNumber || 'Not available' }}</strong>
           </div>
-          <div>
+          <div *ngIf="programme">
             <span>Programme</span>
-            <strong>{{ programme || 'Not available' }}</strong>
+            <strong>{{ programme }}</strong>
           </div>
-          <div>
+          <div *ngIf="college">
             <span>College</span>
-            <strong>{{ college || 'Not available' }}</strong>
+            <strong>{{ college }}</strong>
           </div>
         </div>
       </div>

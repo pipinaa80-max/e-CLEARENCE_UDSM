@@ -1,19 +1,15 @@
 :host {
-  display: block;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .register-page {
-  min-height: 100vh;
   display: grid;
+  flex: 1;
   place-items: center;
   padding: 32px 20px;
-  background:
-    linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   position: relative;
   animation: fadeIn 0.8s ease-out;
 }

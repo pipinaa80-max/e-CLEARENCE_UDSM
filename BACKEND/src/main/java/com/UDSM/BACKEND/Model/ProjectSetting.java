@@ -42,6 +42,9 @@ public class ProjectSetting {
     @Column(name = "dashboards_json", nullable = false, columnDefinition = "TEXT")
     private String dashboardsJson = "[]";
 
+    @Column(name = "footer_links_json", columnDefinition = "TEXT")
+    private String footerLinksJson = "[]";
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

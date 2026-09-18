@@ -1,27 +1,20 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
 }
 
 .dashboard-shell {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  display: flex;
+  flex: 1;
   width: 100%;
   max-width: 100%;
-  min-height: 100vh;
   color: var(--text-dark);
   position: relative;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -46,6 +39,8 @@
 }
 
 .sidebar {
+  width: 260px;
+  flex-shrink: 0;
   padding: 26px 18px;
   background: var(--sidebar-bg, var(--udsm-blue-dark));
   color: #ffffff;
@@ -219,5 +214,60 @@
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* TOOLBAR */
+
+.toolbar {
+  width: min(100%, 1050px);
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 18px;
+}
+
+.search-box {
+  flex: 1 !important;
+}
+
+.search-box input,
+.toolbar select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1.5px solid #dce3e8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.toolbar select {
+  width: 160px;
+}
+
+.search-box input:focus,
+.toolbar select:focus {
+  border-color: #0066a1;
+  box-shadow: 0 0 0 3px rgba(0, 102, 161, 0.1);
+}
+
+@media (max-width: 680px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column !important;
+  }
+
+  .toolbar select {
+    width: 100%;
   }
 }

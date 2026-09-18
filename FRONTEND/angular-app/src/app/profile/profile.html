@@ -101,34 +101,34 @@
               <strong>{{ user?.registrationNumber || 'Not available' }}</strong>
             </div>
 
-            <div>
+            <div *ngIf="programme">
               <span>Programme</span>
-              <strong>{{ user?.programme || 'Not available' }}</strong>
+              <strong>{{ programme }}</strong>
             </div>
 
-            <div *ngIf="user?.college">
+            <div *ngIf="college">
               <span>College</span>
-              <strong>{{ user?.college }}</strong>
+              <strong>{{ college }}</strong>
             </div>
 
-            <div *ngIf="user?.department">
+            <div *ngIf="department">
               <span>Department</span>
-              <strong>{{ user?.department }}</strong>
+              <strong>{{ department }}</strong>
             </div>
 
-            <div *ngIf="user?.hall">
+            <div *ngIf="hall">
               <span>Hall</span>
-              <strong>{{ user?.hall }}</strong>
+              <strong>{{ hall }}</strong>
             </div>
 
-            <div *ngIf="user?.roomNumber">
+            <div *ngIf="roomNumber">
               <span>Room Number</span>
-              <strong>{{ user?.roomNumber }}</strong>
+              <strong>{{ roomNumber }}</strong>
             </div>
 
-            <div *ngIf="user?.sponsor">
+            <div *ngIf="sponsor">
               <span>Sponsor</span>
-              <strong>{{ user?.sponsor }}</strong>
+              <strong>{{ sponsor }}</strong>
             </div>
           </div>
         </div>

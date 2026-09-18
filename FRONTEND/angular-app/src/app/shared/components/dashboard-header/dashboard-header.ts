@@ -10,6 +10,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     <header class="dashboard-header">
       <div class="header-left">
         <button
+          *ngIf="showToggle"
           type="button"
           class="sidebar-toggle-btn"
           (click)="onToggleSidebar($event)"
@@ -187,6 +188,7 @@ export class DashboardHeaderComponent {
   @Input() subtitle?: string;
   @Input() eyebrow?: string;
   @Input() user?: any;
+  @Input() showToggle = true;
 
   @Output() toggleSidebar = new EventEmitter<void>();
 

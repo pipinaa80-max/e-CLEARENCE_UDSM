@@ -1,6 +1,13 @@
-.dashboard-shell {
-  min-height: 100vh;
+:host {
   display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-shell {
+  display: flex;
+  flex: 1;
 }
 
 
@@ -127,18 +134,8 @@
 
 .content-panel {
   flex: 1;
-  min-height: 100vh;
   padding: 0 42px 45px;
   transition: margin-left 0.25s ease;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
 }
 
 @media (min-width: 1000px) {

@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
 import { ToastService } from '../../core/services/toast.service';
+import { ProjectAdminService } from '../../core/services/project-admin.service';
 
 @Component({
   selector: 'app-login',
@@ -18,6 +19,13 @@ export class Login implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  private readonly projectAdminService = inject(ProjectAdminService);
+
+  branding = {
+    universityName: 'University of Dar es Salaam',
+    shortName: 'Clearance',
+    logoUrl: '/public/udsm-logo.png'
+  };
 
   loginForm = this.fb.nonNullable.group({
     identifier: ['', Validators.required],
@@ -38,6 +46,16 @@ export class Login implements OnInit {
     const user = this.authService.getCurrentUser();
     if (user) {
       this.router.navigate([this.redirectPathFor(user.role)]);
+      return;
+    }
+
+    const saved = this.projectAdminService.getSavedBranding();
+    if (saved) {
+      this.branding = {
+        universityName: saved.universityName || this.branding.universityName,
+        shortName: saved.shortName || this.branding.shortName,
+        logoUrl: saved.logoUrl || this.branding.logoUrl
+      };
     }
   }
 

@@ -3,6 +3,12 @@
   <main class="router-shell"><router-outlet></router-outlet></main>
   <footer class="app-footer">
     <p>© {{ currentYear }} {{ branding.universityName }} - Clearance Management Information System</p>
-    <nav aria-label="University links"><a href="https://aris3.udsm.ac.tz/" target="_blank" rel="noopener noreferrer">ARIS 3</a><span aria-hidden="true">|</span><a href="https://www.udsm.ac.tz/" target="_blank" rel="noopener noreferrer">UDSM</a></nav>
+    <nav aria-label="University links">
+      <a routerLink="/">Home</a>
+      <ng-container *ngFor="let link of branding.footerLinks">
+        <span aria-hidden="true">|</span>
+        <a [href]="link.url" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+      </ng-container>
+    </nav>
   </footer>
 </div>

@@ -1,14 +1,15 @@
-:host { display:block; min-height:100vh; }
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
 
 .staff-page {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   padding-bottom: 36px;
-  background:
-    linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7)),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   animation: fadeIn 0.8s ease-out;
 }
 

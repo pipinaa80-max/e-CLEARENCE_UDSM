@@ -90,19 +90,14 @@ export class StudentDashboard implements OnInit {
     if (requests.length > 0) {
       // Get the latest request
       const latestRequest = requests[requests.length - 1];
-      console.log('Dashboard - Latest request:', {
-        id: latestRequest.id,
-        hasPhoto: !!latestRequest.photo,
-        photoLength: latestRequest.photo ? latestRequest.photo.length : 0,
-        status: latestRequest.status
-      });
+      const photoData = latestRequest.photo;
 
-      if (latestRequest.photo && latestRequest.photo.startsWith('data:image')) {
-        this.profilePhoto = latestRequest.photo;
+      if (photoData && (photoData.startsWith('data:image') || photoData.length > 100)) {
+        this.profilePhoto = photoData.startsWith('data:image') ? photoData : 'data:image/jpeg;base64,' + photoData;
         console.log('Dashboard - Photo loaded from clearance request');
 
         // Update the user object with this photo for future use
-        user.photo = latestRequest.photo;
+        user.photo = this.profilePhoto;
         this.authService.updateCurrentUser(user);
         this.isLoading = false;
         return;
@@ -132,29 +127,29 @@ export class StudentDashboard implements OnInit {
   // =====================================================
 
   getPhotoSource(): string | null {
-    if (this.profilePhoto && this.profilePhoto.startsWith('data:image')) {
-      return this.profilePhoto;
+    if (this.profilePhoto && (this.profilePhoto.startsWith('data:image') || this.profilePhoto.length > 100)) {
+      return this.profilePhoto.startsWith('data:image') ? this.profilePhoto : 'data:image/jpeg;base64,' + this.profilePhoto;
     }
 
     const user = this.currentUser;
-    if (user?.profilePhoto && user.profilePhoto.startsWith('data:image')) {
-      return user.profilePhoto;
+    if (user) {
+      const uPhoto = user.profilePhoto || user.photo || user.profileImageUrl;
+      if (uPhoto && (uPhoto.startsWith('data:image') || uPhoto.length > 100)) {
+        return uPhoto.startsWith('data:image') ? uPhoto : 'data:image/jpeg;base64,' + uPhoto;
+      }
     }
 
-    if (user?.photo && user.photo.startsWith('data:image')) {
-      return user.photo;
+    const request = this.currentRequest;
+    if (request?.photo && (request.photo.startsWith('data:image') || request.photo.length > 100)) {
+      return request.photo.startsWith('data:image') ? request.photo : 'data:image/jpeg;base64,' + request.photo;
     }
 
     return null;
   }
 
-  // =====================================================
-  // HAS PHOTO
-  // =====================================================
-
   hasPhoto(): boolean {
     const source = this.getPhotoSource();
-    return !!source && source.startsWith('data:image');
+    return !!source && (source.startsWith('data:image') || source.length > 100);
   }
 
   // =====================================================
@@ -254,11 +249,15 @@ export class StudentDashboard implements OnInit {
   }
 
   get programme(): string | undefined {
-    return this.currentUser?.programme || this.currentRequest?.programme;
+    const p = this.currentUser?.programme;
+    if (p && p !== 'Not selected' && p !== 'Not available' && p.trim().length > 0) return p;
+    return this.currentRequest?.programme;
   }
 
   get college(): string | undefined {
-    return this.currentUser?.college || this.currentRequest?.college;
+    const c = this.currentUser?.college;
+    if (c && c !== 'Not selected' && c !== 'Not available' && c.trim().length > 0) return c;
+    return this.currentRequest?.college;
   }
 
   // =====================================================

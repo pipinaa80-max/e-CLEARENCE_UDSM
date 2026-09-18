@@ -5,7 +5,9 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <a routerLink="/">
+        <img src="/public/udsm-logo.png" alt="Institutional Logo" />
+      </a>
       <div>
         <strong>ICT OFFICE</strong>
         <small>Clearance Workspace</small>
@@ -25,6 +27,7 @@
       title="ICT Dashboard"
       subtitle="Review ICT clearance checks"
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
     </app-dashboard-header>

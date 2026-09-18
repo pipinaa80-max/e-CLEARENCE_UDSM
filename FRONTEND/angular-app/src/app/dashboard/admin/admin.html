@@ -40,6 +40,7 @@
       title="Administrator Dashboard"
       subtitle="Manage users, offices, requests, and reports"
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
@@ -310,7 +311,31 @@
           <div class="form-group"><label>Primary color</label><input type="color" [(ngModel)]="projectConfig.branding.primaryColor" name="primaryColor"></div>
           <div class="form-group"><label>Font family</label><select [(ngModel)]="projectConfig.branding.fontFamily" name="fontFamily"><option>Georgia</option><option>Arial</option><option>Verdana</option><option>Trebuchet MS</option></select></div>
         </div>
-        <button type="submit" class="btn-primary">Save Theme</button>
+
+        <div class="section-divider"></div>
+        <h4>Footer Links</h4>
+        <div class="footer-links-editor">
+          <div class="links-header">
+            <span class="col-label">Link Label</span>
+            <span class="col-url">Link URL</span>
+            <span class="col-action">Action</span>
+          </div>
+          <div class="links-list" *ngIf="projectConfig.branding.footerLinks?.length">
+            <div class="link-item" *ngFor="let link of projectConfig.branding.footerLinks; let i = index">
+              <input [(ngModel)]="link.label" [name]="'link-label-' + i" placeholder="e.g. University Portal">
+              <input [(ngModel)]="link.url" [name]="'link-url-' + i" placeholder="https://...">
+              <button type="button" class="btn-danger btn-sm" (click)="removeFooterLink(i)">Remove</button>
+            </div>
+          </div>
+          <div class="add-link-form">
+            <input [(ngModel)]="newFooterLink.label" name="newLinkLabel" placeholder="New Link Label">
+            <input [(ngModel)]="newFooterLink.url" name="newLinkUrl" placeholder="New Link URL">
+            <button type="button" class="btn-secondary btn-sm" (click)="addFooterLink()">Add Link</button>
+          </div>
+          <small class="field-hint">Changes to footer links will be applied globally after you click "Save Theme".</small>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top: 24px;">Save Theme</button>
       </form>
     </div>
   </main>

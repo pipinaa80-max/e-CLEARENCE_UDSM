@@ -272,6 +272,14 @@ public class ControlPlaneService {
         if (input.containsKey("primaryColor")) setting.setPrimaryColor(String.valueOf(input.get("primaryColor")));
         if (input.containsKey("fontFamily")) setting.setFontFamily(String.valueOf(input.get("fontFamily")));
         
+        if (input.containsKey("footerLinks")) {
+            try {
+                setting.setFooterLinksJson(objectMapper.writeValueAsString(input.get("footerLinks")));
+            } catch (Exception e) {
+                log.error("Failed to serialize footer links", e);
+            }
+        }
+        
         projectSettingRepository.save(setting);
         return branding(projectId);
     }
@@ -345,6 +353,7 @@ public class ControlPlaneService {
             value.setPrimaryColor("#123c69");
             value.setFontFamily("Georgia");
             value.setDashboardsJson("[]");
+            value.setFooterLinksJson("[{\"label\":\"ARIS 3\",\"url\":\"https://aris3.udsm.ac.tz/\"},{\"label\":\"UDSM\",\"url\":\"https://www.udsm.ac.tz/\"}]");
             return value;
         });
         
@@ -369,6 +378,13 @@ public class ControlPlaneService {
         branding.put("primaryColor", value.getPrimaryColor());
         branding.put("fontFamily", value.getFontFamily());
         branding.put("projectId", projectId);
+        
+        try {
+            branding.put("footerLinks", objectMapper.readValue(value.getFooterLinksJson(), new TypeReference<List<Map<String, String>>>() {}));
+        } catch (Exception e) {
+            branding.put("footerLinks", List.of());
+        }
+        
         return branding;
     }
 

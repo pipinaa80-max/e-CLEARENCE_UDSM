@@ -1,20 +1,13 @@
 :host {
-  display: block;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .department-page {
-  min-height: 100vh;
   display: flex;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/public/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  flex: 1;
   animation: fadeIn 0.5s ease-out;
 }
 
@@ -39,7 +32,6 @@
 
 .sidebar {
   width: 235px;
-  min-height: 100vh;
   flex: 0 0 235px;
 
   padding: 26px 18px;
@@ -307,7 +299,10 @@
 .toolbar {
   width: min(100%, 1050px);
 
-  display: flex;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
   align-items: center;
 
   gap: 12px;
@@ -316,7 +311,7 @@
 }
 
 .search-box {
-  flex: 1;
+  flex: 1 !important;
 }
 
 .search-box input,
@@ -494,44 +489,46 @@
 /* STUDENT PHOTO */
 
 .student-photo {
-  width: 62px;
-  height: 62px;
+  width: 62px !important;
+  height: 62px !important;
+  min-width: 62px !important;
+  min-height: 62px !important;
 
-  flex: 0 0 62px;
+  flex: 0 0 62px !important;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 
-  overflow: hidden;
+  overflow: hidden !important;
 
-  border: 1px solid #d9e3e9;
-  border-radius: 50%;
+  border: 1px solid #d9e3e9 !important;
+  border-radius: 50% !important;
 
-  background: #eaf2f8;
+  background: #eaf2f8 !important;
 
-  color: #0066a1;
+  color: #0066a1 !important;
 
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  position: relative !important;
 }
 
 .student-photo img {
-  width: 100%;
-  height: 100%;
-
-  display: block;
-
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
 }
 
 .student-photo span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 
@@ -832,7 +829,7 @@
 
   .toolbar {
     align-items: stretch;
-    flex-direction: column;
+    flex-direction: column !important;
   }
 
   .toolbar select {

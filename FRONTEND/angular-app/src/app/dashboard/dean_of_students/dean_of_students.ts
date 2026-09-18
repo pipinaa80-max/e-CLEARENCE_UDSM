@@ -30,6 +30,9 @@ export class DeanOfStudentsComponent implements OnInit {
   isLoading = false;
   pendingRequests: ClearanceRequest[] = [];
 
+  searchTerm = '';
+  filterStatus = 'all';
+
   get currentUser() {
     return this.authService.getCurrentUser();
   }
@@ -48,6 +51,31 @@ export class DeanOfStudentsComponent implements OnInit {
   get requests(): ClearanceRequest[] {
     this.pendingRequests = this.clearanceService.getRequestsForOffice('Dean of Students');
     return this.pendingRequests;
+  }
+
+  get filteredRequests(): ClearanceRequest[] {
+    let list = this.requests;
+
+    if (this.searchTerm.trim()) {
+      const s = this.searchTerm.toLowerCase();
+      list = list.filter(r =>
+        this.getStudentName(r).toLowerCase().includes(s) ||
+        this.getStudentRegNumber(r).toLowerCase().includes(s) ||
+        r.programme.toLowerCase().includes(s)
+      );
+    }
+
+    if (this.filterStatus !== 'all') {
+      if (this.filterStatus === 'pending') {
+        list = list.filter(r => r.status === 'Pending');
+      } else if (this.filterStatus === 'approved') {
+        list = list.filter(r => r.status === 'Completed');
+      } else if (this.filterStatus === 'rejected') {
+        list = list.filter(r => r.status === 'Rejected');
+      }
+    }
+
+    return list;
   }
 
   // =====================================================
@@ -113,10 +141,10 @@ export class DeanOfStudentsComponent implements OnInit {
     // Try to get from user data
     const user = this.getStudentData(request.studentId);
     if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || 'Student';
+      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
     }
 
-    return 'Student #' + request.studentId.substring(0, 8);
+    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
   }
 
   // =====================================================
@@ -141,23 +169,29 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   getStudentPhoto(request: ClearanceRequest): string | null {
-    // Check request photo first
-    if (request.photo && request.photo.startsWith('data:image')) {
-      return request.photo;
-    }
+    let photo = request.photo;
 
-    // Check user data
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      if (user.photo && user.photo.startsWith('data:image')) {
-        return user.photo;
-      }
-      if (user.profilePhoto && user.profilePhoto.startsWith('data:image')) {
-        return user.profilePhoto;
+    // Check user data if request doesn't have it
+    if (!photo) {
+      const user = this.getStudentData(request.studentId);
+      if (user) {
+        photo = user.photo || user.profilePhoto || user.profileImageUrl;
       }
     }
 
-    return null;
+    if (!photo) {
+      return null;
+    }
+
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
+    }
+
+    if (photo.length > 50) {
+      return 'data:image/jpeg;base64,' + photo;
+    }
+
+    return photo;
   }
 
   // =====================================================
@@ -210,7 +244,7 @@ export class DeanOfStudentsComponent implements OnInit {
 
   hasPhoto(request: ClearanceRequest): boolean {
     const photo = this.getStudentPhoto(request);
-    return !!photo && photo.startsWith('data:image');
+    return !!photo;
   }
 
   // =====================================================

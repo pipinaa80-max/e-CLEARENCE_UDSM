@@ -21,25 +21,22 @@ export class Landing implements OnInit {
     logoUrl: '/public/udsm-logo.png',
     backgroundUrl: '/background_image.png',
     primaryColor: '#0864af',
-    fontFamily: 'Segoe UI'
+    fontFamily: 'Segoe UI',
+    footerLinks: []
   };
 
   ngOnInit(): void {
-    const user = this.authService.getCurrentUser();
-    if (user) {
-      this.router.navigate([this.redirectPathFor(user.role)]);
-      return;
+    const saved = this.projectAdminService.getSavedBranding();
+    if (saved) {
+      this.branding = { ...this.branding, ...saved };
     }
 
-    const saved = this.projectAdminService.getSavedBranding();
-    if (saved) this.branding = { ...this.branding, ...saved };
-
-    this.projectAdminService.getPublicBranding().subscribe({
-      next: (config) => {
-        this.branding = config;
-        this.projectAdminService.setSavedBranding(config);
-      },
-      error: (err) => console.error('Error fetching public branding', err)
+    // Subscribe to branding changes via event to stay in sync with App component
+    window.addEventListener('project-branding-updated', (event: Event) => {
+      const customEvent = event as CustomEvent<{ branding?: Partial<ProjectConfig['branding']> }>;
+      if (customEvent.detail?.branding) {
+        this.branding = { ...this.branding, ...customEvent.detail.branding };
+      }
     });
   }
 

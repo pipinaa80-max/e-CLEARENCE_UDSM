@@ -389,6 +389,33 @@ export class AdminDashboard implements OnInit {
   isError: boolean = false;
   projectConfig: ProjectConfig | null = null;
   newDashboard = { id: '', name: '', description: '' };
+  newFooterLink = { label: '', url: '' };
+
+  addFooterLink(): void {
+    if (!this.projectConfig) return;
+    const label = this.newFooterLink.label.trim();
+    const url = this.newFooterLink.url.trim();
+
+    if (!label || !url) {
+      this.message = 'Both label and URL are required for a footer link';
+      this.isError = true;
+      return;
+    }
+
+    if (!this.projectConfig.branding.footerLinks) {
+      this.projectConfig.branding.footerLinks = [];
+    }
+
+    this.projectConfig.branding.footerLinks.push({ label, url });
+    this.newFooterLink = { label: '', url: '' };
+    this.message = 'Link added to list (click Save Theme to apply)';
+    this.isError = false;
+  }
+
+  removeFooterLink(index: number): void {
+    if (!this.projectConfig?.branding.footerLinks) return;
+    this.projectConfig.branding.footerLinks.splice(index, 1);
+  }
 
   get filteredUsers(): any[] {
     const term = this.userSearchTerm.toLowerCase();
@@ -494,6 +521,9 @@ export class AdminDashboard implements OnInit {
     this.projectAdminService.getProjectConfig().subscribe({
       next: (config) => {
         console.log('Project config loaded:', config);
+        if (config && config.branding && !config.branding.footerLinks) {
+          config.branding.footerLinks = [];
+        }
         this.projectConfig = config;
       },
       error: (err) => console.error('Error loading project config', err)

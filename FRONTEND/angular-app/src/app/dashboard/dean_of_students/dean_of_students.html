@@ -3,12 +3,12 @@
   <aside class="sidebar">
 
     <div class="brand">
-
-      <img
-        src="/public/udsm-logo.png"
-        alt="UDSM Logo"
-      />
-
+      <a routerLink="/">
+        <img
+          src="/public/udsm-logo.png"
+          alt="Institutional Logo"
+        />
+      </a>
       <div>
         <strong>DEAN OF STUDENTS</strong>
         <small>Clearance Workspace</small>
@@ -44,6 +44,7 @@
       title="Dean of Students Approval"
       subtitle="Review student clearance applications and approve or reject requests."
       [user]="currentUser"
+      [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="count">
@@ -61,9 +62,47 @@
     </p>
 
 
+    <!-- FILTER BAR -->
+
+    <section class="toolbar" *ngIf="requests.length || searchTerm">
+
+      <div class="search-box">
+
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Search student, registration number or programme..."
+        />
+
+      </div>
+
+
+      <select [(ngModel)]="filterStatus">
+
+        <option value="all">
+          All Requests
+        </option>
+
+        <option value="pending">
+          Pending
+        </option>
+
+        <option value="approved">
+          Approved
+        </option>
+
+        <option value="rejected">
+          Rejected
+        </option>
+
+      </select>
+
+    </section>
+
+
     <section
       class="empty-state"
-      *ngIf="!requests.length"
+      *ngIf="!filteredRequests.length"
     >
 
       <div class="empty-icon">
@@ -71,12 +110,11 @@
       </div>
 
       <h2>
-        No pending requests
+        {{ searchTerm ? 'No matching requests' : 'No pending requests' }}
       </h2>
 
       <p>
-        There are currently no student applications
-        awaiting Dean of Students approval.
+        {{ searchTerm ? 'Try a different search term or registration number.' : 'There are currently no student applications awaiting Dean of Students approval.' }}
       </p>
 
     </section>
@@ -84,12 +122,12 @@
 
     <section
       class="request-list"
-      *ngIf="requests.length"
+      *ngIf="filteredRequests.length"
     >
 
       <article
         class="request-card"
-        *ngFor="let request of requests"
+        *ngFor="let request of filteredRequests"
       >
 
         <div class="request-header">
@@ -97,26 +135,21 @@
           <div class="student-heading">
 
             <div class="student-photo">
-              <span>ST</span>
+              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" />
+              <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
             </div>
 
 
             <div class="student-title">
-
               <span class="request-label">
                 Graduation Clearance
               </span>
-
               <h2>
-                {{ request.programme }}
+                {{ getStudentName(request) }}
               </h2>
-
               <p>
-                {{ request.department }}
-                ·
-                {{ request.college }}
+                {{ request.programme }}
               </p>
-
             </div>
 
           </div>
@@ -132,54 +165,39 @@
         <div class="request-details">
 
           <div class="detail-item">
-
             <span>
-              Student ID
+              REG NO
             </span>
-
             <strong>
-              {{ request.studentId }}
+              {{ request.registrationNumber || request.studentId }}
             </strong>
-
           </div>
 
-
           <div class="detail-item">
-
             <span>
               Programme
             </span>
-
             <strong>
               {{ request.programme }}
             </strong>
-
           </div>
 
-
           <div class="detail-item">
-
             <span>
               Department
             </span>
-
             <strong>
               {{ request.department }}
             </strong>
-
           </div>
 
-
           <div class="detail-item">
-
             <span>
               College
             </span>
-
             <strong>
               {{ request.college }}
             </strong>
-
           </div>
 
 

@@ -1,8 +1,8 @@
 <header class="login-header">
   <div class="header-content">
     <!-- FIX: Changed from /public/ to /public/ -->
-    <img src="/public/udsm-logo.png" alt="UDSM" class="header-logo" />
-    <h2>E-Clearance MIS</h2>
+    <a routerLink="/"><img [src]="branding.logoUrl" alt="Institutional Logo" class="header-logo" /></a>
+    <h2>{{ branding.shortName }} MIS</h2>
   </div>
 </header>
 
@@ -10,8 +10,8 @@
   <div class="login-card">
     <div class="brand-panel">
       <!-- FIX: Changed from /public/ to /public/ -->
-      <img src="/public/udsm-logo.png" alt="UDSM Logo" class="brand-badge" />
-      <h1>University of Dar es Salaam</h1>
+      <img [src]="branding.logoUrl" alt="Institutional Logo" class="brand-badge" />
+      <h1>{{ branding.universityName }}</h1>
       <p>Secure access for students, staff, and administrators.</p>
     </div>
 

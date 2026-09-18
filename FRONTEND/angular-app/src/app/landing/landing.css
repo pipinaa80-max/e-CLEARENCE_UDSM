@@ -3,10 +3,9 @@
 }
 
 .landing-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 100px);
   display: flex;
   flex-direction: column;
-  background: var(--bg-light);
   color: var(--text-dark);
   animation: fadeIn 0.8s ease-out;
 }
@@ -165,10 +164,15 @@
 }
 
 .info-section {
+  background-color: #ffffff;
+  width: 100%;
+  flex: 1;
+}
+
+.info-container {
   width: min(100%, 1180px);
   margin: 0 auto;
   padding: 64px 32px 72px;
-  flex: 1;
 }
 
 .info-section h3 {
