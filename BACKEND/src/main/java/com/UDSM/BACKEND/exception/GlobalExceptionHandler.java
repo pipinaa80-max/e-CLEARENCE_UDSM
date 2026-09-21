@@ -3,6 +3,7 @@ package com.UDSM.BACKEND.exception;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.access.AccessDeniedException;
 import com.UDSM.BACKEND.dto.ApiResponse;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.slf4j.Logger;
@@ -39,12 +41,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         logger.error("❌ Database Integrity Error: {}", ex.getMessage());
-        String message = "Operation failed due to a database constraint. Please check your inputs.";
+        String message = "Operation failed. Please check your inputs.";
         
         if (ex.getMessage().contains("users_role_check")) {
-            message = "Registration failed: The selected user role is currently being updated in our system. Please try again in a few minutes or contact the Administrator.";
+            message = "The selected user role is currently being updated. Please try again in a few minutes.";
         } else if (ex.getMessage().contains("duplicate key")) {
-            message = "Registration failed: An account with this email or registration number already exists.";
+            message = "An account with this email or registration number already exists.";
         }
         
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -76,6 +78,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Account is inactive. Please contact the administrator.", 403));
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("You do not have permission to access this resource.", 403));
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse> handleApiException(ApiException ex) {
         logger.error("❌ API Error: {}", ex.getMessage());
@@ -90,17 +98,26 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse> handleResponseStatusException(ResponseStatusException ex) {
+        logger.error("❌ Response Status Exception: {} - {}", ex.getStatusCode(), ex.getReason());
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiResponse.error(ex.getReason() != null ? ex.getReason() : "An error occurred during request processing."));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse> handleRuntimeException(RuntimeException ex) {
         logger.error("Runtime exception: ", ex);
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) message = "An internal server error occurred.";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Action failed: " + ex.getMessage()));
+                .body(ApiResponse.error(message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleException(Exception ex) {
         logger.error("Unexpected error: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
     }
 }

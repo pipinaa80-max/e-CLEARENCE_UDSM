@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { NotificationService } from '../core/services/notification.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
+import { ToastService } from '../core/services/toast.service';
 import { TranscriptPaymentRequest } from './transcript-payment.model';
 import { sortTranscriptRequestsForFinance } from './finance-payment.utils';
 
@@ -19,12 +20,12 @@ export class TranscriptFinancePaymentComponent {
   private readonly authService = inject(AuthService);
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   controlNumbers: Record<string, string> = {};
   private queuedRequests: TranscriptPaymentRequest[] = [];
   message = '';
-  errorMessage = '';
 
   constructor() {
     if (this.authService.getCurrentUser()?.role !== 'Finance') {
@@ -49,15 +50,14 @@ export class TranscriptFinancePaymentComponent {
 
   issueControlNumber(request: TranscriptPaymentRequest): void {
     this.message = '';
-    this.errorMessage = '';
     const value = this.controlNumbers[request.id]?.trim();
     if (!value) {
-      this.errorMessage = 'Enter a control number before issuing it.';
+      this.toastService.warning('Input Required', 'Enter a control number before issuing it.');
       return;
     }
 
     if (!this.paymentService.issueControlNumber(request.id, value)) {
-      this.errorMessage = 'This request is no longer waiting for a control number.';
+      this.toastService.error('Action Failed', 'This request is no longer waiting for a control number.');
       return;
     }
 
@@ -68,16 +68,16 @@ export class TranscriptFinancePaymentComponent {
         'success'
     );
     this.controlNumbers[request.id] = '';
-    this.message = `Control number issued to ${request.studentName}.`;
+    this.toastService.success('Success', `Control number issued to ${request.studentName}.`);
     this.refreshRequests();
   }
 
   markPaid(request: TranscriptPaymentRequest): void {
     if (!this.paymentService.updateStatus(request.id, 'Paid')) {
-      this.errorMessage = 'Unable to verify this receipt.';
+      this.toastService.error('Action Failed', 'Unable to verify this receipt.');
       return;
     }
-    this.message = `Payment verified for ${request.studentName}.`;
+    this.toastService.success('Success', `Payment verified for ${request.studentName}.`);
     this.refreshRequests();
   }
 

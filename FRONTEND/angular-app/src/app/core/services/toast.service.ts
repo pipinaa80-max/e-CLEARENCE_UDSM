@@ -36,15 +36,15 @@ export class ToastService {
   }
 
   success(title: string, message: string) {
-    this.show('success', title, message);
+    this.show('success', title, message, 2500);
   }
 
   error(title: string, message: string) {
-    this.show('error', title, message);
+    this.show('error', title, message, 5000);
   }
 
   warning(title: string, message: string) {
-    this.show('warning', title, message);
+    this.show('warning', title, message, 4000);
   }
 
   info(title: string, message: string) {

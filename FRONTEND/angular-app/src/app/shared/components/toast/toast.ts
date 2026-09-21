@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService, ToastMessage } from '../../../core/services/toast.service';
 
@@ -11,7 +11,8 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
       <div *ngFor="let toast of toasts"
            class="toast-item"
            [ngClass]="toast.type"
-           (click)="remove(toast.id)">
+         role="alert"
+         [attr.aria-label]="toast.title + ': ' + toast.message">
         <div class="toast-icon">
           <span *ngIf="toast.type === 'success'">✓</span>
           <span *ngIf="toast.type === 'error'">✕</span>
@@ -22,7 +23,10 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
           <div class="toast-title">{{ toast.title }}</div>
           <div class="toast-message">{{ toast.message }}</div>
         </div>
-        <button class="toast-close">&times;</button>
+        <button class="toast-close"
+          type="button"
+          aria-label="Dismiss notification"
+          (click)="$event.stopPropagation(); remove(toast.id)">&times;</button>
       </div>
     </div>
   `,
@@ -43,17 +47,26 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
       padding: 15px;
       border-radius: 8px;
       background: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
       display: flex;
       align-items: flex-start;
       gap: 12px;
       cursor: pointer;
-      animation: slideIn 0.3s ease-out forwards;
+      animation: slideIn 0.15s cubic-bezier(0, 0, 0.2, 1) forwards;
       border-left: 5px solid #ccc;
     }
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-item.error {
+      animation: slideIn 0.15s cubic-bezier(0, 0, 0.2, 1) forwards, shake 0.3s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-4px); }
     }
     .toast-item.success { border-left-color: #28a745; }
     .toast-item.error { border-left-color: #dc3545; }
@@ -91,11 +104,13 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
 })
 export class ToastComponent implements OnInit {
   private toastService = inject(ToastService);
+  private changeDetector = inject(ChangeDetectorRef);
   toasts: ToastMessage[] = [];
 
   ngOnInit() {
     this.toastService.getToasts().subscribe(toasts => {
       this.toasts = toasts;
+      this.changeDetector.detectChanges();
     });
   }
 

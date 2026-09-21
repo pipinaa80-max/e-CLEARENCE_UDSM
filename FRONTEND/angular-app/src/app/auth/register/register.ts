@@ -39,13 +39,11 @@ export class Register {
     acceptTerms: [false, Validators.requiredTrue]
   });
 
-  errorMessage = '';
   successMessage = '';
   isLoading = false;
 
   submit(): void {
     // Reset messages
-    this.errorMessage = '';
     this.successMessage = '';
     this.isLoading = true;
 
@@ -59,13 +57,13 @@ export class Register {
 
       const controls = this.registerForm.controls;
       if (controls.email.errors?.['email']) {
-        this.errorMessage = 'Please enter a valid email address.';
+        this.toastService.warning('Invalid Email', 'Please enter a valid email address.');
       } else if (controls.password.errors?.['minlength']) {
-        this.errorMessage = 'Password must be at least 8 characters long.';
+        this.toastService.warning('Weak Password', 'Password must be at least 8 characters long.');
       } else if (controls.acceptTerms.errors?.['required']) {
-        this.errorMessage = 'You must accept the terms of service to register.';
+        this.toastService.warning('Terms Required', 'You must accept the terms of service to register.');
       } else {
-        this.errorMessage = 'Please fill in all required fields marked with *.';
+        this.toastService.warning('Missing Fields', 'Please fill in all required fields marked with *.');
       }
       this.isLoading = false;
       return;
@@ -76,7 +74,7 @@ export class Register {
 
     // Check passwords match
     if (value.password !== value.confirmPassword) {
-      this.errorMessage = 'Passwords do not match.';
+      this.toastService.warning('Mismatch', 'Passwords do not match.');
       this.isLoading = false;
       return;
     }
@@ -115,18 +113,7 @@ export class Register {
       error: (err) => {
         console.error('❌ Registration Error:', err);
         this.isLoading = false;
-
-        if (err.status === 0) {
-          this.errorMessage = 'Cannot connect to server. Please check if backend is running on port 8080.';
-        } else if (err.status === 409) {
-          this.errorMessage = 'User with this email or registration number already exists.';
-        } else if (err.status === 400) {
-          this.errorMessage = 'Invalid registration data. Please check your inputs.';
-          console.log('Validation errors:', err.error);
-        } else {
-          this.errorMessage = err.error?.message || 'Unable to register user. Please try again.';
-        }
-        this.toastService.error('Registration Failed', this.errorMessage);
+        // Error toast is handled by the global errorInterceptor
       }
     });
   }

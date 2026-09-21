@@ -26,7 +26,6 @@ export class DepartmentOfficerComponent implements OnInit {
     sidebarOpen = false;
     isLoading = false;
     message = '';
-    errorMessage = '';
     searchTerm = '';
     filterStatus = 'all';
 

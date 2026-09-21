@@ -64,7 +64,6 @@ export class ClearanceRequestComponent implements OnInit {
   });
 
   photoPreview: string | null = null;
-  errorMessage = '';
   isSubmitting = false;
   hasSubmittedRequest = false;
 
@@ -378,6 +377,7 @@ export class ClearanceRequestComponent implements OnInit {
         this.hasSubmittedRequest = false;
       } else {
         this.hasSubmittedRequest = true;
+        this.toastService.info('Already Submitted', 'You have already submitted a clearance request.');
         this.requestForm.disable();
       }
     }
@@ -500,11 +500,9 @@ export class ClearanceRequestComponent implements OnInit {
       roomNumber: '',
       residenceEvidence: ''
     });
-    this.errorMessage = '';
   }
 
   onResidenceEvidenceSelected(event: Event): void {
-    this.errorMessage = '';
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
@@ -513,7 +511,7 @@ export class ClearanceRequestComponent implements OnInit {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      this.errorMessage = 'Residence evidence must be an image.';
+      this.toastService.warning('Invalid File', 'Residence evidence must be an image.');
       input.value = '';
       return;
     }
@@ -523,7 +521,7 @@ export class ClearanceRequestComponent implements OnInit {
       this.requestForm.controls.residenceEvidence.setValue(reader.result as string);
     };
     reader.onerror = () => {
-      this.errorMessage = 'Failed to read residence evidence.';
+      this.toastService.error('Read Error', 'Failed to read residence evidence.');
       input.value = '';
     };
     reader.readAsDataURL(file);
@@ -534,8 +532,6 @@ export class ClearanceRequestComponent implements OnInit {
   // =====================================================
 
   onPhotoSelected(event: Event): void {
-    this.errorMessage = '';
-
     const input = event.target as HTMLInputElement;
 
     if (!input.files || input.files.length === 0) {
@@ -546,7 +542,7 @@ export class ClearanceRequestComponent implements OnInit {
 
     // Accept JPG / JPEG images of ANY dimensions
     if (file.type !== 'image/jpeg' && file.type !== 'image/jpg') {
-      this.errorMessage = 'Passport photo must be a .jpg or .jpeg image.';
+      this.toastService.warning('Invalid Format', 'Passport photo must be a .jpg or .jpeg image.');
       input.value = '';
       return;
     }
@@ -565,7 +561,7 @@ export class ClearanceRequestComponent implements OnInit {
 
         const context = canvas.getContext('2d');
         if (!context) {
-          this.errorMessage = 'Failed to process image file.';
+          this.toastService.error('Process Error', 'Failed to process image file.');
           input.value = '';
           return;
         }
@@ -579,7 +575,7 @@ export class ClearanceRequestComponent implements OnInit {
       };
 
       image.onerror = () => {
-        this.errorMessage = 'Failed to process image file.';
+        this.toastService.error('Process Error', 'Failed to process image file.');
         input.value = '';
       };
 
@@ -587,7 +583,7 @@ export class ClearanceRequestComponent implements OnInit {
     };
 
     reader.onerror = () => {
-      this.errorMessage = 'Failed to read image file.';
+      this.toastService.error('Read Error', 'Failed to read image file.');
       input.value = '';
     };
 
@@ -608,7 +604,6 @@ export class ClearanceRequestComponent implements OnInit {
 // clearance-request.component.ts - Updated submit method
 
   submit(): void {
-    this.errorMessage = '';
     this.isSubmitting = true;
 
     if (this.hasSubmittedRequest || (this.hasExistingRequest() && !this.revisionRequest)) {
@@ -620,7 +615,7 @@ export class ClearanceRequestComponent implements OnInit {
     }
 
     if (this.requestForm.invalid) {
-      this.errorMessage = 'Please complete all required clearance information correctly.';
+      this.toastService.warning('Form Incomplete', 'Please complete all required clearance information correctly.');
       this.requestForm.markAllAsTouched();
       this.isSubmitting = false;
       return;
@@ -629,7 +624,7 @@ export class ClearanceRequestComponent implements OnInit {
     const user = this.authService.getCurrentUser();
 
     if (!user) {
-      this.errorMessage = 'You must be logged in to submit a clearance request.';
+      this.toastService.error('Auth Required', 'You must be logged in to submit a clearance request.');
       this.router.navigate(['/login']);
       this.isSubmitting = false;
       return;
@@ -638,19 +633,19 @@ export class ClearanceRequestComponent implements OnInit {
     const value = this.requestForm.getRawValue();
 
     if (value.residenceType === 'Off Campus' && !value.residenceEvidence) {
-      this.errorMessage = 'Please upload a photo showing proof of your off-campus residence.';
+      this.toastService.warning('Evidence Required', 'Please upload a photo showing proof of your off-campus residence.');
       this.isSubmitting = false;
       return;
     }
 
     if (value.residenceType === 'Hostel Dwellers' && (!value.hostelHall.trim() || !value.roomNumber.trim())) {
-      this.errorMessage = 'Please enter your hostel hall and room number.';
+      this.toastService.warning('Location Details', 'Please enter your hostel hall and room number.');
       this.isSubmitting = false;
       return;
     }
 
     if (!value.studentName || !value.registrationNumber) {
-      this.errorMessage = 'Student information is missing. Please refresh the page and try again.';
+      this.toastService.error('Incomplete Profile', 'Student information is missing. Please refresh the page.');
       this.isSubmitting = false;
       return;
     }
@@ -745,14 +740,12 @@ export class ClearanceRequestComponent implements OnInit {
 
       if (error.message?.includes('already have a submitted clearance request')) {
         this.hasSubmittedRequest = true;
-        this.errorMessage = '';
         this.loadExistingRequest();
         this.requestForm.disable();
         return;
       }
 
-      this.errorMessage = error.message || 'Failed to submit clearance request. Please try again.';
-      this.toastService.error('Submission Failed', this.errorMessage);
+      // Error toast is handled by errorInterceptor or specifically caught above
     } finally {
       this.isSubmitting = false;
     }

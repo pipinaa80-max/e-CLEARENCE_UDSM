@@ -7,6 +7,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
@@ -23,12 +24,12 @@ export class ConvocationDashboardComponent implements OnInit {
   private readonly convocationService = inject(ConvocationService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
   isLoading = false;
   message = '';
-  errorMessage = '';
   selectedRequest: ClearanceRequest | null = null;
 
   backendReceipts: any[] = [];
@@ -252,11 +253,10 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   issueControlNumber(request: ClearanceRequest): void {
-    this.errorMessage = '';
     this.message = '';
 
     if (request.convocation?.controlNumber) {
-      this.message = 'This request already has a control number.';
+      this.toastService.info('Already Issued', 'This request already has a control number.');
       return;
     }
 
@@ -279,7 +279,7 @@ export class ConvocationDashboardComponent implements OnInit {
           'success'
       );
 
-          this.message = `✅ Control number ${controlNumber} issued successfully to ${this.getStudentName(request)}.`;
+          this.toastService.success('Success', `Control number ${controlNumber} issued successfully to ${this.getStudentName(request)}.`);
 
       setTimeout(() => {
         this.message = '';
@@ -287,18 +287,17 @@ export class ConvocationDashboardComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Issue error:', error);
-      this.errorMessage = '❌ Failed to issue control number. Please try again.';
+      this.toastService.error('Issue Failed', 'Failed to issue control number. Please try again.');
     } finally {
       this.isLoading = false;
     }
   }
 
   markReceiptReceived(request: ClearanceRequest): void {
-    this.errorMessage = '';
     this.message = '';
 
     if (!request.convocation?.controlNumber) {
-      this.errorMessage = 'Control number must be issued first.';
+      this.toastService.warning('Action Required', 'Control number must be issued first.');
       return;
     }
 
@@ -325,7 +324,7 @@ export class ConvocationDashboardComponent implements OnInit {
           'success'
       );
 
-      this.message = `✅ Receipt marked as received for ${this.getStudentName(request)}.`;
+      this.toastService.success('Success', `Receipt marked as received for ${this.getStudentName(request)}.`);
 
       setTimeout(() => {
         this.message = '';
@@ -333,18 +332,17 @@ export class ConvocationDashboardComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Mark receipt error:', error);
-      this.errorMessage = '❌ Failed to mark receipt. Please try again.';
+      this.toastService.error('Action Failed', 'Failed to mark receipt. Please try again.');
     } finally {
       this.isLoading = false;
     }
   }
 
   approveRequest(request: ClearanceRequest): void {
-    this.errorMessage = '';
     this.message = '';
 
     if (!request.convocation?.receiptSubmittedAt) {
-      this.errorMessage = 'Student must submit a receipt first.';
+      this.toastService.warning('Student Receipt Missing', 'Student must submit a receipt first.');
       return;
     }
 
@@ -372,7 +370,7 @@ export class ConvocationDashboardComponent implements OnInit {
           'success'
       );
 
-      this.message = `✅ Convocation clearance approved for ${this.getStudentName(request)}.`;
+      this.toastService.success('Approved', `Convocation clearance approved for ${this.getStudentName(request)}.`);
 
       setTimeout(() => {
         this.message = '';
@@ -380,7 +378,7 @@ export class ConvocationDashboardComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Approve error:', error);
-      this.errorMessage = '❌ Failed to approve request. Please try again.';
+      this.toastService.error('Approve Failed', 'Failed to approve request. Please try again.');
     } finally {
       this.isLoading = false;
     }
@@ -408,12 +406,11 @@ export class ConvocationDashboardComponent implements OnInit {
     this.isLoading = true;
     this.convocationService.approveReceipt(receiptId).subscribe({
       next: (res) => {
-        this.message = '✅ Receipt approved and clearance advanced.';
+        this.toastService.success('Success', 'Receipt approved and clearance advanced.');
         this.loadData();
-        setTimeout(() => this.message = '', 3000);
       },
       error: (err) => {
-        this.errorMessage = '❌ Approval failed: ' + (err.error?.message || err.message);
+        this.toastService.error('Approval Failed', (err.error?.message || err.message));
         this.isLoading = false;
       }
     });
@@ -426,12 +423,11 @@ export class ConvocationDashboardComponent implements OnInit {
     this.isLoading = true;
     this.convocationService.rejectReceipt(receiptId, reason).subscribe({
       next: (res) => {
-        this.message = '❌ Receipt rejected and student notified.';
+        this.toastService.success('Rejected', 'Receipt rejected and student notified.');
         this.loadData();
-        setTimeout(() => this.message = '', 3000);
       },
       error: (err) => {
-        this.errorMessage = '❌ Rejection failed: ' + (err.error?.message || err.message);
+        this.toastService.error('Rejection Failed', (err.error?.message || err.message));
         this.isLoading = false;
       }
     });

@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
@@ -21,6 +22,7 @@ export class DepartmentReviewComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
     private readonly notificationService = inject(NotificationService);
+    private readonly toastService = inject(ToastService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
 
@@ -31,8 +33,6 @@ export class DepartmentReviewComponent implements OnInit {
     isLoading = false;
     isSubmitting = false;
     comment = '';
-    errorMessage = '';
-    successMessage = '';
     selectedTab: 'profile' | 'documents' | 'approvals' = 'profile';
 
     readonly documentCategories = ['Transcript', 'O-Level Certificate', 'A-Level Certificate', 'Identity Document'];
@@ -57,7 +57,7 @@ export class DepartmentReviewComponent implements OnInit {
         this.request = this.clearanceService.getRequest(this.requestId) || null;
 
         if (!this.request) {
-            this.errorMessage = 'Request not found.';
+            this.toastService.error('Not Found', 'Request not found.');
             this.isLoading = false;
             return;
         }
@@ -176,12 +176,10 @@ export class DepartmentReviewComponent implements OnInit {
 
     approveRequest(): void {
         this.isSubmitting = true;
-        this.errorMessage = '';
-        this.successMessage = '';
 
         const staff = this.currentUser;
         if (!staff || !this.request) {
-            this.errorMessage = 'Unable to approve request.';
+            this.toastService.error('Error', 'Unable to approve request.');
             this.isSubmitting = false;
             return;
         }
@@ -206,14 +204,14 @@ export class DepartmentReviewComponent implements OnInit {
                 'success'
             );
 
-            this.successMessage = '✅ Request approved successfully!';
+            this.toastService.success('Success', 'Request approved successfully!');
 
             setTimeout(() => {
                 this.router.navigate(['/department/dashboard']);
             }, 2000);
 
         } catch (error: any) {
-            this.errorMessage = error.message || 'Failed to approve request.';
+            this.toastService.error('Approve Failed', error.message || 'Failed to approve request.');
         } finally {
             this.isSubmitting = false;
         }
@@ -221,18 +219,16 @@ export class DepartmentReviewComponent implements OnInit {
 
     rejectRequest(): void {
         this.isSubmitting = true;
-        this.errorMessage = '';
-        this.successMessage = '';
 
         if (!this.comment.trim()) {
-            this.errorMessage = 'Please provide a reason for rejection.';
+            this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
             this.isSubmitting = false;
             return;
         }
 
         const staff = this.currentUser;
         if (!staff || !this.request) {
-            this.errorMessage = 'Unable to reject request.';
+            this.toastService.error('Error', 'Unable to reject request.');
             this.isSubmitting = false;
             return;
         }
@@ -258,14 +254,14 @@ export class DepartmentReviewComponent implements OnInit {
                 'warning'
             );
 
-            this.successMessage = '✅ Request rejected successfully.';
+            this.toastService.success('Success', 'Request rejected successfully.');
 
             setTimeout(() => {
                 this.router.navigate(['/department/dashboard']);
             }, 2000);
 
         } catch (error: any) {
-            this.errorMessage = error.message || 'Failed to reject request.';
+            this.toastService.error('Reject Failed', error.message || 'Failed to reject request.');
         } finally {
             this.isSubmitting = false;
         }

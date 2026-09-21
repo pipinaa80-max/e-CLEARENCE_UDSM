@@ -23,15 +23,14 @@ export class ForgotPassword {
   });
 
   message = '';
-  errorMessage = '';
   isLoading = false;
 
   submit(): void {
     this.message = '';
-    this.errorMessage = '';
 
     if (this.forgotPasswordForm.invalid) {
       this.forgotPasswordForm.markAllAsTouched();
+      this.toastService.warning('Invalid Input', 'Please enter a valid official email address.');
       return;
     }
 
@@ -47,8 +46,7 @@ export class ForgotPassword {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Something went wrong. Please try again later.';
-        this.toastService.error('Error', this.errorMessage);
+        // Error toast is handled by errorInterceptor
       }
     });
   }

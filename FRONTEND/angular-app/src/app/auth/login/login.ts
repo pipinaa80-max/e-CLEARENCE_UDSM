@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -20,6 +20,7 @@ export class Login implements OnInit {
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
   private readonly projectAdminService = inject(ProjectAdminService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   branding = {
     universityName: 'University of Dar es Salaam',
@@ -32,7 +33,6 @@ export class Login implements OnInit {
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
-  errorMessage = '';
   isLoading = false;
 
   ngOnInit(): void {
@@ -60,7 +60,6 @@ export class Login implements OnInit {
   }
 
   submit(): void {
-    this.errorMessage = '';
     this.isLoading = true;
 
     if (this.loginForm.invalid) {
@@ -68,9 +67,9 @@ export class Login implements OnInit {
 
       const controls = this.loginForm.controls;
       if (controls.password.errors?.['minlength']) {
-        this.errorMessage = 'Password must be at least 6 characters long.';
+        this.toastService.warning('Invalid Input', 'Password must be at least 6 characters long.');
       } else {
-        this.errorMessage = 'Please enter both your identifier and password.';
+        this.toastService.warning('Missing Information', 'Please enter both your identifier and password.');
       }
 
       this.isLoading = false;
@@ -84,13 +83,18 @@ export class Login implements OnInit {
       next: (user) => {
         this.isLoading = false;
         this.toastService.success('Login Successful', `Welcome back, ${user.fullName}`);
-        // Navigate based on mapped role
+        this.changeDetector.detectChanges();
         this.router.navigate([this.redirectPathFor(user.role)]);
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
-        this.toastService.error('Authentication Failed', this.errorMessage);
+        // Authentication and connection failures are shown by the fallback request's
+        // interceptor; unexpected failures still need a message after the first request.
+        if (![0, 401, 403].includes(err.status)) {
+          this.toastService.error('Sign-in Failed', 'We could not complete your sign-in request. Please try again.');
+        }
+        this.changeDetector.detectChanges();
+        console.error('Login request failed:', err);
       }
     });
   }

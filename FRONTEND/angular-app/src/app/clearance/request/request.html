@@ -64,10 +64,6 @@
     <!-- MAIN CARD -->
     <section class="request-card">
 
-    <div class="error-message" *ngIf="hasSubmittedRequest">
-      You have already submitted a clearance request.
-    </div>
-
     <div class="revision-message" *ngIf="revisionRequest">
       <strong>Changes required by {{ revisionRequest.revisionOffice }}</strong>
       <span>{{ revisionReason || 'Please review and correct your information before resubmitting.' }}</span>
@@ -226,11 +222,6 @@
           <span>I confirm that the information provided above is correct and belongs to me.</span>
         </label>
       </section>
-
-      <!-- ERROR -->
-      <div class="error-message" *ngIf="errorMessage">
-        {{ errorMessage }}
-      </div>
 
       <!-- BUTTONS -->
       <div class="request-actions">

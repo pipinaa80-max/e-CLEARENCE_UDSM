@@ -20,14 +20,6 @@
         <p>Loading request details...</p>
     </div>
 
-    <div *ngIf="errorMessage && !isLoading" class="error-message">
-        ❌ {{ errorMessage }}
-    </div>
-
-    <div *ngIf="successMessage && !isLoading" class="success-message">
-        ✅ {{ successMessage }}
-    </div>
-
     <div class="review-container" *ngIf="request && !isLoading">
         <!-- Student Profile Card -->
         <section class="student-profile-card">

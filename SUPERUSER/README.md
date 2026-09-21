@@ -26,7 +26,8 @@ Terminal 1:
 ```powershell
 cd SUPERUSER/backend
 $env:SUPERUSER_EMAIL="superuser@admin.local"
-$env:SUPERUSER_PASSWORD="ChangeMeImmediately!2026"
+$env:SUPERUSER_PASSWORD="
+"
 npm start
 ```
 

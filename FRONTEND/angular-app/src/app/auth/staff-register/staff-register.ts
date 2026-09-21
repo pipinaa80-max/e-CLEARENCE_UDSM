@@ -41,7 +41,6 @@ export class StaffRegister {
     'Dar es Salaam University College of Education (DUCE)': ['Educational Foundations, Management and Lifelong Learning', 'Educational Psychology and Curriculum Studies', 'Economics and Geography', 'History, Political Science and Development Studies', 'Languages and Communication Skills', 'Biology', 'Chemistry', 'Mathematics', 'Physics']
   };
 
-  errorMessage = '';
   successMessage = '';
   isLoading = false;
 
@@ -106,7 +105,6 @@ export class StaffRegister {
   }
 
   register(): void {
-    this.errorMessage = '';
     this.successMessage = '';
     this.updateDepartmentValidators();
 
@@ -115,24 +113,24 @@ export class StaffRegister {
 
       const controls = this.form.controls;
       if (controls.email.errors?.['email']) {
-        this.errorMessage = 'Please enter a valid official email address.';
+        this.toastService.warning('Official Email Required', 'Please enter a valid official email address.');
       } else if (controls.password.errors?.['minlength']) {
-        this.errorMessage = 'Password must be at least 8 characters long.';
+        this.toastService.warning('Security Requirement', 'Password must be at least 8 characters long.');
       } else if (controls.acceptTerms.errors?.['required']) {
-        this.errorMessage = 'You must accept the terms of service.';
+        this.toastService.warning('Agreement Needed', 'You must accept the terms of service.');
       } else if (this.isDepartmentStaff && (controls.college.invalid || controls.department.invalid)) {
-        this.errorMessage = 'Please select both your college and department.';
+        this.toastService.warning('Selection Required', 'Please select both your college and department.');
       } else if (this.isPrincipalStaff && controls.college.invalid) {
-        this.errorMessage = 'Please select the Principal college.';
+        this.toastService.warning('Selection Required', 'Please select the Principal college.');
       } else {
-        this.errorMessage = 'Please complete all required fields correctly.';
+        this.toastService.warning('Missing Info', 'Please complete all required fields correctly.');
       }
       return;
     }
 
     const value = this.form.getRawValue();
     if (value.password !== value.confirmPassword) {
-      this.errorMessage = 'The passwords do not match.';
+      this.toastService.warning('Mismatch', 'The passwords do not match.');
       return;
     }
 
@@ -173,8 +171,7 @@ export class StaffRegister {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Unable to create the staff account.';
-        this.toastService.error('Registration Failed', this.errorMessage);
+        // Error toast is handled by the global errorInterceptor
       }
     });
   }

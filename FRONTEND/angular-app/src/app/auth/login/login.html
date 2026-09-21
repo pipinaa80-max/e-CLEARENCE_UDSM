@@ -43,9 +43,6 @@
         <span *ngIf="isLoading">Signing In...</span>
       </button>
 
-      <!-- Display error messages -->
-      <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
-
       <div class="helper-row">
         <!-- FIX: Changed routerLink from /login to /forgot-password -->
         <a routerLink="/forgot-password">Forgot Password?</a>

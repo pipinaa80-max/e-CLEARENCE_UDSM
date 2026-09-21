@@ -17,9 +17,6 @@
       <div><span class="section-kicker">Payment approved</span><h2>Required Documentation</h2><p>Upload all three documents. Accepted formats are PDF, JPG and PNG.</p></div>
     </div>
 
-    <p class="message success-message" *ngIf="message">{{ message }}</p>
-    <p class="message error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
-
     <div class="document-list">
       <article class="document-item" *ngFor="let category of requiredDocuments">
         <div><span class="document-number">0{{ requiredDocuments.indexOf(category) + 1 }}</span><h3>{{ category }}</h3><p>{{ uploaded[category] ? 'Document uploaded successfully.' : (isSubmitted ? 'Documentation period ended.' : 'Choose the required document to continue.') }}</p></div>

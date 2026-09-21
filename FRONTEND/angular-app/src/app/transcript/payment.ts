@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
+import { ToastService } from '../core/services/toast.service';
 import { TranscriptPaymentRequest } from './transcript-payment.model';
 
 @Component({
@@ -17,10 +18,10 @@ export class TranscriptPaymentComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly paymentService = inject(TranscriptPaymentService);
+  private readonly toastService = inject(ToastService);
 
   request: TranscriptPaymentRequest | null = null;
   message = '';
-  errorMessage = '';
   isSubmitting = false;
   transcriptCount = 1;
   selectedFile: File | null = null;
@@ -82,11 +83,10 @@ export class TranscriptPaymentComponent {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] || null;
-    this.errorMessage = '';
     this.message = '';
 
     if (file && file.size > 1.5 * 1024 * 1024) {
-      this.errorMessage = 'This photo is too large for the system to process. Please upload a smaller file or a compressed JPG (Max 1.5MB).';
+      this.toastService.warning('File Too Large', 'This photo is too large for the system to process. Please upload a smaller file or a compressed JPG (Max 1.5MB).');
       this.selectedFile = null;
       input.value = '';
       return;
@@ -99,14 +99,13 @@ export class TranscriptPaymentComponent {
     if (!this.selectedFile || !this.request) return;
 
     this.isSubmitting = true;
-    this.errorMessage = '';
     this.message = '';
 
     // Safety timeout to prevent permanent "Submitting..." hang
     const safetyTimeout = setTimeout(() => {
       if (this.isSubmitting) {
         this.isSubmitting = false;
-        this.errorMessage = 'The submission is taking too long. Please try a smaller photo or a screenshot.';
+        this.toastService.error('Timeout', 'The submission is taking too long. Please try a smaller photo or a screenshot.');
       }
     }, 10000);
 
@@ -123,7 +122,7 @@ export class TranscriptPaymentComponent {
         clearTimeout(safetyTimeout);
 
         if (submitted) {
-          this.message = 'Payment receipt submitted successfully to Finance.';
+          this.toastService.success('Success', 'Payment receipt submitted successfully to Finance.');
           // Refresh local request state immediately
           const user = this.authService.getCurrentUser();
           if (user) {
@@ -131,11 +130,11 @@ export class TranscriptPaymentComponent {
           }
           this.selectedFile = null;
         } else {
-          this.errorMessage = 'Finance could not receive the receipt. Please try a smaller photo.';
+          this.toastService.error('Error', 'Finance could not receive the receipt. Please try a smaller photo.');
         }
       } catch (error) {
         console.error('Submission failed:', error);
-        this.errorMessage = 'The photo data is too heavy for the browser. Please use a screenshot instead.';
+        this.toastService.error('Submission Failed', 'The photo data is too heavy for the browser. Please use a screenshot instead.');
       } finally {
         this.isSubmitting = false;
       }
@@ -143,7 +142,7 @@ export class TranscriptPaymentComponent {
 
     reader.onerror = () => {
       clearTimeout(safetyTimeout);
-      this.errorMessage = 'Unable to read the receipt photo.';
+      this.toastService.error('Read Error', 'Unable to read the receipt photo.');
       this.isSubmitting = false;
     };
 
@@ -151,13 +150,12 @@ export class TranscriptPaymentComponent {
   }
 
   onReceiptSelected(event: Event): void {
-    this.errorMessage = '';
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file || !this.request) return;
 
     if (!file.type.startsWith('image/')) {
-      this.errorMessage = 'Please upload a photo of the payment receipt.';
+      this.toastService.warning('Invalid Format', 'Please upload a photo of the payment receipt.');
       input.value = '';
       return;
     }
@@ -170,14 +168,14 @@ export class TranscriptPaymentComponent {
           reader.result as string
       );
       if (!submitted) {
-        this.errorMessage = 'Receipt cannot be submitted until Finance issues your control number.';
+        this.toastService.warning('Action Required', 'Receipt cannot be submitted until Finance issues your control number.');
         return;
       }
       this.request = this.paymentService.getStudentRequests(this.request!.studentId).at(-1) ?? null;
-      this.message = 'Payment receipt submitted successfully.';
+      this.toastService.success('Success', 'Payment receipt submitted successfully.');
     };
     reader.onerror = () => {
-      this.errorMessage = 'Unable to read the receipt photo.';
+      this.toastService.error('Read Error', 'Unable to read the receipt photo.');
       input.value = '';
     };
     reader.readAsDataURL(file);

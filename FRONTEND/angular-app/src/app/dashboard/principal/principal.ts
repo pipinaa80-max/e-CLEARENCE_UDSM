@@ -7,6 +7,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
@@ -21,12 +22,12 @@ export class PrincipalComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
     private readonly notificationService = inject(NotificationService);
+    private readonly toastService = inject(ToastService);
     private readonly router = inject(Router);
 
     sidebarOpen = false;
     isLoading = false;
     message = '';
-    errorMessage = '';
     searchTerm = '';
     filterStatus = 'all';
 
@@ -210,7 +211,7 @@ export class PrincipalComponent implements OnInit {
     approve(request: ClearanceRequest): void {
         const staff = this.currentUser;
         if (!staff || !this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
-            this.errorMessage = 'Failed to approve request. Please try again.';
+            this.toastService.error('Error', 'Failed to approve request. Please try again.');
             return;
         }
 

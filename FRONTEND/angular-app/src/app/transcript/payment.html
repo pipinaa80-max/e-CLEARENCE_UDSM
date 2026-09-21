@@ -71,8 +71,6 @@
       </div>
     </section>
 
-    <p class="message success-message" *ngIf="message">{{ message }}</p>
-    <p class="message error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
     </ng-container>
 
     <a *ngIf="!request || (request.status !== 'Paid' && request.status !== 'Receipt Submitted')" routerLink="/dashboard" class="back-link">Back to Dashboard</a>

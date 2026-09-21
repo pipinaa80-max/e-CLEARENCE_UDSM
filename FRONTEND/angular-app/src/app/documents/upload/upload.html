@@ -24,8 +24,6 @@
             <span>Choose File</span>
             <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
         </label>
-        <p class="error-message" *ngIf="errorMessage">{{ errorMessage }}</p>
-        <p class="success-message" *ngIf="successMessage">{{ successMessage }}</p>
         <button type="submit" [disabled]="!missingCategories.length">Upload Document</button>
     </form>
     

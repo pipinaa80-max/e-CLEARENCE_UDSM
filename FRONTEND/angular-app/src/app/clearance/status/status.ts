@@ -6,6 +6,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 import {
@@ -37,11 +38,11 @@ export class ClearanceStatusComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
   isLoading = false;
-  errorMessage = '';
   successMessage = '';
 
   get currentUser() {
@@ -240,12 +241,11 @@ export class ClearanceStatusComponent {
 
   continueToNextStage(): void {
     this.isLoading = true;
-    this.errorMessage = '';
     this.successMessage = '';
 
     const request = this.request;
     if (!request) {
-      this.errorMessage = 'No active clearance request found.';
+      this.toastService.warning('Not Found', 'No active clearance request found.');
       this.isLoading = false;
       return;
     }
@@ -256,7 +256,7 @@ export class ClearanceStatusComponent {
       const requestIndex = allRequests.findIndex(r => r.id === request.id);
 
       if (requestIndex === -1) {
-        this.errorMessage = 'Request not found.';
+        this.toastService.error('Error', 'Request not found.');
         this.isLoading = false;
         return;
       }
@@ -271,7 +271,7 @@ export class ClearanceStatusComponent {
       } else if (request.currentStage === 'Parallel') {
         // Check if all offices are approved before proceeding
         if (!this.allClearanceOfficesApproved) {
-          this.errorMessage = 'All clearance offices must approve first.';
+          this.toastService.warning('Action Required', 'All clearance offices must approve first.');
           this.isLoading = false;
           return;
         }
@@ -279,7 +279,7 @@ export class ClearanceStatusComponent {
         nextOffice = 'Department';
       } else if (request.currentStage === 'Department') {
         if (this.getOfficeStatus('Department') !== 'Approved') {
-          this.errorMessage = 'Department approval is required first.';
+          this.toastService.warning('Action Required', 'Department approval is required first.');
           this.isLoading = false;
           return;
         }
@@ -287,7 +287,7 @@ export class ClearanceStatusComponent {
         nextOffice = 'Principal';
       } else if (request.currentStage === 'Principal') {
         if (this.getOfficeStatus('Principal') !== 'Approved') {
-          this.errorMessage = 'Principal approval is required first.';
+          this.toastService.warning('Action Required', 'Principal approval is required first.');
           this.isLoading = false;
           return;
         }
@@ -295,7 +295,7 @@ export class ClearanceStatusComponent {
         nextOffice = 'Finance';
       } else if (request.currentStage === 'Finance') {
         if (this.getOfficeStatus('Finance') !== 'Approved') {
-          this.errorMessage = 'Finance approval is required first.';
+          this.toastService.warning('Action Required', 'Finance approval is required first.');
           this.isLoading = false;
           return;
         }
@@ -303,7 +303,7 @@ export class ClearanceStatusComponent {
         nextOffice = undefined;
         allRequests[requestIndex].status = 'Completed';
       } else {
-        this.errorMessage = 'Cannot continue from current stage.';
+        this.toastService.error('Error', 'Cannot continue from current stage.');
         this.isLoading = false;
         return;
       }
@@ -337,7 +337,7 @@ export class ClearanceStatusComponent {
 
     } catch (error: any) {
       console.error('Error continuing to next stage:', error);
-      this.errorMessage = 'Failed to continue to next stage. Please try again.';
+      this.toastService.error('Process Failed', 'Failed to continue to next stage. Please try again.');
     } finally {
       this.isLoading = false;
     }

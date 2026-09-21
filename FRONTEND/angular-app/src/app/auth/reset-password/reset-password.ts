@@ -26,34 +26,33 @@ export class ResetPassword implements OnInit {
 
   token: string | null = null;
   message = '';
-  errorMessage = '';
   isLoading = false;
 
   ngOnInit(): void {
     this.token = this.route.snapshot.queryParamMap.get('token');
     if (!this.token) {
-      this.errorMessage = 'Invalid or missing reset token. Please request a new link.';
+      this.toastService.error('Invalid Token', 'Invalid or missing reset token. Please request a new link.');
     }
   }
 
   submit(): void {
     this.message = '';
-    this.errorMessage = '';
 
     if (!this.token) {
-      this.errorMessage = 'Cannot reset password without a valid token.';
+      this.toastService.error('Invalid Token', 'Cannot reset password without a valid token.');
       return;
     }
 
     if (this.resetForm.invalid) {
       this.resetForm.markAllAsTouched();
+      this.toastService.warning('Invalid Input', 'Password must be at least 8 characters long.');
       return;
     }
 
     const { password, confirmPassword } = this.resetForm.getRawValue();
 
     if (password !== confirmPassword) {
-      this.errorMessage = 'Passwords do not match.';
+      this.toastService.warning('Mismatch', 'Passwords do not match.');
       return;
     }
 
@@ -67,8 +66,7 @@ export class ResetPassword implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.message || 'Failed to reset password. The link may have expired.';
-        this.toastService.error('Error', this.errorMessage);
+        // Error toast is handled by errorInterceptor
       }
     });
   }

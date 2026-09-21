@@ -13,6 +13,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 
 import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
@@ -37,6 +38,7 @@ export class ConvocationComponent implements OnInit {
   private readonly convocationService = inject(ConvocationService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   // =====================================================
@@ -49,7 +51,6 @@ export class ConvocationComponent implements OnInit {
   });
 
   selectedFileName = '';
-  errorMessage = '';
   message = '';
   isLoading = false;
 
@@ -157,12 +158,11 @@ export class ConvocationComponent implements OnInit {
 
   continueToStep2(): void {
     this.isLoading = true;
-    this.errorMessage = '';
     this.message = '';
 
     const request = this.studentRequest;
     if (!request) {
-      this.errorMessage = 'No active clearance request found.';
+      this.toastService.warning('Request Missing', 'No active clearance request found.');
       this.isLoading = false;
       return;
     }
@@ -174,7 +174,7 @@ export class ConvocationComponent implements OnInit {
       );
 
       if (!convocationApproval || convocationApproval.status !== 'Approved') {
-        this.errorMessage = 'Convocation approval is required first.';
+        this.toastService.warning('Action Required', 'Convocation approval is required first.');
         this.isLoading = false;
         return;
       }
@@ -184,7 +184,7 @@ export class ConvocationComponent implements OnInit {
       const requestIndex = allRequests.findIndex(r => r.id === request.id);
 
       if (requestIndex === -1) {
-        this.errorMessage = 'Request not found.';
+        this.toastService.error('Error', 'Request not found.');
         this.isLoading = false;
         return;
       }
@@ -216,7 +216,7 @@ export class ConvocationComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Error continuing to step 2:', error);
-      this.errorMessage = 'Failed to continue to Step 2. Please try again.';
+      this.toastService.error('Stage Error', 'Failed to continue to Step 2. Please try again.');
       this.isLoading = false;
     } finally {
       this.isLoading = false;
@@ -301,13 +301,12 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   requestControlNumber(): void {
-    this.errorMessage = '';
     this.message = '';
 
     const request = this.studentRequest;
 
     if (!request) {
-      this.errorMessage = 'No active clearance request was found.';
+      this.toastService.warning('Not Found', 'No active clearance request was found.');
       return;
     }
 
@@ -342,7 +341,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   onFileSelected(event: Event): void {
-    this.errorMessage = '';
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
 
@@ -361,7 +359,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   submit(): void {
-    this.errorMessage = '';
     this.message = '';
     this.isLoading = true;
 
@@ -370,7 +367,7 @@ export class ConvocationComponent implements OnInit {
     const receiptData = this.form.controls.file.value as unknown as string;
 
     if (!user || !request || !receiptData) {
-      this.errorMessage = 'Please select a receipt file first.';
+      this.toastService.warning('File Required', 'Please select a receipt file first.');
       this.isLoading = false;
       return;
     }

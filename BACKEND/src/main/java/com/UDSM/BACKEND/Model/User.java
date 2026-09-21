@@ -94,14 +94,17 @@ public class User implements UserDetails {
 
     @Column(name = "is_active")
     @JsonProperty("isActive")
+    @Builder.Default
     private boolean active = false;
 
     @Column(name = "is_email_verified")
     @JsonProperty("isEmailVerified")
+    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(name = "is_locked")
     @JsonProperty("isLocked")
+    @Builder.Default
     private boolean locked = false;
 
     @Column(name = "lock_reason")

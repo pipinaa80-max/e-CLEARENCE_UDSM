@@ -95,6 +95,7 @@ public class Student {
     private String semester;
 
     @Column(name = "is_final_year")
+    @Builder.Default
     private boolean isFinalYear = false;
 
     @Column(name = "clearance_status")

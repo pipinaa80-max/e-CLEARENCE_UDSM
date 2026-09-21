@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ControlPlaneService {
     private final UserRepository userRepository;
@@ -66,9 +68,12 @@ public class ControlPlaneService {
         }
         if (user == null || user.getRole() == null
                 || (user.getRole() != ERole.SUPERUSER && user.getRole() != ERole.ADMINISTRATOR)
-                || !passwordEncoder.matches(password, user.getPassword())
-                || !user.isActive()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+                || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email/registration number or password.");
+        }
+        
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is currently disabled. Please contact the administrator.");
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

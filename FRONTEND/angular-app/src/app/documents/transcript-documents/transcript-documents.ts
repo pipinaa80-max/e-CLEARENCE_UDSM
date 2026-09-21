@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
@@ -17,6 +18,7 @@ export class TranscriptDocumentsComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly documentService = inject(DocumentService);
   private readonly paymentService = inject(TranscriptPaymentService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
@@ -28,7 +30,6 @@ export class TranscriptDocumentsComponent implements OnInit {
   selectedFiles: Record<string, File | null> = {};
   uploaded: Record<string, boolean> = {};
   message = '';
-  errorMessage = '';
   uploading = '';
   paymentId = '';
 
@@ -80,7 +81,7 @@ export class TranscriptDocumentsComponent implements OnInit {
         }
       },
       error: () => {
-        this.errorMessage = 'Unable to load previously uploaded documents.';
+        this.toastService.error('Load Error', 'Unable to load previously uploaded documents.');
       }
     });
   }
@@ -89,10 +90,9 @@ export class TranscriptDocumentsComponent implements OnInit {
     if (this.isSubmitted) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-    this.errorMessage = '';
 
     if (file && !['application/pdf', 'image/jpeg', 'image/png'].includes(file.type)) {
-      this.errorMessage = 'Please upload a PDF, JPG or PNG file.';
+      this.toastService.warning('Invalid Format', 'Please upload a PDF, JPG or PNG file.');
       input.value = '';
       return;
     }
@@ -105,12 +105,11 @@ export class TranscriptDocumentsComponent implements OnInit {
     const user = this.currentUser;
     const file = this.selectedFiles[category];
     if (!user || !file) {
-      this.errorMessage = `Select the ${category} file first.`;
+      this.toastService.warning('Missing File', `Select the ${category} file first.`);
       return;
     }
 
     this.uploading = category;
-    this.errorMessage = '';
     this.documentService.uploadDocument({
       studentId: user.id,
       fileName: file.name,
@@ -124,11 +123,11 @@ export class TranscriptDocumentsComponent implements OnInit {
           localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
         }
         this.uploading = '';
-        this.message = `${category} uploaded successfully.`;
+        this.toastService.success('Upload Success', `${category} uploaded successfully.`);
       },
       error: (error: Error) => {
         this.uploading = '';
-        this.errorMessage = error.message || `Unable to upload ${category}.`;
+        this.toastService.error('Upload Failed', error.message || `Unable to upload ${category}.`);
       }
     });
   }

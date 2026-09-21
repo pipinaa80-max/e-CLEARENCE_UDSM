@@ -18,7 +18,13 @@ export class AuthService {
 
   login(identifier: string, password: string): Observable<any> {
     const normalized = identifier.trim();
-    return this.http.post<any>(`${this.apiUrl}/login`, { identifier: normalized, password }).pipe(
+    const isControlPlaneAccount = normalized.toLowerCase().endsWith('@admin.local');
+    // Only control-plane accounts need a fallback request after the main login fails.
+    const headers = isControlPlaneAccount
+      ? new HttpHeaders({ 'X-Skip-Error-Toast': 'true' })
+      : undefined;
+
+    return this.http.post<any>(`${this.apiUrl}/login`, { identifier: normalized, password }, headers ? { headers } : {}).pipe(
       timeout(15000),
       map(response => {
         const data = response.data || response;
@@ -27,7 +33,8 @@ export class AuthService {
         return user;
       }),
       catchError(error => {
-        if (error?.status === 0 || error?.status === 401 || error?.status === 403 || normalized.toLowerCase().endsWith('@admin.local')) {
+        // Fallback to superuser backend (this request will show a toast if it fails)
+        if (isControlPlaneAccount && (error?.status === 0 || error?.status === 401 || error?.status === 403)) {
           return this.loginWithSuperuserBackend(normalized, password);
         }
         return throwError(() => error);
