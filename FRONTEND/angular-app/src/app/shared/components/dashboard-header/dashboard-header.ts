@@ -51,10 +51,12 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
   styles: [`
     .dashboard-header {
       position: relative;
-      z-index: 1100;
+      z-index: 900;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      width: 100%;
+      box-sizing: border-box;
       padding: 24px;
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(12px);
