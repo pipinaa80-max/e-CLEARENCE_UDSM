@@ -2671,3 +2671,122 @@ org.springframework.web.server.ResponseStatusException: 401 UNAUTHORIZED "Invali
 2026-09-21 16:02:47 [http-nio-8080-exec-5] DEBUG o.s.s.authentication.ProviderManager - Authentication failed with provider DaoAuthenticationProvider since Bad credentials
 2026-09-21 16:02:47 [http-nio-8080-exec-5] WARN  c.UDSM.BACKEND.Service.AuthService - 🔒 Account locked for identifier: FINANCE@udom.ac.tz
 2026-09-21 16:02:47 [http-nio-8080-exec-5] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.BadCredentialsException: Invalid email/registration number or password]
+2026-09-21 16:04:32 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:04:32 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:04:32 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:04:32 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:04:32 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:04:32 [http-nio-8080-exec-10] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:04:38 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:04:38 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:04:38 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:04:38 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:04:38 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:04:38 [http-nio-8080-exec-8] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:04:50 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:04:50 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:04:50 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:04:50 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:04:50 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:04:50 [http-nio-8080-exec-1] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:04:56 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:04:56 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:04:56 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:04:56 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:04:56 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:04:56 [http-nio-8080-exec-3] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:02 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:05:02 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:02 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:02 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:02 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:02 [http-nio-8080-exec-5] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:13 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:05:13 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:13 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:13 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:13 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:13 [http-nio-8080-exec-6] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:16 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:16 [http-nio-8080-exec-10] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:16 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:16 [http-nio-8080-exec-10] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:16 [http-nio-8080-exec-10] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:17 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:17 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:17 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:17 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:17 [http-nio-8080-exec-9] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:18 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:05:18 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:18 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:18 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:18 [http-nio-8080-exec-1] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:18 [http-nio-8080-exec-1] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:19 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:19 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:19 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:19 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:19 [http-nio-8080-exec-2] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:21 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:21 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:21 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:21 [http-nio-8080-exec-3] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:21 [http-nio-8080-exec-3] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:27 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:05:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:27 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:27 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:27 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:27 [http-nio-8080-exec-5] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:05:28 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:05:28 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:05:28 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:05:28 [http-nio-8080-exec-7] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:05:28 [http-nio-8080-exec-7] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:06:21 [http-nio-8080-exec-10] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:06:21 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:06:21 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:06:21 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:06:21 [http-nio-8080-exec-9] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:06:21 [http-nio-8080-exec-9] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:08:17 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:08:17 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:08:17 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:08:17 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:08:17 [http-nio-8080-exec-2] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: FINANCE@udom.ac.tz
+2026-09-21 16:08:17 [http-nio-8080-exec-2] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.LockedException: Account is temporarily locked. Please try again later.]
+2026-09-21 16:11:52 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:11:52 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:11:52 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:11:52 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:11:52 [http-nio-8080-exec-5] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: fake-user@example.com
+2026-09-21 16:11:52 [http-nio-8080-exec-5] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: fake-user@example.com
+2026-09-21 16:11:52 [http-nio-8080-exec-5] DEBUG c.U.B.S.CustomUserDetailsService - User not found by email, trying registration number: fake-user@example.com
+2026-09-21 16:11:52 [http-nio-8080-exec-5] ERROR c.U.B.S.CustomUserDetailsService - ❌ User not found with identifier: fake-user@example.com
+2026-09-21 16:11:53 [http-nio-8080-exec-5] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Failed to find user 'fake-user@example.com'
+2026-09-21 16:11:53 [http-nio-8080-exec-5] DEBUG o.s.s.authentication.ProviderManager - Authentication failed with provider DaoAuthenticationProvider since Bad credentials
+2026-09-21 16:11:53 [http-nio-8080-exec-5] WARN  c.UDSM.BACKEND.Service.AuthService - 🔒 Account locked for identifier: fake-user@example.com
+2026-09-21 16:11:53 [http-nio-8080-exec-5] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.BadCredentialsException: Invalid email/registration number or password]
+2026-09-21 16:12:21 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:12:21 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:12:21 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:12:21 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:12:21 [http-nio-8080-exec-6] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: wrong-user@example.com
+2026-09-21 16:12:21 [http-nio-8080-exec-6] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: wrong-user@example.com
+2026-09-21 16:12:21 [http-nio-8080-exec-6] DEBUG c.U.B.S.CustomUserDetailsService - User not found by email, trying registration number: wrong-user@example.com
+2026-09-21 16:12:21 [http-nio-8080-exec-6] ERROR c.U.B.S.CustomUserDetailsService - ❌ User not found with identifier: wrong-user@example.com
+2026-09-21 16:12:22 [http-nio-8080-exec-6] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Failed to find user 'wrong-user@example.com'
+2026-09-21 16:12:22 [http-nio-8080-exec-6] DEBUG o.s.s.authentication.ProviderManager - Authentication failed with provider DaoAuthenticationProvider since Bad credentials
+2026-09-21 16:12:22 [http-nio-8080-exec-6] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.BadCredentialsException: Invalid email/registration number or password]
+2026-09-21 16:14:20 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing OPTIONS /auth/login
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing POST /auth/login
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured POST /auth/login
+2026-09-21 16:14:20 [http-nio-8080-exec-8] INFO  c.U.B.Controller.AuthController - 🔐 Login attempt for: wrong-user@example.com
+2026-09-21 16:14:20 [http-nio-8080-exec-8] INFO  c.U.B.S.CustomUserDetailsService - 🔍 Loading user by identifier: wrong-user@example.com
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG c.U.B.S.CustomUserDetailsService - User not found by email, trying registration number: wrong-user@example.com
+2026-09-21 16:14:20 [http-nio-8080-exec-8] ERROR c.U.B.S.CustomUserDetailsService - ❌ User not found with identifier: wrong-user@example.com
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Failed to find user 'wrong-user@example.com'
+2026-09-21 16:14:20 [http-nio-8080-exec-8] DEBUG o.s.s.authentication.ProviderManager - Authentication failed with provider DaoAuthenticationProvider since Bad credentials
+2026-09-21 16:14:20 [http-nio-8080-exec-8] WARN  o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - Resolved [org.springframework.security.authentication.BadCredentialsException: Invalid email/registration number or password]

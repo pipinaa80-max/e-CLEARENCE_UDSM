@@ -24,7 +24,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         // Unauthorized
         if (isLoginRequest) {
           errorTitle = 'Authentication Failed';
-          errorMessage = getServerMessage(error) || 'Invalid email/registration number or password.';
+          errorMessage = 'Incorrect username or password.';
         } else {
           errorTitle = 'Session Expired';
           errorMessage = 'Your session has expired. Please login again.';
@@ -43,7 +43,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         // Bad Request or Conflict
         if (isLoginRequest) {
           errorTitle = 'Authentication Failed';
-          errorMessage = 'Invalid email/registration number or password.';
+          errorMessage = 'Incorrect username or password.';
         } else {
           errorTitle = 'Request Failed';
           errorMessage = getServerMessage(error) || 'The request could not be processed.';
