@@ -105,6 +105,7 @@ export class AuthService {
       id: response.user_id || response.id,
       fullName: response.full_name || response.fullName,
       registrationNumber: response.registration_number || response.registrationNumber,
+      award: response.award || 'Bachelor Degree',
       college: response.college || response.faculty,
       programme: response.programme,
       department: response.department,

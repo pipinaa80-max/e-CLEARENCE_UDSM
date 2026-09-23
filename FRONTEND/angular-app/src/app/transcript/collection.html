@@ -1,12 +1,84 @@
-<section class="collection-page">
-  <header class="collection-header">
-    <div>
-      <span class="step-label">Clearance Step 3</span>
-      <h1>Transcript</h1>
-      <p>Complete the transcript request and payment process.</p>
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
+
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
     </div>
-    <a routerLink="/transcript/process" class="secondary-button">Back to Process</a>
-  </header>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
+
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
+    <app-dashboard-header
+      eyebrow="Clearance Step 3"
+      title="Transcript Collection"
+      subtitle="Choose how you would like to receive your transcript."
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <a routerLink="/transcript/process" class="back-link" style="
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 42px;
+          padding: 0 15px;
+          border: 1px solid #b8ccd5;
+          border-radius: 7px;
+          background: rgba(255, 255, 255, .78);
+          color: #003b5c;
+          font-size: 13px;
+          font-weight: 800;
+          text-decoration: none;
+          box-shadow: 0 4px 12px rgba(0, 59, 92, .08);
+        ">Back to Process</a>
+      </div>
+    </app-dashboard-header>
 
   <main class="collection-card" *ngIf="request">
     <div class="step-intro">
@@ -29,11 +101,12 @@
         <textarea formControlName="postingAddress" rows="4" placeholder="Explain where the transcript should be posted"></textarea>
       </label>
 
-      <p class="message" *ngIf="message">{{ message }}</p>
       <div class="step-navigation">
         <a routerLink="/transcript/process" class="secondary-button">Back</a>
         <button type="submit" class="primary-button">Save Collection Preference</button>
       </div>
     </form>
+  </main>
+
   </main>
 </section>

@@ -9,8 +9,15 @@
 
 .office-page {
   display: flex;
+  align-items: stretch;
   flex: 1;
   min-height: 100vh;
+}
+
+.sidebar {
+  height: auto;
+  min-height: 100vh;
+  flex-shrink: 0;
 }
 
 /* TOOLBAR */
@@ -66,4 +73,20 @@
   .toolbar select {
     width: 100%;
   }
+}
+
+.pagination {
+  width: 100%;
+  max-width: 1050px;
+  margin: 35px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-sizing: border-box;
 }

@@ -1,4 +1,4 @@
-<section class="office-page">
+<section class="office-page" [class.sidebar-open]="sidebarOpen">
   <aside class="sidebar">
     <div class="brand">
       <a routerLink="/">
@@ -11,7 +11,12 @@
     </div>
 
     <nav>
-      <a routerLink="/smart-card">Pending Requests</a>
+      <a
+        routerLink="/smart-card"
+        routerLinkActive="active"
+      >
+        Pending Requests
+      </a>
 
       <button type="button" (click)="logout()">
         Log out
@@ -42,11 +47,12 @@
         <input
           type="text"
           [(ngModel)]="searchTerm"
+          (ngModelChange)="onFilterChange()"
           placeholder="Search student, registration number or programme..."
         />
       </div>
 
-      <select [(ngModel)]="filterStatus">
+      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
         <option value="all">All Requests</option>
         <option value="pending">Pending</option>
         <option value="approved">Approved</option>
@@ -56,12 +62,12 @@
 
     <section class="empty-state" *ngIf="!filteredRequests.length">
       <div class="empty-icon">✓</div>
-      <h2>{{ searchTerm ? 'No matching requests' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
+      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Smart Card.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Smart Card.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
     </section>
 
     <section class="request-list" *ngIf="filteredRequests.length">
-      <article class="request-card" *ngFor="let request of filteredRequests">
+      <article class="request-card" *ngFor="let request of paginatedRequests">
 
         <!-- REQUEST HEADER -->
         <div class="request-header">
@@ -114,7 +120,7 @@
         <!-- ACTIONS -->
         <div class="request-footer">
           <span class="review-note">Review this clearance request.</span>
-          <div class="actions">
+          <div class="actions" *ngIf="getRequestOfficeStatus(request, 'Smart Card') === 'Pending'">
             <button
               type="button"
               class="reject-button"
@@ -134,6 +140,18 @@
         </div>
       </article>
     </section>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+        &larr; Previous
+      </button>
+      <span class="page-info">
+        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+      </span>
+      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+        Next &rarr;
+      </button>
+    </div>
 
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest">

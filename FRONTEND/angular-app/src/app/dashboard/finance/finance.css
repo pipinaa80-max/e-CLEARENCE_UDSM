@@ -7,6 +7,7 @@
 
 .office-page {
   display: flex;
+  align-items: stretch;
   flex: 1;
   min-height: 100vh;
   animation: fadeIn 0.5s ease-out;
@@ -19,9 +20,10 @@
 .sidebar {
   width: 270px;
   flex: 0 0 270px;
-  height: 100vh;
-  position: sticky !important;
-  top: 0;
+  height: auto;
+  min-height: 100vh;
+  flex-shrink: 0;
+  position: relative;
   z-index: 1000;
   padding: 26px 18px;
   box-sizing: border-box;
@@ -239,6 +241,59 @@
   border-radius: 12px; background: #ffffff; text-align: center;
 }
 .empty-icon { width: 44px; height: 44px; display: grid; place-items: center; margin: 0 auto 15px; border-radius: 50%; background: #eef8f0; color: #218739; font-weight: 900; }
+
+/* PAGINATION */
+.pagination {
+  width: 100%;
+  max-width: 1050px;
+  margin: 35px auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-sizing: border-box;
+}
+
+.page-btn {
+  min-height: 42px;
+  padding: 0 20px;
+  border: 1px solid #ccd8de;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #003b5c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #00679b;
+  color: #00679b;
+  background: #f8fafc;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+}
+
+.page-info {
+  color: #24323a;
+  font-size: 14px;
+}
+
+.page-info strong {
+  color: #003b5c;
+}
 
 /* REJECTION MODAL */
 .reject-modal {

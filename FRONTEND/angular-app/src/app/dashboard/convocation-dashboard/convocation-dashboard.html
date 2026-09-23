@@ -15,7 +15,10 @@
     </div>
 
     <nav>
-      <a routerLink="/convocation/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+      <a
+        routerLink="/convocation/dashboard"
+        routerLinkActive="active"
+      >
         Dashboard
       </a>
       <a routerLink="/convocation/requests" routerLinkActive="active" (click)="closeSidebar()">
@@ -118,12 +121,12 @@
 
       <div *ngIf="!isLoading && requests.length === 0" class="empty-state">
         <div class="empty-icon">✓</div>
-        <h3>No pending requests</h3>
-        <p>All students have been issued control numbers or there are no new requests.</p>
+        <h2>{{ filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+        <p>{{ filterStatus === 'approved' ? 'There are currently no approved student applications for Convocation.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Convocation.' : 'There are currently no student applications awaiting Convocation approval.' }}</p>
       </div>
 
       <div *ngIf="!isLoading && requests.length > 0" class="request-list">
-        <div class="request-card" *ngFor="let request of requests">
+        <div class="request-card" *ngFor="let request of paginatedRequests">
 
           <div class="student-header">
             <div class="student-avatar">
@@ -185,7 +188,7 @@
             </div>
           </div>
 
-          <div class="action-buttons">
+          <div class="action-buttons" *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending'">
             <!-- STEP 1: ISSUE CONTROL NUMBER -->
             <button
               *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber"
@@ -222,6 +225,18 @@
           </div>
 
         </div>
+      </div>
+
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+          &larr; Previous
+        </button>
+        <span class="page-info">
+          Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+        </span>
+        <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+          Next &rarr;
+        </button>
       </div>
     </section>
   </main>

@@ -21,14 +21,17 @@ export class TranscriptPaymentService {
   createRequest(data: Omit<TranscriptPaymentRequest, 'id' | 'amount' | 'currency' | 'attemptNumber' | 'status' | 'requestedAt' | 'controlNumberRequestedAt'>): TranscriptPaymentRequest {
     const requests = this.getAllRequests();
     const studentRequests = requests.filter(request => request.studentId === data.studentId);
-    const transcriptCount = Math.max(1, Math.floor(data.transcriptCount));
+
+    // First request is always 1 copy at 15,000.
+    // Subsequent requests are 5,000 per copy.
+    const isFirstRequest = studentRequests.length === 0;
+    const transcriptCount = isFirstRequest ? 1 : Math.max(1, Math.floor(data.transcriptCount));
+
     const request: TranscriptPaymentRequest = {
       ...data,
       id: crypto.randomUUID(),
       transcriptCount,
-      amount: studentRequests.length === 0
-        ? 15000 + (transcriptCount - 1) * 5000
-        : transcriptCount * 5000,
+      amount: isFirstRequest ? 15000 : transcriptCount * 5000,
       currency: 'TZS',
       attemptNumber: studentRequests.length + 1,
       status: 'Pending Control Number',
@@ -57,7 +60,7 @@ export class TranscriptPaymentService {
   submitReceipt(requestId: string, fileName: string, receiptData: string): boolean {
     const all = this.getAllRequests();
     const request = all.find(item => item.id === requestId);
-    if (!request || request.status !== 'Awaiting Payment' || !request.controlNumber) {
+    if (!request) {
       return false;
     }
 

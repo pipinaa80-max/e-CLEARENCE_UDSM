@@ -47,10 +47,8 @@ body {
   -moz-osx-font-smoothing: auto;
 
   /* Fixed background applied globally to prevent cut-off issues */
-  background-image: var(--app-bg-url, url('/background_image.png'));
+  background: var(--app-bg-url, url('/background.png')) no-repeat center center fixed;
   background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
 }
 
 body::after {
@@ -63,7 +61,8 @@ body::after {
 }
 
 /* Ensure all text is at least a readable size unless explicitly tiny */
-p, span, div, a, button, input, select, td, th, label, strong, small {
+/* Sidebar links and brand are handled specifically below */
+p, span, div, a:not(.sidebar nav a), button, input, select, td, th, label, strong, small {
   font-size: 1rem; /* Default to 16px */
   color: var(--text-dark); /* High contrast */
 }
@@ -233,8 +232,148 @@ textarea:focus-visible {
   }
 }
 
-/* One consistent, easy-to-find session action on every dashboard sidebar. */
-.sidebar { display: flex; flex-direction: column; }
-.sidebar nav { flex: 1; display: flex; flex-direction: column; }
-.sidebar .logout-link { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin-top: auto; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--udsm-gold) 70%, #ffffff); border-radius: var(--radius-control); background: transparent; color: #ffffff; font: inherit; font-weight: 800; text-align: center; text-decoration: none; cursor: pointer; transition: background .2s ease, color .2s ease, transform .2s ease; }
-.sidebar .logout-link:hover { background: var(--udsm-gold); color: var(--udsm-blue-dark); transform: translateY(-1px); }
+/* =========================================
+   STANDARD SIDEBAR STYLES (Used across all dashboards)
+========================================= */
+
+.sidebar {
+  width: 270px;
+  flex: 0 0 270px;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 18px;
+  background: var(--sidebar-bg, var(--udsm-blue-dark)) !important;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
+}
+
+/* Ensure no gap between sidebar and footer in all conditions */
+.dashboard-shell {
+  align-items: stretch;
+}
+.sidebar {
+  height: auto;
+}
+
+.sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 25px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 5px;
+}
+
+/* Ensure branding text stacks vertically */
+.sidebar .brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar .brand img {
+  width: 45px !important;
+  height: 45px !important;
+  object-fit: contain !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  padding: 4px !important;
+  border: 2px solid var(--udsm-gold) !important;
+  flex-shrink: 0 !important;
+}
+
+.sidebar .brand strong {
+  display: block;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.sidebar .brand small {
+  display: block;
+  margin-top: 2px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 25px;
+  flex: 1;
+}
+
+.sidebar nav a {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px !important;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-family: inherit;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  transform: translateX(5px);
+}
+
+.sidebar .logout-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin-top: auto;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: #ffffff !important;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.sidebar .logout-link:hover {
+  background: var(--udsm-gold);
+  color: var(--udsm-blue-dark) !important;
+  border-color: var(--udsm-gold);
+}
+
+/* Hide sidebar by shrinking it when not open (Desktop only) */
+@media (min-width: 769px) {
+  .dashboard-shell:not(.sidebar-open) .sidebar {
+    width: 0 !important;
+    flex: 0 0 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+}

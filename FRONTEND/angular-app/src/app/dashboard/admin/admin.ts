@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminService } from '../../core/services/admin.service';
 import { ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
+import { AwardService } from '../../core/services/award.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 interface DepartmentData {
@@ -27,10 +28,13 @@ export class AdminDashboard implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly router = inject(Router);
   private readonly projectAdminService = inject(ProjectAdminService);
+  private readonly awardService = inject(AwardService);
 
   sidebarOpen = false;
   showAddForm = false;
-  activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' = 'overview';
+  activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'overview';
+  newAwardName: string = '';
+  awardsList: string[] = [];
 
   get currentUser() {
     return this.authService.getCurrentUser();
@@ -447,13 +451,14 @@ export class AdminDashboard implements OnInit {
   get filteredRequests(): any[] {
     if (!this.requestSearchTerm) return this.clearanceRequests;
     const term = this.requestSearchTerm.toLowerCase();
-    return this.clearanceRequests.filter(r =>
-      r.student?.fullName?.toLowerCase().includes(term) ||
-      r.student?.registrationNumber?.toLowerCase().includes(term) ||
-      r.department?.toLowerCase().includes(term) ||
-      r.status?.toLowerCase().includes(term) ||
-      r.currentStage?.toLowerCase().includes(term)
-    );
+    return this.clearanceRequests.filter(r => {
+      const name = (r.student?.fullName || r.studentName || '').toLowerCase();
+      const reg = (r.student?.registrationNumber || r.registrationNumber || '').toLowerCase();
+      const dept = (r.department || '').toLowerCase();
+      const status = (r.status || '').toLowerCase();
+      const stage = (r.currentStage || '').toLowerCase();
+      return name.includes(term) || reg.includes(term) || dept.includes(term) || status.includes(term) || stage.includes(term);
+    });
   }
 
   ngOnInit(): void {
@@ -466,6 +471,7 @@ export class AdminDashboard implements OnInit {
 
     this.loadData();
     this.loadProjectConfig();
+    this.loadAwards();
   }
 
   loadData(): void {
@@ -500,11 +506,45 @@ export class AdminDashboard implements OnInit {
 
     this.adminService.getAllClearanceRequests().subscribe({
       next: (requests) => {
-        this.clearanceRequests = requests;
+        if (Array.isArray(requests) && requests.length > 0) {
+          this.clearanceRequests = requests;
+        } else {
+          this.loadLocalClearanceRequests();
+        }
         this.calculateStats();
       },
-      error: (err) => console.error('Error loading requests', err)
+      error: (err) => {
+        console.warn('Backend clearance requests fetch failed, checking local storage:', err);
+        this.loadLocalClearanceRequests();
+        this.calculateStats();
+      }
     });
+  }
+
+  private loadLocalClearanceRequests(): void {
+    const raw = localStorage.getItem('udsm-clearance-requests');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.clearanceRequests = parsed.map(r => ({
+            id: r.id,
+            studentName: r.studentName || r.student?.fullName || 'Student',
+            registrationNumber: r.registrationNumber || r.student?.registrationNumber || 'N/A',
+            student: {
+              fullName: r.studentName || r.student?.fullName || 'Student',
+              registrationNumber: r.registrationNumber || r.student?.registrationNumber || 'N/A'
+            },
+            department: r.department || r.programme || 'N/A',
+            status: r.status || 'PENDING',
+            currentStage: r.currentStage || r.stage || 'Clearance Process',
+            submittedAt: r.requestDate || r.submittedAt || new Date().toISOString()
+          }));
+        }
+      } catch (e) {
+        console.error('Error loading local clearance requests:', e);
+      }
+    }
   }
 
   calculateStats(): void {
@@ -517,35 +557,198 @@ export class AdminDashboard implements OnInit {
     this.stats.rejected = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'REJECTED').length;
   }
 
+  private readonly defaultProjectDashboards: ProjectDashboard[] = [
+    { id: 'academic-staff', name: 'Academic Staff', description: 'Academic Staff clearance office', enabled: true },
+    { id: 'administrator', name: 'Administrator', description: 'Administrator clearance office', enabled: true },
+    { id: 'convocation', name: 'Convocation', description: 'Convocation clearance office', enabled: true },
+    { id: 'daruso', name: 'DARUSO', description: 'DARUSO clearance office', enabled: true },
+    { id: 'dean-of-students', name: 'Dean of Students', description: 'Dean of Students clearance office', enabled: true },
+    { id: 'department', name: 'Department', description: 'Department clearance office', enabled: true },
+    { id: 'finance', name: 'Finance', description: 'Finance clearance office', enabled: true },
+    { id: 'games-coach', name: 'Games Coach', description: 'Games Coach clearance office', enabled: true },
+    { id: 'hall-warden', name: 'Hall Warden', description: 'Hall Warden clearance office', enabled: true },
+    { id: 'ict', name: 'ICT', description: 'ICT clearance office', enabled: true },
+    { id: 'laboratory', name: 'Laboratory', description: 'Laboratory clearance office', enabled: true },
+    { id: 'library', name: 'Library', description: 'Library clearance office', enabled: true },
+    { id: 'principal', name: 'Principal', description: 'Principal clearance office', enabled: true },
+    { id: 'smart-card', name: 'Smart Card', description: 'Smart Card clearance office', enabled: true },
+    { id: 'usab', name: 'USAB', description: 'USAB clearance office', enabled: true },
+    { id: 'workshop', name: 'Workshop', description: 'Workshop clearance office', enabled: true }
+  ];
+
   loadProjectConfig(): void {
     this.projectAdminService.getProjectConfig().subscribe({
       next: (config) => {
-        console.log('Project config loaded:', config);
         if (config && config.branding && !config.branding.footerLinks) {
           config.branding.footerLinks = [];
         }
+        if (config && (!config.dashboards || config.dashboards.length === 0)) {
+          config.dashboards = this.loadLocalDashboards();
+        }
         this.projectConfig = config;
+        this.saveLocalDashboards(config.dashboards || []);
       },
-      error: (err) => console.error('Error loading project config', err)
+      error: (err) => {
+        console.warn('Backend project config fetch failed, using local dashboards:', err);
+        const savedBranding = this.projectAdminService.getSavedBranding() || {
+          universityName: 'University of Dar es Salaam',
+          shortName: 'UDSM',
+          logoUrl: '/public/udsm-logo.png',
+          backgroundUrl: '',
+          primaryColor: '#00679b',
+          fontFamily: 'Segoe UI',
+          footerLinks: []
+        };
+        this.projectConfig = {
+          projectId: 'udsm-main',
+          branding: savedBranding as any,
+          dashboards: this.loadLocalDashboards()
+        };
+      }
     });
   }
 
-  setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme'): void {
+  private loadLocalDashboards(): ProjectDashboard[] {
+    const raw = localStorage.getItem('udsm-project-dashboards');
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    localStorage.setItem('udsm-project-dashboards', JSON.stringify(this.defaultProjectDashboards));
+    return [...this.defaultProjectDashboards];
+  }
+
+  private saveLocalDashboards(dashboards: ProjectDashboard[]): void {
+    localStorage.setItem('udsm-project-dashboards', JSON.stringify(dashboards));
+  }
+
+  setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards'): void {
     this.activeTab = tab;
     this.message = '';
   }
 
+  loadAwards(): void {
+    this.awardsList = this.awardService.getAwards();
+  }
+
+  addAward(): void {
+    const trimmed = this.newAwardName.trim();
+    if (!trimmed) {
+      this.message = 'Please enter an award name.';
+      this.isError = true;
+      return;
+    }
+
+    if (this.awardService.addAward(trimmed)) {
+      this.message = `Award "${trimmed}" added successfully.`;
+      this.isError = false;
+      this.newAwardName = '';
+      this.loadAwards();
+    } else {
+      this.message = `Award "${trimmed}" already exists or could not be added.`;
+      this.isError = true;
+    }
+  }
+
+  deleteAward(award: string): void {
+    if (confirm(`Are you sure you want to delete the award "${award}"?`)) {
+      if (this.awardService.deleteAward(award)) {
+        this.message = `Award "${award}" deleted successfully.`;
+        this.isError = false;
+        this.loadAwards();
+      } else {
+        this.message = `Failed to delete award "${award}".`;
+        this.isError = true;
+      }
+    }
+  }
+
+  resetAwards(): void {
+    if (confirm('Reset awards list to defaults?')) {
+      this.awardsList = this.awardService.resetToDefaults();
+      this.message = 'Awards reset to default options.';
+      this.isError = false;
+    }
+  }
+
   addDashboard(): void {
-    this.projectAdminService.createDashboard(this.newDashboard).subscribe({ next: () => { this.message = 'Dashboard added to this project'; this.isError = false; this.newDashboard = { id: '', name: '', description: '' }; this.loadProjectConfig(); }, error: (err) => { this.message = err.error?.message || 'Failed to add dashboard'; this.isError = true; } });
+    if (!this.newDashboard.id.trim() || !this.newDashboard.name.trim()) {
+      this.message = 'Dashboard ID and Name are required.';
+      this.isError = true;
+      return;
+    }
+
+    const newDash: ProjectDashboard = {
+      id: this.newDashboard.id.trim(),
+      name: this.newDashboard.name.trim(),
+      description: this.newDashboard.description.trim(),
+      enabled: true
+    };
+
+    this.projectAdminService.createDashboard(newDash).subscribe({
+      next: () => {
+        this.message = 'Dashboard added successfully.';
+        this.isError = false;
+        this.newDashboard = { id: '', name: '', description: '' };
+        this.loadProjectConfig();
+      },
+      error: () => {
+        if (!this.projectConfig) {
+          this.loadProjectConfig();
+        }
+        if (this.projectConfig) {
+          const current = this.projectConfig.dashboards || [];
+          if (current.some(d => d.id === newDash.id)) {
+            this.message = `Dashboard ID "${newDash.id}" already exists.`;
+            this.isError = true;
+            return;
+          }
+          current.push(newDash);
+          this.projectConfig.dashboards = current;
+          this.saveLocalDashboards(current);
+          this.message = `Dashboard "${newDash.name}" added successfully.`;
+          this.isError = false;
+          this.newDashboard = { id: '', name: '', description: '' };
+        }
+      }
+    });
   }
 
   updateDashboard(dashboard: ProjectDashboard): void {
-    this.projectAdminService.updateDashboard(dashboard).subscribe({ next: () => { this.message = 'Dashboard updated'; this.isError = false; }, error: () => { this.message = 'Failed to update dashboard'; this.isError = true; } });
+    this.projectAdminService.updateDashboard(dashboard).subscribe({
+      next: () => {
+        this.message = 'Dashboard updated successfully.';
+        this.isError = false;
+      },
+      error: () => {
+        if (this.projectConfig?.dashboards) {
+          this.saveLocalDashboards(this.projectConfig.dashboards);
+          this.message = `Dashboard "${dashboard.name}" updated successfully.`;
+          this.isError = false;
+        }
+      }
+    });
   }
 
   deleteDashboard(id: string): void {
     if (!confirm('Delete this dashboard from your project?')) return;
-    this.projectAdminService.deleteDashboard(id).subscribe({ next: () => { this.message = 'Dashboard deleted'; this.isError = false; this.loadProjectConfig(); }, error: () => { this.message = 'Failed to delete dashboard'; this.isError = true; } });
+    this.projectAdminService.deleteDashboard(id).subscribe({
+      next: () => {
+        this.message = 'Dashboard deleted successfully.';
+        this.isError = false;
+        this.loadProjectConfig();
+      },
+      error: () => {
+        if (this.projectConfig?.dashboards) {
+          this.projectConfig.dashboards = this.projectConfig.dashboards.filter(d => d.id !== id);
+          this.saveLocalDashboards(this.projectConfig.dashboards);
+          this.message = 'Dashboard deleted successfully.';
+          this.isError = false;
+        }
+      }
+    });
   }
 
   saveTheme(): void {

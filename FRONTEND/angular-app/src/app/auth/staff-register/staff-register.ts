@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
 import { ToastService } from '../../core/services/toast.service';
+import { ProjectAdminService } from '../../core/services/project-admin.service';
 
 type StaffRole = Exclude<UserRole, 'Student'>;
 
@@ -15,11 +16,29 @@ type StaffRole = Exclude<UserRole, 'Student'>;
   templateUrl: './staff-register.html',
   styleUrl: './staff-register.css'
 })
-export class StaffRegister {
+export class StaffRegister implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly toastService = inject(ToastService);
+  private readonly projectAdminService = inject(ProjectAdminService);
   private readonly router = inject(Router);
+
+  branding = {
+    universityName: 'University of Dar es Salaam',
+    shortName: 'UDSM',
+    logoUrl: '/public/udsm-logo.png'
+  };
+
+  ngOnInit(): void {
+    const saved = this.projectAdminService.getSavedBranding();
+    if (saved) {
+      this.branding = {
+        universityName: saved.universityName || this.branding.universityName,
+        shortName: saved.shortName || this.branding.shortName,
+        logoUrl: saved.logoUrl || this.branding.logoUrl
+      };
+    }
+  }
 
   readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'ICT', 'Laboratory', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
   readonly laboratoryDepartments = ['Anatomy laboratory', 'Pathology laboratory', 'Biochemistry', 'Microbiology & Immunology', 'Physiology', 'Parasitology & Entomology', 'Pharmacology'];

@@ -87,121 +87,76 @@
   }
 }
 
-
-/* =========================================
-   SIDEBAR BRAND
-========================================= */
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  padding: 4px 8px 25px;
-
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.brand-logo {
+.sidebar .brand img {
   width: 43px;
   height: 43px;
-
   object-fit: contain;
-
   border-radius: 50%;
   background: #ffffff;
-}
-
-.brand strong {
-  display: block;
-
-  font-size: 1.2rem;
-  font-weight: 800;
-}
-
-.brand small {
-  display: block;
-
-  margin-top: 2px;
-
-  color: rgba(255, 255, 255, 0.68);
-
-  font-size: 0.85rem;
-}
-
-
-/* =========================================
-   SIDEBAR NAVIGATION
-========================================= */
-
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-
-  gap: 5px;
-
-  margin-top: 25px;
-}
-
-.sidebar nav a,
-.logout-link {
-  display: flex;
-  align-items: center;
-
-  width: 100%;
-
-  padding: 12px 13px;
-
-  border: 0;
-  border-radius: 8px;
-
-  background: transparent;
-
-  color: rgba(255, 255, 255, 0.78);
-
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-
-  text-align: left;
-  text-decoration: none;
-
-  cursor: pointer;
-
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar nav a:hover,
-.sidebar nav a.active,
-.logout-link:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  transform: translateX(6px);
 }
 
 .notification-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   min-width: 20px;
   height: 20px;
-
   margin-left: auto;
-
   border-radius: 999px;
-
   background: #e5b83c;
   color: var(--udsm-blue-dark);
-
   font-size: 0.6rem;
   font-weight: 900;
 }
 
-.logout-link {
-  margin-top: auto;
+/* Header notification entry point: a real icon, not an in-page alert banner. */
+.notification-button {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(5, 63, 112, 0.72);
+  color: #ffffff;
+  text-decoration: none;
+  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
 
-  border: 1px solid rgba(255, 255, 255, 0.35);
+.notification-button:hover {
+  background: var(--udsm-blue);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.notification-button svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--udsm-gold);
+  color: var(--udsm-blue-dark);
+  font-size: 10px !important;
+  font-weight: 900;
+  line-height: 1;
 }
 
 
@@ -337,6 +292,17 @@
   line-height: 1.4;
 }
 
+.award-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
 
 /* =========================================
    CLEARANCE OVERVIEW
@@ -438,6 +404,23 @@
 .status-badge.rejected {
   background: #fdeaea;
   color: #c53939;
+}
+
+/* Transcript Statuses */
+.status-badge.pending-control-number,
+.status-badge.awaiting-payment {
+  background: #fff5d6;
+  color: #947000;
+}
+
+.status-badge.receipt-submitted {
+  background: #e7f1fa;
+  color: #0b5b94;
+}
+
+.status-badge.paid {
+  background: #e6f5eb;
+  color: #21834a;
 }
 
 .status-description {

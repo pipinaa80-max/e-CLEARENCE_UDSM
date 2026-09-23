@@ -35,8 +35,11 @@
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
-      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications
@@ -58,30 +61,26 @@
   <main class="content-panel">
 
     <app-dashboard-header
-      eyebrow="Student Dashboard"
+      [eyebrow]="dashboardEyebrow"
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
-      subtitle="Manage your student information and clearance process."
+      [subtitle]="dashboardSubtitle"
       [user]="null"
       [showToggle]="!sidebarOpen"
       (toggleSidebar)="toggleSidebar()"
     >
+      <a
+        header-actions
+        class="notification-button"
+        routerLink="/notifications"
+        title="View notifications"
+        aria-label="View notifications"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+        </svg>
+        <span class="header-notification-badge" *ngIf="unreadNotifications">{{ unreadNotifications }}</span>
+      </a>
     </app-dashboard-header>
-
-    <!-- =========================
-         NOTIFICATIONS BANNER
-    ========================== -->
-    <div class="notifications-banner" *ngIf="latestNotifications.length > 0">
-      <div class="notification-item" *ngFor="let notification of latestNotifications" [ngClass]="notification.type">
-        <div class="notification-content">
-          <span class="notification-icon">🔔</span>
-          <div class="notification-text">
-            <strong>{{ notification.title }}</strong>
-            <p>{{ notification.message }}</p>
-          </div>
-        </div>
-        <button class="close-notification" (click)="markAsRead(notification.id)">×</button>
-      </div>
-    </div>
 
     <!-- =========================
          STUDENT PROFILE SUMMARY
@@ -118,6 +117,10 @@
             <span>Registration Number</span>
             <strong>{{ currentUser.registrationNumber || 'Not available' }}</strong>
           </div>
+          <div>
+            <span>Academic Award</span>
+            <strong class="award-badge">{{ studentAward }}</strong>
+          </div>
           <div *ngIf="programme">
             <span>Programme</span>
             <strong>{{ programme }}</strong>
@@ -139,60 +142,103 @@
       <!-- STATUS CARD -->
       <article class="clearance-status-card">
         <div class="card-heading">
-          <div>
+          <div *ngIf="clearanceStatus !== 'Completed'">
             <span class="section-label">Clearance</span>
             <h2>Clearance Status</h2>
           </div>
-          <span class="status-badge" [ngClass]="clearanceStatus.toLowerCase().replace(' ', '-')">
-            {{ clearanceStatus }}
+          <div *ngIf="clearanceStatus === 'Completed'">
+            <span class="section-label">Transcript</span>
+            <h2>Transcript Status</h2>
+          </div>
+          <span class="status-badge" [ngClass]="(clearanceStatus === 'Completed' ? transcriptStatus : clearanceStatus).toLowerCase().replace(' ', '-')">
+            {{ clearanceStatus === 'Completed' ? transcriptStatus : clearanceStatus }}
           </span>
         </div>
 
-        <div *ngIf="!currentRequest">
-          <p class="status-description">
-            Your clearance request has not been completed.
-            Complete your clearance request to begin the
-            clearance process.
-          </p>
-          <a routerLink="/clearance/request" class="primary-button">
-            Request Clearance
-          </a>
+        <!-- Clearance Not Completed Flow -->
+        <div *ngIf="clearanceStatus !== 'Completed'">
+          <div *ngIf="!currentRequest">
+            <p class="status-description">
+              Your clearance request has not been completed.
+              Complete your clearance request to begin the
+              clearance process.
+            </p>
+            <a routerLink="/clearance/request" class="primary-button">
+              Request Clearance
+            </a>
+          </div>
+
+          <div *ngIf="currentRequest">
+            <p class="status-description">
+              Your clearance request has been submitted.
+              Track the progress of your clearance through
+              the responsible offices.
+            </p>
+            <a routerLink="/clearance/status" class="secondary-button">
+              View Clearance Process
+            </a>
+          </div>
         </div>
 
-        <div *ngIf="currentRequest">
-          <p class="status-description">
-            Your clearance request has been submitted.
-            Track the progress of your clearance through
-            the responsible offices.
-          </p>
-          <a routerLink="/clearance/status" class="secondary-button">
-            View Clearance Process
-          </a>
+        <!-- Clearance Completed Flow (Show Transcript) -->
+        <div *ngIf="clearanceStatus === 'Completed'">
+          <div *ngIf="!currentTranscriptRequest">
+            <p class="status-description">
+              Congratulations! Your clearance is complete.
+              You can now proceed to request your official
+              academic transcript.
+            </p>
+            <a routerLink="/transcript" class="primary-button">
+              Start Transcript Request
+            </a>
+          </div>
+
+          <div *ngIf="currentTranscriptRequest">
+            <p class="status-description">
+              Your transcript request is being processed.
+              Make sure your payment is verified to complete
+               the process.
+            </p>
+            <a routerLink="/transcript" class="secondary-button">
+              Manage Transcript
+            </a>
+          </div>
         </div>
       </article>
 
       <!-- PROGRESS CARD -->
       <article class="clearance-progress-card">
         <div class="card-heading">
-          <div>
+          <div *ngIf="clearanceStatus !== 'Completed'">
             <span class="section-label">Progress</span>
             <h2>Clearance Progress</h2>
           </div>
+          <div *ngIf="clearanceStatus === 'Completed'">
+            <span class="section-label">Progress</span>
+            <h2>Transcript Progress</h2>
+          </div>
           <strong class="progress-percentage">
-            {{ completedOffices }}/{{ offices.length || 0 }}
+            {{ clearanceStatus === 'Completed' ? transcriptProgressSteps + '/4' : completedOffices + '/' + (offices.length || 0) }}
           </strong>
         </div>
 
         <div class="progress-track">
-          <div class="progress-fill" [style.width.%]="offices.length ? (completedOffices / offices.length) * 100 : 0"></div>
+          <div class="progress-fill" [style.width.%]="clearanceStatus === 'Completed' ? transcriptProgressPercent : (offices.length ? (completedOffices / offices.length) * 100 : 0)"></div>
         </div>
 
         <div class="progress-footer">
-          <span>{{ completedOffices }} approved</span>
-          <span>{{ pendingOffices }} pending</span>
-          <span *ngIf="rejectedOffices" class="rejected-text">
-            {{ rejectedOffices }} rejected
-          </span>
+          <ng-container *ngIf="clearanceStatus !== 'Completed'">
+            <span>{{ completedOffices }} approved</span>
+            <span>{{ pendingOffices }} pending</span>
+            <span *ngIf="rejectedOffices" class="rejected-text">
+              {{ rejectedOffices }} rejected
+            </span>
+          </ng-container>
+          <ng-container *ngIf="clearanceStatus === 'Completed'">
+            <span>Step {{ transcriptProgressSteps }} of 4</span>
+            <span *ngIf="transcriptStatus === 'Paid'">✓ Fully Processed</span>
+            <span *ngIf="transcriptStatus !== 'Paid'">Awaiting Verification</span>
+          </ng-container>
         </div>
       </article>
 
@@ -203,18 +249,31 @@
     ========================== -->
 
     <section class="process-preview">
+      <!-- HEADER: Dynamic based on Clearance Status -->
       <div class="process-heading">
-        <div>
+        <div *ngIf="clearanceStatus !== 'Completed'">
           <span class="section-label">Clearance Process</span>
           <h2>Track Your Clearance</h2>
           <p>Follow your clearance as it moves through each responsible office.</p>
         </div>
-        <a *ngIf="currentRequest" routerLink="/clearance/status" class="view-process">
+
+        <div *ngIf="clearanceStatus === 'Completed'">
+          <span class="section-label">Transcript Process</span>
+          <h2>Track Your Transcript</h2>
+          <p *ngIf="!currentTranscriptRequest">You have completed your clearance! Start your transcript request to track it here.</p>
+          <p *ngIf="currentTranscriptRequest">Follow your transcript request as it moves through the payment and verification steps.</p>
+        </div>
+
+        <a *ngIf="currentRequest && clearanceStatus !== 'Completed'" routerLink="/clearance/status" class="view-process">
           View Full Process
+        </a>
+        <a *ngIf="currentTranscriptRequest && clearanceStatus === 'Completed'" routerLink="/transcript" class="view-process">
+          View Transcript Details
         </a>
       </div>
 
-      <div class="office-grid" *ngIf="currentRequest">
+      <!-- GRID 1: Clearance Offices (Only show if NOT completed) -->
+      <div class="office-grid" *ngIf="clearanceStatus !== 'Completed' && currentRequest">
         <article class="office-card" *ngFor="let office of offices">
           <div class="office-card-top">
             <div class="office-icon">{{ office.name.charAt(0) }}</div>
@@ -227,8 +286,22 @@
         </article>
       </div>
 
-      <!-- NO REQUEST -->
-      <div class="process-empty" *ngIf="!currentRequest">
+      <!-- GRID 2: Transcript Steps (Only show if Clearance IS completed AND Transcript started) -->
+      <div class="office-grid" *ngIf="clearanceStatus === 'Completed' && currentTranscriptRequest">
+        <article class="office-card" *ngFor="let step of transcriptSteps">
+          <div class="office-card-top">
+            <div class="office-icon">{{ step.name.charAt(0) }}</div>
+            <span class="office-status" [ngClass]="step.status.toLowerCase()">
+              {{ step.status }}
+            </span>
+          </div>
+          <h3>{{ step.name }}</h3>
+          <p>{{ step.note }}</p>
+        </article>
+      </div>
+
+      <!-- EMPTY STATE: Clearance not started -->
+      <div class="process-empty" *ngIf="clearanceStatus !== 'Completed' && !currentRequest">
         <div class="empty-icon">01</div>
         <div>
           <h3>Your clearance process has not started</h3>
@@ -240,6 +313,21 @@
         </div>
         <a routerLink="/clearance/request" class="primary-button">
           Complete Clearance Request
+        </a>
+      </div>
+
+      <!-- EMPTY STATE: Transcript not started (Clearance is done) -->
+      <div class="process-empty" *ngIf="clearanceStatus === 'Completed' && !currentTranscriptRequest">
+        <div class="empty-icon">✓</div>
+        <div>
+          <h3>Your transcript process has not started</h3>
+          <p>
+            Congratulations on completing your clearance!
+            You can now request your official academic transcript.
+          </p>
+        </div>
+        <a routerLink="/transcript" class="primary-button">
+          Start Transcript Request
         </a>
       </div>
 

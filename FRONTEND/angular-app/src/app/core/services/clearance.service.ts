@@ -295,47 +295,23 @@ export class ClearanceService {
     return this.getAllRequests().filter(request => {
       const approval = request.approvals.find(item => item.office === office);
 
-      /*
-       * Only pending requests.
-       */
-      if (request.status !== 'Pending' &&
-          !(request.status === 'Rejected' && request.revisionOffice === office)) {
-        return false;
-      }
-
-      if (approval?.status !== 'Pending' && approval?.status !== 'Rejected') {
-        return false;
-      }
-
-      /*
-       * Convocation only sees Convocation-stage requests.
-       */
+      // If checking for all requests or custom status from dashboard filter, we can evaluate approval existence
       if (office === 'Convocation') {
-        return request.currentStage === 'Convocation';
+        return request.approvals.some(item => item.office === 'Convocation');
       }
 
-      /*
-       * The seven clearance offices can act independently during Step 2.
-       */
       if (this.getClearanceOffices(request.college).includes(office)) {
-        return request.currentStage === 'Parallel';
+        return true;
       }
 
-      /*
-       * Department is restricted to the student's department.
-       */
       if (office === 'Department') {
         return (
-            request.currentStage === 'Department' &&
             request.college === college &&
             request.department === department
         );
       }
 
-      /*
-       * Principal and Finance.
-       */
-      return request.currentStage === office;
+      return true;
     });
   }
 

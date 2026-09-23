@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AwardService } from '../../core/services/award.service';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -26,18 +27,24 @@ export class Register {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastService);
+  private readonly awardService = inject(AwardService);
 
   registerForm = this.fb.nonNullable.group({
     firstName: ['', Validators.required],
     middleName: [''],
     lastName: ['', Validators.required],
     registrationNumber: ['', Validators.required],
+    award: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', Validators.required],
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', Validators.required],
     acceptTerms: [false, Validators.requiredTrue]
   });
+
+  get awards(): string[] {
+    return this.awardService.getAwards();
+  }
 
   successMessage = '';
   isLoading = false;
@@ -86,6 +93,7 @@ export class Register {
       middleName: value.middleName || '',
       lastName: value.lastName,
       registrationNumber: value.registrationNumber,
+      award: value.award,
       email: value.email,
       phone: value.phone,
       password: value.password,

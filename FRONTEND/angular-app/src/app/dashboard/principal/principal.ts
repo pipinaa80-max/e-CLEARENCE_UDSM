@@ -30,6 +30,36 @@ export class PrincipalComponent implements OnInit {
     message = '';
     searchTerm = '';
     filterStatus = 'all';
+    currentPage = 1;
+    pageSize = 3;
+
+    get paginatedRequests(): ClearanceRequest[] {
+        const start = (this.currentPage - 1) * this.pageSize;
+        return this.filteredRequests.slice(start, start + this.pageSize);
+    }
+
+    get totalPages(): number {
+        return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+    }
+
+    nextPage(): void {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    prevPage(): void {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    onFilterChange(): void {
+        this.currentPage = 1;
+        this.applyFilters();
+    }
 
     pendingRequests: ClearanceRequest[] = [];
     filteredRequests: ClearanceRequest[] = [];
@@ -96,15 +126,19 @@ export class PrincipalComponent implements OnInit {
         ).length;
     }
 
+    getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
+        return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+    }
+
     applyFilters(): void {
         let filtered = [...this.pendingRequests];
 
-        if (this.filterStatus === 'pending') {
-            filtered = filtered.filter(r => r.currentStage === 'Principal' && r.status === 'Pending');
+        if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+            filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Pending');
         } else if (this.filterStatus === 'approved') {
-            filtered = filtered.filter(r => r.currentStage === 'Finance' || r.status === 'Completed');
+            filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Approved');
         } else if (this.filterStatus === 'rejected') {
-            filtered = filtered.filter(r => r.status === 'Rejected');
+            filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Rejected');
         }
 
         if (this.searchTerm.trim()) {

@@ -32,8 +32,11 @@
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
-      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications
@@ -64,7 +67,56 @@
     </app-dashboard-header>
 
     <div class="transcript-wrapper">
-      <main class="transcript-card">
+      <!-- 1. TRANSCRIPT REQUEST HISTORY (When student has completed first transcript) -->
+      <div class="transcript-card history-dashboard" *ngIf="hasCompletedFirstRequest">
+        <div class="dashboard-header">
+          <div>
+            <h2>Request History</h2>
+            <p>View the status of your official transcript applications.</p>
+          </div>
+          <a *ngIf="!hasUnverifiedActiveRequest" routerLink="/transcript/payment" class="primary-button">
+            Request More Copies
+          </a>
+          <button *ngIf="hasUnverifiedActiveRequest" type="button" class="primary-button" (click)="notifyPendingRequest()" style="opacity: 0.7; cursor: not-allowed; background: #64748b; border: none;">
+            Request More Copies
+          </button>
+        </div>
+
+        <div class="history-list">
+          <div
+            class="history-item"
+            *ngFor="let req of allTranscriptRequests"
+            [ngClass]="{
+              'paid': req.status === 'Paid',
+              'awaiting-payment': req.status === 'Awaiting Payment' || req.status === 'Receipt Submitted',
+              'pending-control-number': req.status === 'Pending Control Number'
+            }">
+            <div class="req-info">
+              <div class="req-id">#{{ req.attemptNumber }}</div>
+              <div class="req-details">
+                <strong>{{ req.transcriptCount }} {{ req.transcriptCount === 1 ? 'Copy' : 'Copies' }}</strong>
+                <span>{{ req.requestedAt | date:'medium' }}</span>
+              </div>
+            </div>
+
+            <div class="req-status">
+              <span class="status-badge">{{ req.status }}</span>
+              <a *ngIf="req.status === 'Pending Control Number' || req.status === 'Awaiting Payment'" routerLink="/transcript/payment" class="action-link">
+                Complete Payment &rarr;
+              </a>
+              <div *ngIf="req.status === 'Paid'" style="display: flex; align-items: center; gap: 8px;">
+                <span class="success-note">Completed</span>
+                <button *ngIf="!isPrinted(req.id)" type="button" (click)="printTranscript(req)" style="padding: 6px 12px; background: #00679b; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                  🖨️ Print Transcript
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. TRANSCRIPT APPLICATION FORM (When first transcript is not completed yet) -->
+      <div class="transcript-card" *ngIf="!hasCompletedFirstRequest">
         <section class="transcript-state-header">
           <div class="state-icon">3</div>
           <div>
@@ -83,14 +135,13 @@
           </div>
 
           <div class="fields-grid">
-            <label class="field"><span>Surname</span><input formControlName="surname" type="text" /></label>
-            <label class="field"><span>Other Name(s)</span><input formControlName="otherNames" type="text" /></label>
-            <label class="field"><span>Registration Number</span><input formControlName="registrationNumber" type="text" /></label>
-            <label class="field"><span>Graduation Year</span><select formControlName="graduationYear"><option value="" disabled>Select year</option><option *ngFor="let year of graduationYears" [value]="year">{{ year }}</option></select></label>
-            <label class="field full-width"><span>Award</span><select formControlName="award"><option value="" disabled>Select award</option><option *ngFor="let award of awards" [value]="award">{{ award }}</option></select></label>
-            <label class="field"><span>Phone Number</span><input formControlName="phone" type="tel" /></label>
-            <label class="field"><span>Email Address</span><input formControlName="email" type="email" /></label>
-            <label class="field full-width"><span>Physical Address</span><textarea formControlName="physicalAddress" rows="3" placeholder="Enter your current physical address"></textarea></label>
+            <label class="field"><span>Surname</span><input formControlName="surname" type="text" readonly class="readonly-field" title="Surname cannot be altered" /></label>
+            <label class="field"><span>Other Name(s)</span><input formControlName="otherNames" type="text" readonly class="readonly-field" title="Other names cannot be altered" /></label>
+            <label class="field"><span>Registration Number</span><input formControlName="registrationNumber" type="text" readonly class="readonly-field" title="Registration number cannot be altered" /></label>
+            <label class="field"><span>Graduation Year</span><select formControlName="graduationYear" class="readonly-select"><option value="" disabled>Select year</option><option *ngFor="let year of graduationYears" [value]="year">{{ year }}</option></select></label>
+            <label class="field"><span>Phone Number *</span><input formControlName="phone" type="tel" placeholder="e.g., 0712-345-678" /></label>
+            <label class="field"><span>Email Address</span><input formControlName="email" type="email" readonly class="readonly-field" title="Email address cannot be altered" /></label>
+            <label class="field full-width"><span>Physical Address *</span><textarea formControlName="physicalAddress" rows="3" placeholder="Enter your current physical address"></textarea></label>
           </div>
         </section>
 
@@ -140,7 +191,7 @@
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
 
   </main>

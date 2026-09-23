@@ -38,8 +38,7 @@
 
       <a
         routerLink="/principal/dashboard"
-        class="active"
-        (click)="closeSidebar()"
+        routerLinkActive="active"
       >
         Pending Requests
       </a>
@@ -144,7 +143,7 @@
         <input
           type="text"
           [(ngModel)]="searchTerm"
-          (ngModelChange)="applyFilters()"
+          (ngModelChange)="onFilterChange()"
           placeholder="Search student, registration number or programme..."
         />
 
@@ -153,7 +152,7 @@
 
       <select
         [(ngModel)]="filterStatus"
-        (ngModelChange)="applyFilters()"
+        (ngModelChange)="onFilterChange()"
       >
 
         <option value="all">
@@ -203,12 +202,11 @@
       </div>
 
       <h2>
-        No clearance requests
+        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
       </h2>
 
       <p>
-        There are currently no requests matching
-        your selected filter.
+        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Principal.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Principal.' : 'There are currently no student applications awaiting Principal approval.' }}
       </p>
 
     </section>
@@ -223,7 +221,7 @@
 
       <article
         class="request-card"
-        *ngFor="let request of filteredRequests"
+        *ngFor="let request of paginatedRequests"
       >
 
         <!-- CARD HEADER -->
@@ -382,6 +380,7 @@
 
 
           <button
+            *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'"
             type="button"
             class="review-button"
             (click)="approve(request)"
@@ -394,6 +393,18 @@
       </article>
 
     </section>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+        &larr; Previous
+      </button>
+      <span class="page-info">
+        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+      </span>
+      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+        Next &rarr;
+      </button>
+    </div>
   </main>
 
 </section>

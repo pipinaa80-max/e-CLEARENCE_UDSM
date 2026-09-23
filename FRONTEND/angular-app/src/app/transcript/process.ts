@@ -1,14 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { TranscriptPaymentStatus } from './transcript-payment.model';
+import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-transcript-process',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './process.html',
   styleUrl: './process.css'
 })
@@ -17,14 +18,38 @@ export class TranscriptProcessComponent {
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
   get request() {
     const user = this.authService.getCurrentUser();
-    return user ? this.paymentService.getStudentRequests(user.id).at(-1) ?? null : null;
+    if (!user) return null;
+    // Always track the FIRST request (attemptNumber 1) for the main clearance process
+    return this.paymentService.getStudentRequests(user.id).find(r => r.attemptNumber === 1) ?? null;
   }
 
   get hasApproval(): boolean {
     const user = this.authService.getCurrentUser();
     return !!user && localStorage.getItem(`udsm-transcript-decision-${user.id}`) === 'Approved';
+  }
+
+  get isTranscriptPaid(): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user) return false;
+    const requests = this.paymentService.getStudentRequests(user.id);
+    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
   get paymentStatus(): TranscriptPaymentStatus | 'Not Started' {
@@ -47,6 +72,16 @@ export class TranscriptProcessComponent {
     return !!this.request?.collectionMethod;
   }
 
+  get isFirstRequest(): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user) return false;
+    const requests = this.paymentService.getStudentRequests(user.id);
+    // Clearance process (this component) is always for the first request (attempt 1)
+    return this.request?.attemptNumber === 1 || requests.length <= 1;
+  }
+
+  isFinished = false;
+
   get processSteps() {
     let paymentStepStatus = 'Pending';
     if (this.paymentApproved) {
@@ -55,11 +90,13 @@ export class TranscriptProcessComponent {
       paymentStepStatus = 'Waiting for Approval';
     }
 
+    const feeAmount = '15,000';
+
     return [
       {
         number: 1,
         label: 'Transcript Payment',
-        detail: 'Pay the required TSh 15,000 transcript fee.',
+        detail: `Pay the required TSh ${feeAmount} transcript fee.`,
         status: paymentStepStatus,
         route: '/transcript/payment'
       },
@@ -81,11 +118,30 @@ export class TranscriptProcessComponent {
   }
 
   get currentStageLabel(): string {
-    if (this.collectionMethodSaved) return 'Process Completed';
+    const user = this.authService.getCurrentUser();
+    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+
+    if (isAcquired || this.collectionMethodSaved) return 'Process Completed';
     if (this.documentsSubmitted) return 'Step 3: Transcript Collection';
     if (this.paymentApproved) return 'Step 2: Upload Documentation';
     if (this.paymentStatus === 'Receipt Submitted') return 'Step 1: Waiting for Payment Approval';
     return 'Step 1: Transcript Payment';
+  }
+
+  get isAcquired(): boolean {
+    const user = this.authService.getCurrentUser();
+    return !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+  }
+
+  finishProcess(): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    if (!this.isAcquired) {
+      this.generateTranscript();
+      localStorage.setItem(`udsm-transcript-acquired-${user.id}`, 'true');
+    }
+    this.router.navigate(['/transcript']);
   }
 
   generateTranscript(): void {

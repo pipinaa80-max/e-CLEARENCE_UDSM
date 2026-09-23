@@ -1,14 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
+import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 
 @Component({
   selector: 'app-transcript-collection',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './collection.html',
   styleUrl: './collection.css'
 })
@@ -18,7 +19,28 @@ export class TranscriptCollectionComponent {
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
 
+  sidebarOpen = false;
   message = '';
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  get isTranscriptPaid(): boolean {
+    const user = this.authService.getCurrentUser();
+    if (!user) return false;
+    const requests = this.paymentService.getStudentRequests(user.id);
+    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
+  }
   form = this.fb.nonNullable.group({
     collectionMethod: ['' as 'Physical Collection' | 'Post by DHL' | '', Validators.required],
     postingAddress: ['']

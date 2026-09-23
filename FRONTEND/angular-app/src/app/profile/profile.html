@@ -33,8 +33,11 @@
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
-      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications

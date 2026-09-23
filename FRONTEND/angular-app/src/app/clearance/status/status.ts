@@ -8,6 +8,7 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 
 import {
   ClearanceRequest,
@@ -38,6 +39,7 @@ export class ClearanceStatusComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -61,6 +63,13 @@ export class ClearanceStatusComponent {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  get isTranscriptPaid(): boolean {
+    const user = this.student;
+    if (!user) return false;
+    const requests = this.transcriptService.getStudentRequests(user.id);
+    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
   // =====================================================

@@ -1,7 +1,7 @@
 <main class="signup-page">
   <header class="page-header">
-    <img src="/public/udsm-logo.png" alt="University of Dar es Salaam" />
-    <span>E-Clearance MIS</span>
+    <img [src]="branding.logoUrl || '/public/udsm-logo.png'" [alt]="branding.universityName" />
+    <span>{{ branding.shortName }} MIS</span>
   </header>
 
   <section class="choice-card" aria-labelledby="signup-title">

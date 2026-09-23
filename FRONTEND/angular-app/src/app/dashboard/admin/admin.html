@@ -29,6 +29,7 @@
       <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">Data Upload</a>
       <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">Institutional Dashboards</a>
       <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">Institutional Theme</a>
+      <a (click)="setTab('awards')" [class.active]="activeTab === 'awards'">Academic Awards</a>
       <button type="button" class="logout-link" (click)="logout()">
         Log out
       </button>
@@ -109,6 +110,10 @@
             <div class="form-group">
               <label>First Name</label>
               <input type="text" [(ngModel)]="newUser.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label>Middle Name</label>
+              <input type="text" [(ngModel)]="newUser.middleName" name="middleName" placeholder="Middle Name (Optional)">
             </div>
             <div class="form-group">
               <label>Last Name</label>
@@ -224,12 +229,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let req of filteredRequests">
-              <td>{{ req.student?.fullName || '-' }}</td>
-              <td>{{ req.student?.registrationNumber || '-' }}</td>
+              <td>{{ req.student?.fullName || req.studentName || '-' }}</td>
+              <td>{{ req.student?.registrationNumber || req.registrationNumber || '-' }}</td>
               <td>{{ req.department || '-' }}</td>
-              <td><span class="status-pill" [class]="req.status.toLowerCase()">{{ req.status }}</span></td>
-              <td>{{ req.currentStage }}</td>
-              <td>{{ req.submittedAt | date:'short' }}</td>
+              <td><span class="status-pill" [class]="(req.status || 'PENDING').toLowerCase()">{{ req.status || 'PENDING' }}</span></td>
+              <td>{{ req.currentStage || 'Clearance Process' }}</td>
+              <td>{{ (req.submittedAt || req.requestDate) | date:'short' }}</td>
+            </tr>
+            <tr *ngIf="!filteredRequests.length">
+              <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                No clearance requests found.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -273,7 +283,7 @@
               <th>ID</th>
               <th>Name</th>
               <th>Description</th>
-              <th>Enabled</th>
+              <th style="text-align: center;">Enabled</th>
               <th style="text-align: right;">Actions</th>
             </tr>
           </thead>
@@ -282,12 +292,14 @@
               <td><code style="font-weight: 800; color: var(--udsm-blue);">{{ dashboard.id }}</code></td>
               <td><input [(ngModel)]="dashboard.name" [name]="'name-' + dashboard.id" class="table-input"></td>
               <td><input [(ngModel)]="dashboard.description" [name]="'description-' + dashboard.id" class="table-input"></td>
-              <td>
-                <input type="checkbox" [(ngModel)]="dashboard.enabled" [name]="'enabled-' + dashboard.id" style="width: 20px; height: 20px; cursor: pointer;">
+              <td style="text-align: center;">
+                <input type="checkbox" [(ngModel)]="dashboard.enabled" [name]="'enabled-' + dashboard.id" style="width: 20px; height: 20px; cursor: pointer; vertical-align: middle;">
               </td>
-              <td style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                <button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button>
-                <button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button>
+              <td style="text-align: right;">
+                <div class="actions-cell">
+                  <button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button>
+                  <button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="!projectConfig?.dashboards?.length">
@@ -337,6 +349,63 @@
 
         <button type="submit" class="btn-primary" style="margin-top: 24px;">Save Theme</button>
       </form>
+    </div>
+
+    <!-- Academic Awards Tab -->
+    <div *ngIf="activeTab === 'awards'" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h3>Academic Award Management</h3>
+          <p>Add or remove academic awards available for student registration and dynamic student dashboards.</p>
+        </div>
+      </div>
+
+      <div class="form-container">
+        <h4>Add New Academic Award</h4>
+        <div class="form-grid" style="grid-template-columns: 1fr auto; gap: 12px; align-items: flex-end;">
+          <div class="form-group" style="margin: 0;">
+            <label>Award Name</label>
+            <input type="text" [(ngModel)]="newAwardName" name="newAwardName" placeholder="e.g. Higher Diploma, Doctor of Science, Executive MBA" (keyup.enter)="addAward()">
+          </div>
+          <button type="button" class="btn-primary" (click)="addAward()">Add Award</button>
+        </div>
+      </div>
+
+      <div class="table-container" style="margin-top: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 60px;">#</th>
+              <th>Award Title</th>
+              <th>Target Dashboard Name Preview</th>
+              <th style="text-align: right; width: 140px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let award of awardsList; let i = index">
+              <td><strong>{{ i + 1 }}</strong></td>
+              <td>
+                <span class="award-pill">{{ award }}</span>
+              </td>
+              <td>
+                <code style="font-weight: 700; color: #00679b;">{{ award }} Student Dashboard</code>
+              </td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-danger btn-sm" (click)="deleteAward(award)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="!awardsList.length">
+              <td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                No awards configured. Click "Reset to Defaults" below to restore default awards.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-secondary btn-sm" (click)="resetAwards()">Reset to Defaults</button>
+      </div>
     </div>
   </main>
 </section>

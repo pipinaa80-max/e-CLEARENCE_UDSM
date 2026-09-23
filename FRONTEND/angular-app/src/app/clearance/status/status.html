@@ -32,8 +32,11 @@
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
         Clearance Process
       </a>
-      <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         Notifications
@@ -51,26 +54,25 @@
 
   <main class="content-panel">
 
-    <div
-      class="status-card"
-      *ngIf="request; else noRequest"
+    <app-dashboard-header
+      eyebrow="Graduation Clearance"
+      title="Clearance Process"
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
     >
-
-      <app-dashboard-header
-        eyebrow="Graduation Clearance"
-        title="Clearance Process"
-        [user]="null"
-        (toggleSidebar)="toggleSidebar()"
-      >
-        <div header-actions>
+      <div header-actions *ngIf="request">
           <span
             class="final-status"
             [ngClass]="request.status.toLowerCase()"
           >
             {{ request.status }}
           </span>
-        </div>
-      </app-dashboard-header>
+      </div>
+    </app-dashboard-header>
+
+    <div class="status-page-wrapper" *ngIf="request; else noRequest">
+
+      <div class="status-card">
 
 
       <!-- CURRENT STAGE -->
@@ -471,6 +473,7 @@
         View Notifications
       </a>
 
+    </div>
     </div>
 
     <!-- =====================================================

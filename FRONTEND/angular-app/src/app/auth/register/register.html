@@ -41,6 +41,14 @@
         </label>
 
         <label class="field full-width">
+          <span>Award *</span>
+          <select formControlName="award">
+            <option value="" disabled selected>Select award</option>
+            <option *ngFor="let award of awards" [value]="award">{{ award }}</option>
+          </select>
+        </label>
+
+        <label class="field full-width">
           <span>Email *</span>
           <input
                   type="email"

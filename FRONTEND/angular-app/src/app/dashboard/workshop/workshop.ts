@@ -29,6 +29,35 @@ export class WorkshopComponent {
 
   searchTerm = '';
   filterStatus = 'all';
+  currentPage = 1;
+  pageSize = 3;
+
+  get paginatedRequests(): ClearanceRequest[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
 
   get currentUser() {
     return this.authService.getCurrentUser();
@@ -36,6 +65,10 @@ export class WorkshopComponent {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
+    return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
   }
 
   get workshopName(): string {
@@ -58,14 +91,12 @@ export class WorkshopComponent {
       );
     }
 
-    if (this.filterStatus !== 'all') {
-      if (this.filterStatus === 'pending') {
-        list = list.filter(r => r.status === 'Pending');
-      } else if (this.filterStatus === 'approved') {
-        list = list.filter(r => r.status === 'Completed');
-      } else if (this.filterStatus === 'rejected') {
-        list = list.filter(r => r.status === 'Rejected');
-      }
+    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Pending');
+    } else if (this.filterStatus === 'approved') {
+      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Approved');
+    } else if (this.filterStatus === 'rejected') {
+      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Rejected');
     }
 
     return list;

@@ -1,78 +1,181 @@
-<section class="payment-page">
-  <div class="header-group">
-    <span class="section-kicker">Clearance Step 3</span>
-    <h1>Transcript</h1>
-    <p>Complete the transcript request and payment process.</p>
-  </div>
+<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
-  <main class="payment-card" *ngIf="hasApproval">
-    <span class="section-kicker">Step 1</span>
-    <h1>Transcript Payment</h1>
-    <p *ngIf="!request">Your transcript request is approved. Request a payment control number to continue.</p>
+  <!-- =========================
+       SIDEBAR OVERLAY
+  ========================== -->
 
-    <section class="payment-step" *ngIf="!request">
-      <h2>Request payment control number</h2>
-      <label class="copy-count-field">
-        <span>Total number of transcripts</span>
-        <input type="number" min="1" step="1" [(ngModel)]="transcriptCount" aria-label="Total number of transcripts" />
-      </label>
-      <p>Amount for {{ transcriptCount }} transcript{{ transcriptCount === 1 ? '' : 's' }}: <strong>TSh {{ nextRequestAmount | number }}</strong>.</p>
-      <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
-    </section>
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-    <ng-container *ngIf="request">
-    <p>Use the control number issued by Finance to pay for your transcript request.</p>
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
 
-    <div class="payment-summary">
-      <div><span>Request</span><strong>#{{ request.attemptNumber }}</strong></div>
-      <div><span>{{ request.transcriptCount }} Transcript{{ request.transcriptCount === 1 ? '' : 's' }}</span><strong>TSh {{ request.amount | number }}</strong></div>
-      <div><span>Status</span><strong>{{ request.status }}</strong></div>
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/public/udsm-logo.png" alt="UDSM Logo" />
+      <div>
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
     </div>
 
-    <section class="payment-step" *ngIf="request.status === 'Pending Control Number'">
-      <h2>Waiting for Finance</h2>
-      <p>Your control number request has been sent to the Finance transcript payment team. This button will reappear only for a new transcript request.</p>
-    </section>
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Dashboard
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        My Profile
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Request
+      </a>
+      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
+        Clearance Process
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        Transcript Dashboard
+      </a>
+      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        Acquire More Transcript
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        Notifications
+      </a>
+    </nav>
 
-    <section class="payment-step" *ngIf="request.status === 'Awaiting Payment'">
-      <h2>Pay using your control number</h2>
-      <div class="control-number">{{ request.controlNumber }}</div>
-      <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your receipt.</p>
-      <label class="receipt-upload">
-        <span>Upload payment receipt photo</span>
-        <input type="file" accept="image/*" (change)="onFileSelected($event)" />
-      </label>
+    <button type="button" class="logout-link" (click)="logout()">
+      Log out
+    </button>
+  </aside>
 
-      <div *ngIf="selectedFile" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-        <p style="margin: 0; color: #00679b; font-weight: 700;">Selected: {{ selectedFile.name }}</p>
-        <button type="button" class="primary-button" (click)="submitReceipt()" [disabled]="isSubmitting">
-          {{ isSubmitting ? 'Submitting...' : 'Submit and Continue' }}
-        </button>
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+
+  <main class="content-panel">
+
+    <app-dashboard-header
+      [eyebrow]="isStandaloneMode ? 'TRANSCRIPT SERVICE' : 'Clearance Step 3'"
+      [title]="isStandaloneMode ? 'Acquire More Transcript' : 'Transcript Payment'"
+      [subtitle]="isStandaloneMode ? 'Order additional official copies of your academic transcript.' : 'Complete the transcript request and payment process.'"
+      [user]="null"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <a routerLink="/dashboard" class="back-link" style="
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 42px;
+          padding: 0 15px;
+          border: 1px solid #b8ccd5;
+          border-radius: 7px;
+          background: rgba(255, 255, 255, .78);
+          color: #003b5c;
+          font-size: 13px;
+          font-weight: 800;
+          text-decoration: none;
+          box-shadow: 0 4px 12px rgba(0, 59, 92, .08);
+        ">← Back to Dashboard</a>
       </div>
-    </section>
+    </app-dashboard-header>
 
-    <section class="payment-step success-step" *ngIf="request.status === 'Receipt Submitted' || request.status === 'Paid'">
-      <h2 *ngIf="request.status === 'Receipt Submitted'">Receipt submitted</h2>
+    <div class="transcript-payment-wrapper" *ngIf="hasApproval; else noApproval">
+      <div class="payment-card">
+      <span class="section-kicker">{{ isStandaloneMode ? 'New Request' : 'Step 1' }}</span>
+      <h1>{{ isStandaloneMode ? 'Acquire Copies' : 'Transcript Payment' }}</h1>
+      <p *ngIf="!request">
+        {{ isStandaloneMode ? 'Request additional copies of your transcript. Each copy costs TSh 5,000.' : 'Your transcript request is approved. Request a payment control number to continue.' }}
+      </p>
 
-      <div *ngIf="request.status === 'Receipt Submitted'">
-        <p>Your payment receipt has been sent to Finance for verification. Please wait for approval before continuing.</p>
+      <section class="payment-step" *ngIf="!request">
+        <h2>Request payment control number</h2>
+        <label class="copy-count-field" *ngIf="isStandaloneMode">
+          <span>Number of additional copies</span>
+          <input type="number" min="1" step="1" [(ngModel)]="transcriptCount" aria-label="Total number of transcripts" />
+        </label>
+        <p *ngIf="!isStandaloneMode">This is your first transcript request. The amount is fixed at <strong>TSh 15,000</strong>.</p>
+        <p *ngIf="isStandaloneMode">Amount for {{ transcriptCount }} transcript{{ transcriptCount === 1 ? '' : 's' }}: <strong>TSh {{ nextRequestAmount | number }}</strong>.</p>
+
+        <div style="display: flex; gap: 12px; margin-top: 20px; align-items: center; flex-wrap: wrap;">
+          <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+          <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
+        </div>
+      </section>
+
+      <ng-container *ngIf="request">
+      <p>Use the control number issued by Finance to pay for your transcript {{ isStandaloneMode ? 'additional copies' : 'request' }}.</p>
+
+      <div class="payment-summary">
+        <div><span>Request</span><strong>#{{ request.attemptNumber }}</strong></div>
+        <div><span>{{ request.transcriptCount }} Transcript{{ request.transcriptCount === 1 ? '' : 's' }}</span><strong>TSh {{ request.amount | number }}</strong></div>
+        <div><span>Status</span><strong>{{ request.status }}</strong></div>
+      </div>
+
+      <section class="payment-step" *ngIf="request.status === 'Pending Control Number'">
+        <h2>Waiting for Finance</h2>
+        <p>Your control number request for Request #{{ request.attemptNumber }} has been sent to the Finance transcript payment team.</p>
         <div class="step-navigation">
           <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-          <a routerLink="/transcript/process" class="approval-button">Next</a>
+          <a routerLink="/transcript" class="approval-button">View History</a>
+        </div>
+      </section>
+
+      <section class="payment-step" *ngIf="request.status === 'Awaiting Payment'">
+        <h2>Pay using your control number</h2>
+        <div class="control-number">{{ request.controlNumber }}</div>
+        <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your receipt.</p>
+        <label class="receipt-upload">
+          <span>Upload payment receipt photo</span>
+          <input type="file" accept="image/*" (change)="onFileSelected($event)" />
+        </label>
+
+        <div *ngIf="selectedFile" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+          <p style="margin: 0; color: #00679b; font-weight: 700;">Selected: {{ selectedFile.name }}</p>
+          <button type="button" class="primary-button" (click)="submitReceipt()" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Submitting...' : 'Submit Receipt' }}
+          </button>
+        </div>
+      </section>
+
+      <section class="payment-step success-step" *ngIf="request.status === 'Receipt Submitted' || request.status === 'Paid'">
+        <h2 *ngIf="request.status === 'Receipt Submitted'">Receipt submitted</h2>
+
+        <div *ngIf="request.status === 'Receipt Submitted'">
+          <p>Your payment receipt for Request #{{ request.attemptNumber }} has been sent to Finance for verification. Please wait for Finance approval before ordering additional copies.</p>
+          <div class="step-navigation">
+            <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+            <a routerLink="/transcript" class="approval-button">View History</a>
+          </div>
+        </div>
+
+        <div *ngIf="request.status === 'Paid'">
+          <p *ngIf="!isStandaloneMode">Finance has approved your payment. You can now proceed to attach your required documents and print your official transcript.</p>
+          <p *ngIf="isStandaloneMode">Finance has approved your payment. Your transcript is verified and ready for printing.</p>
+          <div class="step-navigation" style="gap: 10px; flex-wrap: wrap;">
+            <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+            <button *ngIf="!isPrinted(request.id)" type="button" class="approval-button" (click)="printTranscript(request)" style="background: #218739; color: #ffffff; border: none; cursor: pointer;">
+              🖨️ Print Transcript
+            </button>
+            <a *ngIf="!isStandaloneMode" routerLink="/transcript/process" class="approval-button">Next Step</a>
+          </div>
+        </div>
+      </section>
+
+      </ng-container>
+    </div>
+    </div>
+
+    <ng-template #noApproval>
+      <div class="no-request-page">
+        <div class="no-request-card">
+          <div class="warning-icon">!</div>
+          <h1>Approval Required</h1>
+          <p>Please review and accept the transcript terms before starting this process.</p>
+          <a routerLink="/transcript" class="request-button">Review Terms</a>
         </div>
       </div>
+    </ng-template>
 
-      <div *ngIf="request.status === 'Paid'">
-        <p>Finance has approved your payment. You can now proceed to attach your required documents.</p>
-        <div class="step-navigation">
-          <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-          <a routerLink="/transcript/process" class="approval-button">Next</a>
-        </div>
-      </div>
-    </section>
-
-    </ng-container>
-
-    <a *ngIf="!request || (request.status !== 'Paid' && request.status !== 'Receipt Submitted')" routerLink="/dashboard" class="back-link">Back to Dashboard</a>
   </main>
 </section>

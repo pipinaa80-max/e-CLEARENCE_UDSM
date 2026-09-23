@@ -1,15 +1,25 @@
-/* =====================================================
-   TRANSCRIPT PROCESS PAGE (Based on Clearance Style)
-===================================================== */
-
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-shell {
+  display: flex;
+  flex: 1;
   min-height: 100vh;
 }
 
-.transcript-process-page {
+.content-panel {
+  flex: 1;
+  min-width: 0;
   min-height: 100vh;
-  padding: 32px 36px;
+  padding: 35px 42px 45px;
+  margin: 0 !important;
+  transition: none;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(
       rgba(5, 63, 112, 0.65),
@@ -21,9 +31,12 @@
   background-attachment: fixed;
 }
 
-/* =====================================================
-   MAIN CARD (Synced with Clearance)
-===================================================== */
+@media (max-width: 768px) {
+  .dashboard-shell { display: block; }
+  .sidebar { position: fixed !important; transform: translateX(-100%); flex: none; width: 270px; z-index: 2000; }
+  .sidebar-open .sidebar { transform: translateX(0); opacity: 1; visibility: visible; }
+  .content-panel { margin: 0 !important; transform: none; }
+}
 
 .status-card {
   width: min(100%, 1100px);
@@ -102,10 +115,6 @@
   font-weight: 800;
 }
 
-/* =====================================================
-   THREE STEP PROCESS (HORIZONTAL)
-===================================================== */
-
 .process-path {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -163,10 +172,6 @@
 .process-step.pending .step-number { border-color: var(--udsm-blue); color: var(--udsm-blue); }
 .process-step.pending .step-content > span { color: var(--warning); }
 
-/* =====================================================
-   ACTIVE STEP CARDS
-===================================================== */
-
 .waiting-card {
   margin-top: 22px;
   padding: 22px;
@@ -175,10 +180,7 @@
   background: var(--surface-soft);
 }
 
-.waiting-card.warning-card {
-  border-left-color: var(--udsm-gold);
-}
-
+.waiting-card.warning-card { border-left-color: var(--udsm-gold); }
 .waiting-card h2 { margin: 0 0 8px; color: var(--udsm-blue-dark); font-size: 1rem; font-weight: 800; }
 .waiting-card p { margin: 6px 0; color: var(--text-muted); font-size: 0.82rem; line-height: 1.55; }
 
@@ -195,7 +197,7 @@
   white-space: nowrap;
 }
 
-.status-badge.pending { background: #fff5d6; color: var(--warning); }
+.status-badge.pending { background: #fff7df; color: var(--warning); }
 
 .approval-button {
   display: inline-flex;
@@ -233,10 +235,7 @@
   cursor: pointer;
 }
 
-.back-button:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-}
+.back-button:hover { background: #f8fafc; border-color: #94a3b8; }
 
 .step-navigation {
   display: flex;
@@ -262,10 +261,6 @@
   font-weight: 800;
   text-decoration: none;
 }
-
-/* =====================================================
-   NO REQUEST/APPROVAL CARD
-===================================================== */
 
 .no-request-page { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
 .no-request-card {
@@ -305,7 +300,6 @@
 }
 
 @media (max-width: 850px) {
-  .transcript-process-page { padding: 24px 20px; }
   .status-card { padding: 24px; }
   .process-path { grid-template-columns: repeat(3, minmax(130px, 1fr)); overflow-x: auto; }
 }

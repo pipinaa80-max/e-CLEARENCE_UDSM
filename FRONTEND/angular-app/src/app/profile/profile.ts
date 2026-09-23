@@ -7,6 +7,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 
 @Component({
   selector: 'app-profile',
@@ -19,6 +20,7 @@ export class ProfileComponent implements OnInit {
 
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -260,6 +262,13 @@ export class ProfileComponent implements OnInit {
     }
 
     return 'In Progress';
+  }
+
+  get isTranscriptPaid(): boolean {
+    const user = this.user;
+    if (!user) return false;
+    const requests = this.transcriptService.getStudentRequests(user.id);
+    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
   /* =========================

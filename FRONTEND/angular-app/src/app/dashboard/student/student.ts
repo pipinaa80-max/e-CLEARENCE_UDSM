@@ -8,6 +8,8 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationItem } from '../../core/models/notification.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -20,6 +22,7 @@ export class StudentDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
@@ -248,6 +251,35 @@ export class StudentDashboard implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get studentAward(): string {
+    return this.currentUser?.award || 'Bachelor Degree';
+  }
+
+  get awardType(): 'degree' | 'diploma' | 'certificate' | 'postgraduate' | 'masters' | 'phd' {
+    const award = this.studentAward.toLowerCase();
+    if (award.includes('phd') || award.includes('doctor')) return 'phd';
+    if (award.includes('master')) return 'masters';
+    if (award.includes('postgraduate')) return 'postgraduate';
+    if (award.includes('diploma')) return 'diploma';
+    if (award.includes('certificate')) return 'certificate';
+    return 'degree';
+  }
+
+  get dashboardEyebrow(): string {
+    switch (this.awardType) {
+      case 'diploma': return 'Diploma Student Dashboard';
+      case 'certificate': return 'Certificate Student Dashboard';
+      case 'postgraduate': return 'Postgraduate Diploma Student Dashboard';
+      case 'masters': return 'Master Degree Student Dashboard';
+      case 'phd': return 'PhD Doctoral Student Dashboard';
+      default: return 'Degree Student Dashboard';
+    }
+  }
+
+  get dashboardSubtitle(): string {
+    return `Manage your ${this.studentAward} student information and clearance process.`;
+  }
+
   get programme(): string | undefined {
     const p = this.currentUser?.programme;
     if (p && p !== 'Not selected' && p !== 'Not available' && p.trim().length > 0) return p;
@@ -337,6 +369,73 @@ export class StudentDashboard implements OnInit {
 
   get rejectedOffices(): number {
     return this.offices.filter((office) => office.status === 'Rejected').length;
+  }
+
+  // =====================================================
+  // TRANSCRIPT LOGIC
+  // =====================================================
+
+  get currentTranscriptRequest(): TranscriptPaymentRequest | null {
+    const user = this.currentUser;
+    if (!user) return null;
+    const requests = this.transcriptService.getStudentRequests(user.id);
+    return requests.length > 0 ? requests[requests.length - 1] : null;
+  }
+
+  get transcriptStatus(): string {
+    const req = this.currentTranscriptRequest;
+    return req ? req.status : 'Not Started';
+  }
+
+  get isTranscriptPaid(): boolean {
+    const user = this.currentUser;
+    if (!user) return false;
+    const requests = this.transcriptService.getStudentRequests(user.id);
+    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
+  }
+
+  get transcriptProgressSteps(): number {
+    const req = this.currentTranscriptRequest;
+    if (!req) return 0;
+
+    // Steps: 1. Requested, 2. Control Number Issued, 3. Receipt Submitted, 4. Paid
+    if (req.status === 'Paid') return 4;
+    if (req.status === 'Receipt Submitted') return 3;
+    if (req.status === 'Awaiting Payment') return 2;
+    return 1;
+  }
+
+  get transcriptProgressPercent(): number {
+    return (this.transcriptProgressSteps / 4) * 100;
+  }
+
+  get transcriptSteps() {
+    const req = this.currentTranscriptRequest;
+    const steps = [
+      { name: 'Application', note: 'Request submitted', status: 'Pending' },
+      { name: 'Control Number', note: 'Finance issues code', status: 'Pending' },
+      { name: 'Payment', note: 'Upload your receipt', status: 'Pending' },
+      { name: 'Verification', note: 'Final approval', status: 'Pending' }
+    ];
+
+    if (!req) return steps;
+
+    // Map statuses
+    steps[0].status = 'Approved'; // Always true if req exists
+
+    if (req.controlNumber || req.status !== 'Pending Control Number') {
+      steps[1].status = 'Approved';
+    }
+
+    if (req.receiptSubmittedAt || req.status === 'Receipt Submitted' || req.status === 'Paid') {
+      steps[2].status = 'Approved';
+    }
+
+    if (req.status === 'Paid') {
+      steps[3].status = 'Approved';
+    }
+
+    return steps;
   }
 
   // =====================================================

@@ -9,9 +9,36 @@
   </header>
 
   <main class="finance-transcript-content">
-    <section class="queue-section">
+    <nav class="queue-nav-tabs" aria-label="Queue Filter">
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="selectedQueue === 'queue1'"
+        (click)="setQueueFilter('queue1')">
+        Queue 01: Control Numbers
+        <span class="tab-count">{{ controlNumberRequests.length }}</span>
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="selectedQueue === 'queue2'"
+        (click)="setQueueFilter('queue2')">
+        Queue 02: Receipt Verification
+        <span class="tab-count">{{ receiptRequests.length }}</span>
+      </button>
+      <button
+        type="button"
+        class="tab-button"
+        [class.active]="selectedQueue === 'history'"
+        (click)="setQueueFilter('history')">
+        Verified Receipts
+        <span class="tab-count verified">{{ verifiedRequests.length }}</span>
+      </button>
+    </nav>
+
+    <section class="queue-section" *ngIf="selectedQueue === 'queue1'">
       <div class="section-heading">
-        <span>Queue 01</span>
+        <span class="queue-tag">Queue 01</span>
         <h2>Control Number Requests</h2>
         <p>Issue a unique control number for each approved transcript request.</p>
       </div>
@@ -30,13 +57,92 @@
       </article>
     </section>
 
-    <section class="queue-section">
-      <div class="section-heading"><span>Queue 02</span><h2>Receipt Verification</h2><p>Review the uploaded receipt and confirm the payment.</p></div>
+    <section class="queue-section" *ngIf="selectedQueue === 'queue2'">
+      <div class="section-heading">
+        <span class="queue-tag">Queue 02</span>
+        <h2>Receipt Verification</h2>
+        <p>Review the uploaded receipt and confirm the payment.</p>
+      </div>
+
       <div class="empty-state" *ngIf="!receiptRequests.length">No transcript receipts are waiting for verification.</div>
       <article class="payment-card" *ngFor="let request of receiptRequests">
         <div class="request-heading"><div><span class="request-label">{{ request.registrationNumber }}</span><h3>{{ request.studentName }}</h3><p>Control number: {{ request.controlNumber }} · {{ request.transcriptCount }} transcript{{ request.transcriptCount === 1 ? '' : 's' }}</p></div><strong class="amount">TSh {{ request.amount | number }}</strong></div>
-        <div class="receipt-preview" *ngIf="request.receiptData"><img [src]="request.receiptData" alt="Uploaded transcript payment receipt" /></div>
+        <div class="request-meta">
+          <span>Graduation year <strong>{{ request.graduationYear || '2026' }}</strong></span>
+          <span>Receipt File <strong>{{ request.receiptFileName || 'Uploaded' }}</strong></span>
+          <span>Delivery <strong>{{ request.collectionMethod || 'Physical Collection' }}</strong></span>
+        </div>
+        <div class="receipt-container-box">
+          <div class="pdf-attachment-card">
+            <div class="pdf-info">
+              <div class="pdf-icon-badge">PDF</div>
+              <div class="pdf-text">
+                <strong class="pdf-filename">{{ getFormattedFileName(request.studentName) }}</strong>
+                <span class="pdf-filesize">25 KB · Payment Receipt</span>
+              </div>
+            </div>
+            <div class="pdf-actions">
+              <button type="button" class="pdf-action-btn primary" (click)="downloadReceiptPdf(request)" title="Download PDF Receipt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+              <button type="button" class="pdf-action-btn secondary" (click)="viewReceiptPdf(request)" title="View PDF Receipt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+              </button>
+            </div>
+          </div>
+        </div>
         <button type="button" class="primary-button" (click)="markPaid(request)">Verify Payment</button>
+      </article>
+    </section>
+
+    <section class="queue-section" *ngIf="selectedQueue === 'history'">
+      <div class="section-heading">
+        <span class="queue-tag verified">Verified History</span>
+        <h2>Verified Receipts</h2>
+        <p>Verified transcript payment receipts and confirmed payments.</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!verifiedRequests.length">No verified transcript payment receipts yet.</div>
+      <article class="payment-card verified-card" *ngFor="let request of verifiedRequests">
+        <div class="request-heading">
+          <div>
+            <span class="request-label">{{ request.registrationNumber }}</span>
+            <h3>{{ request.studentName }}</h3>
+            <p>Control number: <strong>{{ request.controlNumber }}</strong> · {{ request.transcriptCount }} transcript{{ request.transcriptCount === 1 ? '' : 's' }}</p>
+          </div>
+          <div class="amount-status">
+            <strong class="amount">TSh {{ request.amount | number }}</strong>
+            <span class="status-badge paid">VERIFIED / PAID</span>
+          </div>
+        </div>
+        <div class="request-meta">
+          <span>Graduation year <strong>{{ request.graduationYear || '2026' }}</strong></span>
+          <span>Receipt File <strong>{{ request.receiptFileName || 'Uploaded' }}</strong></span>
+          <span>Delivery <strong>{{ request.collectionMethod || 'Physical Collection' }}</strong></span>
+        </div>
+        <div class="receipt-container-box">
+          <div class="pdf-attachment-card">
+            <div class="pdf-info">
+              <div class="pdf-icon-badge">PDF</div>
+              <div class="pdf-text">
+                <strong class="pdf-filename">{{ getFormattedFileName(request.studentName) }}</strong>
+                <span class="pdf-filesize">25 KB · Verified Receipt</span>
+              </div>
+            </div>
+            <div class="pdf-actions">
+              <button type="button" class="pdf-action-btn primary" (click)="downloadReceiptPdf(request)" title="Download PDF Receipt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+              <button type="button" class="pdf-action-btn secondary" (click)="viewReceiptPdf(request)" title="View PDF Receipt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+              </button>
+            </div>
+          </div>
+        </div>
       </article>
     </section>
   </main>

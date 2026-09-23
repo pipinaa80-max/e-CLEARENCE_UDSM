@@ -125,7 +125,7 @@ export class App {
 
   private refreshBrandingNodes(): void {
     if (this.branding.logoUrl) {
-      document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
+      document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
         .forEach(image => {
           if (image.src !== this.branding.logoUrl) image.src = this.branding.logoUrl;
         });
@@ -135,21 +135,28 @@ export class App {
     while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
 
     const targetName = 'University of Dar es Salaam';
-    const currentName = this.branding.universityName;
+    const currentName = this.branding.universityName || 'University of Dar es Salaam';
+
+    const targetShortName = 'UDSM';
+    const currentShortName = this.branding.shortName || 'UDSM';
 
     textNodes.forEach(node => {
       const parent = node.parentElement;
-      if (!parent) return;
+      if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') return;
 
-      // Use a data attribute to store the original text so we can always revert/re-replace correctly
       let originalText = parent.getAttribute('data-original-text');
-      if (!originalText && node.nodeValue?.includes(targetName)) {
-        originalText = node.nodeValue;
-        parent.setAttribute('data-original-text', originalText);
+      if (!originalText) {
+        if (node.nodeValue?.includes(targetName) || node.nodeValue?.includes(targetShortName)) {
+          originalText = node.nodeValue;
+          parent.setAttribute('data-original-text', originalText);
+        }
       }
 
       if (originalText) {
-        const newText = originalText.replaceAll(targetName, currentName);
+        let newText = originalText.replaceAll(targetName, currentName);
+        if (currentShortName && currentShortName !== targetShortName) {
+          newText = newText.replaceAll(targetShortName, currentShortName);
+        }
         if (node.nodeValue !== newText) {
           node.nodeValue = newText;
         }
