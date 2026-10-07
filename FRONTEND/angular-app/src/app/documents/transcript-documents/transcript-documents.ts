@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -20,6 +20,7 @@ export class TranscriptDocumentsComponent implements OnInit {
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   sidebarOpen = false;
   readonly requiredDocuments = [
@@ -65,20 +66,16 @@ export class TranscriptDocumentsComponent implements OnInit {
 
     this.documentService.getDocumentCategories(user.id).subscribe({
       next: categories => {
-        const uploadedCategories = categories.map(category => String(category));
-        for (const category of categories) {
-          if (this.requiredDocuments.includes(category)) {
-            this.uploaded[category] = true;
-          }
-        }
-        if (uploadedCategories.length >= this.requiredDocuments.length) {
-          for (const category of this.requiredDocuments) {
-            this.uploaded[category] = true;
-          }
+        const uploadedCategories = new Set(
+          categories.map(category => String(category).trim().toLowerCase())
+        );
+        for (const category of this.requiredDocuments) {
+          this.uploaded[category] = uploadedCategories.has(category.toLowerCase());
         }
         if (this.allUploaded) {
           localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
         }
+        this.changeDetector.detectChanges();
       },
       error: () => {
         this.toastService.error('Load Error', 'Unable to load previously uploaded documents.');

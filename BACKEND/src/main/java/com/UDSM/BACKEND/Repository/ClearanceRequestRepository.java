@@ -30,12 +30,12 @@ public interface ClearanceRequestRepository extends JpaRepository<ClearanceReque
 
     List<ClearanceRequest> findByStudentIdAndProjectId(String studentId, String projectId);
 
-    Optional<ClearanceRequest> findByStudentAndStatusAndProjectId(Student student, ClearanceStatus status, String projectId);
+    Optional<ClearanceRequest> findByStudentAndStatusAndProjectId(Student student, String status, String projectId);
 
     // Add: Find by student ID with pagination
     Page<ClearanceRequest> findByStudentId(String studentId, Pageable pageable);
 
-    Optional<ClearanceRequest> findByStudentAndStatus(Student student, ClearanceStatus status);
+    Optional<ClearanceRequest> findByStudentAndStatus(Student student, String status);
 
     //  Add: Find by student ID and status
     Optional<ClearanceRequest> findByStudentIdAndStatus(String studentId, ClearanceStatus status);

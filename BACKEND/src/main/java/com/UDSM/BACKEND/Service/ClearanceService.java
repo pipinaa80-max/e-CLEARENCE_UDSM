@@ -48,8 +48,8 @@ public class ClearanceService {
 
         // Check if student already has a pending request
         Optional<ClearanceRequest> existingRequest = projectId == null
-                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING)
-                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING, projectId);
+                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING.name())
+                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING.name(), projectId);
         if (existingRequest.isPresent()) {
             return ApiResponse.error("You already have a pending clearance request");
         }
@@ -148,8 +148,8 @@ public class ClearanceService {
 
         // Check for pending request first
         Optional<ClearanceRequest> pendingRequest = projectId == null
-                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING)
-                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING, projectId);
+                ? clearanceRequestRepository.findByStudentAndStatus(student, ClearanceStatus.PENDING.name())
+                : clearanceRequestRepository.findByStudentAndStatusAndProjectId(student, ClearanceStatus.PENDING.name(), projectId);
         ClearanceRequest request;
 
         if (pendingRequest.isPresent()) {

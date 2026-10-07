@@ -10,6 +10,7 @@ import com.UDSM.BACKEND.Repository.AuditLogRepository;
 import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.config.ProjectScope;
 import com.UDSM.BACKEND.config.JwtTokenProvider;
+import com.UDSM.BACKEND.config.InstitutionalSuspensionChecker;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -72,8 +73,8 @@ public class ControlPlaneService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email/registration number or password.");
         }
         
-        if (!user.isActive()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is currently disabled. Please contact the administrator.");
+        if (!user.isActive() || InstitutionalSuspensionChecker.isInstitutionalAdminSuspended(user, userRepository)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account or institutional access is currently disabled. Please contact the administrator.");
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
@@ -240,7 +241,34 @@ public class ControlPlaneService {
         requireSuperuser();
         User admin = userRepository.findById(id).filter(user -> user.getRole() == ERole.ADMINISTRATOR)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Institutional admin not found"));
-        if (input.containsKey("active")) admin.setActive(Boolean.TRUE.equals(input.get("active")));
+        if (input.containsKey("active")) {
+            boolean activeState = Boolean.TRUE.equals(input.get("active"));
+            admin.setActive(activeState);
+
+            String adminDomain = (admin.getEmail() != null && admin.getEmail().contains("@"))
+                    ? admin.getEmail().substring(admin.getEmail().indexOf("@") + 1).toLowerCase()
+                    : null;
+
+            List<User> allUsers = userRepository.findAll();
+            for (User u : allUsers) {
+                if (u.getId().equals(admin.getId()) || u.getRole() == ERole.SUPERUSER) {
+                    continue;
+                }
+                boolean matchesProject = admin.getProjectId() != null && admin.getProjectId().equals(u.getProjectId());
+                boolean matchesDomain = adminDomain != null 
+                        && !InstitutionalSuspensionChecker.isGenericDomain(adminDomain) 
+                        && u.getEmail() != null 
+                        && u.getEmail().toLowerCase().endsWith("@" + adminDomain);
+
+                if (matchesProject || matchesDomain) {
+                    u.setActive(activeState);
+                    if (u.getProjectId() == null || u.getProjectId().isBlank()) {
+                        u.setProjectId(admin.getProjectId());
+                    }
+                }
+            }
+            userRepository.saveAll(allUsers);
+        }
         userRepository.save(admin);
         return userView(admin);
     }

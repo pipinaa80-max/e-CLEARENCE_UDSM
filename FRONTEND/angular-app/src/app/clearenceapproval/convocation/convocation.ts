@@ -51,6 +51,7 @@ export class ConvocationComponent implements OnInit {
   });
 
   selectedFileName = '';
+  selectedFile: File | null = null;
   message = '';
   isLoading = false;
 
@@ -328,7 +329,8 @@ export class ConvocationComponent implements OnInit {
     }
 
     // Request the control number
-    this.clearanceService.requestControlNumber(request.id);
+    const controlNumber = `991${Date.now().toString().slice(-10)}`;
+    this.clearanceService.requestControlNumber(request.id, controlNumber);
 
     // Reload data after action
     this.loadData();
@@ -346,6 +348,7 @@ export class ConvocationComponent implements OnInit {
 
     if (!file) return;
 
+    this.selectedFile = file;
     const reader = new FileReader();
     reader.onload = () => {
       this.selectedFileName = file.name;
@@ -364,33 +367,37 @@ export class ConvocationComponent implements OnInit {
 
     const user = this.currentUser;
     const request = this.studentRequest;
-    const receiptData = this.form.controls.file.value as unknown as string;
 
-    if (!user || !request || !receiptData) {
+    if (!user || !request || !this.selectedFile || !this.controlNumber) {
       this.toastService.warning('File Required', 'Please select a receipt file first.');
       this.isLoading = false;
       return;
     }
 
-    // 1. Update local storage with the actual receipt data
-    this.clearanceService.submitConvocationReceipt(
-        request.id,
-        receiptData
-    );
-
-    this.notificationService.createNotification(
-        user.id,
-        'Payment receipt submitted',
-        'Your payment receipt has been submitted to Convocation for verification.',
-        'success'
-    );
-
-    this.message = '✅ Payment receipt submitted successfully. Redirecting to status...';
-    this.isLoading = false;
-
-    setTimeout(() => {
-      this.router.navigate(['/clearance/status']);
-    }, 2000);
+    this.convocationService.submitReceipt({
+      studentId: user.id,
+      controlNumber: this.controlNumber,
+      receiptNumber: `TEST-RECEIPT-${Date.now()}`,
+      paymentDate: new Date().toISOString().slice(0, 10)
+    }, this.selectedFile).subscribe({
+      next: () => {
+        this.clearanceService.submitConvocationReceipt(request.id, this.form.controls.file.value as unknown as string);
+        this.notificationService.createNotification(
+          user.id,
+          'Payment receipt submitted',
+          'Your payment receipt has been submitted to Convocation for verification.',
+          'success'
+        );
+        this.message = 'Payment receipt submitted successfully. Redirecting to status...';
+        this.isLoading = false;
+        setTimeout(() => this.router.navigate(['/clearance/status']), 1200);
+      },
+      error: (error) => {
+        console.error('Error submitting Convocation receipt:', error);
+        this.toastService.error('Receipt Failed', 'The payment receipt could not be submitted. Please try again.');
+        this.isLoading = false;
+      }
+    });
   }
 
   // =====================================================

@@ -74,8 +74,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ApiResponse> handleDisabledException(DisabledException ex) {
+        String msg = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Account is inactive. Please contact the administrator.";
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Account is inactive. Please contact the administrator.", 403));
+                .body(ApiResponse.error(msg, 403));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

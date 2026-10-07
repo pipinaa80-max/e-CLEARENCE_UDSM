@@ -1,5 +1,7 @@
 // clearance.service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 import {
   ClearanceOffice,
@@ -7,12 +9,15 @@ import {
 } from '../models/clearance.model';
 
 import { StorageService } from './storage.service';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClearanceService {
 
+  private readonly http = inject(HttpClient);
+  private readonly config = inject(ConfigService);
   private readonly storage = new StorageService();
   private readonly requestKey = 'udsm-clearance-requests';
   private readonly draftKey = 'udsm-clearance-drafts';
@@ -29,6 +34,31 @@ export class ClearanceService {
     'Dean of Students',
     'Smart Card'
   ];
+
+  submitBackendRequest(requestData: {
+    studentName: string;
+    registrationNumber: string;
+    email?: string;
+    phoneNumber?: string;
+    programme: string;
+    college: string;
+    department: string;
+    academicYear: string;
+    hall: string;
+    roomNumber?: string;
+    sponsor?: string;
+    photo?: string;
+  }): Observable<any> {
+    const token = this.storage.get<string>('udsm-auth-token');
+    const headers = token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : undefined;
+
+    return this.http.post(`${this.config.apiUrl}/clearance/request`, {
+      ...requestData,
+      confirm: true
+    }, headers ? { headers } : {});
+  }
 
   getClearanceOffices(college: string): ClearanceOffice[] {
     const offices = [...this.clearanceOffices];
@@ -319,7 +349,7 @@ export class ClearanceService {
   // STEP 1 - STUDENT REQUESTS CONTROL NUMBER
   // =====================================================
 
-  requestControlNumber(requestId: string): void {
+  requestControlNumber(requestId: string, controlNumber?: string): void {
     const request = this.getRequest(requestId);
 
     if (!request) {
@@ -339,7 +369,8 @@ export class ClearanceService {
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      controlNumberRequestedAt: new Date().toISOString()
+      controlNumberRequestedAt: new Date().toISOString(),
+      ...(controlNumber ? { controlNumber, controlNumberIssuedAt: new Date().toISOString() } : {})
     };
 
     this.save(request);

@@ -63,6 +63,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     List<User> findByRole(ERole role);
 
+    List<User> findByRoleAndProjectId(ERole role, String projectId);
+
     List<User> findByActiveTrue();
 
     List<User> findByActiveFalse();

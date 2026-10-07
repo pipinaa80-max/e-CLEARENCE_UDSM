@@ -14,6 +14,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { firstValueFrom } from 'rxjs';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -612,7 +613,7 @@ export class ClearanceRequestComponent implements OnInit {
   // =====================================================
 // clearance-request.component.ts - Updated submit method
 
-  submit(): void {
+  async submit(): Promise<void> {
     this.isSubmitting = true;
 
     if (this.hasSubmittedRequest || (this.hasExistingRequest() && !this.revisionRequest)) {
@@ -715,6 +716,21 @@ export class ClearanceRequestComponent implements OnInit {
         next: profile => this.authService.updateCurrentUser(profile),
         error: error => console.error('Unable to persist student profile:', error)
       });
+
+      await firstValueFrom(this.clearanceService.submitBackendRequest({
+        studentName: value.studentName,
+        registrationNumber: value.registrationNumber,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        programme: value.programme,
+        college: value.college,
+        department: value.department,
+        academicYear: new Date().getFullYear().toString(),
+        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
+        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+        sponsor: value.sponsor,
+        photo: value.photo
+      }));
 
       this.clearanceService.createFullRequest({
         studentId: user.id,

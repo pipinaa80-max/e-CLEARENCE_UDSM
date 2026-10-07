@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, tap, map, catchError, timeout, throwError } from 'rxjs';
 import { UserRole } from '../models/user.model';
 import { StorageService } from './storage.service';
+import { SubdomainService } from './subdomain.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -29,6 +30,16 @@ export class AuthService {
       map(response => {
         const data = response.data || response;
         const user = this.mapUserResponse(data);
+
+        if (this.isUserSuspended(user)) {
+          this.logoutLocal();
+          throw {
+            status: 403,
+            error: { message: 'Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.' },
+            message: 'Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.'
+          };
+        }
+
         this.persist(user, data.access_token || data.accessToken || data.token);
         return user;
       }),
@@ -74,8 +85,11 @@ export class AuthService {
     const map: Record<string, UserRole> = {
       STUDENT: 'Student',
       CONVOCATION_OFFICER: 'Convocation',
+      CONVOCATION: 'Convocation',
       GAMES_COACH: 'Games Coach',
+      'GAMES COACH': 'Games Coach',
       HALL_WARDEN: 'Hall Warden',
+      'HALL WARDEN': 'Hall Warden',
       USAB_OFFICER: 'USAB',
       USAB: 'USAB',
       DARUSO_OFFICER: 'DARUSO',
@@ -83,7 +97,9 @@ export class AuthService {
       LIBRARY_OFFICER: 'Library',
       LIBRARY: 'Library',
       DEAN_OF_STUDENTS: 'Dean of Students',
+      'DEAN OF STUDENTS': 'Dean of Students',
       SMART_CARD_OFFICER: 'Smart Card',
+      'SMART CARD': 'Smart Card',
       WORKSHOP_OFFICER: 'Workshop',
       WORKSHOP: 'Workshop',
       PRINCIPAL: 'Principal',
@@ -95,6 +111,7 @@ export class AuthService {
       DEPARTMENT: 'Department',
       LABORATORY_OFFICER: 'Laboratory',
       LABORATORY: 'Laboratory',
+      'ACADEMIC STAFF': 'Academic Staff',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
       SUPERUSER: 'Administrator'
@@ -173,13 +190,54 @@ export class AuthService {
     return this.http.put(`${this.apiUrl}/deactivate/${userId}`, {}, { headers: this.getAuthHeaders() });
   }
 
+  private isUserSuspended(user: any): boolean {
+    if (!user) return false;
+
+    // Check individual user active status
+    if (user.isActive === false || user.active === false || user.is_active === false) {
+      return true;
+    }
+
+    // Check tenant active status
+    try {
+      const subdomainService = inject(SubdomainService);
+      const tenants = subdomainService.getSubdomains();
+      const userEmail = (user.email || user.username || '').toLowerCase();
+      const domain = userEmail.includes('@') ? userEmail.split('@')[1] : '';
+
+      for (const t of tenants) {
+        if (t.active === false) {
+          const tDomain = (t.adminEmail || '').toLowerCase().split('@')[1];
+          if (tDomain && domain && tDomain === domain) {
+            return true;
+          }
+          if (user.projectId && t.id.includes(user.projectId)) {
+            return true;
+          }
+          if (userEmail.includes('udom') || (user.college && user.college.toLowerCase().includes('dodoma'))) {
+            if (t.subdomain === 'udom' || t.adminEmail.includes('udom')) {
+              return true;
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore injection error outside component context
+    }
+
+    return false;
+  }
+
   private cachedUser: any | null = null;
 
   getCurrentUser(): any | null {
-    if (this.cachedUser) return this.cachedUser;
-
-    const user = this.storage.get<any>(this.currentUserKey);
+    const user = this.cachedUser || this.storage.get<any>(this.currentUserKey);
     if (!user) return null;
+
+    if (this.isUserSuspended(user)) {
+      this.logoutLocal();
+      return null;
+    }
 
     this.cachedUser = { ...user, role: this.mapRole(user.role) };
     return this.cachedUser;
@@ -190,7 +248,10 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!this.getToken() && !!this.getCurrentUser();
+    const user = this.getCurrentUser();
+    const token = this.getToken();
+    if (!token || !user) return false;
+    return !this.isUserSuspended(user);
   }
 
   updateCurrentUser(user: any): void {

@@ -85,7 +85,7 @@ public class Student {
     @Column(name = "sponsor")
     private String sponsor;
 
-    @Column(name = "photo")
+    @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;  // Base64 encoded photo
 
     @Column(name = "graduation_year")

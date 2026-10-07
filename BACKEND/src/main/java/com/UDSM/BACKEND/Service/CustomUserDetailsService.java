@@ -39,6 +39,11 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new UsernameNotFoundException("User not found with identifier: " + identifier);
         });
 
+        if (!user.isActive() || com.UDSM.BACKEND.config.InstitutionalSuspensionChecker.isInstitutionalAdminSuspended(user, userRepository)) {
+            log.warn("⛔ User or institutional admin is suspended for: {}", user.getEmail());
+            throw new org.springframework.security.authentication.DisabledException("Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.");
+        }
+
         log.info("✅ User found: {} with role: {}", user.getEmail(), user.getRole());
 
         // Keep the domain user as the principal so projectId is available to every

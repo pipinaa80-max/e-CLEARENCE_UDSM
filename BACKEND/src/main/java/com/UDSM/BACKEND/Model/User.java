@@ -85,7 +85,7 @@ public class User implements UserDetails {
     private String sponsor;
 
     // ========== PROFILE FIELDS ==========
-    @Column(name = "photo")
+    @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;
 
     // ========== ROLE & STATUS FIELDS ==========

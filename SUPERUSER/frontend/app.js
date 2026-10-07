@@ -245,6 +245,25 @@ document.addEventListener('click', async event => {
     if (target.dataset.tab) { state.detail = null; state.tab = target.dataset.tab; state.message = ''; render(); }
     if (target.dataset.viewAdmin) await loadDetail(target.dataset.viewAdmin);
     if (target.id === 'logout') { localStorage.removeItem('superuser-token'); state.token = null; render(); }
+    if (target.dataset.toggleAdmin) {
+      const admin = state.data?.subAdmins?.find(item => item.id === target.dataset.toggleAdmin) || state.detail?.admin;
+      if (!admin) throw new Error('Administrator not found');
+      await request(`/sub-admins/${admin.id}`, { method: 'PUT', body: JSON.stringify({ active: !admin.active }) });
+      state.detail = null;
+      state.message = `Administrator access ${admin.active ? 'suspended' : 'activated'}.`;
+      const message = state.message;
+      await refresh();
+      state.message = message;
+      render();
+    }
+    if (target.dataset.resetAdmin) {
+      const result = await request(`/sub-admins/${target.dataset.resetAdmin}/reset-password`, { method: 'POST' });
+      state.message = `${result.message} Temporary password: ${result.temporaryPassword}`;
+      const message = state.message;
+      await refresh();
+      state.message = message;
+      render();
+    }
     if (target.dataset.toggleDashboard) { const dashboard = state.data.dashboards.find(d => d.id === target.dataset.toggleDashboard); await request(`/dashboards/${dashboard.id}`, { method: 'PUT', body: JSON.stringify({ enabled: !dashboard.enabled }) }); await refresh(); render(); }
   } catch (error) { state.message = error.message; render(); }
 });

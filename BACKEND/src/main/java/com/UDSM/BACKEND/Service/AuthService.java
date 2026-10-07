@@ -9,6 +9,7 @@ import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.config.JwtTokenProvider;
 import com.UDSM.BACKEND.config.ProjectScope;
+import com.UDSM.BACKEND.config.InstitutionalSuspensionChecker;
 import com.UDSM.BACKEND.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -113,8 +114,8 @@ public class AuthService {
 
             User user = findUserByIdentifier(identifier);
 
-            if (!user.isActive()) {
-                throw new DisabledException("Your account is inactive. Please contact the administrator.");
+            if (!user.isActive() || InstitutionalSuspensionChecker.isInstitutionalAdminSuspended(user, userRepository)) {
+                throw new DisabledException("Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.");
             }
 
             clearLoginAttempts(identifier);
@@ -147,6 +148,7 @@ public class AuthService {
                     .fullName(user.getFullName())
                     .registrationNumber(user.getRegistrationNumber())
                     .role(user.getRole().name())
+                    .isActive(user.isActive())
                     .department(user.getDepartment() != null ? user.getDepartment() : student != null ? student.getDepartment() : null)
                     .faculty(user.getCollege() != null ? user.getCollege() : student != null ? student.getCollege() : null)
                     .programme(user.getProgramme() != null ? user.getProgramme() : student != null ? student.getProgramme() : null)
@@ -562,8 +564,8 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!user.isActive()) {
-            throw new RuntimeException("User account is inactive");
+        if (!user.isActive() || InstitutionalSuspensionChecker.isInstitutionalAdminSuspended(user, userRepository)) {
+            throw new RuntimeException("Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.");
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -585,6 +587,7 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .registrationNumber(user.getRegistrationNumber())
                 .role(user.getRole().name())
+                .isActive(user.isActive())
                 .department(user.getDepartment())
                 .faculty(user.getCollege())
                 .programme(user.getProgramme())
