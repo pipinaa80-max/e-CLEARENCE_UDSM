@@ -4,7 +4,7 @@
   <aside class="sidebar">
     <div class="brand">
       <a routerLink="/">
-        <img src="/public/udsm-logo.png" alt="Institutional Logo" />
+        <img src="/udsm-logo.png" alt="Institutional Logo" />
       </a>
       <div>
         <strong>GAMES COACH</strong>
@@ -32,7 +32,7 @@
       title="Games Coach Approval"
       subtitle="Review student clearance applications and approve or reject requests."
       [user]="currentUser"
-      [showToggle]="!sidebarOpen"
+      [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="count">
@@ -80,7 +80,7 @@
 
             <!-- SAFE PHOTO PLACEHOLDER -->
             <div class="student-photo">
-              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" />
+              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(request))" title="Click to view enlarged photo" />
               <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
             </div>
 
@@ -192,4 +192,12 @@
       </div>
     </section>
   </main>
+
+  <!-- ENLARGED PHOTO MODAL -->
+  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
+    <div class="photo-modal-content" (click)="$event.stopPropagation()">
+      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
+      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
+    </div>
+  </div>
 </section>

@@ -290,7 +290,9 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(userRole);
         user.setActive(false);
-        user.setEmailVerified(true); // ✅ Auto-verify for now
+        user.setEmailVerified(false);
+        user.setVerificationToken(UUID.randomUUID().toString());
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusHours(48));
         user.setPhoneNumber(request.getPhone());
         user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
@@ -345,10 +347,12 @@ public class AuthService {
             log.error("Failed to log audit: {}", e.getMessage());
         }
 
-        // ========== SEND WELCOME EMAIL (ASYNC) ==========
-        new Thread(() -> sendWelcomeEmail(savedUser)).start();
+        String verificationLink = getFrontendUrl() + "/verify-email?token=" + savedUser.getVerificationToken();
+        new Thread(() -> sendVerificationEmail(savedUser, verificationLink)).start();
 
-        return ApiResponse.success("Registration successful. Admin will review your account soon.");
+        return ApiResponse.success(
+                "Registration successful. Check your email and click the verification link to activate your account. Admin activation is optional."
+        );
     }
 
     // =========================================================
@@ -846,9 +850,13 @@ public class AuthService {
                     "📝 Profile Updated - Smart Clearance",
                     "email/profile-updated",
                     variables
-            );
-
-            log.info("✅ Profile update notification sent to: {}", user.getEmail());
+            ).thenAccept(success -> {
+                if (Boolean.TRUE.equals(success)) {
+                    log.info("✅ Profile update notification sent to: {}", user.getEmail());
+                } else {
+                    log.warn("⚠️ Profile update notification delivery failed for: {}", user.getEmail());
+                }
+            });
         } catch (Exception e) {
             log.warn("⚠️ Failed to send profile update notification to {}: {}", user.getEmail(), e.getMessage());
         }
@@ -963,10 +971,36 @@ public class AuthService {
 
     @Transactional
     public ApiResponse verifyEmail(String token) {
-        // Implementation for email verification
-        // This would typically check a verification token in the user record
-        log.info("📧 Email verification with token: {}", token);
-        return ApiResponse.success("Email verified successfully");
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Verification token is required");
+        }
+
+        User user = userRepository.findByValidVerificationToken(token.trim(), LocalDateTime.now())
+                .orElseThrow(() -> new ApiException(
+                        "This verification link is invalid or has expired. Request a new verification email.",
+                        HttpStatus.BAD_REQUEST
+                ));
+
+        user.setEmailVerified(true);
+        user.setActive(true);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        try {
+            auditLogService.logAction(
+                    user.getId(),
+                    "VERIFY_EMAIL",
+                    "Email verified and account activated: " + user.getEmail(),
+                    "SUCCESS"
+            );
+        } catch (Exception e) {
+            log.warn("Failed to record email verification audit for {}: {}", user.getEmail(), e.getMessage());
+        }
+
+        sendAccountActivationNotification(user, "email verification", "Email verification link");
+        return ApiResponse.success("Email verified successfully. Your account is now active and ready to use.");
     }
 
     // =========================================================
@@ -975,8 +1009,16 @@ public class AuthService {
 
     @Transactional
     public ApiResponse resendVerificationEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
         User user = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isEmailVerified()) {
+            return ApiResponse.success("This email address is already verified.");
+        }
 
         // Generate verification token
         String verificationToken = UUID.randomUUID().toString();
@@ -1012,9 +1054,13 @@ public class AuthService {
                     "📧 Verify Your Email - Smart Clearance",
                     "email/verify-email",
                     variables
-            );
-
-            log.info("✅ Verification email sent to: {}", user.getEmail());
+            ).thenAccept(success -> {
+                if (Boolean.TRUE.equals(success)) {
+                    log.info("✅ Verification email sent to: {}", user.getEmail());
+                } else {
+                    log.warn("⚠️ Verification email delivery failed for: {}", user.getEmail());
+                }
+            });
         } catch (Exception e) {
             log.error("❌ Failed to send verification email to {}: {}", user.getEmail(), e.getMessage());
         }

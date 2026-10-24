@@ -228,6 +228,18 @@ export class PrincipalComponent implements OnInit {
         return !!photo;
     }
 
+    enlargedPhotoUrl: string | null = null;
+
+    openEnlargedPhoto(photoUrl: string | null): void {
+        if (photoUrl) {
+            this.enlargedPhotoUrl = photoUrl;
+        }
+    }
+
+    closeEnlargedPhoto(): void {
+        this.enlargedPhotoUrl = null;
+    }
+
     getDocumentStatus(request: ClearanceRequest): { total: number; uploaded: number; verified: number } {
         const hasPhoto = this.hasPhoto(request);
         return {

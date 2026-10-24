@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -99,6 +100,7 @@ public class AuthController {
     }
 
     @PutMapping("/activate/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> activateAccount(
             @PathVariable String userId,
             HttpServletRequest httpRequest) {
@@ -109,6 +111,7 @@ public class AuthController {
     }
 
     @PutMapping("/deactivate/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> deactivateAccount(
             @PathVariable String userId,
             HttpServletRequest httpRequest) {

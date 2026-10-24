@@ -16,7 +16,7 @@ export class SignupOptions implements OnInit {
   branding = {
     universityName: 'University of Dar es Salaam',
     shortName: 'UDSM',
-    logoUrl: '/public/udsm-logo.png'
+    logoUrl: '/udsm-logo.png'
   };
 
   ngOnInit(): void {

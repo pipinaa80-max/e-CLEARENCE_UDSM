@@ -6,6 +6,35 @@
   font-family: "Inter", "Segoe UI", Arial, sans-serif;
 }
 
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 20px;
+}
+
+.dashboard-toolbar input,
+.dashboard-toolbar select {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #cad8e2;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #17324d;
+  font: inherit;
+}
+
+.dashboard-toolbar input {
+  flex: 1 1 280px;
+}
+
+@media (max-width: 680px) {
+  .dashboard-toolbar > * {
+    width: 100%;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1692,3 +1721,19 @@
     visibility: hidden;
   }
 }
+
+/* Consistent line icons for Convocation dashboard labels and actions. */
+.ui-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -0.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.empty-state-icon { width: 2rem; height: 2rem; }
+

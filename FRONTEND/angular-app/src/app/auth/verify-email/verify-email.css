@@ -1,0 +1,42 @@
+.verification-page {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.verification-card {
+  width: min(100%, 30rem);
+  padding: 2.5rem;
+  text-align: center;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .12);
+}
+
+.icon {
+  margin: 0 auto 1rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #1b5e20;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.icon.error { background: #b71c1c; }
+
+button {
+  margin-top: 1rem;
+  padding: .7rem 1.3rem;
+  border: 0;
+  border-radius: .4rem;
+  color: #fff;
+  background: #1a237e;
+  cursor: pointer;
+}
+
+a { display: block; margin-top: 1rem; }

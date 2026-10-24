@@ -51,7 +51,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
   styles: [`
     .dashboard-header {
       position: relative;
-      z-index: 900;
+      z-index: 2100;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -88,6 +88,14 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
       flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+      .sidebar-toggle-btn {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 2200;
+      }
     }
     .sidebar-toggle-btn:hover {
       background: var(--udsm-blue);

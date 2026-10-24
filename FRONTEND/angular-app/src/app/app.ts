@@ -18,7 +18,7 @@ export class App {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly currentYear = new Date().getFullYear();
-  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/public/udsm-logo.png', backgroundUrl: '/public/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI', footerLinks: [] };
+  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', backgroundUrl: '/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI', footerLinks: [] };
   private brandingObserver?: MutationObserver;
 
   constructor() {

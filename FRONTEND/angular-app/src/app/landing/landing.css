@@ -96,7 +96,7 @@
   padding: 76px 24px 84px;
   text-align: center;
   color: #ffffff;
-  background-image: var(--app-bg-url, url('/public/background.png'));
+  background-image: var(--app-bg-url, url('/background.png'));
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

@@ -41,7 +41,7 @@
       title="Administrator Dashboard"
       subtitle="Manage users, offices, requests, and reports"
       [user]="currentUser"
-      [showToggle]="!sidebarOpen"
+      [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">

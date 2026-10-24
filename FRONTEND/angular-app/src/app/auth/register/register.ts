@@ -110,8 +110,8 @@ export class Register {
       next: (response) => {
         console.log('✅ Registration Success:', response);
         this.isLoading = false;
-        this.successMessage = response.message || 'Registration successful! Your account is pending administrator activation.';
-        this.toastService.success('Registration Success', 'Your account has been created and is pending activation.');
+        this.successMessage = response.message || 'Registration successful! Check your email to verify and activate your account.';
+        this.toastService.success('Check Your Email', 'Your account was created. Click the verification link sent to your email to activate it.');
 
         // Redirect to login after 3 seconds
         setTimeout(() => {

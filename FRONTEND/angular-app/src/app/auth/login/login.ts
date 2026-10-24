@@ -25,7 +25,7 @@ export class Login implements OnInit {
   branding = {
     universityName: 'University of Dar es Salaam',
     shortName: 'Clearance',
-    logoUrl: '/public/udsm-logo.png'
+    logoUrl: '/udsm-logo.png'
   };
 
   loginForm = this.fb.nonNullable.group({

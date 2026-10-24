@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="510" viewBox="0 0 1100 510">
+  <rect width="1100" height="510" fill="#101827"/>
+  <rect width="1100" height="54" fill="#1e293b"/>
+  <circle cx="26" cy="27" r="8" fill="#ef4444"/>
+  <circle cx="52" cy="27" r="8" fill="#f59e0b"/>
+  <circle cx="78" cy="27" r="8" fill="#22c55e"/>
+  <text x="110" y="34" fill="#cbd5e1" font-family="Consolas, monospace" font-size="20">app.routes.ts</text>
+  <text x="34" y="96" fill="#64748b" font-family="Consolas, monospace" font-size="19">1</text>
+  <text x="64" y="96" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">{</text>
+  <text x="94" y="96" fill="#facc15" font-family="Consolas, monospace" font-size="20">path</text>
+  <text x="150" y="96" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: </text>
+  <text x="174" y="96" fill="#86efac" font-family="Consolas, monospace" font-size="20">'dashboard/finance'</text>
+  <text x="390" y="96" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">,</text>
+  <text x="94" y="132" fill="#facc15" font-family="Consolas, monospace" font-size="20">component</text>
+  <text x="210" y="132" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: FinanceDashboard,</text>
+  <text x="94" y="168" fill="#facc15" font-family="Consolas, monospace" font-size="20">canActivate</text>
+  <text x="220" y="168" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: [authGuard, roleGuard(['Finance'])]</text>
+  <text x="64" y="204" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">},</text>
+  <text x="34" y="258" fill="#64748b" font-family="Consolas, monospace" font-size="19">6</text>
+  <text x="64" y="258" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">{</text>
+  <text x="94" y="258" fill="#facc15" font-family="Consolas, monospace" font-size="20">path</text>
+  <text x="150" y="258" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: </text>
+  <text x="174" y="258" fill="#86efac" font-family="Consolas, monospace" font-size="20">'dashboard/library'</text>
+  <text x="390" y="258" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">,</text>
+  <text x="94" y="294" fill="#facc15" font-family="Consolas, monospace" font-size="20">component</text>
+  <text x="210" y="294" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: LibraryDashboard,</text>
+  <text x="94" y="330" fill="#facc15" font-family="Consolas, monospace" font-size="20">canActivate</text>
+  <text x="220" y="330" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: [authGuard, roleGuard(['Library'])]</text>
+  <text x="64" y="366" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">}</text>
+  <text x="34" y="455" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">Authentication and role guards control navigation to office dashboards</text>
+</svg>

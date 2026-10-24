@@ -18,7 +18,7 @@ export class Landing implements OnInit {
   branding: ProjectConfig['branding'] = {
     universityName: 'University of Dar es Salaam',
     shortName: 'Clearance',
-    logoUrl: '/public/udsm-logo.png',
+    logoUrl: '/udsm-logo.png',
     backgroundUrl: '/background_image.png',
     primaryColor: '#0864af',
     fontFamily: 'Segoe UI',

@@ -1,4 +1,4 @@
-// convocation-dashboard.component.ts
+﻿// convocation-dashboard.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ConvocationService } from '../../core/services/convocation.service';
+import { ConvocationReceipt, ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
@@ -32,7 +32,7 @@ export class ConvocationDashboardComponent implements OnInit {
   message = '';
   selectedRequest: ClearanceRequest | null = null;
 
-  backendReceipts: any[] = [];
+  backendReceipts: ConvocationReceipt[] = [];
 
   showReceiptModal = false;
   receiptToView: { name: string, data: string, reg: string } | null = null;
@@ -42,6 +42,8 @@ export class ConvocationDashboardComponent implements OnInit {
   totalCompleted = 0;
 
   filterStatus = 'all';
+  searchTerm = '';
+  dateFilter = 'all';
   currentPage = 1;
   pageSize = 3;
 
@@ -86,6 +88,19 @@ export class ConvocationDashboardComponent implements OnInit {
     let allRequests = this.clearanceService.getRequestsForOffice('Convocation');
     this.updateStats(allRequests);
 
+    const search = this.searchTerm.trim().toLowerCase();
+    if (search) {
+      allRequests = allRequests.filter(request =>
+        [this.getStudentName(request), this.getStudentRegNumber(request), request.programme, request.department, request.college]
+          .some(value => (value || '').toLowerCase().includes(search))
+      );
+    }
+    if (this.dateFilter !== 'all') {
+      const days = Number(this.dateFilter);
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      allRequests = allRequests.filter(request => new Date(request.requestDate).getTime() >= cutoff);
+    }
+
     if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
       allRequests = allRequests.filter(r => this.getRequestOfficeStatus(r, 'Convocation') === 'Pending');
     } else if (this.filterStatus === 'approved') {
@@ -107,7 +122,7 @@ export class ConvocationDashboardComponent implements OnInit {
     // 1. Load from Backend
     this.convocationService.getPendingReceipts().subscribe({
       next: (res) => {
-        this.backendReceipts = res.receipts || [];
+        this.backendReceipts = (res.receipts || []).filter((receipt: ConvocationReceipt) => receipt.status === 'PENDING');
         console.log('Backend pending receipts loaded:', this.backendReceipts.length);
         this.isLoading = false;
       },
@@ -287,6 +302,18 @@ export class ConvocationDashboardComponent implements OnInit {
     return !!photo;
   }
 
+  enlargedPhotoUrl: string | null = null;
+
+  openEnlargedPhoto(photoUrl: string | null): void {
+    if (photoUrl) {
+      this.enlargedPhotoUrl = photoUrl;
+    }
+  }
+
+  closeEnlargedPhoto(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
   onImageError(request: ClearanceRequest): void {
     console.error('Image failed to load for request:', request.id);
     // Suppress loops by fallback flag or custom initials indicator rather than deleting full cache object
@@ -425,15 +452,36 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   refreshData(): void {
-    this.message = '🔄 Refreshing data...';
+    this.message = 'Refreshing data...';
     this.studentCache.clear();
     this.loadData();
     setTimeout(() => {
-      this.message = '✅ Data refreshed successfully.';
+      this.message = 'Data refreshed successfully.';
       setTimeout(() => {
         this.message = '';
       }, 3000);
     }, 500);
+  }
+
+  exportRequests(): void {
+    const rows = this.requests.map(request => [
+      this.getStudentName(request),
+      this.getStudentRegNumber(request),
+      request.programme || '',
+      request.college || '',
+      this.getRequestOfficeStatus(request, 'Convocation'),
+      request.requestDate
+    ]);
+    const csv = [['Student', 'Registration Number', 'Programme', 'College', 'Status', 'Requested At'], ...rows]
+      .map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `convocation-requests-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   logout(): void {
@@ -473,3 +521,4 @@ export class ConvocationDashboardComponent implements OnInit {
     });
   }
 }
+

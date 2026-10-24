@@ -128,6 +128,18 @@ export class DepartmentReviewComponent implements OnInit {
         return !!photo;
     }
 
+    enlargedPhotoUrl: string | null = null;
+
+    openEnlargedPhoto(photoUrl: string | null): void {
+        if (photoUrl) {
+            this.enlargedPhotoUrl = photoUrl;
+        }
+    }
+
+    closeEnlargedPhoto(): void {
+        this.enlargedPhotoUrl = null;
+    }
+
     getStudentEmail(): string {
         if (this.studentData) {
             return this.studentData.email || 'Not available';

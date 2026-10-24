@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs><linearGradient id="hero" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#aeb3ba"/><stop offset="1" stop-color="#858b93"/></linearGradient></defs>
+  <rect width="1200" height="760" fill="#f8fafc"/>
+  <rect width="1200" height="100" fill="white"/>
+  <circle cx="63" cy="50" r="33" fill="#fff" stroke="#f4bd24" stroke-width="4"/>
+  <text x="115" y="46" font-family="Arial, sans-serif" font-size="25" font-weight="bold" fill="#123b63">University of Dar es Salaam</text>
+  <text x="115" y="75" font-family="Arial, sans-serif" font-size="17" font-weight="bold" fill="#374151">CLEARANCE MIS</text>
+  <rect x="890" y="25" width="250" height="52" rx="10" fill="#09639a"/>
+  <text x="1015" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="19" font-weight="bold" fill="white">Staff / Student Login</text>
+  <rect y="100" width="1200" height="600" fill="url(#hero)"/>
+  <ellipse cx="600" cy="250" rx="55" ry="72" fill="#fff" opacity=".95"/>
+  <text x="600" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="white">Online Student Clearance Management System</text>
+  <text x="600" y="445" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="white">Streamlining the graduation and exit clearance process for students,</text>
+  <text x="600" y="477" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" fill="white">academic departments, library, finance, and ICT units.</text>
+  <rect x="465" y="535" width="270" height="70" rx="10" fill="#ffba16"/>
+  <text x="600" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#123b63">Proceed to Login</text>
+  <rect y="700" width="1200" height="8" fill="#f4bd24"/>
+  <text x="600" y="744" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#334155">Figure captured from the Angular e-Clearance frontend landing page</text>
+</svg>

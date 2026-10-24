@@ -1,0 +1,9 @@
+<main class="verification-page">
+  <section class="verification-card" aria-live="polite">
+    <div class="icon" [class.error]="error">{{ error ? '!' : (isLoading ? '...' : '✓') }}</div>
+    <h1>{{ isLoading ? 'Verifying email' : (error ? 'Verification failed' : 'Email verified') }}</h1>
+    <p>{{ message }}</p>
+    <button *ngIf="!isLoading" type="button" (click)="goToLogin()">Go to login</button>
+    <a *ngIf="error" routerLink="/login">Return to login</a>
+  </section>
+</main>

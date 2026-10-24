@@ -36,10 +36,13 @@ public class ConvocationService {
     private final StudentRepository studentRepository;
 
     private static final String UPLOAD_DIR = "uploads/convocation/";
+    private static final long MAX_RECEIPT_SIZE = 10 * 1024 * 1024;
 
     @Transactional
     public ApiResponse submitReceipt(ConvocationReceiptRequest request, MultipartFile file, String officerUsername) {
         log.info("📝 Submitting receipt for student: {}", request.getStudentId());
+
+        validateReceiptUpload(request, file);
 
         // Check if student exists
         User student = userRepository.findById(request.getStudentId())
@@ -95,7 +98,7 @@ public class ConvocationService {
     public ConvocationReceiptResponse getPendingReceipts() {
         log.info("📋 Getting all pending convocation receipts");
 
-        List<ConvocationReceipt> receipts = receiptRepository.findByStatus(ClearanceStatus.PENDING);
+        List<ConvocationReceipt> receipts = receiptRepository.findAll();
 
         List<ConvocationReceiptResponse.ReceiptDTO> receiptDTOs = receipts.stream()
                 .map(this::mapToReceiptDTO)
@@ -111,6 +114,30 @@ public class ConvocationService {
                 .approvedCount((int) approvedCount)
                 .rejectedCount((int) rejectedCount)
                 .build();
+    }
+
+    private void validateReceiptUpload(ConvocationReceiptRequest request, MultipartFile file) {
+        if (request == null || request.getStudentId() == null || request.getStudentId().isBlank()) {
+            throw new IllegalArgumentException("Student ID is required");
+        }
+        if (request.getControlNumber() == null || request.getControlNumber().isBlank()) {
+            throw new IllegalArgumentException("Control number is required");
+        }
+        if (request.getReceiptNumber() == null || request.getReceiptNumber().isBlank()) {
+            throw new IllegalArgumentException("Receipt number is required");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("A payment receipt file is required");
+        }
+        if (file.getSize() > MAX_RECEIPT_SIZE) {
+            throw new IllegalArgumentException("Payment receipt must not exceed 10 MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !(contentType.equals("application/pdf")
+                || contentType.equals("image/jpeg")
+                || contentType.equals("image/png"))) {
+            throw new IllegalArgumentException("Payment receipt must be a PDF, JPG, or PNG file");
+        }
     }
 
     @Transactional

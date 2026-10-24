@@ -17,6 +17,17 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/register`, user).pipe(timeout(30000));
   }
 
+  verifyEmail(token: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/verify-email?token=${encodeURIComponent(token)}`, {});
+  }
+
+  resendVerificationEmail(email: string): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/resend-verification?email=${encodeURIComponent(email.trim())}`,
+      {}
+    );
+  }
+
   login(identifier: string, password: string): Observable<any> {
     const normalized = identifier.trim();
     const isControlPlaneAccount = normalized.toLowerCase().endsWith('@admin.local');
@@ -111,6 +122,7 @@ export class AuthService {
       DEPARTMENT: 'Department',
       LABORATORY_OFFICER: 'Laboratory',
       LABORATORY: 'Laboratory',
+      ACADEMIC_STAFF: 'Academic Staff',
       'ACADEMIC STAFF': 'Academic Staff',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
@@ -151,8 +163,7 @@ export class AuthService {
   }
 
   logout(): Observable<any> {
-    this.storage.remove(this.currentUserKey);
-    this.storage.remove(this.tokenKey);
+    this.logoutLocal();
     return of({});
   }
 
@@ -170,7 +181,11 @@ export class AuthService {
 
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/profile`, { headers: this.getAuthHeaders() }).pipe(
-      tap(response => this.storage.save(this.currentUserKey, this.mapUserResponse(response)))
+      tap(response => {
+        const user = this.mapUserResponse(response);
+        this.cachedUser = user;
+        this.storage.save(this.currentUserKey, user);
+      })
     );
   }
 

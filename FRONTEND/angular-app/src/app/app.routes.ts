@@ -22,6 +22,7 @@ import { SignupOptions } from './auth/signup-options/signup-options';
 import { StaffRegister } from './auth/staff-register/staff-register';
 import { ForgotPassword } from './auth/forgot-password/forgot-password';
 import { ResetPassword } from './auth/reset-password/reset-password';
+import { VerifyEmail } from './auth/verify-email/verify-email';
 import { ConvocationComponent } from './clearenceapproval/convocation/convocation';
 import { GamesCoachComponent } from './dashboard/games_coach/games_coach';
 import { HallWardenComponent } from './dashboard/hall_warden/hall_warden';
@@ -53,6 +54,7 @@ export const routes: Routes = [
   { path: 'staff-register', component: StaffRegister },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
+  { path: 'verify-email', component: VerifyEmail },
 
   // Student Dashboard
   {

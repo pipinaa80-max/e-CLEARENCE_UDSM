@@ -179,6 +179,18 @@ export class LibraryDashboard {
     return !!photo;
   }
 
+  enlargedPhotoUrl: string | null = null;
+
+  openEnlargedPhoto(photoUrl: string | null): void {
+    if (photoUrl) {
+      this.enlargedPhotoUrl = photoUrl;
+    }
+  }
+
+  closeEnlargedPhoto(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
   getOfficeStatus(office: string): string {
     const request = this.studentRequest;
     if (!request) return 'Pending';

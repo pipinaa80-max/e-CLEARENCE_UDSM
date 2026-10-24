@@ -58,7 +58,7 @@ public class EmailService {
             log.info("📧 Email sent successfully to: {}", to);
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
-            if (e.getMessage().contains("Daily user sending limit exceeded")) {
+            if (e.getMessage() != null && e.getMessage().contains("Daily user sending limit exceeded")) {
                 log.error("🛑 GMAIL QUOTA EXCEEDED: Daily sending limit reached for {}. Please switch to a transactional service like SendGrid or Mailgun.", fromEmail);
             } else {
                 log.error("❌ Failed to send email to {}: {}", to, e.getMessage());
@@ -90,7 +90,7 @@ public class EmailService {
             log.info("📧 Email with attachment sent successfully to: {}", to);
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
-            if (e.getMessage().contains("Daily user sending limit exceeded")) {
+            if (e.getMessage() != null && e.getMessage().contains("Daily user sending limit exceeded")) {
                 log.error("🛑 GMAIL QUOTA EXCEEDED: Daily sending limit reached. Cannot send attachment to {}.", to);
             } else {
                 log.error("❌ Failed to send email with attachment to {}: {}", to, e.getMessage());

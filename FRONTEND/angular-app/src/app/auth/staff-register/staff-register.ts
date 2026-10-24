@@ -26,7 +26,7 @@ export class StaffRegister implements OnInit {
   branding = {
     universityName: 'University of Dar es Salaam',
     shortName: 'UDSM',
-    logoUrl: '/public/udsm-logo.png'
+    logoUrl: '/udsm-logo.png'
   };
 
   ngOnInit(): void {
@@ -171,22 +171,9 @@ export class StaffRegister implements OnInit {
     this.authService.register(userData).subscribe({
       next: (response) => {
         this.isLoading = false;
-        this.successMessage = response.message || 'Registration successful!';
-        this.toastService.success('Registration Success', 'Staff account created successfully.');
-
-        // Auto-login after registration
-        this.authService.login(value.email, value.password).subscribe({
-          next: (user) => {
-            setTimeout(() => {
-              this.router.navigate([this.redirectPathFor(user.role)]);
-            }, 1500);
-          },
-          error: () => {
-            setTimeout(() => {
-              this.router.navigate(['/login']);
-            }, 2000);
-          }
-        });
+        this.successMessage = response.message || 'Registration successful! Check your email to verify and activate your account.';
+        this.toastService.success('Check Your Email', 'Staff account created. Click the verification link sent to the account email before signing in.');
+        setTimeout(() => this.router.navigate(['/login']), 3000);
       },
       error: (err) => {
         this.isLoading = false;

@@ -20,7 +20,8 @@ public enum ERole {
     SMART_CARD_OFFICER,
     WORKSHOP_OFFICER,
     PRINCIPAL,
-    LABORATORY_OFFICER;
+    LABORATORY_OFFICER,
+    ACADEMIC_STAFF;
 
     private ERole() {
     }

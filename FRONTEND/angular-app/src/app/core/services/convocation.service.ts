@@ -12,6 +12,25 @@ export interface ConvocationReceiptRequest {
   paymentDate?: string;
 }
 
+export interface ConvocationReceipt {
+  id: string;
+  studentId: string;
+  studentName: string;
+  registrationNumber: string;
+  programme?: string;
+  department?: string;
+  college?: string;
+  controlNumber: string;
+  receiptNumber?: string;
+  paymentDate?: string;
+  fileUrl?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: string;
+  approvedAt?: string;
+  comments?: string;
+  submittedAt?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })

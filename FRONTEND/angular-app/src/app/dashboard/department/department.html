@@ -1,7 +1,7 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
   <aside class="sidebar">
     <div class="brand">
-      <img src="/public/udsm-logo.png" alt="Institutional Logo" />
+      <img src="/udsm-logo.png" alt="Institutional Logo" />
 
       <div>
         <strong>Department</strong>
@@ -27,7 +27,7 @@
         eyebrow="Department Clearance"
         title="Your Status"
         [user]="currentUser"
-        [showToggle]="!sidebarOpen"
+        [showToggle]="true"
         (toggleSidebar)="toggleSidebar()"
       >
       </app-dashboard-header>
@@ -66,7 +66,7 @@
         eyebrow="Clearance Office"
         title="Department Approval"
         [user]="currentUser"
-        [showToggle]="!sidebarOpen"
+        [showToggle]="true"
         (toggleSidebar)="toggleSidebar()"
       >
         <div header-actions class="count">

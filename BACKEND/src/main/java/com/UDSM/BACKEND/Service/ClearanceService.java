@@ -23,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,13 +39,9 @@ public class ClearanceService {
     private final PdfGenerator pdfGenerator;
     private final AuditLogService auditLogService;
 
-    public ApiResponse submitClearanceRequest(ClearanceRequestDTO requestDTO) {
-        // Find student by registration number
+    public ApiResponse submitClearanceRequest(ClearanceRequestDTO requestDTO, Authentication authentication) {
         String projectId = ProjectScope.currentProjectId();
-        Student student = (projectId == null
-                ? studentRepository.findByRegistrationNumber(requestDTO.getRegistrationNumber())
-                : studentRepository.findByRegistrationNumberAndProjectId(requestDTO.getRegistrationNumber(), projectId))
-                .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + requestDTO.getRegistrationNumber()));
+        Student student = findRequestedStudent(requestDTO.getRegistrationNumber(), authentication, projectId);
 
         // Check if student already has a pending request
         Optional<ClearanceRequest> existingRequest = projectId == null
@@ -139,12 +136,13 @@ public class ClearanceService {
         return ApiResponse.success("Clearance request submitted successfully");
     }
 
-    public ClearanceResponse getClearanceStatus(String studentId) {
+    public ClearanceResponse getClearanceStatus(String studentId, Authentication authentication) {
         String projectId = ProjectScope.currentProjectId();
         Student student = (projectId == null
                 ? studentRepository.findById(studentId)
                 : studentRepository.findByIdAndProjectId(studentId, projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found"));
+        assertStudentAccess(student, authentication);
 
         // Check for pending request first
         Optional<ClearanceRequest> pendingRequest = projectId == null
@@ -173,13 +171,48 @@ public class ClearanceService {
         return mapToResponse(request);
     }
 
-    public ClearanceResponse getClearanceStatusByRegistrationNumber(String registrationNumber) {
+    public ClearanceResponse getClearanceStatusByRegistrationNumber(
+            String registrationNumber,
+            Authentication authentication) {
         String projectId = ProjectScope.currentProjectId();
         Student student = (projectId == null
                 ? studentRepository.findByRegistrationNumber(registrationNumber)
                 : studentRepository.findByRegistrationNumberAndProjectId(registrationNumber, projectId))
                 .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + registrationNumber));
-        return getClearanceStatus(student.getId());
+        assertStudentAccess(student, authentication);
+        return getClearanceStatus(student.getId(), authentication);
+    }
+
+    private Student findRequestedStudent(String registrationNumber, Authentication authentication, String projectId) {
+        if (isStudent(authentication)) {
+            User user = (User) authentication.getPrincipal();
+            return (projectId == null
+                    ? studentRepository.findByUserId(user.getId())
+                    : studentRepository.findByUserIdAndProjectId(user.getId(), projectId))
+                    .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                            HttpStatus.FORBIDDEN, "The authenticated student does not own this clearance request"));
+        }
+
+        return (projectId == null
+                ? studentRepository.findByRegistrationNumber(registrationNumber)
+                : studentRepository.findByRegistrationNumberAndProjectId(registrationNumber, projectId))
+                .orElseThrow(() -> new RuntimeException("Student not found with registration number: " + registrationNumber));
+    }
+
+    private void assertStudentAccess(Student student, Authentication authentication) {
+        if (isStudent(authentication)) {
+            User user = (User) authentication.getPrincipal();
+            if (student.getUser() == null || !user.getId().equals(student.getUser().getId())) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "You may only access your own clearance status");
+            }
+        }
+    }
+
+    private boolean isStudent(Authentication authentication) {
+        return authentication != null
+                && authentication.getPrincipal() instanceof User user
+                && user.getRole() == ERole.STUDENT;
     }
 
     public Page<ClearanceResponse> getStudentClearanceHistory(String studentId, Pageable pageable) {

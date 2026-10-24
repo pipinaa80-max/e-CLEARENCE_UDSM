@@ -173,6 +173,18 @@ export class LaboratoryComponent {
     return !!photo;
   }
 
+  enlargedPhotoUrl: string | null = null;
+
+  openEnlargedPhoto(photoUrl: string | null): void {
+    if (photoUrl) {
+      this.enlargedPhotoUrl = photoUrl;
+    }
+  }
+
+  closeEnlargedPhoto(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
   approve(request: ClearanceRequest): void {
     const staff = this.currentUser;
 

@@ -278,6 +278,18 @@ export class DeanOfStudentsComponent implements OnInit {
     return !!photo;
   }
 
+  enlargedPhotoUrl: string | null = null;
+
+  openEnlargedPhoto(photoUrl: string | null): void {
+    if (photoUrl) {
+      this.enlargedPhotoUrl = photoUrl;
+    }
+  }
+
+  closeEnlargedPhoto(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
   // =====================================================
   // APPROVE
   // =====================================================

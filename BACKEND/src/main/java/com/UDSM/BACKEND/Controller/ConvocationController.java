@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ public class ConvocationController {
     private final ConvocationService convocationService;
 
     @PostMapping(value = "/submit-receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse> submitReceipt(
             @RequestPart("receipt") @Valid ConvocationReceiptRequest request,
             @RequestPart("file") MultipartFile file,
@@ -37,6 +39,7 @@ public class ConvocationController {
     }
 
     @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ConvocationReceiptResponse> getPendingReceipts(
             @AuthenticationPrincipal UserDetails userDetails) {
 
@@ -47,6 +50,7 @@ public class ConvocationController {
     }
 
     @PostMapping("/approve/{receiptId}")
+    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> approveReceipt(
             @PathVariable String receiptId,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -58,10 +62,15 @@ public class ConvocationController {
     }
 
     @PostMapping("/reject/{receiptId}")
+    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> rejectReceipt(
             @PathVariable String receiptId,
             @RequestParam String reason,
             @AuthenticationPrincipal UserDetails userDetails) {
+
+        if (reason == null || reason.trim().length() < 5) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("A rejection reason of at least 5 characters is required"));
+        }
 
         log.info("❌ Rejecting convocation receipt: {}, reason: {}", receiptId, reason);
 
@@ -70,6 +79,7 @@ public class ConvocationController {
     }
 
     @GetMapping("/status/{studentId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> getReceiptStatus(@PathVariable String studentId) {
         log.info("📊 Getting receipt status for student: {}", studentId);
         return ResponseEntity.ok(convocationService.getReceiptStatus(studentId));

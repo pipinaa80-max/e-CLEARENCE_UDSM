@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+  <rect width="1100" height="620" fill="#101827"/>
+  <rect x="0" y="0" width="1100" height="54" fill="#1e293b"/>
+  <circle cx="26" cy="27" r="8" fill="#ef4444"/>
+  <circle cx="52" cy="27" r="8" fill="#f59e0b"/>
+  <circle cx="78" cy="27" r="8" fill="#22c55e"/>
+  <text x="110" y="34" fill="#cbd5e1" font-family="Consolas, monospace" font-size="20">app.config.ts</text>
+  <text x="34" y="94" fill="#64748b" font-family="Consolas, monospace" font-size="19">1</text>
+  <text x="64" y="94" fill="#c084fc" font-family="Consolas, monospace" font-size="20">import</text>
+  <text x="143" y="94" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20"> { ApplicationConfig, ErrorHandler } </text>
+  <text x="575" y="94" fill="#c084fc" font-family="Consolas, monospace" font-size="20">from</text>
+  <text x="650" y="94" fill="#86efac" font-family="Consolas, monospace" font-size="20">'@angular/core';</text>
+  <text x="34" y="130" fill="#64748b" font-family="Consolas, monospace" font-size="19">2</text>
+  <text x="64" y="130" fill="#c084fc" font-family="Consolas, monospace" font-size="20">import</text>
+  <text x="143" y="130" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20"> { provideRouter } </text>
+  <text x="365" y="130" fill="#c084fc" font-family="Consolas, monospace" font-size="20">from</text>
+  <text x="440" y="130" fill="#86efac" font-family="Consolas, monospace" font-size="20">'@angular/router';</text>
+  <text x="34" y="166" fill="#64748b" font-family="Consolas, monospace" font-size="19">3</text>
+  <text x="64" y="166" fill="#c084fc" font-family="Consolas, monospace" font-size="20">import</text>
+  <text x="143" y="166" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20"> { provideHttpClient, withInterceptors } </text>
+  <text x="635" y="166" fill="#c084fc" font-family="Consolas, monospace" font-size="20">from</text>
+  <text x="710" y="166" fill="#86efac" font-family="Consolas, monospace" font-size="20">'@angular/common/http';</text>
+  <text x="34" y="220" fill="#64748b" font-family="Consolas, monospace" font-size="19">5</text>
+  <text x="64" y="220" fill="#60a5fa" font-family="Consolas, monospace" font-size="20">export const</text>
+  <text x="205" y="220" fill="#facc15" font-family="Consolas, monospace" font-size="20">appConfig</text>
+  <text x="315" y="220" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">: ApplicationConfig = {</text>
+  <text x="34" y="256" fill="#64748b" font-family="Consolas, monospace" font-size="19">6</text>
+  <text x="94" y="256" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">providers: [</text>
+  <text x="34" y="292" fill="#64748b" font-family="Consolas, monospace" font-size="19">7</text>
+  <text x="124" y="292" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">provideRouter(routes),</text>
+  <text x="34" y="328" fill="#64748b" font-family="Consolas, monospace" font-size="19">8</text>
+  <text x="124" y="328" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">{ provide: ErrorHandler, useClass: GlobalErrorHandler },</text>
+  <text x="34" y="364" fill="#64748b" font-family="Consolas, monospace" font-size="19">9</text>
+  <text x="124" y="364" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">provideHttpClient(</text>
+  <text x="154" y="400" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">withInterceptors([errorInterceptor])</text>
+  <text x="124" y="436" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">)</text>
+  <text x="34" y="472" fill="#64748b" font-family="Consolas, monospace" font-size="19">13</text>
+  <text x="94" y="472" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">]</text>
+  <text x="64" y="508" fill="#e2e8f0" font-family="Consolas, monospace" font-size="20">};</text>
+  <text x="34" y="575" fill="#94a3b8" font-family="Arial, sans-serif" font-size="18">Angular providers: routing, HTTP communication, interceptor, and global error handling</text>
+</svg>

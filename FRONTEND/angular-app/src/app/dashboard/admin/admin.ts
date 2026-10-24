@@ -593,7 +593,7 @@ export class AdminDashboard implements OnInit {
         const savedBranding = this.projectAdminService.getSavedBranding() || {
           universityName: 'University of Dar es Salaam',
           shortName: 'UDSM',
-          logoUrl: '/public/udsm-logo.png',
+          logoUrl: '/udsm-logo.png',
           backgroundUrl: '',
           primaryColor: '#00679b',
           fontFamily: 'Segoe UI',
