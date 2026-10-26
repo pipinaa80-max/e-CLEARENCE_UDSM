@@ -32,7 +32,6 @@ body {
   background: var(--bg-light);
   color: var(--text-dark);
   font-size: 16px; /* Base font size */
-  overflow-x: hidden;
 }
 
 body * {
@@ -60,34 +59,27 @@ body::after {
   pointer-events: none;
 }
 
-/* Ensure all text is at least a readable size unless explicitly tiny */
-/* Sidebar links and brand are handled specifically below */
-p, span, div, a:not(.sidebar nav a), button, input, select, td, th, label, strong, small {
-  font-size: 1rem; /* Default to 16px */
-  color: var(--text-dark); /* High contrast */
+/* Readable defaults. Components can size their own text without global color
+   declarations overriding text on dark or accent backgrounds. */
+p, li { line-height: 1.55; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.3; }
+small, .text-small { font-size: 0.75rem; line-height: 1.4; }
+button, input, select, textarea { font-family: inherit; line-height: 1.4; }
+td, th, p, li, dd, dt { overflow-wrap: anywhere; }
+.student-meta, .student-meta strong, .profile-details strong,
+.student-info, .student-details, .student-title, .student-heading,
+.department-name, .office-name, .request-heading, .request-label,
+.admin-project, .field-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
-
-h1 { font-size: 2.25rem; font-weight: 800; line-height: 1.2; }
-h2 { font-size: 1.75rem; font-weight: 700; line-height: 1.3; }
-h3 { font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
-
-small, .text-small {
-  font-size: 0.9rem !important; /* 14.4px - minimum recommended for clarity */
-}
-
-/* Force minimum readability for legacy components using tiny rems or px */
-small, .text-small, .eyebrow, .section-label, .status-badge, .clearance-label, .office-status, .pending-box small, .pending-status, .detail span, .approval-status, .reject-button, .approve-button, .cancel-button, .return-button, .view-process, .quick-action span, .brand small {
-  font-size: 0.9rem !important; /* 14.4px - minimum recommended for clarity */
-}
-
-.sidebar nav a, .sidebar nav button, .logout-link, .request-header h2, .student-meta strong, .office-card h3, .process-empty h3, .quick-action strong, .brand strong {
-  font-size: 1.1rem !important; /* Slightly larger for main navigation/headings */
-  font-weight: 700 !important;
-}
-
-td, th, p, li, label, input, select, textarea {
-  font-size: 1rem !important; /* 16px */
-  line-height: 1.6;
+code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
+.identifier, .code-value, .student-meta strong, .profile-details strong,
+[class*="registration-number"], [class*="student-id"] {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 /* Logo clarity enhancement */
@@ -175,7 +167,6 @@ input:disabled,
 select:disabled,
 textarea:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
 }
 
 ::selection {
@@ -193,7 +184,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--udsm-gold) 85%, #ffffff);
+  outline: 3px solid var(--udsm-blue-dark);
   outline-offset: 3px;
 }
 
@@ -405,7 +396,7 @@ textarea:focus-visible {
   background: var(--sidebar-bg) !important;
   color: #ffffff !important;
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
-  overflow-x: hidden !important;
+  overflow-x: visible;
   overflow-y: auto !important;
 }
 
@@ -499,7 +490,7 @@ textarea:focus-visible {
   flex: 1 1 auto;
   box-sizing: border-box;
   padding: clamp(20px, 3vw, 40px);
-  overflow-x: hidden;
+  overflow-x: auto;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -681,73 +672,16 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px var(--udsm-gold, #f6b418) !important;
 }
 
-/* Typography system: keep the existing component styling and tune text only. */
-html,
-body,
-body * {
-  font-family: 'Roboto', Arial, sans-serif !important;
+/* Role-specific families inherit the Roboto base set on html/body. */
+.sidebar nav a, .sidebar nav button, .sidebar .logout-link,
+.office-page .sidebar nav a, .office-page .sidebar nav button,
+.dashboard-shell .sidebar nav a, .dashboard-shell .sidebar nav button,
+.nav a, .nav button {
+  font-family: 'Open Sans', Arial, sans-serif;
 }
 
-html,
-body {
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-p, span, div, a, button, input, select, textarea, td, th, label, strong, small, li {
-  font-size: 13px !important;
-  font-weight: 400;
-  line-height: 1.45;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 16px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-
-button, input, select, textarea {
-  font-family: 'Roboto', Arial, sans-serif;
-  font-size: 13px !important;
-  font-weight: 400;
-}
-
-.sidebar nav a,
-.sidebar nav button,
-.sidebar .logout-link,
-.office-page .sidebar nav a,
-.office-page .sidebar nav button,
-.dashboard-shell .sidebar nav a,
-.dashboard-shell .sidebar nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-
-small, .text-small, .eyebrow, .section-label, .status-badge, .clearance-label,
-.office-status, .pending-box small, .pending-status, .detail span,
-.approval-status, .quick-action span, .brand small {
-  font-size: 11px !important;
-  font-weight: 400;
-}
-
-.app-footer, .app-footer p, .app-footer a, .app-footer nav span {
-  font-size: 11px !important;
-  font-weight: 400;
-}
-
-code, pre, kbd, samp,
-.registration-number, .student-id, .reg-number, .identifier, .code-value,
+code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
+.identifier, .code-value, .student-meta strong, .profile-details strong,
 [class*="registration-number"], [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
-}
-
-.student-meta strong, .profile-details strong {
-  font-family: 'Courier New', Courier, monospace !important;
-  font-size: 11px !important;
-  font-weight: 400 !important;
+  font-family: 'Courier New', Courier, monospace;
 }

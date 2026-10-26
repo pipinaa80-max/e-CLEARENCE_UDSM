@@ -53,7 +53,7 @@
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="count">
-        <strong>{{ requests.length }}</strong>
+        <strong>{{ pendingRequestCount }}</strong>
         <small>Pending</small>
       </div>
     </app-dashboard-header>
@@ -85,24 +85,16 @@
       </div>
 
 
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-
-        <option value="all">
-          All Requests
-        </option>
-
-        <option value="pending">
+      <select aria-label="Filter requests by status" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
+        <option value="Pending">
           Pending
         </option>
-
-        <option value="approved">
+        <option value="Approved">
           Approved
         </option>
-
-        <option value="rejected">
+        <option value="Rejected">
           Rejected
         </option>
-
       </select>
 
     </section>
@@ -116,15 +108,15 @@
     >
 
       <div class="empty-icon">
-        ✓
+        —
       </div>
 
       <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
+        {{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}
       </h2>
 
       <p>
-        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}
+        {{ searchTerm ? 'Try another registration number, student name or programme.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}
       </p>
 
     </section>
@@ -132,161 +124,51 @@
 
     <!-- REQUEST LIST -->
 
-    <section
-      class="request-list"
-      *ngIf="filteredRequests.length"
-    >
-
-      <article
-        class="request-card"
-        *ngFor="let request of paginatedRequests"
-      >
-
-        <!-- REQUEST HEADER -->
-
-        <div class="request-header">
-
-          <div class="student-heading">
-
-            <!-- SAFE PHOTO PLACEHOLDER -->
-
-            <div class="student-photo">
-              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(request))" title="Click to view enlarged photo" />
-              <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
-            </div>
-
-
-            <div class="student-title">
-
-              <span class="request-label">
-                Graduation Clearance
-              </span>
-
-              <h2>
-                {{ getStudentName(request) }}
-              </h2>
-
-              <p>
-                {{ request.programme }}
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <span class="status">
-            Pending
-          </span>
-
-        </div>
-
-
-        <!-- DETAILS -->
-
-        <div class="request-details">
-
-          <div class="detail-item">
-
-            <span>
-              REG NO
-            </span>
-
-            <strong>
-              {{ getStudentRegNumber(request) }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Programme
-            </span>
-
-            <strong>
-              {{ request.programme }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Department
-            </span>
-
-            <strong>
-              {{ request.department }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              College
-            </span>
-
-            <strong>
-              {{ request.college }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Submitted
-            </span>
-
-            <strong>
-              {{ request.requestDate | date:'mediumDate' }}
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        <!-- ACTIONS -->
-
-        <div class="request-footer">
-
-          <span class="review-note">
-            Review this clearance request.
-          </span>
-
-
-          <div class="actions" *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'">
-
-            <button
-              type="button"
-              class="reject-button"
-              (click)="openRejectForm(request)"
-            >
-              Reject
-            </button>
-
-
-            <button
-              type="button"
-              class="approve-button"
-              (click)="approve(request)"
-            >
-              Approve
-            </button>
-
-          </div>
-
-        </div>
-
-      </article>
-
+    <section class="request-table-wrap" *ngIf="filteredRequests.length">
+      <table class="request-table">
+        <thead>
+          <tr>
+            <th scope="col">Registration Number</th>
+            <th scope="col">Full Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone Number</th>
+            <th scope="col">Programme</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let request of paginatedRequests">
+            <td>{{ getStudentRegNumber(request) }}</td>
+            <td class="student-name">{{ getStudentName(request) }}</td>
+            <td>{{ getStudentEmail(request) }}</td>
+            <td>{{ getStudentPhone(request) }}</td>
+            <td>{{ getStudentProgramme(request) }}</td>
+            <td>
+              <div class="actions" *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'; else reviewedStatus">
+                <button
+                  type="button"
+                  class="reject-button"
+                  (click)="openRejectForm(request)"
+                  [disabled]="processingRequests.has(request.id)"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  class="approve-button"
+                  (click)="approve(request)"
+                  [disabled]="processingRequests.has(request.id)"
+                >
+                  {{ processingRequests.has(request.id) ? 'Processing...' : 'Approve' }}
+                </button>
+              </div>
+              <ng-template #reviewedStatus>
+                <span class="reviewed-status">{{ getRequestOfficeStatus(request, 'DARUSO') }}</span>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <div class="pagination" *ngIf="totalPages > 1">
@@ -342,6 +224,7 @@
             type="button"
             class="cancel-button"
             (click)="selectedRequest = null"
+            [disabled]="processingRequests.has(selectedRequest.id)"
           >
             Cancel
           </button>
@@ -351,9 +234,9 @@
             type="button"
             class="return-button"
             (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
+            [disabled]="!rejectionComment.trim() || processingRequests.has(selectedRequest.id)"
           >
-            Send Reason to Student
+            {{ processingRequests.has(selectedRequest.id) ? 'Processing...' : 'Send Reason to Student' }}
           </button>
 
         </div>
@@ -362,13 +245,5 @@
 
     </section>
   </main>
-
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
-    </div>
-  </div>
 
 </section>

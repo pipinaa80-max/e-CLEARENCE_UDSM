@@ -1,0 +1,92 @@
+.request-table-wrap {
+  width: min(100%, 1500px);
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid #dce3e8;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
+}
+
+.request-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  color: #26343d;
+  font-size: 0.78rem;
+}
+
+.request-table th,
+.request-table td {
+  padding: 13px 15px;
+  border-bottom: 1px solid #e8edf0;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.request-table th {
+  background: #f5f8fa;
+  color: #455762;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.request-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.request-table tbody tr:hover {
+  background: #f9fbfc;
+}
+
+.request-table .student-name {
+  color: #132d3a;
+  font-weight: 750;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.reject-button,
+.approve-button {
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reject-button {
+  border: 1px solid #c73535;
+  background: #ffffff;
+  color: #c73535;
+}
+
+.reject-button:hover {
+  background: #c73535;
+  color: #ffffff;
+}
+
+.approve-button {
+  border: 1px solid #176b37;
+  background: #176b37;
+  color: #ffffff;
+}
+
+.approve-button:hover {
+  background: #1a6b2e;
+  color: #ffffff;
+}
+
+.reviewed-status {
+  color: #52636d;
+  font-size: 0.72rem;
+  font-weight: 800;
+}

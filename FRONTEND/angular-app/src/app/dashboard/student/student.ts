@@ -10,6 +10,9 @@ import { NotificationItem } from '../../core/models/notification.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
+import { environment } from '../../environments/environment';
+
+type StudentSystemType = 'clearance' | 'transcript';
 
 @Component({
   selector: 'app-student-dashboard',
@@ -27,22 +30,23 @@ export class StudentDashboard implements OnInit {
 
   sidebarOpen = false;
   profilePhoto: string | null = null;
+  photoLoadFailed = false;
   isLoading = true;
+  systemType: StudentSystemType = environment.systemType;
 
   ngOnInit(): void {
-    this.refreshInformation();
+    this.loadProfilePhoto();
   }
 
   refreshInformation(): void {
-    this.isLoading = true;
+    this.loadProfilePhoto();
     this.authService.getProfile().subscribe({
-      next: (user) => {
-        console.log('Dashboard - Profile updated from backend');
+      next: () => {
         this.loadProfilePhoto();
       },
       error: (err) => {
         console.error('Dashboard - Failed to refresh profile:', err);
-        this.loadProfilePhoto(); // Fallback to local
+        this.loadProfilePhoto();
       }
     });
   }
@@ -61,6 +65,7 @@ export class StudentDashboard implements OnInit {
 
   loadProfilePhoto(): void {
     this.isLoading = true;
+    this.photoLoadFailed = false;
     const user = this.currentUser;
 
     if (!user) {
@@ -68,60 +73,26 @@ export class StudentDashboard implements OnInit {
       return;
     }
 
-    console.log('Dashboard - Loading profile photo for user:', user.id);
-
-    // Method 1: Check if user has a profile photo directly
-    if (user.profilePhoto && user.profilePhoto.startsWith('data:image')) {
-      this.profilePhoto = user.profilePhoto;
-      console.log('Dashboard - Photo loaded from user.profilePhoto');
+    const savedPhoto = this.authService.getProfilePhotoSource(user);
+    if (savedPhoto) {
+      this.profilePhoto = savedPhoto;
       this.isLoading = false;
       return;
     }
 
-    // Method 2: Check if user has photo from clearance request
-    if (user.photo && user.photo.startsWith('data:image')) {
-      this.profilePhoto = user.photo;
-      console.log('Dashboard - Photo loaded from user.photo');
-      this.isLoading = false;
-      return;
-    }
-
-    // Method 3: Check the latest clearance request for photo
     const requests = this.clearanceService.getStudentRequests(user.id);
-    console.log('Dashboard - Found clearance requests:', requests.length);
-
-    if (requests.length > 0) {
-      // Get the latest request
-      const latestRequest = requests[requests.length - 1];
-      const photoData = latestRequest.photo;
-
-      if (photoData && (photoData.startsWith('data:image') || photoData.length > 100)) {
-        this.profilePhoto = photoData.startsWith('data:image') ? photoData : 'data:image/jpeg;base64,' + photoData;
-        console.log('Dashboard - Photo loaded from clearance request');
-
-        // Update the user object with this photo for future use
-        user.photo = this.profilePhoto;
+    for (const request of [...requests].reverse()) {
+      const requestPhoto = this.authService.getProfilePhotoSource({ photo: request.photo });
+      if (requestPhoto) {
+        this.profilePhoto = requestPhoto;
+        user.photo = requestPhoto;
         this.authService.updateCurrentUser(user);
         this.isLoading = false;
         return;
       }
     }
 
-    // Method 4: Check all requests for any photo
-    for (const request of requests) {
-      if (request.photo && request.photo.startsWith('data:image')) {
-        this.profilePhoto = request.photo;
-        console.log('Dashboard - Photo loaded from older request:', request.id);
-
-        // Update the user object with this photo
-        user.photo = request.photo;
-        this.authService.updateCurrentUser(user);
-        this.isLoading = false;
-        return;
-      }
-    }
-
-    console.log('Dashboard - No photo found for user');
+    this.profilePhoto = null;
     this.isLoading = false;
   }
 
@@ -130,29 +101,16 @@ export class StudentDashboard implements OnInit {
   // =====================================================
 
   getPhotoSource(): string | null {
-    if (this.profilePhoto && (this.profilePhoto.startsWith('data:image') || this.profilePhoto.length > 100)) {
-      return this.profilePhoto.startsWith('data:image') ? this.profilePhoto : 'data:image/jpeg;base64,' + this.profilePhoto;
-    }
-
-    const user = this.currentUser;
-    if (user) {
-      const uPhoto = user.profilePhoto || user.photo || user.profileImageUrl;
-      if (uPhoto && (uPhoto.startsWith('data:image') || uPhoto.length > 100)) {
-        return uPhoto.startsWith('data:image') ? uPhoto : 'data:image/jpeg;base64,' + uPhoto;
-      }
-    }
+    const userPhoto = this.authService.getProfilePhotoSource(this.currentUser);
+    if (userPhoto) return userPhoto;
+    if (this.profilePhoto) return this.profilePhoto;
 
     const request = this.currentRequest;
-    if (request?.photo && (request.photo.startsWith('data:image') || request.photo.length > 100)) {
-      return request.photo.startsWith('data:image') ? request.photo : 'data:image/jpeg;base64,' + request.photo;
-    }
-
-    return null;
+    return this.authService.getProfilePhotoSource({ photo: request?.photo });
   }
 
   hasPhoto(): boolean {
-    const source = this.getPhotoSource();
-    return !!source && (source.startsWith('data:image') || source.length > 100);
+    return !this.photoLoadFailed && !!this.getPhotoSource();
   }
 
   // =====================================================
@@ -277,7 +235,12 @@ export class StudentDashboard implements OnInit {
   }
 
   get dashboardSubtitle(): string {
-    return `Manage your ${this.studentAward} student information and clearance process.`;
+    const process = this.isTranscriptSystem ? 'transcript request and payment process' : 'clearance process';
+    return `Manage your ${this.studentAward} student information and ${process}.`;
+  }
+
+  get isTranscriptSystem(): boolean {
+    return this.systemType === 'transcript';
   }
 
   get programme(): string | undefined {
@@ -462,13 +425,7 @@ export class StudentDashboard implements OnInit {
   // =====================================================
 
   onImageError(): void {
-    console.log('Dashboard - Image failed to load, clearing photo');
     this.profilePhoto = null;
-    const user = this.currentUser;
-    if (user) {
-      user.profilePhoto = '';
-      user.photo = '';
-      this.authService.updateCurrentUser(user);
-    }
+    this.photoLoadFailed = true;
   }
 }

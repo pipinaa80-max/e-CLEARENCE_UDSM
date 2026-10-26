@@ -89,7 +89,7 @@
   margin-top: 4px;
 
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.65rem;
+  font-size: 12px;
 }
 
 .sidebar nav {
@@ -117,7 +117,7 @@
   color: rgba(255, 255, 255, 0.78);
 
   font: inherit;
-  font-size: 0.74rem;
+  font-size: 12px;
   font-weight: 700;
 
   text-align: left;
@@ -166,7 +166,7 @@
 
   color: var(--udsm-gold);
 
-  font-size: 0.68rem;
+  font-size: 12px;
   font-weight: 800;
 
   letter-spacing: 0.06em;
@@ -231,7 +231,7 @@
 
   color: #6c7780;
 
-  font-size: 0.63rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -248,12 +248,12 @@
   padding: 12px 15px;
   box-sizing: border-box;
 
-  border-left: 4px solid #218739;
+  border-left: 4px solid #176b37;
   border-radius: 7px;
 
   background: #f0f8f2;
 
-  color: #218739;
+  color: #176b37;
 
   font-size: 0.75rem;
   font-weight: 700;
@@ -293,7 +293,7 @@
 
   background: #eef8f0;
 
-  color: #218739;
+  color: #176b37;
 
   font-weight: 900;
 }
@@ -433,7 +433,7 @@
 
   color: #0066a1;
 
-  font-size: 0.63rem;
+  font-size: 12px;
   font-weight: 800;
 
   letter-spacing: 0.05em;
@@ -468,9 +468,9 @@
 
   background: #fff7df;
 
-  color: #9a7100;
+  color: #795700;
 
-  font-size: 0.61rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -521,7 +521,7 @@
 
   color: #6c7780;
 
-  font-size: 0.61rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -560,7 +560,7 @@
 .review-note {
   color: #6c7780;
 
-  font-size: 0.68rem;
+  font-size: 12px;
 }
 
 .actions {
@@ -579,7 +579,7 @@
 
   border-radius: 7px;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
@@ -599,9 +599,9 @@
 }
 
 .approve-button {
-  border: 1px solid #218739;
+  border: 1px solid #176b37;
 
-  background: #218739;
+  background: #176b37;
 
   color: #ffffff;
 }
@@ -697,7 +697,7 @@
 
   color: #26343d;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -749,7 +749,7 @@
 
   border-radius: 7px;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
@@ -806,7 +806,7 @@
   background: #ffffff;
   color: #000000;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
@@ -979,48 +979,106 @@
 .page-info strong {
   color: #003b5c;
 }
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
+
+.toolbar,
+.request-table-wrap,
+.empty-state,
+.message,
+.pagination {
+  width: min(100%, 1500px);
 }
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
+
+.toolbar {
+  margin-bottom: 14px;
 }
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
+
+.request-table-wrap {
+  margin: 0 auto;
+  overflow-x: auto;
+  border: 1px solid #dce3e8;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+  -webkit-overflow-scrolling: touch;
 }
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
+
+.request-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  table-layout: auto;
+  color: #26343d;
+  font-size: 0.78rem;
 }
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
+
+.request-table th,
+.request-table td {
+  padding: 13px 15px;
+  border-bottom: 1px solid #e8edf0;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
 }
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
+
+.request-table th {
+  background: #f5f8fa;
+  color: #455762;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
 }
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
+
+.request-table tbody tr:last-child td {
+  border-bottom: 0;
 }
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
+
+.request-table tbody tr:hover {
+  background: #f9fbfc;
+}
+
+.request-table .student-name {
+  color: #132d3a;
+  font-weight: 750;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.request-table .reject-button,
+.request-table .approve-button {
+  min-height: 34px;
+  padding: 0 11px;
+}
+
+.request-table .reject-button:disabled,
+.request-table .approve-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
+}
+
+.reviewed-status {
+  color: #52636d;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 680px) {
+  .toolbar {
+    flex-direction: column !important;
+    align-items: stretch;
+  }
+
+  .search-box,
+  .toolbar select {
+    width: 100%;
+  }
+
+  .request-table {
+    min-width: 1120px;
+  }
 }

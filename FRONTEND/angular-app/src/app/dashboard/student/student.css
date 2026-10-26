@@ -105,7 +105,7 @@
   border-radius: 999px;
   background: #e5b83c;
   color: var(--udsm-blue-dark);
-  font-size: 0.6rem;
+  font-size: 12px;
   font-weight: 900;
 }
 
@@ -154,7 +154,7 @@
   border-radius: 999px;
   background: var(--udsm-gold);
   color: var(--udsm-blue-dark);
-  font-size: 10px !important;
+  font-size: 12px !important;
   font-weight: 900;
   line-height: 1;
 }
@@ -276,7 +276,7 @@
 
   color: #4b5563;
 
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 400;
 
   text-transform: uppercase;
@@ -288,7 +288,7 @@
   color: #000000;
 
   font-family: 'Courier New', Courier, monospace !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 400;
   line-height: 1.4;
 }
@@ -297,7 +297,7 @@
   display: inline-block;
   padding: 3px 10px;
   background: #e0f2fe;
-  color: #0284c7;
+  color: #0369a1;
   border: 1px solid #bae6fd;
   border-radius: 6px;
   font-size: 0.95rem;
@@ -372,7 +372,7 @@
   border-radius: 999px;
 
   background: #edf2f7;
-  color: #68788a;
+  color: #4f5f70;
 
   font-size: 0.85rem;
   font-weight: 800;
@@ -382,7 +382,7 @@
 
 .status-badge.not-started {
   background: #fff5d6;
-  color: #947000;
+  color: #795700;
 }
 
 .status-badge.in-progress {
@@ -399,19 +399,19 @@
 
 .status-badge.completed {
   background: #e6f5eb;
-  color: #21834a;
+  color: #176b37;
 }
 
 .status-badge.rejected {
   background: #fdeaea;
-  color: #c53939;
+  color: #b42318;
 }
 
 /* Transcript Statuses */
 .status-badge.pending-control-number,
 .status-badge.awaiting-payment {
   background: #fff5d6;
-  color: #947000;
+  color: #795700;
 }
 
 .status-badge.receipt-submitted {
@@ -421,7 +421,7 @@
 
 .status-badge.paid {
   background: #e6f5eb;
-  color: #21834a;
+  color: #176b37;
 }
 
 .status-description {
@@ -429,7 +429,7 @@
 
   margin: 17px 0;
 
-  color: #718096;
+  color: #556475;
 
   font-size: 0.95rem;
   line-height: 1.55;
@@ -529,13 +529,13 @@
 
   margin-top: 11px;
 
-  color: #7a8795;
+  color: #556475;
 
-  font-size: 0.64rem;
+  font-size: 12px;
 }
 
 .rejected-text {
-  color: #c53939;
+  color: #b42318;
 }
 
 
@@ -545,7 +545,6 @@
 
 .process-preview {
   position: relative;
-  overflow: hidden;
 
   margin-top: 22px;
 
@@ -562,6 +561,7 @@
 }
 .process-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
 
@@ -571,6 +571,10 @@
   padding-bottom: 22px;
 
   border-bottom: 1px solid #e4ecf2;
+}
+.process-heading > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .process-heading h2 {
   margin: 5px 0 0;
@@ -585,13 +589,14 @@
 
   margin: 7px 0 0;
 
-  color: #718096;
+  color: #556475;
 
   font-size: 0.78rem;
   line-height: 1.55;
 }
 .view-process {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
   gap: 7px;
 
@@ -603,8 +608,11 @@
   background: #f8fbfd;
   color: #0b5b94;
 
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: normal;
 
   text-decoration: none;
 
@@ -640,6 +648,7 @@
 
 .office-card {
   position: relative;
+  min-width: 0;
 
   min-height: 0;
 
@@ -661,6 +670,7 @@
 }
 .office-card-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
 
   gap: 10px;
@@ -683,22 +693,26 @@
 }
 
 .office-status {
+  max-width: 100%;
   padding: 5px 8px;
 
   border-radius: 999px;
 
   background: #edf2f7;
-  color: #718096;
+  color: #556475;
 
   font-size: 0.9rem;
   font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  white-space: normal;
 
   text-transform: uppercase;
 }
 
 .office-status.approved {
   background: #e7f5ec;
-  color: #21834a;
+  color: #176b37;
 }
 
 .office-status.pending {
@@ -708,7 +722,7 @@
 
 .office-status.rejected {
   background: #fdeaea;
-  color: #c53939;
+  color: #b42318;
 }
 
 .office-card h3 {
@@ -717,14 +731,16 @@
   color: #243b53;
 
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
 }
 .office-card p {
   margin: 5px 0 0 48px;
 
-  color: #7a8795;
+  color: #556475;
 
   font-size: 0.95rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .office-card:has(.office-status.approved) {
@@ -772,12 +788,13 @@
   background: #e8f1f8;
   color: #0b5b94;
 
-  font-size: 0.65rem;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .process-empty div:nth-child(2) {
   flex: 1;
+  min-width: 0;
 }
 
 .process-empty h3 {
@@ -793,7 +810,7 @@
 
   margin: 5px 0 0;
 
-  color: #718096;
+  color: #556475;
 
   font-size: 0.95rem;
   line-height: 1.45;
@@ -817,6 +834,7 @@
 
 .quick-action {
   display: block;
+  min-width: 0;
 
   padding: 16px;
 
@@ -852,9 +870,10 @@
 
   margin-top: 5px;
 
-  color: #7a8795;
+  color: #556475;
 
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 
@@ -992,48 +1011,4 @@
 
 }
 
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
-}
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
-}
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
-}
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-}
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
-}
+

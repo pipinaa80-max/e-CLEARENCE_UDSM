@@ -39,12 +39,18 @@ export interface ClearanceRequest {
   studentId: string;
   studentName?: string;           // Added
   registrationNumber?: string;    // Added
+  email?: string;
+  phoneNumber?: string;
+  physicalAddress?: string;
+  address?: string;
   college: string;
   department: string;
   programme: string;
   hall?: string;                  // Added
+  wing?: string;
+  block?: string;
   roomNumber?: string;            // Added
-  residenceType?: 'Off Campus' | 'Hostel Dwellers';
+  residenceType?: 'Hostel Dwellers' | 'Non-Hostel Dwellers' | 'Off Campus';
   residenceEvidence?: string;
   sponsor?: string;               // Added
   photo?: string;                 // Added

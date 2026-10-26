@@ -80,7 +80,7 @@
   min-height: 32px;
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   white-space: nowrap;
@@ -102,7 +102,7 @@
   background: var(--surface-soft);
 }
 
-.current-stage span { color: var(--text-muted); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.current-stage span { color: var(--text-muted); font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .current-stage strong { color: #000000; font-size: 0.95rem; font-weight: 800; }
 
 .process-path {
@@ -119,8 +119,8 @@
 .step-number { position: relative; z-index: 1; width: 36px; height: 36px; display: inline-grid; place-items: center; border: 1px solid var(--border-soft); border-radius: 50%; background: #ffffff; color: var(--text-muted); font-size: 0.75rem; font-weight: 800; }
 .step-content { display: grid; gap: 5px; margin-top: 10px; }
 .step-content strong { color: #000000; font-size: 0.8rem; font-weight: 800; }
-.step-content small { min-height: 36px; color: #374151; font-size: 0.72rem; line-height: 1.4; font-weight: 500; }
-.step-content > span { color: var(--warning); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+.step-content small { min-height: 36px; color: #374151; font-size: 12px; line-height: 1.4; font-weight: 500; }
+.step-content > span { color: var(--warning); font-size: 12px; font-weight: 800; text-transform: uppercase; }
 
 .process-step.approved .step-number { border-color: var(--success); background: var(--success); color: #ffffff; }
 .process-step.approved .step-line { background: var(--success); }
@@ -145,7 +145,7 @@
 .approval-item:last-child { border-bottom: none; }
 .approval-item strong { display: block; color: #000000; font-size: 0.9rem; font-weight: 700; }
 .approval-item small { display: block; margin-top: 5px; color: #374151; font-size: 0.75rem; line-height: 1.4; font-weight: 500; }
-.approval-item p { margin: 8px 0 0; color: var(--danger); font-size: 0.74rem; line-height: 1.45; }
+.approval-item p { margin: 8px 0 0; color: var(--danger); font-size: 12px; line-height: 1.45; }
 
 .step-action { margin-top: 18px; padding: 14px 16px; border-radius: var(--radius-control); background: var(--surface-soft); }
 .step-action p { margin: 0; color: var(--text-muted); font-size: 0.78rem; line-height: 1.5; }
@@ -158,7 +158,7 @@
 
 .no-request-page { min-height: calc(100vh - 56px); display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
 .no-request-card { width: min(100%, 480px); margin: 0; padding: 64px 40px; text-align: center; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-card); box-shadow: var(--shadow-soft); }
-.warning-icon { width: 48px; height: 48px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 50%; background: #fff7df; color: #946f00; font-size: 1.5rem; font-weight: 900; }
+.warning-icon { width: 48px; height: 48px; display: grid; place-items: center; margin: 0 auto 18px; border-radius: 50%; background: #fff7df; color: #795700; font-size: 1.5rem; font-weight: 900; }
 .no-request-card h1 { margin: 0 0 10px; color: var(--udsm-blue-dark); font-size: 1rem; font-weight: 800; }
 .no-request-card p { max-width: 360px; margin: 0 auto 20px; color: var(--text-muted); font-size: 0.82rem; line-height: 1.5; }
 .request-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border-radius: var(--radius-control); background: var(--udsm-blue); color: #ffffff; font-size: 0.82rem; font-weight: 800; text-decoration: none; }

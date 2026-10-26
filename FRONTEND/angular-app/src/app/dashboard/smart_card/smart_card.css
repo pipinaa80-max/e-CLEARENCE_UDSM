@@ -90,7 +90,7 @@
   margin-top: 4px;
 
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.65rem;
+  font-size: 12px;
 }
 
 .sidebar nav {
@@ -118,7 +118,7 @@
   color: rgba(255, 255, 255, 0.78);
 
   font: inherit;
-  font-size: 0.74rem;
+  font-size: 12px;
   font-weight: 700;
 
   text-align: left;
@@ -167,7 +167,7 @@
 
   color: var(--udsm-gold);
 
-  font-size: 0.68rem;
+  font-size: 12px;
   font-weight: 800;
 
   letter-spacing: 0.06em;
@@ -232,7 +232,7 @@
 
   color: #6c7780;
 
-  font-size: 0.63rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -249,12 +249,12 @@
   padding: 12px 15px;
   box-sizing: border-box;
 
-  border-left: 4px solid #218739;
+  border-left: 4px solid #176b37;
   border-radius: 7px;
 
   background: #f0f8f2;
 
-  color: #218739;
+  color: #176b37;
 
   font-size: 0.75rem;
   font-weight: 700;
@@ -294,7 +294,7 @@
 
   background: #eef8f0;
 
-  color: #218739;
+  color: #176b37;
 
   font-weight: 900;
 }
@@ -434,7 +434,7 @@
 
   color: #0066a1;
 
-  font-size: 0.63rem;
+  font-size: 12px;
   font-weight: 800;
 
   letter-spacing: 0.05em;
@@ -469,9 +469,9 @@
 
   background: #fff7df;
 
-  color: #9a7100;
+  color: #795700;
 
-  font-size: 0.61rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -522,7 +522,7 @@
 
   color: #6c7780;
 
-  font-size: 0.61rem;
+  font-size: 12px;
   font-weight: 800;
 
   text-transform: uppercase;
@@ -570,7 +570,7 @@
   background: #ffffff;
   color: #000000;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
@@ -606,7 +606,7 @@
 .review-note {
   color: #6c7780;
 
-  font-size: 0.68rem;
+  font-size: 12px;
 }
 
 .actions {
@@ -625,7 +625,7 @@
 
   border-radius: 7px;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
@@ -645,9 +645,9 @@
 }
 
 .approve-button {
-  border: 1px solid #218739;
+  border: 1px solid #176b37;
 
-  background: #218739;
+  background: #176b37;
 
   color: #ffffff;
 }
@@ -743,7 +743,7 @@
 
   color: #26343d;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -795,7 +795,7 @@
 
   border-radius: 7px;
 
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
@@ -981,48 +981,4 @@
   color: #003b5c;
 }
 
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
-}
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
-}
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
-}
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-}
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
-}
+

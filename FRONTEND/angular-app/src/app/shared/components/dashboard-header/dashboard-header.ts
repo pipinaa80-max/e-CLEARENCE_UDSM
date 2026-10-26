@@ -164,7 +164,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     }
     .user-role {
       display: block;
-      font-size: 0.72rem;
+      font-size: 12px;
       font-weight: 600;
       color: var(--udsm-gold);
       opacity: 0.9;

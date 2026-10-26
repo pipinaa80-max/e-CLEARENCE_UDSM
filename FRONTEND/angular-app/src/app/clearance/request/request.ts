@@ -54,14 +54,19 @@ export class ClearanceRequestComponent implements OnInit {
   requestForm = this.fb.nonNullable.group({
     studentName: ['', Validators.required],
     registrationNumber: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9+--\s()]{8,20}$/)]],
+    physicalAddress: ['', Validators.required],
     college: ['', Validators.required],
     department: ['', Validators.required],
     programme: ['', Validators.required],
     residenceType: ['', Validators.required],
     hostelHall: [''],
+    wing: [''],
+    block: [''],
     roomNumber: [''],
     residenceEvidence: [''],
-    sponsor: [''],
+    sponsor: ['', Validators.required],
     photo: [''],
     confirm: [false, Validators.requiredTrue]
   });
@@ -349,6 +354,57 @@ export class ClearanceRequestComponent implements OnInit {
     return this.academicUnits[college]?.[department] || [];
   }
 
+  // =====================================================
+  // RESIDENCE & SPONSOR DROPDOWN OPTIONS
+  // =====================================================
+
+  readonly residenceOptions = [
+    'Hostel Dwellers',
+    'Non-Hostel Dwellers'
+  ];
+
+  readonly hallOptions = [
+    'CoICT Hostels',
+    'Kunduchi Hostels',
+    'Mabibo Hostels',
+    'Magufuli Hostels',
+    'Mikocheni Hostels'
+  ];
+
+  readonly coictWings = [
+    'Wing A',
+    'Wing B'
+  ];
+
+  readonly blockOptions = [
+    'Block A',
+    'Block B',
+    'Block C',
+    'Block D',
+    'Block E',
+    'Block F'
+  ];
+
+  readonly sponsorOptions = [
+    'HELBS',
+    'Karimjee Scholarships',
+    'MO scholarship',
+    'PRIVATE'
+  ];
+
+  get isHostelDweller(): boolean {
+    return this.requestForm.controls.residenceType.value === 'Hostel Dwellers';
+  }
+
+  get isCoictHostel(): boolean {
+    return this.isHostelDweller && this.requestForm.controls.hostelHall.value === 'CoICT Hostels';
+  }
+
+  get isBlockHostel(): boolean {
+    const hall = this.requestForm.controls.hostelHall.value;
+    return this.isHostelDweller && (hall === 'Mabibo Hostels' || hall === 'Magufuli Hostels');
+  }
+
   get currentUser() {
     return this.authService.getCurrentUser();
   }
@@ -431,14 +487,39 @@ export class ClearanceRequestComponent implements OnInit {
         .filter((name): name is string => !!name && name.trim().length > 0)
         .join(' ');
 
+    let residenceType = '';
+    let hostelHall = '';
+    let wing = user.wing || '';
+    let block = user.block || '';
+    let roomNumber = user.roomNumber || '';
+
+    if (user.hall) {
+      if (user.hall === 'Non-Hostel Dwellers' || user.hall === 'Off Campus') {
+        residenceType = 'Non-Hostel Dwellers';
+      } else if (this.hallOptions.includes(user.hall)) {
+        residenceType = 'Hostel Dwellers';
+        hostelHall = user.hall;
+      }
+    }
+
+    const sponsorValue = this.sponsorOptions.includes(user.sponsor) ? user.sponsor : '';
+
     // Patch form with user data
     this.requestForm.patchValue({
       studentName: fullName || user.fullName || 'Student Name',
       registrationNumber: user.registrationNumber || user.studentId || 'Not Available',
+      email: user.email || '',
+      phoneNumber: user.phoneNumber || user.phone || '',
+      physicalAddress: user.physicalAddress || user.address || '',
       college: user.college && user.college !== 'Not selected' ? user.college : '',
       department: user.department && user.department !== 'Not selected' ? user.department : '',
       programme: user.programme && user.programme !== 'Not selected' ? user.programme : '',
-      sponsor: user.sponsor || '',
+      residenceType: residenceType,
+      hostelHall: hostelHall,
+      wing: wing,
+      block: block,
+      roomNumber: roomNumber,
+      sponsor: sponsorValue,
       photo: user.photo || ''
     });
 
@@ -463,17 +544,34 @@ export class ClearanceRequestComponent implements OnInit {
       return;
     }
 
+    const resType = request.residenceType === 'Hostel Dwellers'
+      ? 'Hostel Dwellers'
+      : (request.hall && request.hall !== 'Off Campus' && request.hall !== 'Non-Hostel Dwellers'
+          ? 'Hostel Dwellers'
+          : 'Non-Hostel Dwellers');
+
+    const hall = resType === 'Hostel Dwellers' ? (request.hall || '') : '';
+    const wing = (resType === 'Hostel Dwellers' && hall === 'CoICT Hostels') ? (request.wing || '') : '';
+    const block = (resType === 'Hostel Dwellers' && (hall === 'Mabibo Hostels' || hall === 'Magufuli Hostels')) ? (request.block || '') : '';
+    const roomNumber = resType === 'Hostel Dwellers' ? (request.roomNumber || '') : '';
+    const sponsorVal = this.sponsorOptions.includes(request.sponsor || '') ? request.sponsor : '';
+
     this.requestForm.patchValue({
       studentName: request.studentName || this.requestForm.controls.studentName.value,
       registrationNumber: request.registrationNumber || this.requestForm.controls.registrationNumber.value,
+      email: request.email || user.email || '',
+      phoneNumber: request.phoneNumber || user.phoneNumber || user.phone || '',
+      physicalAddress: request.physicalAddress || request.address || user.physicalAddress || user.address || '',
       college: request.college,
       department: request.department,
       programme: request.programme,
-      residenceType: request.residenceType || (request.hall === 'Off Campus' ? 'Off Campus' : 'Hostel Dwellers'),
-      hostelHall: request.residenceType === 'Hostel Dwellers' ? request.hall || '' : '',
-      roomNumber: request.roomNumber || '',
+      residenceType: resType,
+      hostelHall: hall,
+      wing: wing,
+      block: block,
+      roomNumber: roomNumber,
       residenceEvidence: request.residenceEvidence || '',
-      sponsor: request.sponsor || '',
+      sponsor: sponsorVal,
       photo: request.photo || this.requestForm.controls.photo.value,
       confirm: true
     });
@@ -505,11 +603,42 @@ export class ClearanceRequestComponent implements OnInit {
   }
 
   onResidenceTypeChange(): void {
+    const resType = this.requestForm.controls.residenceType.value;
+    if (resType !== 'Hostel Dwellers') {
+      this.requestForm.patchValue({
+        hostelHall: '',
+        wing: '',
+        block: '',
+        roomNumber: '',
+        residenceEvidence: ''
+      });
+    }
+  }
+
+  onHallChange(): void {
     this.requestForm.patchValue({
-      hostelHall: '',
-      roomNumber: '',
-      residenceEvidence: ''
+      wing: '',
+      block: ''
     });
+  }
+
+  onRoomNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.value === '' || input.value === null) {
+      this.requestForm.controls.roomNumber.setValue('');
+      return;
+    }
+
+    const rawVal = input.value.replace(/[^0-9]/g, '');
+    let numVal = parseInt(rawVal, 10);
+    if (isNaN(numVal) || numVal < 0) {
+      numVal = 0;
+    }
+    const sanitizedStr = numVal.toString();
+    if (input.value !== sanitizedStr) {
+      input.value = sanitizedStr;
+    }
+    this.requestForm.controls.roomNumber.setValue(sanitizedStr);
   }
 
   onResidenceEvidenceSelected(event: Event): void {
@@ -520,8 +649,8 @@ export class ClearanceRequestComponent implements OnInit {
 
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      this.toastService.warning('Invalid File', 'Residence evidence must be an image.');
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.toastService.warning('Invalid File', 'Residence document must be an image or PDF file.');
       input.value = '';
       return;
     }
@@ -531,7 +660,7 @@ export class ClearanceRequestComponent implements OnInit {
       this.requestForm.controls.residenceEvidence.setValue(reader.result as string);
     };
     reader.onerror = () => {
-      this.toastService.error('Read Error', 'Failed to read residence evidence.');
+      this.toastService.error('Read Error', 'Failed to read residence document.');
       input.value = '';
     };
     reader.readAsDataURL(file);
@@ -642,14 +771,65 @@ export class ClearanceRequestComponent implements OnInit {
 
     const value = this.requestForm.getRawValue();
 
-    if (value.residenceType === 'Off Campus' && !value.residenceEvidence) {
-      this.toastService.warning('Evidence Required', 'Please upload a photo showing proof of your off-campus residence.');
+    if (value.residenceType === 'Hostel Dwellers') {
+      if (!value.hostelHall || !this.hallOptions.includes(value.hostelHall)) {
+        this.toastService.warning('Location Details', 'Please select a valid hall of residence.');
+        this.isSubmitting = false;
+        return;
+      }
+
+      if (this.isCoictHostel && (!value.wing || !this.coictWings.includes(value.wing))) {
+        this.toastService.warning('Location Details', 'Please select a valid wing.');
+        this.isSubmitting = false;
+        return;
+      }
+
+      if (this.isBlockHostel && (!value.block || !this.blockOptions.includes(value.block))) {
+        this.toastService.warning('Location Details', 'Please select a valid block.');
+        this.isSubmitting = false;
+        return;
+      }
+
+      if (value.roomNumber === null || value.roomNumber === undefined || value.roomNumber.toString().trim() === '') {
+        this.toastService.warning('Location Details', 'Please enter your room number.');
+        this.isSubmitting = false;
+        return;
+      }
+
+      const roomNum = Number(value.roomNumber);
+      if (isNaN(roomNum) || roomNum < 0 || !Number.isInteger(roomNum)) {
+        this.toastService.warning('Invalid Room Number', 'Room number must be a non-negative whole number.');
+        this.isSubmitting = false;
+        return;
+      }
+    }
+
+    if (value.residenceType === 'Non-Hostel Dwellers' && !value.residenceEvidence) {
+      this.toastService.warning('Document Required', 'Please upload a document showing proof of your non-hostel residence.');
       this.isSubmitting = false;
       return;
     }
 
-    if (value.residenceType === 'Hostel Dwellers' && (!value.hostelHall.trim() || !value.roomNumber.trim())) {
-      this.toastService.warning('Location Details', 'Please enter your hostel hall and room number.');
+    if (!value.sponsor || !this.sponsorOptions.includes(value.sponsor)) {
+      this.toastService.warning('Sponsor Required', 'Please select a valid sponsor.');
+      this.isSubmitting = false;
+      return;
+    }
+
+    if (!value.email || this.requestForm.controls.email.invalid) {
+      this.toastService.warning('Email Address', 'Please enter a valid email address.');
+      this.isSubmitting = false;
+      return;
+    }
+
+    if (!value.phoneNumber || this.requestForm.controls.phoneNumber.invalid) {
+      this.toastService.warning('Phone Number', 'Please enter a valid phone number.');
+      this.isSubmitting = false;
+      return;
+    }
+
+    if (!value.physicalAddress || this.requestForm.controls.physicalAddress.invalid) {
+      this.toastService.warning('Physical Address', 'Please enter your physical address.');
       this.isSubmitting = false;
       return;
     }
@@ -660,6 +840,11 @@ export class ClearanceRequestComponent implements OnInit {
       return;
     }
 
+    const finalHall = value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Non-Hostel Dwellers';
+    const finalWing = (value.residenceType === 'Hostel Dwellers' && this.isCoictHostel) ? value.wing : '';
+    const finalBlock = (value.residenceType === 'Hostel Dwellers' && this.isBlockHostel) ? value.block : '';
+    const finalRoomNumber = value.residenceType === 'Hostel Dwellers' ? value.roomNumber.toString() : '';
+
     try {
       const existingRequest = this.revisionRequest;
 
@@ -668,9 +853,15 @@ export class ClearanceRequestComponent implements OnInit {
           college: value.college,
           department: value.department,
           programme: value.programme,
-          hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
-          roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
-          residenceType: value.residenceType as 'Off Campus' | 'Hostel Dwellers',
+          email: value.email,
+          phoneNumber: value.phoneNumber,
+          physicalAddress: value.physicalAddress,
+          address: value.physicalAddress,
+          hall: finalHall,
+          wing: finalWing,
+          block: finalBlock,
+          roomNumber: finalRoomNumber,
+          residenceType: value.residenceType as 'Hostel Dwellers' | 'Non-Hostel Dwellers',
           residenceEvidence: value.residenceEvidence,
           sponsor: value.sponsor,
           photo: value.photo
@@ -679,6 +870,16 @@ export class ClearanceRequestComponent implements OnInit {
         if (!resubmitted) {
           throw new Error('This request could not be resubmitted. Please refresh and try again.');
         }
+
+        user.email = value.email;
+        user.phoneNumber = value.phoneNumber;
+        user.physicalAddress = value.physicalAddress;
+        user.address = value.physicalAddress;
+        user.hall = finalHall;
+        user.wing = finalWing;
+        user.block = finalBlock;
+        user.roomNumber = finalRoomNumber;
+        user.sponsor = value.sponsor;
 
         this.authService.updateCurrentUser(user);
         this.notificationService.createNotification(
@@ -693,9 +894,17 @@ export class ClearanceRequestComponent implements OnInit {
       }
 
       // Update student account
+      user.email = value.email;
+      user.phoneNumber = value.phoneNumber;
+      user.physicalAddress = value.physicalAddress;
+      user.address = value.physicalAddress;
       user.college = value.college;
       user.department = value.department;
       user.programme = value.programme;
+      user.hall = finalHall;
+      user.wing = finalWing;
+      user.block = finalBlock;
+      user.roomNumber = finalRoomNumber;
       user.sponsor = value.sponsor;
       user.photo = value.photo;
       user.fullName = value.studentName;
@@ -705,11 +914,17 @@ export class ClearanceRequestComponent implements OnInit {
 
       this.authService.updateProfile({
         fullName: value.studentName,
+        email: value.email,
+        phoneNumber: value.phoneNumber,
+        physicalAddress: value.physicalAddress,
+        address: value.physicalAddress,
         college: value.college,
         department: value.department,
         programme: value.programme,
-        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
-        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+        hall: finalHall,
+        wing: finalWing,
+        block: finalBlock,
+        roomNumber: finalRoomNumber,
         sponsor: value.sponsor,
         photo: value.photo
       }).subscribe({
@@ -720,14 +935,18 @@ export class ClearanceRequestComponent implements OnInit {
       await firstValueFrom(this.clearanceService.submitBackendRequest({
         studentName: value.studentName,
         registrationNumber: value.registrationNumber,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
+        email: value.email,
+        phoneNumber: value.phoneNumber,
+        physicalAddress: value.physicalAddress,
+        address: value.physicalAddress,
         programme: value.programme,
         college: value.college,
         department: value.department,
         academicYear: new Date().getFullYear().toString(),
-        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
-        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
+        hall: finalHall,
+        wing: finalWing,
+        block: finalBlock,
+        roomNumber: finalRoomNumber,
         sponsor: value.sponsor,
         photo: value.photo
       }));
@@ -736,12 +955,18 @@ export class ClearanceRequestComponent implements OnInit {
         studentId: user.id,
         studentName: value.studentName,
         registrationNumber: value.registrationNumber,
+        email: value.email,
+        phoneNumber: value.phoneNumber,
+        physicalAddress: value.physicalAddress,
+        address: value.physicalAddress,
         college: value.college,
         department: value.department,
         programme: value.programme,
-        hall: value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Off Campus',
-        roomNumber: value.residenceType === 'Hostel Dwellers' ? value.roomNumber : '',
-        residenceType: value.residenceType as 'Off Campus' | 'Hostel Dwellers',
+        hall: finalHall,
+        wing: finalWing,
+        block: finalBlock,
+        roomNumber: finalRoomNumber,
+        residenceType: value.residenceType as 'Hostel Dwellers' | 'Non-Hostel Dwellers',
         residenceEvidence: value.residenceEvidence,
         sponsor: value.sponsor,
         photo: value.photo

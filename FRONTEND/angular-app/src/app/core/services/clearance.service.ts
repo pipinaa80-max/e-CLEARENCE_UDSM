@@ -40,11 +40,15 @@ export class ClearanceService {
     registrationNumber: string;
     email?: string;
     phoneNumber?: string;
+    physicalAddress?: string;
+    address?: string;
     programme: string;
     college: string;
     department: string;
     academicYear: string;
     hall: string;
+    wing?: string;
+    block?: string;
     roomNumber?: string;
     sponsor?: string;
     photo?: string;
@@ -133,12 +137,18 @@ export class ClearanceService {
     studentId: string;
     studentName?: string;
     registrationNumber?: string;
+    email?: string;
+    phoneNumber?: string;
+    physicalAddress?: string;
+    address?: string;
     college: string;
     department: string;
     programme: string;
     hall?: string;
+    wing?: string;
+    block?: string;
     roomNumber?: string;
-    residenceType?: 'Off Campus' | 'Hostel Dwellers';
+    residenceType?: 'Hostel Dwellers' | 'Non-Hostel Dwellers' | 'Off Campus';
     residenceEvidence?: string;
     sponsor?: string;
     photo?: string;
@@ -155,10 +165,16 @@ export class ClearanceService {
       studentId: requestData.studentId,
       studentName: requestData.studentName || '',
       registrationNumber: requestData.registrationNumber || '',
+      email: requestData.email || '',
+      phoneNumber: requestData.phoneNumber || '',
+      physicalAddress: requestData.physicalAddress || requestData.address || '',
+      address: requestData.address || requestData.physicalAddress || '',
       college: requestData.college,
       department: requestData.department,
       programme: requestData.programme,
       hall: requestData.hall || '',
+      wing: requestData.wing || '',
+      block: requestData.block || '',
       roomNumber: requestData.roomNumber || '',
       residenceType: requestData.residenceType,
       residenceEvidence: requestData.residenceEvidence || '',
@@ -560,7 +576,7 @@ export class ClearanceService {
   resubmitRequest(
       requestId: string,
       requestData: Partial<Pick<ClearanceRequest,
-          'college' | 'department' | 'programme' | 'hall' | 'roomNumber' |
+          'email' | 'phoneNumber' | 'physicalAddress' | 'address' | 'college' | 'department' | 'programme' | 'hall' | 'wing' | 'block' | 'roomNumber' |
           'residenceType' | 'residenceEvidence' | 'sponsor' | 'photo'>>
   ): boolean {
     const request = this.getRequest(requestId);

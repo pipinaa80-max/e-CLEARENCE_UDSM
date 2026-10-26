@@ -54,6 +54,11 @@ public class ClearanceService {
         // Create new clearance request
         ClearanceRequest clearanceRequest = ClearanceRequest.builder()
                 .student(student)
+                .college(requestDTO.getCollege())
+                .department(requestDTO.getDepartment())
+                .programme(requestDTO.getProgramme())
+                .wing(requestDTO.getWing())
+                .block(requestDTO.getBlock())
                 .projectId(projectId)
                 .status(ClearanceStatus.PENDING.name())
                 .submittedAt(LocalDateTime.now())

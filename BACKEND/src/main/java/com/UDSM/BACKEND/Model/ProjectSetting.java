@@ -30,7 +30,7 @@ public class ProjectSetting {
     @Column(name = "logo_url", length = 1000)
     private String logoUrl;
 
-    @Column(name = "background_url", length = 1000)
+    @Column(name = "background_url", columnDefinition = "TEXT")
     private String backgroundUrl;
 
     @Column(name = "primary_color", length = 20)

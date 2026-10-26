@@ -26,6 +26,7 @@ export class ProfileComponent implements OnInit {
 
   sidebarOpen = false;
   profilePhoto: string | null = null;
+  photoLoadFailed = false;
   isLoading = true;
 
   get currentUser() {
@@ -78,6 +79,14 @@ export class ProfileComponent implements OnInit {
     return this.clearanceRequest?.hall;
   }
 
+  get wing(): string | undefined {
+    return this.user?.wing || this.clearanceRequest?.wing;
+  }
+
+  get block(): string | undefined {
+    return this.user?.block || this.clearanceRequest?.block;
+  }
+
   get roomNumber(): string | undefined {
     return this.user?.roomNumber || this.clearanceRequest?.roomNumber;
   }
@@ -91,25 +100,25 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   ngOnInit(): void {
-    this.refreshInformation();
+    this.loadProfilePhoto();
   }
 
   refreshInformation(): void {
-    this.isLoading = true;
+    this.loadProfilePhoto();
     this.authService.getProfile().subscribe({
-      next: (user) => {
-        console.log('Profile - Updated from backend');
+      next: () => {
         this.loadProfilePhoto();
       },
       error: (err) => {
         console.error('Profile - Failed to refresh profile:', err);
-        this.loadProfilePhoto(); // Fallback to local
+        this.loadProfilePhoto();
       }
     });
   }
 
   loadProfilePhoto(): void {
     this.isLoading = true;
+    this.photoLoadFailed = false;
     const user = this.user;
 
     if (!user) {
@@ -117,65 +126,26 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    console.log('Loading profile photo for user:', user.id);
-    console.log('User data:', {
-      profilePhoto: user.profilePhoto ? 'exists' : 'null',
-      photo: user.photo ? 'exists' : 'null',
-      fullName: user.fullName
-    });
-
-    // Method 1: Check if user has a profile photo directly
-    if (user.profilePhoto && user.profilePhoto.startsWith('data:image')) {
-      this.profilePhoto = user.profilePhoto;
-      console.log('Photo loaded from user.profilePhoto');
+    const savedPhoto = this.authService.getProfilePhotoSource(user);
+    if (savedPhoto) {
+      this.profilePhoto = savedPhoto;
       this.isLoading = false;
       return;
     }
 
-    // Method 2: Check if user has photo from clearance request
-    if (user.photo && user.photo.startsWith('data:image')) {
-      this.profilePhoto = user.photo;
-      console.log('Photo loaded from user.photo');
-      this.isLoading = false;
-      return;
-    }
-
-    // Method 3: Check the latest clearance request for photo
     const requests = this.clearanceService.getStudentRequests(user.id);
-    console.log('Found clearance requests:', requests.length);
-
-    if (requests.length > 0) {
-      // Get the latest request
-      const latestRequest = requests[requests.length - 1];
-      const photoData = latestRequest.photo;
-
-      if (photoData && (photoData.startsWith('data:image') || photoData.length > 100)) {
-        this.profilePhoto = photoData.startsWith('data:image') ? photoData : 'data:image/jpeg;base64,' + photoData;
-        console.log('Photo loaded from clearance request');
-
-        // Update the user object with this photo for future use
-        user.photo = this.profilePhoto;
+    for (const request of [...requests].reverse()) {
+      const requestPhoto = this.authService.getProfilePhotoSource({ photo: request.photo });
+      if (requestPhoto) {
+        this.profilePhoto = requestPhoto;
+        user.photo = requestPhoto;
         this.authService.updateCurrentUser(user);
         this.isLoading = false;
         return;
       }
     }
 
-    // Method 4: Check all requests for any photo
-    for (const request of requests) {
-      if (request.photo && request.photo.startsWith('data:image')) {
-        this.profilePhoto = request.photo;
-        console.log('Photo loaded from older request:', request.id);
-
-        // Update the user object with this photo
-        user.photo = request.photo;
-        this.authService.updateCurrentUser(user);
-        this.isLoading = false;
-        return;
-      }
-    }
-
-    console.log('No photo found for user');
+    this.profilePhoto = null;
     this.isLoading = false;
   }
 
@@ -276,32 +246,16 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   getPhotoSource(): string | null {
-    // Check local component state first (loaded during init)
-    if (this.profilePhoto && (this.profilePhoto.startsWith('data:image') || this.profilePhoto.length > 100)) {
-      return this.profilePhoto.startsWith('data:image') ? this.profilePhoto : 'data:image/jpeg;base64,' + this.profilePhoto;
-    }
+    const userPhoto = this.authService.getProfilePhotoSource(this.user);
+    if (userPhoto) return userPhoto;
+    if (this.profilePhoto) return this.profilePhoto;
 
-    // Check current user object
-    const user = this.user;
-    if (user) {
-      const uPhoto = user.profilePhoto || user.photo || user.profileImageUrl;
-      if (uPhoto && (uPhoto.startsWith('data:image') || uPhoto.length > 100)) {
-        return uPhoto.startsWith('data:image') ? uPhoto : 'data:image/jpeg;base64,' + uPhoto;
-      }
-    }
-
-    // Check latest clearance request
     const request = this.clearanceRequest;
-    if (request?.photo && (request.photo.startsWith('data:image') || request.photo.length > 100)) {
-      return request.photo.startsWith('data:image') ? request.photo : 'data:image/jpeg;base64,' + request.photo;
-    }
-
-    return null;
+    return this.authService.getProfilePhotoSource({ photo: request?.photo });
   }
 
   hasPhoto(): boolean {
-    const source = this.getPhotoSource();
-    return !!source && (source.startsWith('data:image') || source.length > 100);
+    return !this.photoLoadFailed && !!this.getPhotoSource();
   }
 
   /* =========================
@@ -319,13 +273,7 @@ export class ProfileComponent implements OnInit {
   ========================= */
 
   onImageError(): void {
-    console.log('Image failed to load, clearing photo');
     this.profilePhoto = null;
-    const user = this.user;
-    if (user) {
-      user.profilePhoto = '';
-      user.photo = '';
-      this.authService.updateCurrentUser(user);
-    }
+    this.photoLoadFailed = true;
   }
 }

@@ -33,6 +33,9 @@ public class ProfileUpdateRequest {
     @Size(min = 10, max = 15, message = "Phone number must be between 10 and 15 characters")
     private String phoneNumber;
 
+    private String address;
+    private String physicalAddress;
+
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
@@ -41,6 +44,8 @@ public class ProfileUpdateRequest {
     private String college;
     private String programme;
     private String hall;
+    private String wing;
+    private String block;
     private String roomNumber;
     private String sponsor;
     private String photo;

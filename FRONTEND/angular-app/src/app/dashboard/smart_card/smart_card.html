@@ -34,7 +34,7 @@
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="count">
-        <strong>{{ requests.length }}</strong>
+        <strong>{{ pendingRequestCount }}</strong>
         <small>Pending</small>
       </div>
     </app-dashboard-header>
@@ -53,92 +53,25 @@
       </div>
 
       <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="all">All Requests</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
       </select>
     </section>
 
     <section class="empty-state" *ngIf="!filteredRequests.length">
       <div class="empty-icon">✓</div>
-      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Smart Card.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Smart Card.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
+      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Smart Card.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Smart Card.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
     </section>
 
     <section class="request-list" *ngIf="filteredRequests.length">
-      <article class="request-card" *ngFor="let request of paginatedRequests">
-
-        <!-- REQUEST HEADER -->
-        <div class="request-header">
-          <div class="student-heading">
-
-            <!-- SAFE PHOTO PLACEHOLDER -->
-            <div class="student-photo">
-              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" alt="Student Photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(request))" title="Click to view enlarged photo" />
-              <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
-            </div>
-
-            <div class="student-title">
-              <span class="request-label">Graduation Clearance</span>
-              <h2>{{ getStudentName(request) }}</h2>
-              <p>{{ request.programme }}</p>
-            </div>
-          </div>
-
-          <span class="status">Pending</span>
-        </div>
-
-        <!-- DETAILS -->
-        <div class="request-details">
-          <div class="detail-item">
-            <span>REG NO</span>
-            <strong>{{ request.registrationNumber || request.studentId }}</strong>
-          </div>
-
-          <div class="detail-item">
-            <span>Programme</span>
-            <strong>{{ request.programme }}</strong>
-          </div>
-
-          <div class="detail-item">
-            <span>Department</span>
-            <strong>{{ request.department }}</strong>
-          </div>
-
-          <div class="detail-item">
-            <span>College</span>
-            <strong>{{ request.college }}</strong>
-          </div>
-
-          <div class="detail-item">
-            <span>Submitted</span>
-            <strong>{{ request.requestDate | date:'mediumDate' }}</strong>
-          </div>
-        </div>
-
-        <!-- ACTIONS -->
-        <div class="request-footer">
-          <span class="review-note">Review this clearance request.</span>
-          <div class="actions" *ngIf="getRequestOfficeStatus(request, 'Smart Card') === 'Pending'">
-            <button
-              type="button"
-              class="reject-button"
-              (click)="openRejectForm(request)"
-            >
-              Reject
-            </button>
-
-            <button
-              type="button"
-              class="approve-button"
-              (click)="approve(request)"
-            >
-              Approve
-            </button>
-          </div>
-        </div>
-      </article>
+      <app-parallel-office-request-table
+        [requests]="paginatedRequests"
+        [office]="'Smart Card'"
+        (approve)="approve($event)"
+        (reject)="openRejectForm($event)"
+      ></app-parallel-office-request-table>
     </section>
 
     <div class="pagination" *ngIf="totalPages > 1">

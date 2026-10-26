@@ -58,18 +58,25 @@
 .form-section { padding: 32px 0; border-bottom: 1px solid #e5eaed; }
 .form-section:last-of-type { border-bottom: none; }
 .section-heading { margin-bottom: 22px; }
-.section-heading span { color: var(--udsm-gold); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.section-heading span { color: var(--udsm-gold); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .section-heading h2 { margin: 6px 0; color: #003b5c; font-size: 20px; font-weight: 800; }
 .section-heading p { margin: 0; color: #68757d; font-size: 13px; }
 
 .fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.contact-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; width: 100%; }
+.contact-row .field { flex: 1 1 0px; min-width: 170px; }
+.residence-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; width: 100%; }
+.residence-row .field { flex: 1 1 0px; min-width: 170px; }
+.non-hostel-row { margin-top: 20px; width: 100%; }
+.sponsor-row { margin-top: 20px; width: 100%; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field.full-width { grid-column: 1 / -1; }
 .field > span { color: #000; font-size: 13px; font-weight: 800; }
 .field input, .field select, .field textarea { width: 100%; box-sizing: border-box; padding: 13px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff; color: #000; font: inherit; font-size: 14px; font-weight: 500; outline: none; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: #00679b; box-shadow: 0 0 0 3px rgba(0, 103, 155, .1); }
-.field input:read-only { background: #f8fafc; color: #64748b; cursor: not-allowed; }
-.field-hint { margin-top: 5px; color: #218739; font-size: 12px; font-weight: 600; }
+.field input:read-only { background: #f8fafc; color: #475569; cursor: not-allowed; }
+.field-hint { margin-top: 5px; color: #176b37; font-size: 12px; font-weight: 600; }
+.field-error { margin-top: 5px; color: #c73535; font-size: 12px; font-weight: 600; }
 
 .photo-upload { display: flex; align-items: center; gap: 24px; padding: 10px 0; }
 .photo-preview { width: 120px; height: 120px; flex-shrink: 0; border: 1px solid #ccd8de; border-radius: 10px; background: #f8fafc; overflow: hidden; }
@@ -84,7 +91,7 @@
 .confirmation input { margin-top: 3px; width: 18px; height: 18px; accent-color: #00679b; cursor: pointer; }
 
 .request-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #e5eaed; }
-.cancel-button { min-height: 46px; padding: 0 24px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #64748b; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.cancel-button { min-height: 46px; padding: 0 24px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .cancel-button:hover { background: #f8fafc; }
 .submit-button { min-height: 46px; padding: 0 28px; border: none; border-radius: 8px; background: #00679b; color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: background .2s ease; }
 .submit-button:hover:not(:disabled) { background: #003b5c; }
@@ -98,6 +105,10 @@
 @media (max-width: 650px) {
   .request-card { padding: 24px 20px; }
   .fields-grid { grid-template-columns: 1fr; gap: 15px; }
+  .contact-row { flex-direction: column; gap: 15px; }
+  .contact-row .field { flex: 1 1 100%; width: 100%; min-width: 100%; }
+  .residence-row { flex-direction: column; gap: 15px; }
+  .residence-row .field { flex: 1 1 100%; width: 100%; min-width: 100%; }
   .photo-upload { flex-direction: column; align-items: flex-start; gap: 18px; }
   .request-actions { flex-direction: column-reverse; gap: 12px; }
   .request-actions button { width: 100%; }

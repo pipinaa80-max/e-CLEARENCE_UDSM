@@ -48,7 +48,7 @@
   background: #ffffff;
   color: #000000;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
@@ -91,48 +91,4 @@
   box-sizing: border-box;
 }
 
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
-}
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
-}
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
-}
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-}
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
-}
+

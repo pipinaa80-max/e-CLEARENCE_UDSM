@@ -80,7 +80,7 @@
   min-height: 32px;
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   white-space: nowrap;
@@ -103,7 +103,7 @@
 
 .current-stage span {
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -162,8 +162,8 @@
 }
 
 .step-content strong { color: #000000; font-size: 0.8rem; font-weight: 800; }
-.step-content small { min-height: 36px; color: #374151; font-size: 0.72rem; line-height: 1.4; font-weight: 500; }
-.step-content > span { color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
+.step-content small { min-height: 36px; color: #374151; font-size: 12px; line-height: 1.4; font-weight: 500; }
+.step-content > span { color: var(--text-muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
 
 .process-step.approved .step-number { border-color: var(--success); background: var(--success); color: #ffffff; }
 .process-step.approved .step-line { background: var(--success); }
@@ -191,7 +191,7 @@
   min-height: 32px;
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   white-space: nowrap;
@@ -280,7 +280,7 @@
   margin: 0 auto 18px;
   border-radius: 50%;
   background: #fff7df;
-  color: #946f00;
+  color: #795700;
   font-size: 1.5rem;
   font-weight: 900;
 }

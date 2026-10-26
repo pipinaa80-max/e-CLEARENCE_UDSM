@@ -144,7 +144,7 @@ export class TranscriptFinancePaymentComponent {
     .image-section h3 { font-size: 13px; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
     .receipt-img { max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
-    .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b; }
+    .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #64748b; }
     .no-print { text-align: center; margin-top: 24px; }
     .btn-print { padding: 10px 24px; background: #00679b; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .btn-print:hover { background: #003b5c; }

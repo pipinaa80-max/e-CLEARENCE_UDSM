@@ -8,11 +8,12 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
 @Component({
   selector: 'app-usab',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
   templateUrl: './usab.html',
   styleUrl: './usab.css'
 })
@@ -28,9 +29,9 @@ export class UsabComponent {
   message = '';
 
   searchTerm = '';
-  filterStatus = 'all';
+  filterStatus = 'Pending';
   currentPage = 1;
-  pageSize = 3;
+  pageSize = 20;
 
   get paginatedRequests(): ClearanceRequest[] {
     const start = (this.currentPage - 1) * this.pageSize;
@@ -75,6 +76,10 @@ export class UsabComponent {
     return this.clearanceService.getRequestsForOffice('USAB');
   }
 
+  get pendingRequestCount(): number {
+    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'USAB') === 'Pending').length;
+  }
+
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
 
@@ -87,15 +92,7 @@ export class UsabComponent {
       );
     }
 
-    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === 'Pending');
-    } else if (this.filterStatus === 'approved') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === 'Approved');
-    } else if (this.filterStatus === 'rejected') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === 'Rejected');
-    }
-
-    return list;
+    return list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === this.filterStatus);
   }
 
   // Cache for student data to avoid repeated lookups

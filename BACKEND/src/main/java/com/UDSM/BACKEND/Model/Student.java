@@ -79,6 +79,12 @@ public class Student {
     @Column(name = "hall")
     private String hall;
 
+    @Column(name = "wing")
+    private String wing;
+
+    @Column(name = "block")
+    private String block;
+
     @Column(name = "room_number")
     private String roomNumber;
 

@@ -27,6 +27,10 @@ public class ClearanceRequestDTO {
     @Size(max = 20, message = "Phone number must not exceed 20 characters")
     private String phoneNumber;
 
+    private String address;
+
+    private String physicalAddress;
+
     @NotBlank(message = "Programme is required")
     private String programme;
 
@@ -41,6 +45,10 @@ public class ClearanceRequestDTO {
 
     @NotBlank(message = "Hall is required")
     private String hall;
+
+    private String wing;
+
+    private String block;
 
     private String roomNumber;
 

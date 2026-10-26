@@ -318,9 +318,51 @@
         <div class="form-grid">
           <div class="form-group"><label>University name</label><input [(ngModel)]="projectConfig.branding.universityName" name="universityName" required></div>
           <div class="form-group"><label>Short name</label><input [(ngModel)]="projectConfig.branding.shortName" name="shortName" required></div>
-          <div class="form-group"><label>Logo URL</label><input [(ngModel)]="projectConfig.branding.logoUrl" name="logoUrl"></div>
+          <div class="form-group"><label>Logo URL</label><input [(ngModel)]="projectConfig.branding.logoUrl" (ngModelChange)="previewLogo($event)" name="logoUrl" placeholder="https://example.com/logo.png or /assets/logo.png"></div>
           <div class="form-group"><label>Background URL</label><input [(ngModel)]="projectConfig.branding.backgroundUrl" (ngModelChange)="previewBackground($event)" name="backgroundUrl" placeholder="Enter background image URL"></div>
-          <div class="form-group"><label>Primary color</label><input type="color" [(ngModel)]="projectConfig.branding.primaryColor" name="primaryColor"></div>
+          <div class="form-group">
+            <label id="primary-color-label">Primary color</label>
+            <div class="theme-color-picker">
+              <button
+                type="button"
+                class="theme-color-trigger"
+                aria-haspopup="listbox"
+                aria-controls="theme-color-options"
+                [attr.aria-expanded]="themeColorDropdownOpen"
+                aria-labelledby="primary-color-label selected-theme-color"
+                (click)="toggleThemeColorDropdown()"
+                (keydown.escape)="themeColorDropdownOpen = false"
+              >
+                <span class="theme-color-swatch" [style.backgroundColor]="selectedThemeColor.hex"></span>
+                <span id="selected-theme-color" class="theme-color-value">
+                  <span>{{ selectedThemeColor.name }}</span>
+                  <code>{{ selectedThemeColor.hex }}</code>
+                </span>
+                <span class="theme-color-caret" aria-hidden="true">▾</span>
+              </button>
+              <div
+                *ngIf="themeColorDropdownOpen"
+                id="theme-color-options"
+                class="theme-color-options"
+                role="listbox"
+                aria-labelledby="primary-color-label"
+              >
+                <button
+                  *ngFor="let color of themeColors"
+                  type="button"
+                  class="theme-color-option"
+                  role="option"
+                  [attr.aria-selected]="selectedThemeColor.hex === color.hex"
+                  (click)="selectThemeColor(color.hex)"
+                  (keydown.escape)="themeColorDropdownOpen = false"
+                >
+                  <span class="theme-color-swatch" [style.backgroundColor]="color.hex"></span>
+                  <span class="theme-color-name">{{ color.name }}</span>
+                  <code>{{ color.hex }}</code>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="form-group"><label>Font family</label><select [(ngModel)]="projectConfig.branding.fontFamily" name="fontFamily"><option>Georgia</option><option>Arial</option><option>Verdana</option><option>Trebuchet MS</option></select></div>
         </div>
 

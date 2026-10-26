@@ -130,7 +130,7 @@
                     <div class="field-row" *ngIf="request.hall || request.roomNumber">
                         <span class="field-label">Residence</span>
                         <span class="field-value">
-                            {{ request.hall }} {{ request.roomNumber ? 'Room ' + request.roomNumber : '' }}
+                            {{ request.hall }}{{ request.wing ? ', ' + request.wing : '' }}{{ request.block ? ', ' + request.block : '' }}{{ request.roomNumber ? ' (Room ' + request.roomNumber + ')' : '' }}
                         </span>
                     </div>
                     <div class="field-row" *ngIf="request.sponsor">

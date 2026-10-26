@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast';
-import { ProjectAdminService, ProjectConfig } from './core/services/project-admin.service';
+import { normalizeBrandAssetUrl, ProjectAdminService, ProjectConfig } from './core/services/project-admin.service';
 import { AuthService } from './core/services/auth.service';
+import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor } from './core/config/udsm-brand-colors';
 
 @Component({
   selector: 'app-root',
@@ -52,8 +53,12 @@ export class App {
       return;
     }
 
-    // If logged out, prefer the last used institutional branding saved in this browser
-    if (saved && saved.primaryColor && saved.primaryColor !== '#0864af') {
+    // Keep the last saved institutional assets when logged out. Fetching public branding
+    // again here can replace the logo/background URL the admin just saved.
+    if (saved && (
+      Boolean(saved.logoUrl || saved.backgroundUrl) ||
+      (saved.primaryColor && normalizeUdsmBrandColor(saved.primaryColor) !== DEFAULT_UDSM_BRAND_COLOR)
+    )) {
       this.applyBranding(saved);
       return;
     }
@@ -71,20 +76,21 @@ export class App {
   }
 
   private applyBranding(config: Partial<typeof this.branding>): void {
-    // Sanitize URLs to handle Windows-style slashes
-    if (config.logoUrl) config.logoUrl = config.logoUrl.trim().replace(/\\/g, '/');
-    if (config.backgroundUrl) config.backgroundUrl = config.backgroundUrl.trim().replace(/\\/g, '/');
-
-    this.branding = { ...this.branding, ...config };
+    const normalizedLogo = normalizeBrandAssetUrl(config.logoUrl ?? this.branding.logoUrl, '/udsm-logo.png');
+    const normalizedConfig = {
+      ...config,
+      logoUrl: normalizedLogo === 'none' ? '/udsm-logo.png' : normalizedLogo,
+      backgroundUrl: normalizeBrandAssetUrl(config.backgroundUrl ?? this.branding.backgroundUrl),
+      primaryColor: normalizeUdsmBrandColor(config.primaryColor ?? this.branding.primaryColor)
+    };
+    this.branding = { ...this.branding, ...normalizedConfig };
     const root = document.documentElement;
-    if (config.primaryColor) {
-      root.style.setProperty('--udsm-blue', config.primaryColor);
-      root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${config.primaryColor} 85%, #000)`);
-      root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${config.primaryColor} 12%, #fff)`);
-      // Explicitly set sidebar background to match primary or dark version for better UI
-      root.style.setProperty('--sidebar-bg', config.primaryColor);
-    }
-    if (config.fontFamily) root.style.setProperty('--app-font-family', config.fontFamily);
+    root.style.setProperty('--udsm-blue', this.branding.primaryColor);
+    root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${this.branding.primaryColor} 85%, #000)`);
+    root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${this.branding.primaryColor} 12%, #fff)`);
+    // Explicitly set sidebar background to match primary or dark version for better UI
+    root.style.setProperty('--sidebar-bg', this.branding.primaryColor);
+    if (this.branding.fontFamily) root.style.setProperty('--app-font-family', this.branding.fontFamily);
 
     if (this.branding.logoUrl) {
       root.style.setProperty('--app-logo-url', `url("${this.branding.logoUrl}")`);
@@ -99,22 +105,7 @@ export class App {
       root.style.setProperty('--app-bg-url', 'none');
       root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7))');
     } else {
-      let bgUrl = this.branding.backgroundUrl;
-
-      // Format path for public assets
-      if (!bgUrl.startsWith('http') && !bgUrl.startsWith('/') && !bgUrl.startsWith('data:')) {
-        bgUrl = '/' + bgUrl;
-      }
-      // Resolve workspace paths to the URL exposed by the Angular dev server.
-      const publicAssetIndex = bgUrl.toLowerCase().lastIndexOf('/public/');
-      if (publicAssetIndex >= 0) bgUrl = bgUrl.substring(publicAssetIndex);
-      if (bgUrl.toLowerCase().startsWith('public/')) bgUrl = '/' + bgUrl;
-      if (!bgUrl.startsWith('/') && !bgUrl.startsWith('http') && !bgUrl.startsWith('data:')) {
-        bgUrl = '/' + bgUrl;
-      }
-
-      console.log('🖼️ Dynamic Background Updated to:', bgUrl);
-      root.style.setProperty('--app-bg-url', `url("${bgUrl}")`);
+      root.style.setProperty('--app-bg-url', `url(${JSON.stringify(this.branding.backgroundUrl)})`);
 
       // Set the overlay to be transparent (0% tint) for custom backgrounds
       root.style.setProperty('--hero-gradient', 'none');
@@ -125,9 +116,11 @@ export class App {
 
   private refreshBrandingNodes(): void {
     if (this.branding.logoUrl) {
+      const logoUrl = normalizeBrandAssetUrl(this.branding.logoUrl, '/udsm-logo.png');
       document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
         .forEach(image => {
-          if (image.src !== this.branding.logoUrl) image.src = this.branding.logoUrl;
+          const currentUrl = normalizeBrandAssetUrl(image.getAttribute('src'), '');
+          if (currentUrl !== logoUrl) image.setAttribute('src', logoUrl);
         });
     }
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);

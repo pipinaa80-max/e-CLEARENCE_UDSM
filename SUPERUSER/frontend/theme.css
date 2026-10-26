@@ -31,7 +31,6 @@ body {
   color: var(--ink);
   background: var(--canvas);
   margin: 0;
-  overflow-x: hidden;
   font-family: 'Inter', sans-serif;
 }
 
@@ -59,7 +58,7 @@ body {
 
 .content { padding: 48px 52px; background: var(--canvas); flex: 1; }
 .topline h1 { font-family: 'Instrument Sans', serif; color: var(--ink); font-size: 42px; letter-spacing: -.025em; font-weight: 800; }
-.eyebrow { color: var(--primary); letter-spacing: .16em; font-weight: 700; text-transform: uppercase; font-size: 11px; }
+.eyebrow { color: var(--primary); letter-spacing: .16em; font-weight: 700; text-transform: uppercase; font-size: 12px; }
 
 .metric-grid { gap: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: 30px; }
 .metric-card, .panel, .profile-banner { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--shadow); border-radius: 12px; }

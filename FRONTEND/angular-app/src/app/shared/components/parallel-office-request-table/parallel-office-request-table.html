@@ -1,0 +1,32 @@
+<div class="request-table-wrap">
+  <table class="request-table">
+    <thead>
+      <tr>
+        <th scope="col">Registration Number</th>
+        <th scope="col">Full Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Phone Number</th>
+        <th scope="col">Programme</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let request of requests">
+        <td>{{ getRegistrationNumber(request) }}</td>
+        <td class="student-name">{{ getStudentName(request) }}</td>
+        <td>{{ getEmail(request) }}</td>
+        <td>{{ getPhoneNumber(request) }}</td>
+        <td>{{ getProgramme(request) }}</td>
+        <td>
+          <div class="actions" *ngIf="getOfficeStatus(request) === 'Pending'; else reviewedStatus">
+            <button type="button" class="reject-button" (click)="reject.emit(request)">Reject</button>
+            <button type="button" class="approve-button" (click)="approve.emit(request)">Approve</button>
+          </div>
+          <ng-template #reviewedStatus>
+            <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>
+          </ng-template>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

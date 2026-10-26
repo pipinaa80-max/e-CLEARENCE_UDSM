@@ -146,16 +146,37 @@ export class AuthService {
       college: response.college || response.faculty,
       programme: response.programme,
       department: response.department,
+      hall: response.hall,
+      wing: response.wing,
+      block: response.block,
+      roomNumber: response.room_number || response.roomNumber,
+      sponsor: response.sponsor,
       phoneNumber: response.phone_number || response.phoneNumber || response.phone,
       isActive: response.isActive !== undefined ? response.isActive : (response.active !== undefined ? response.active : response.is_active),
       lastLogin: response.last_login || response.lastLogin,
       createdAt: response.created_at || response.createdAt,
       updatedAt: response.updated_at || response.updatedAt,
       clearanceStatus: response.clearance_status || response.clearanceStatus,
-      isFinalYear: response.isFinalYear !== undefined ? response.isFinalYear : (response.finalYear !== undefined ? response.finalYear : response.is_final_year)
+      isFinalYear: response.isFinalYear !== undefined ? response.isFinalYear : (response.finalYear !== undefined ? response.finalYear : response.is_final_year),
+      photo: response.photo || response.profilePhoto || response.profile_photo || response.profileImageUrl || response.profile_image_url
     };
     if (user.role) user.role = this.mapRole(user.role);
     return user;
+  }
+
+  getProfilePhotoSource(user: any = this.getCurrentUser()): string | null {
+    const photo = user?.profilePhoto ?? user?.photo ?? user?.profileImageUrl ?? user?.profile_image_url;
+    if (typeof photo !== 'string') return null;
+
+    const source = photo.trim();
+    if (!source) return null;
+    if (/^data:image\//i.test(source) || /^(https?:|blob:)/i.test(source) || source.startsWith('/')) {
+      return source;
+    }
+    if (/^(?:\.{1,2}\/)?[\w.-]+(?:\/[\w.-]+)*\.(?:png|jpe?g|gif|webp|svg)(?:[?#].*)?$/i.test(source)) {
+      return source;
+    }
+    return source.length > 100 ? `data:image/jpeg;base64,${source}` : null;
   }
 
   refreshToken(refreshToken: string): Observable<any> {
@@ -183,8 +204,7 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/profile`, { headers: this.getAuthHeaders() }).pipe(
       tap(response => {
         const user = this.mapUserResponse(response);
-        this.cachedUser = user;
-        this.storage.save(this.currentUserKey, user);
+        this.updateCurrentUser(user);
       })
     );
   }

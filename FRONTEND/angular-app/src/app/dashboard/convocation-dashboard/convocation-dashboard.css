@@ -136,7 +136,7 @@
 
   color: rgba(255, 255, 255, 0.68);
 
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sidebar nav {
@@ -165,7 +165,7 @@
   color: rgba(255, 255, 255, 0.78);
 
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 
   text-decoration: none;
@@ -230,7 +230,7 @@
 
   color: var(--udsm-gold);
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 
   letter-spacing: 0.08em;
@@ -253,7 +253,7 @@
 
   color: rgba(255, 255, 255, 0.9);
 
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .topbar-actions {
@@ -323,7 +323,7 @@
 
   color: #707c84;
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -345,7 +345,7 @@
 
   color: #929ba1;
 
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .stat-card.pending {
@@ -359,7 +359,7 @@
 }
 
 .stat-card.completed {
-  border-top: 4px solid #10b981;
+  border-top: 4px solid #087443;
   background: linear-gradient(to bottom, #f0fdf4, #fff);
 }
 
@@ -378,7 +378,7 @@
 
   border-radius: 7px;
 
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -432,7 +432,7 @@
   color: var(--udsm-blue);
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -476,7 +476,7 @@
 }
 
 .request-card:has(.status-badge.receipt-received) {
-  border-left-color: #10b981;
+  border-left-color: #087443;
 }
 
 
@@ -540,13 +540,13 @@
 .student-meta span {
   color: #55646d;
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .academic-info {
   margin: 8px 0 0;
-  color: #64748b;
+  color: #475569;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -559,7 +559,7 @@
 
   color: #9aa3a8;
 
-  font-size: 9px;
+  font-size: 12px;
 }
 
 
@@ -579,13 +579,13 @@
 
   border-radius: 999px;
 
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .status-badge.control-requested {
   background: #fff7df;
-  color: #997200;
+  color: #795700;
   animation: pulse 2s infinite;
 }
 
@@ -641,7 +641,7 @@
 }
 
 .receipt-received {
-  border-left: 5px solid #10b981;
+  border-left: 5px solid #087443;
   background: linear-gradient(to right, #f0fdf4, #ffffff);
 }
 
@@ -676,8 +676,8 @@
 .receipt-received small {
   display: block;
   margin-top: 4px;
-  color: #64748b;
-  font-size: 11px;
+  color: #475569;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -696,7 +696,7 @@
 
   font-family: inherit;
 
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
@@ -723,8 +723,8 @@
 
 .control-label {
   display: block;
-  color: #64748b;
-  font-size: 10px;
+  color: #475569;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -839,19 +839,19 @@
 }
 
 .approve-btn {
-  background: #10b981;
+  background: #087443;
   color: #fff;
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
 }
 
 .approve-btn:hover:not(:disabled) {
-  background: #059669;
+  background: #087443;
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
 }
 
 .reject-btn {
-  background: #ef4444;
+  background: #b42318;
   color: #fff;
   box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
 }
@@ -863,7 +863,7 @@
 }
 
 .final-approve-btn {
-  background: #059669;
+  background: #087443;
   color: #fff;
   padding: 0 24px;
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
@@ -881,14 +881,14 @@
 .final-approve-btn:disabled {
   opacity: 0.6;
   background: #cbd5e1;
-  color: #64748b;
+  color: #475569;
   box-shadow: none;
   cursor: not-allowed;
   transform: none;
 }
 
 .receipt-btn {
-  background: #0ea5e9;
+  background: #00679b;
   color: #fff;
   padding: 8px 16px;
   border-radius: 6px;
@@ -900,7 +900,7 @@
 }
 
 .receipt-btn:hover:not(:disabled) {
-  background: #0284c7;
+  background: #0369a1;
   transform: scale(1.05);
 }
 
@@ -940,7 +940,7 @@
 
   color: #7b858c;
 
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @keyframes spin {
@@ -998,7 +998,7 @@
 
   color: #7b858c;
 
-  font-size: 10px;
+  font-size: 12px;
 
   line-height: 1.6;
 }
@@ -1049,7 +1049,7 @@
 
 .receipt-modal-card header p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: #475569;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1089,7 +1089,7 @@
 .text-receipt {
   padding: 40px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
   font-style: italic;
 }
@@ -1315,7 +1315,7 @@
   }
 
   .topbar-title p {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .topbar-actions {
@@ -1423,7 +1423,7 @@
 .brand small {
   margin-top: 3px;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sidebar nav {
@@ -1523,9 +1523,9 @@
 .stat-card.pending { color: #9a6800; border-top-color: var(--convocation-gold); background: #fffdf7; }
 .stat-card.issued { color: var(--convocation-blue); border-top-color: var(--convocation-blue); background: #fbfdff; }
 .stat-card.completed { color: var(--convocation-green); border-top-color: var(--convocation-green); background: #fbfefc; }
-.stat-card span { color: var(--convocation-muted); font-size: 11px; letter-spacing: 0.01em; }
+.stat-card span { color: var(--convocation-muted); font-size: 12px; letter-spacing: 0.01em; }
 .stat-card strong { color: currentColor; font-size: 32px; letter-spacing: -0.05em; }
-.stat-card small { color: var(--convocation-muted); font-size: 10px; }
+.stat-card small { color: var(--convocation-muted); font-size: 12px; }
 
 .section-header {
   margin: 42px 0 18px;
@@ -1571,7 +1571,7 @@
 .student-meta span, .academic-info { color: var(--convocation-muted); }
 .submitted-date { color: #8091a1; }
 
-.status-badge { padding: 6px 10px; font-size: 10px; }
+.status-badge { padding: 6px 10px; font-size: 12px; }
 .status-badge.control-requested { background: #fff7df; color: #8d6300; }
 .status-badge.control-issued { background: var(--convocation-blue-pale); color: var(--convocation-blue); }
 .status-badge.receipt-received { background: #eaf7ef; color: var(--convocation-green); }
@@ -1599,7 +1599,7 @@
   min-height: 39px;
   padding: 0 15px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .issue-btn { background: var(--convocation-blue); box-shadow: none; }
 .issue-btn:hover:not(:disabled) { background: #064d86; box-shadow: none; }
@@ -1738,48 +1738,4 @@
 .empty-state-icon { width: 2rem; height: 2rem; }
 
 
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
-}
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
-}
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
-}
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-}
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
-}
+

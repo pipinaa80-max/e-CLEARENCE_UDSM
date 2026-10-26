@@ -71,8 +71,7 @@
   text-transform: uppercase;
 }
 
-.login-btn-outline,
-.cta-btn {
+.login-btn-outline {
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -93,13 +92,10 @@
 
 .hero {
   position: relative;
+  overflow: hidden;
   padding: 76px 24px 84px;
   text-align: center;
   color: #ffffff;
-  background-image: var(--app-bg-url, url('/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   border-bottom: 5px solid var(--udsm-gold);
   z-index: 1;
 }
@@ -111,8 +107,15 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9)));
-  z-index: -1;
+  background:
+    var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.85), rgba(5, 63, 112, 0.9))),
+    var(--app-bg-url, url('/background.png')) center / cover no-repeat fixed;
+  filter: blur(2px);
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-logo {
@@ -140,27 +143,6 @@
   font-size: 1.08rem;
   line-height: 1.65;
   animation: fadeInUp 0.8s ease-out both;
-}
-
-.cta-btn {
-  background: var(--udsm-gold);
-  color: var(--udsm-blue-dark);
-  padding: 14px 32px;
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--udsm-blue-dark) 22%, transparent);
-  animation: fadeInUp 0.9s ease-out both, pulse 2.5s infinite 1.5s;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.cta-btn:hover {
-  background: var(--udsm-gold-hover);
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-  animation-play-state: paused;
 }
 
 .info-section {

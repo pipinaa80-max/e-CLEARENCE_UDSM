@@ -1,6 +1,27 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { normalizeUdsmBrandColor } from '../config/udsm-brand-colors';
+
+/** Converts local asset paths and workspace paths into URLs served by Angular. */
+export function normalizeBrandAssetUrl(value: string | null | undefined, fallback = ''): string {
+  let url = (value || '').trim().replace(/\\/g, '/');
+  if (!url) return fallback;
+  if (/^(https?:|data:image\/|blob:|\/\/)/i.test(url)) return url;
+  // Admins often paste a host name without the scheme. Treat it as a remote URL
+  // instead of incorrectly resolving it as an Angular-local asset path.
+  if (/^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:[:/]|$)/i.test(url)) return `https://${url}`;
+  if (url.toLowerCase() === 'none') return 'none';
+
+  const publicPathIndex = url.toLowerCase().lastIndexOf('/public/');
+  if (publicPathIndex >= 0) {
+    url = url.slice(publicPathIndex);
+  } else if (url.toLowerCase().startsWith('public/')) {
+    url = `/${url}`;
+  }
+
+  return `/${url.replace(/^\.\/+/, '').replace(/^\/+/, '')}`;
+}
 
 export interface ProjectDashboard {
   id: string;
@@ -37,7 +58,10 @@ export class ProjectAdminService {
   getSavedBranding(): Partial<ProjectConfig['branding']> | null {
     const raw = localStorage.getItem('udsm-project-branding');
     try {
-      return raw ? JSON.parse(raw) : null;
+      const branding = raw ? JSON.parse(raw) as Partial<ProjectConfig['branding']> : null;
+      return branding
+        ? { ...branding, primaryColor: normalizeUdsmBrandColor(branding.primaryColor) }
+        : null;
     } catch {
       return null;
     }
@@ -46,7 +70,11 @@ export class ProjectAdminService {
   /** Persists branding to localStorage. */
   setSavedBranding(branding: Partial<ProjectConfig['branding']>): void {
     const current = this.getSavedBranding() || {};
-    localStorage.setItem('udsm-project-branding', JSON.stringify({ ...current, ...branding }));
+    localStorage.setItem('udsm-project-branding', JSON.stringify({
+      ...current,
+      ...branding,
+      primaryColor: normalizeUdsmBrandColor(branding.primaryColor ?? current.primaryColor)
+    }));
   }
 
   getProjectConfig(): Observable<ProjectConfig> {
@@ -74,6 +102,10 @@ export class ProjectAdminService {
   }
 
   updateBranding(branding: ProjectConfig['branding']): Observable<ProjectConfig['branding']> {
-    return this.http.put<ProjectConfig['branding']>(`${this.apiUrl}/branding`, branding, { headers: this.headers() });
+    const approvedBranding = {
+      ...branding,
+      primaryColor: normalizeUdsmBrandColor(branding.primaryColor)
+    };
+    return this.http.put<ProjectConfig['branding']>(`${this.apiUrl}/branding`, approvedBranding, { headers: this.headers() });
   }
 }

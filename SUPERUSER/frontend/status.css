@@ -2,33 +2,40 @@
 @keyframes quiet-pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 /* Typography shared by every superuser dashboard view. */
 #app, #app * { font-family: 'Roboto', Arial, sans-serif !important; }
-#app { font-size: 13px; line-height: 1.45; }
-#app p, #app span, #app div, #app a, #app button, #app input, #app select,
-#app textarea, #app td, #app th, #app label, #app strong, #app small, #app li {
-  font-size: 13px !important;
-  font-weight: 400;
-  line-height: 1.45;
-}
-#app h1, #app h2, #app h3, #app h4, #app h5, #app h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
+#app .main-footer { background: var(--navy, #0f172a); color: #ffffff; }
+#app .main-footer, #app .main-footer * { color: #ffffff !important; }
 #app .sidebar .nav button, #app .nav button, #app .sidebar nav a {
   font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
   line-height: 1.4;
-  letter-spacing: 0;
-}
-#app small, #app .eyebrow, #app .section-label, #app .helper-text, #app .field label {
-  font-size: 11px !important;
-  font-weight: 400;
 }
 #app code, #app pre, #app kbd, #app samp,
 #app .registration-number, #app .student-id, #app .reg-number,
 #app .identifier, #app .code-value {
   font-family: 'Courier New', Courier, monospace !important;
+}
+
+/* Keep administrator identity, project, and account details available on small screens. */
+@media (max-width: 900px) {
+  #app .sidebar-brand, #app .sidebar-info { display: block; }
+  #app .sidebar-brand { padding-bottom: 12px; }
+  #app .sidebar-info { padding: 10px 10px 12px; }
+  #app .sidebar-foot, #app .logout { display: block; }
+  #app .sidebar-foot { margin-top: 12px; }
+  #app .admin-row { grid-template-columns: 42px minmax(0, 1fr) auto; align-items: start; }
+  #app .admin-identity { grid-column: 2; grid-row: 1; overflow-wrap: anywhere; }
+  #app .admin-project { display: grid; grid-column: 2; grid-row: 2; overflow-wrap: anywhere; }
+  #app .admin-stat { display: flex; grid-column: 2; grid-row: 3; align-items: baseline; gap: 6px; }
+  #app .status { grid-column: 3; grid-row: 1; }
+  #app .row-action { grid-column: 2 / 4; grid-row: 4; text-align: left; }
+  #app .admin-row > * { min-width: 0; }
+}
+@media (max-width: 620px) {
+  #app .main-header { height: auto; min-height: 62px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  #app .user-meta { display: block; max-width: min(65vw, 320px); text-align: left; overflow-wrap: anywhere; }
+  #app .admin-row { grid-template-columns: 38px minmax(0, 1fr); }
+  #app .status { grid-column: 2; grid-row: 3; }
+  #app .admin-stat { grid-column: 2; grid-row: 4; }
+  #app .row-action { grid-column: 2; grid-row: 5; }
+  #app .sidebar .nav { flex-wrap: wrap; overflow: visible; }
+  #app .sidebar .nav button { white-space: normal; }
 }

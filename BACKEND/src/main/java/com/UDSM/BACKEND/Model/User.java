@@ -74,9 +74,21 @@ public class User implements UserDetails {
     @Column(name = "phone_number")
     private String phoneNumber;
 
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "physical_address")
+    private String physicalAddress;
+
     // ========== ACCOMMODATION FIELDS ==========
     @Column(name = "hall")
     private String hall;
+
+    @Column(name = "wing")
+    private String wing;
+
+    @Column(name = "block")
+    private String block;
 
     @Column(name = "room_number")
     private String roomNumber;

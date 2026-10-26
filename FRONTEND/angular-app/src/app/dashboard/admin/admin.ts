@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminService } from '../../core/services/admin.service';
-import { ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
+import { normalizeBrandAssetUrl, ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
 import { AwardService } from '../../core/services/award.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor, UDSM_BRAND_COLORS } from '../../core/config/udsm-brand-colors';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -32,6 +33,8 @@ export class AdminDashboard implements OnInit {
 
   sidebarOpen = false;
   showAddForm = false;
+  readonly themeColors = UDSM_BRAND_COLORS;
+  themeColorDropdownOpen = false;
   activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'overview';
   newAwardName: string = '';
   awardsList: string[] = [];
@@ -582,6 +585,9 @@ export class AdminDashboard implements OnInit {
         if (config && config.branding && !config.branding.footerLinks) {
           config.branding.footerLinks = [];
         }
+        if (config?.branding) {
+          config.branding.primaryColor = normalizeUdsmBrandColor(config.branding.primaryColor);
+        }
         if (config && (!config.dashboards || config.dashboards.length === 0)) {
           config.dashboards = this.loadLocalDashboards();
         }
@@ -595,7 +601,7 @@ export class AdminDashboard implements OnInit {
           shortName: 'UDSM',
           logoUrl: '/udsm-logo.png',
           backgroundUrl: '',
-          primaryColor: '#00679b',
+          primaryColor: DEFAULT_UDSM_BRAND_COLOR,
           fontFamily: 'Segoe UI',
           footerLinks: []
         };
@@ -753,10 +759,22 @@ export class AdminDashboard implements OnInit {
 
   saveTheme(): void {
     if (!this.projectConfig) return;
-    const submittedBranding = { ...this.projectConfig.branding };
+    const submittedBranding = {
+      ...this.projectConfig.branding,
+      primaryColor: normalizeUdsmBrandColor(this.projectConfig.branding.primaryColor)
+    };
+    this.projectConfig.branding.primaryColor = submittedBranding.primaryColor;
     this.projectAdminService.updateBranding(submittedBranding).subscribe({
       next: (branding) => {
-        const savedBranding = { ...submittedBranding, ...branding };
+        const savedBranding = {
+          ...submittedBranding,
+          ...branding,
+          // Keep the exact strings entered in the theme form even if the API response
+          // applies a different representation for display.
+          logoUrl: submittedBranding.logoUrl,
+          backgroundUrl: submittedBranding.backgroundUrl,
+          primaryColor: normalizeUdsmBrandColor(branding.primaryColor ?? submittedBranding.primaryColor)
+        };
         this.projectConfig = this.projectConfig ? { ...this.projectConfig, branding: savedBranding } : { projectId: '', branding: savedBranding, dashboards: [] };
         this.projectAdminService.setSavedBranding(savedBranding);
         window.dispatchEvent(new CustomEvent('project-branding-updated', { detail: { branding: savedBranding } }));
@@ -765,6 +783,28 @@ export class AdminDashboard implements OnInit {
       },
       error: () => { this.message = 'Failed to save project theme'; this.isError = true; }
     });
+  }
+
+  previewLogo(logoUrl: string): void {
+    const normalizedLogoUrl = normalizeBrandAssetUrl(logoUrl, '/udsm-logo.png');
+    window.dispatchEvent(new CustomEvent('project-branding-updated', {
+      detail: { branding: { logoUrl: normalizedLogoUrl } }
+    }));
+  }
+
+  get selectedThemeColor() {
+    const selectedHex = normalizeUdsmBrandColor(this.projectConfig?.branding.primaryColor);
+    return this.themeColors.find(color => color.hex === selectedHex) ?? this.themeColors[0];
+  }
+
+  toggleThemeColorDropdown(): void {
+    this.themeColorDropdownOpen = !this.themeColorDropdownOpen;
+  }
+
+  selectThemeColor(colorHex: string): void {
+    if (!this.projectConfig) return;
+    this.projectConfig.branding.primaryColor = normalizeUdsmBrandColor(colorHex);
+    this.themeColorDropdownOpen = false;
   }
 
   previewBackground(backgroundUrl: string): void {

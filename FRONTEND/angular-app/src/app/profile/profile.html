@@ -124,6 +124,16 @@
               <strong>{{ hall }}</strong>
             </div>
 
+            <div *ngIf="wing">
+              <span>Wing</span>
+              <strong>{{ wing }}</strong>
+            </div>
+
+            <div *ngIf="block">
+              <span>Block</span>
+              <strong>{{ block }}</strong>
+            </div>
+
             <div *ngIf="roomNumber">
               <span>Room Number</span>
               <strong>{{ roomNumber }}</strong>

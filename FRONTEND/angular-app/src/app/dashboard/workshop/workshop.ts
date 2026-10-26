@@ -8,11 +8,12 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
 @Component({
   selector: 'app-workshop',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
   templateUrl: './workshop.html',
   styleUrl: './workshop.css'
 })
@@ -28,9 +29,9 @@ export class WorkshopComponent {
   message = '';
 
   searchTerm = '';
-  filterStatus = 'all';
+  filterStatus = 'Pending';
   currentPage = 1;
-  pageSize = 3;
+  pageSize = 20;
 
   get paginatedRequests(): ClearanceRequest[] {
     const start = (this.currentPage - 1) * this.pageSize;
@@ -79,6 +80,10 @@ export class WorkshopComponent {
     return this.clearanceService.getRequestsForOffice('Workshop');
   }
 
+  get pendingRequestCount(): number {
+    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'Workshop') === 'Pending').length;
+  }
+
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
 
@@ -91,15 +96,7 @@ export class WorkshopComponent {
       );
     }
 
-    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Pending');
-    } else if (this.filterStatus === 'approved') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Approved');
-    } else if (this.filterStatus === 'rejected') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === 'Rejected');
-    }
-
-    return list;
+    return list.filter(r => this.getRequestOfficeStatus(r, 'Workshop') === this.filterStatus);
   }
 
   // Cache for student data to avoid repeated lookups

@@ -49,6 +49,18 @@ public class ClearanceRequest {
     @Column(name = "programme")
     private String programme;
 
+    @Column(name = "wing")
+    private String wing;
+
+    @Column(name = "block")
+    private String block;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "physical_address")
+    private String physicalAddress;
+
     @Column(name = "project_id", length = 100)
     private String projectId;
 

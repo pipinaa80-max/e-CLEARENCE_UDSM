@@ -731,6 +731,18 @@ public class AuthService {
             updated = true;
         }
 
+        // Update wing
+        if (request.getWing() != null) {
+            user.setWing(request.getWing());
+            updated = true;
+        }
+
+        // Update block
+        if (request.getBlock() != null) {
+            user.setBlock(request.getBlock());
+            updated = true;
+        }
+
         // Update room number
         if (request.getRoomNumber() != null && !request.getRoomNumber().isEmpty()) {
             user.setRoomNumber(request.getRoomNumber());
@@ -740,6 +752,17 @@ public class AuthService {
         // Update sponsor
         if (request.getSponsor() != null && !request.getSponsor().isEmpty()) {
             user.setSponsor(request.getSponsor());
+            updated = true;
+        }
+
+        // Update physical address
+        if (request.getPhysicalAddress() != null && !request.getPhysicalAddress().isEmpty()) {
+            user.setPhysicalAddress(request.getPhysicalAddress());
+            user.setAddress(request.getPhysicalAddress());
+            updated = true;
+        } else if (request.getAddress() != null && !request.getAddress().isEmpty()) {
+            user.setAddress(request.getAddress());
+            user.setPhysicalAddress(request.getAddress());
             updated = true;
         }
 
@@ -798,12 +821,15 @@ public class AuthService {
                         .ifPresent(student -> {
                             student.setFullName(user.getFullName());
                             student.setPhoneNumber(user.getPhoneNumber());
+                            student.setAddress(user.getPhysicalAddress() != null ? user.getPhysicalAddress() : user.getAddress());
                             student.setProgramme(user.getProgramme());
                             student.setFaculty(user.getCollege());
                             student.setDepartment(user.getDepartment());
                             student.setAcademicYear(user.getAcademicYear());
                             student.setPhoto(user.getPhoto());
                             student.setHall(user.getHall());
+                            student.setWing(user.getWing());
+                            student.setBlock(user.getBlock());
                             student.setRoomNumber(user.getRoomNumber());
                             student.setSponsor(user.getSponsor());
                             student.setUpdatedAt(LocalDateTime.now());

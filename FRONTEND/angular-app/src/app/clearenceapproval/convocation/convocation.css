@@ -70,7 +70,7 @@
 
   color: var(--udsm-gold);
 
-  font-size: 0.7rem;
+  font-size: 12px;
 
   font-weight: 800;
 
@@ -111,7 +111,7 @@
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
@@ -195,7 +195,7 @@
 
   color: var(--udsm-blue);
 
-  font-size: 0.68rem;
+  font-size: 12px;
 
   font-weight: 800;
 
@@ -257,7 +257,7 @@
 
   color: var(--text-muted);
 
-  font-size: 0.72rem;
+  font-size: 12px;
 
   font-weight: 800;
 }
@@ -292,7 +292,7 @@
 
   color: var(--text-muted);
 
-  font-size: 0.68rem;
+  font-size: 12px;
 
   font-weight: 800;
 
@@ -353,7 +353,7 @@
 
   color: var(--text-muted);
 
-  font-size: 0.74rem;
+  font-size: 12px;
 
   cursor: pointer;
 }
@@ -361,7 +361,7 @@
 .file-field small {
   color: var(--text-muted);
 
-  font-size: 0.68rem;
+  font-size: 12px;
 }
 
 .file-field .file-selected {
@@ -434,7 +434,7 @@
 
   color: var(--danger);
 
-  font-size: 0.74rem;
+  font-size: 12px;
 
   font-weight: 700;
 }
@@ -456,7 +456,7 @@
 
   color: var(--success);
 
-  font-size: 0.74rem;
+  font-size: 12px;
 
   font-weight: 700;
 
@@ -490,7 +490,7 @@
   width: fit-content;
   margin: 32px auto 0;
   padding: 10px 20px;
-  color: #64748b;
+  color: #475569;
   font-size: 0.76rem;
   font-weight: 700;
   text-decoration: none;

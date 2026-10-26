@@ -5,7 +5,6 @@
   min-height: 0;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 @keyframes fadeIn {
@@ -34,15 +33,20 @@
   position: relative;
   animation: fadeIn 0.5s ease-out;
   z-index: 1;
+  isolation: isolate;
+  background: none;
+}
+
+.dashboard-shell::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
   background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+    var(--hero-gradient, linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7))),
+    var(--app-bg-url, url('/background.png')) center / cover no-repeat fixed;
+  filter: blur(2px);
+  pointer-events: none;
 }
 
 .sidebar {
@@ -223,7 +227,7 @@
   width: 100%;
   max-width: 100%;
   padding: 32px;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .topbar {
@@ -391,6 +395,85 @@ tr:hover { background: rgba(0,0,0,0.02); transition: background 0.15s ease; }
   border-radius: 8px;
 }
 
+.theme-color-picker {
+  position: relative;
+}
+
+.theme-color-trigger,
+.theme-color-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  color: var(--text-dark);
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-color-trigger {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.theme-color-value {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.theme-color-value code,
+.theme-color-option code {
+  font-size: 12px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.theme-color-caret {
+  margin-left: auto;
+}
+
+.theme-color-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.theme-color-option {
+  padding: 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.theme-color-option:hover,
+.theme-color-option[aria-selected="true"] {
+  background: var(--udsm-blue-light);
+}
+
+.theme-color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.theme-color-name {
+  flex: 1;
+}
+
 .table-container {
   border-radius: 12px;
   overflow: hidden;
@@ -524,55 +607,9 @@ tr.row-selected { background: rgba(8, 100, 175, 0.08); }
   display: inline-block;
   padding: 4px 12px;
   background: #e0f2fe;
-  color: #0284c7;
+  color: #0369a1;
   border: 1px solid #bae6fd;
   border-radius: 6px;
   font-weight: 800;
   font-size: 13px;
-}
-
-/* Dashboard typography overrides: shared across dashboard components. */
-:host, :host * {
-  font-family: 'Roboto', Arial, sans-serif !important;
-}
-:host p, :host span, :host div, :host a, :host button, :host input,
-:host select, :host textarea, :host td, :host th, :host label, :host li {
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  line-height: 1.45;
-}
-:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-:host button, :host input, :host select, :host textarea {
-  font-family: 'Roboto', Arial, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 400 !important;
-}
-:host label, :host .field-label, :host .form-label {
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-:host small, :host .text-small, :host .eyebrow, :host .section-label,
-:host .helper-text, :host .status-badge {
-  font-size: 11px !important;
-  font-weight: 400 !important;
-}
-:host .sidebar nav a, :host .sidebar nav button,
-:host .sidebar .logout-link, :host .nav a, :host .nav button {
-  font-family: 'Open Sans', Arial, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-:host code, :host pre, :host kbd, :host samp,
-:host .registration-number, :host .student-id, :host .reg-number,
-:host .identifier, :host .code-value,
-:host [class*="registration-number"], :host [class*="student-id"] {
-  font-family: 'Courier New', Courier, monospace !important;
 }

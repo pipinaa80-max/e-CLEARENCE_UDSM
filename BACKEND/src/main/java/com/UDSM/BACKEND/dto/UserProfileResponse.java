@@ -50,6 +50,12 @@ public class UserProfileResponse {
     @JsonProperty("phone_number")
     private String phoneNumber;
 
+    @JsonProperty("address")
+    private String address;
+
+    @JsonProperty("physical_address")
+    private String physicalAddress;
+
     @JsonProperty("department")
     private String department;
 
@@ -61,6 +67,12 @@ public class UserProfileResponse {
 
     @JsonProperty("hall")
     private String hall;
+
+    @JsonProperty("wing")
+    private String wing;
+
+    @JsonProperty("block")
+    private String block;
 
     @JsonProperty("room_number")
     private String roomNumber;
@@ -110,10 +122,14 @@ public class UserProfileResponse {
                 .role(user.getRole() != null ? user.getRole().name() : null)
                 .isActive(user.isActive())
                 .phoneNumber(user.getPhoneNumber())
+                .address(user.getAddress() != null ? user.getAddress() : (student != null ? student.getAddress() : null))
+                .physicalAddress(user.getPhysicalAddress() != null ? user.getPhysicalAddress() : user.getAddress())
                 .department(user.getDepartment())
                 .college(user.getCollege())
                 .programme(user.getProgramme())
                 .hall(user.getHall())
+                .wing(user.getWing())
+                .block(user.getBlock())
                 .roomNumber(user.getRoomNumber())
                 .sponsor(user.getSponsor())
                 .photo(user.getPhoto())

@@ -10,11 +10,12 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
 @Component({
   selector: 'app-games-coach',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
   templateUrl: './games_coach.html',
   styleUrl: './games_coach.css'
 })
@@ -30,9 +31,9 @@ export class GamesCoachComponent {
   message = '';
 
   searchTerm = '';
-  filterStatus = 'all';
+  filterStatus = 'Pending';
   currentPage = 1;
-  pageSize = 3;
+  pageSize = 20;
 
   get paginatedRequests(): ClearanceRequest[] {
     const start = (this.currentPage - 1) * this.pageSize;
@@ -77,6 +78,10 @@ export class GamesCoachComponent {
     return this.clearanceService.getRequestsForOffice('Games Coach');
   }
 
+  get pendingRequestCount(): number {
+    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'Games Coach') === 'Pending').length;
+  }
+
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
 
@@ -89,15 +94,7 @@ export class GamesCoachComponent {
       );
     }
 
-    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Games Coach') === 'Pending');
-    } else if (this.filterStatus === 'approved') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Games Coach') === 'Approved');
-    } else if (this.filterStatus === 'rejected') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Games Coach') === 'Rejected');
-    }
-
-    return list;
+    return list.filter(r => this.getRequestOfficeStatus(r, 'Games Coach') === this.filterStatus);
   }
 
   // Cache for student data to avoid repeated lookups
