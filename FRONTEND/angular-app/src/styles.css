@@ -19,7 +19,7 @@
   --radius-control: 8px;
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--udsm-blue) 15%, transparent);
   --transition-fast: 160ms ease;
-  --app-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --app-font-family: 'Roboto', Arial, sans-serif;
   --app-bg-url: url('/background_image.png');
   --hero-gradient: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25));
 }
@@ -679,4 +679,75 @@ textarea:focus-visible {
 .student-photo-clickable:hover {
   transform: scale(1.08);
   box-shadow: 0 0 0 3px var(--udsm-gold, #f6b418) !important;
+}
+
+/* Typography system: keep the existing component styling and tune text only. */
+html,
+body,
+body * {
+  font-family: 'Roboto', Arial, sans-serif !important;
+}
+
+html,
+body {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+p, span, div, a, button, input, select, textarea, td, th, label, strong, small, li {
+  font-size: 13px !important;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Roboto', Arial, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+button, input, select, textarea {
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 13px !important;
+  font-weight: 400;
+}
+
+.sidebar nav a,
+.sidebar nav button,
+.sidebar .logout-link,
+.office-page .sidebar nav a,
+.office-page .sidebar nav button,
+.dashboard-shell .sidebar nav a,
+.dashboard-shell .sidebar nav button {
+  font-family: 'Open Sans', Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+small, .text-small, .eyebrow, .section-label, .status-badge, .clearance-label,
+.office-status, .pending-box small, .pending-status, .detail span,
+.approval-status, .quick-action span, .brand small {
+  font-size: 11px !important;
+  font-weight: 400;
+}
+
+.app-footer, .app-footer p, .app-footer a, .app-footer nav span {
+  font-size: 11px !important;
+  font-weight: 400;
+}
+
+code, pre, kbd, samp,
+.registration-number, .student-id, .reg-number, .identifier, .code-value,
+[class*="registration-number"], [class*="student-id"] {
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+.student-meta strong, .profile-details strong {
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
 }

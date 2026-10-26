@@ -125,13 +125,13 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     }
     .header-titles h2 {
       margin: 0;
-      font-size: 1.5rem;
-      font-weight: 800;
+      font-size: 16px !important;
+      font-weight: 400;
       line-height: 1.2;
     }
     .header-titles p {
       margin: 4px 0 0;
-      font-size: 0.95rem;
+      font-size: 13px;
       opacity: 0.9;
     }
     .header-right {
