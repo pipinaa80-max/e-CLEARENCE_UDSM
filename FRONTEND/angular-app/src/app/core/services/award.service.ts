@@ -36,6 +36,26 @@ export class AwardService {
     return true;
   }
 
+  updateAward(currentName: string, newName: string): boolean {
+    const trimmed = newName.trim();
+    if (!trimmed) return false;
+
+    const current = this.getAwards();
+    const currentIndex = current.findIndex(
+      award => award.toLowerCase() === currentName.trim().toLowerCase()
+    );
+    if (currentIndex === -1) return false;
+
+    const duplicate = current.some(
+      (award, index) => index !== currentIndex && award.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (duplicate) return false;
+
+    current[currentIndex] = trimmed;
+    this.storage.save(this.awardsKey, current);
+    return true;
+  }
+
   deleteAward(awardName: string): boolean {
     const current = this.getAwards();
     const updated = current.filter(a => a.toLowerCase() !== awardName.trim().toLowerCase());

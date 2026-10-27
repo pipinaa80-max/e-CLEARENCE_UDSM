@@ -124,6 +124,7 @@ export class AuthService {
       LABORATORY: 'Laboratory',
       ACADEMIC_STAFF: 'Academic Staff',
       'ACADEMIC STAFF': 'Academic Staff',
+      LECTURER: 'Lecturer',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
       SUPERUSER: 'Administrator'

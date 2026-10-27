@@ -146,6 +146,10 @@ export class TranscriptComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get isClearanceComplete(): boolean {
+    return this.request?.status === 'Completed';
+  }
+
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
   }

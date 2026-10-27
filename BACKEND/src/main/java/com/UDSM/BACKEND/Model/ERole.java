@@ -21,7 +21,8 @@ public enum ERole {
     WORKSHOP_OFFICER,
     PRINCIPAL,
     LABORATORY_OFFICER,
-    ACADEMIC_STAFF;
+    ACADEMIC_STAFF,
+    LECTURER;
 
     private ERole() {
     }

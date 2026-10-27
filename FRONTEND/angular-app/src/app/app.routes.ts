@@ -36,6 +36,7 @@ import { LaboratoryComponent } from './dashboard/laboratory/laboratory';
 import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import { DepartmentOfficerComponent } from "./dashboard/Department-officer/department-officer.component";
+import { LecturerDashboard } from './dashboard/lecturer/lecturer';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -88,6 +89,11 @@ export const routes: Routes = [
     path: 'dashboard/academic',
     component: AcademicDashboard,
     canActivate: [authGuard, roleGuard(['Academic Staff'])]
+  },
+  {
+    path: 'dashboard/lecturer',
+    component: LecturerDashboard,
+    canActivate: [authGuard, roleGuard(['Lecturer'])]
   },
   {
     path: 'dashboard/admin',

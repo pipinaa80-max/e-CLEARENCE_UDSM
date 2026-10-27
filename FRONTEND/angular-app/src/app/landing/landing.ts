@@ -62,6 +62,7 @@ export class Landing implements OnInit {
       Laboratory: '/dashboard/laboratory',
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
+      Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin'
     };
 

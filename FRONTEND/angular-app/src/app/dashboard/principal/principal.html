@@ -1,4 +1,4 @@
-<section class="principal-page">
+<section class="principal-page office-page" [class.sidebar-open]="sidebarOpen">
 
   <!-- MOBILE OVERLAY -->
 
@@ -39,6 +39,7 @@
       <a
         routerLink="/principal/dashboard"
         routerLinkActive="active"
+        (click)="closeSidebar()"
       >
         Pending Requests
       </a>
@@ -68,13 +69,9 @@
       (toggleSidebar)="toggleSidebar()"
     >
       <div header-actions class="header-actions">
-        <button
-          type="button"
-          class="refresh-button"
-          (click)="refreshData()"
-        >
-          Refresh
-        </button>
+        <div class="pending-box" aria-label="Pending requests">
+          <strong>{{ pendingRequestCount }}</strong><small>Pending</small>
+        </div>
       </div>
     </app-dashboard-header>
 
@@ -87,51 +84,6 @@
     >
       {{ message }}
     </div>
-
-
-    <!-- STATISTICS -->
-
-    <section class="stats">
-
-      <div class="stat-card">
-
-        <span>
-          Pending
-        </span>
-
-        <strong>
-          {{ totalPending }}
-        </strong>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <span>
-          Approved
-        </span>
-
-        <strong>
-          {{ totalApproved }}
-        </strong>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <span>
-          Rejected
-        </span>
-
-        <strong>
-          {{ totalRejected }}
-        </strong>
-
-      </div>
-
-    </section>
 
 
     <!-- FILTER BAR -->
@@ -154,10 +106,6 @@
         [(ngModel)]="filterStatus"
         (ngModelChange)="onFilterChange()"
       >
-
-        <option value="all">
-          All Requests
-        </option>
 
         <option value="pending">
           Pending
@@ -212,191 +160,52 @@
     </section>
 
 
-    <!-- REQUESTS -->
-
-    <section
-      class="request-list"
-      *ngIf="!isLoading && filteredRequests.length"
-    >
-
-      <article
-        class="request-card"
-        *ngFor="let request of paginatedRequests"
-      >
-
-        <!-- CARD HEADER -->
-
-        <div class="request-header">
-
-          <div class="student-heading">
-
-            <!-- STUDENT PHOTO -->
-
-            <div class="student-photo">
-
-              <img
-                *ngIf="hasPhoto(request)"
-                [src]="getStudentPhoto(request)"
-                alt="Student photo"
-                class="student-photo-clickable"
-                (click)="openEnlargedPhoto(getStudentPhoto(request))"
-                title="Click to view enlarged photo"
-              />
-
-              <span
-                *ngIf="!hasPhoto(request)"
-              >
-                {{ getStudentInitials(request) }}
-              </span>
-
-            </div>
-
-
-            <!-- STUDENT INFORMATION -->
-
-            <div class="student-title">
-
-              <span class="request-label">
-                Graduation Clearance
-              </span>
-
-              <h2>
-                {{ getStudentName(request) }}
-              </h2>
-
-              <p>
-                {{ request.programme }}
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <span
-            class="status"
-            [class.status-approved]="request.currentStage === 'Finance' || request.status === 'Completed'"
-            [class.status-rejected]="request.status === 'Rejected'"
-          >
-            {{ request.status === 'Pending' && request.currentStage === 'Principal' ? 'Awaiting Review' : request.status }}
-          </span>
-
-        </div>
-
-
-        <!-- STUDENT DETAILS -->
-
-        <div class="student-details">
-
-          <div class="detail-item">
-
-            <span>
-              Registration Number
-            </span>
-
-            <strong>
-              {{ getStudentRegNumber(request) }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Programme
-            </span>
-
-            <strong>
-              {{ request.programme }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Department
-            </span>
-
-            <strong>
-              {{ request.department }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              College
-            </span>
-
-            <strong>
-              {{ request.college }}
-            </strong>
-
-          </div>
-
-
-          <div class="detail-item">
-
-            <span>
-              Submitted
-            </span>
-
-            <strong>
-              {{ request.requestDate | date:'mediumDate' }}
-            </strong>
-
-          </div>
-
-        </div>
-
-
-        <!-- DOCUMENT SUMMARY -->
-
-        <div class="document-summary">
-
-          <span>
-            Documents
-          </span>
-
-          <strong>
-            {{ getDocumentStatus(request).uploaded }}
-            /
-            {{ getDocumentStatus(request).total }}
-            Uploaded
-          </strong>
-
-        </div>
-
-
-        <!-- ACTION -->
-
-        <div class="request-footer">
-
-          <span class="review-note">
-            Review this student's clearance request.
-          </span>
-
-
-          <button
-            *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'"
-            type="button"
-            class="review-button"
-            (click)="approve(request)"
-          >
-            Approve
-          </button>
-
-        </div>
-
-      </article>
-
+    <!-- COMPACT REQUEST TABLE -->
+    <section class="compact-table-wrap" *ngIf="!isLoading && filteredRequests.length">
+      <table class="compact-request-table">
+        <thead><tr>
+          <th>Registration Number</th><th>Full Name</th><th>Email</th><th>Phone Number</th><th>Programme</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          <tr *ngFor="let request of paginatedRequests">
+            <td>{{ getStudentRegNumber(request) }}</td>
+            <td class="compact-name">{{ getStudentListName(request) }}</td>
+            <td>{{ getStudentEmail(request) }}</td>
+            <td>{{ getStudentPhone(request) }}</td>
+            <td>{{ getStudentProgramme(request) }}</td>
+            <td><div class="compact-actions">
+              <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
+              <button *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'" type="button" class="review-button" (click)="approve(request)">Approve</button>
+              <span *ngIf="getRequestOfficeStatus(request, 'Principal') !== 'Pending'" class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
+    <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
+      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
+        <button type="button" class="compact-close" aria-label="Close" (click)="detailsRequest = null">×</button>
+        <div class="compact-details-heading">
+          <div class="student-photo">
+            <img *ngIf="hasPhoto(detailsRequest)" [src]="getStudentPhoto(detailsRequest)" alt="Student photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(detailsRequest))" />
+            <span *ngIf="!hasPhoto(detailsRequest)">{{ getStudentInitials(detailsRequest) }}</span>
+          </div>
+          <div><span class="request-label">Student Information</span><h2>{{ getStudentName(detailsRequest) }}</h2></div>
+        </div>
+        <dl class="compact-details-grid">
+          <div><dt>Registration Number</dt><dd>{{ getStudentRegNumber(detailsRequest) }}</dd></div>
+          <div><dt>Gender</dt><dd>{{ getStudentGender(detailsRequest) }}</dd></div>
+          <div><dt>Email</dt><dd>{{ getStudentEmail(detailsRequest) }}</dd></div>
+          <div><dt>Phone Number</dt><dd>{{ getStudentPhone(detailsRequest) }}</dd></div>
+          <div><dt>Programme</dt><dd>{{ getStudentProgramme(detailsRequest) }}</dd></div>
+          <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
+          <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
+          <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
+          <div><dt>Documents Uploaded</dt><dd>{{ getDocumentStatus(detailsRequest).uploaded }} / {{ getDocumentStatus(detailsRequest).total }}</dd></div>
+        </dl>
+      </div>
+    </section>
     <div class="pagination" *ngIf="totalPages > 1">
       <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
         &larr; Previous

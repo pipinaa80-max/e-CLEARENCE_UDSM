@@ -25,6 +25,10 @@
         Pending Requests
       </a>
 
+      <a href="#analytics" (click)="sidebarOpen = false">
+        Analytics &amp; Reports
+      </a>
+
       <button
         type="button"
         (click)="logout()"
@@ -60,6 +64,78 @@
     >
       {{ message }}
     </p>
+
+    <section class="analytics-section" id="analytics">
+      <div class="analytics-heading">
+        <div>
+          <span class="analytics-eyebrow">Institution-wide overview</span>
+          <h2>Clearance analytics</h2>
+          <p>Track completed clearances across programmes, academic years, and colleges.</p>
+        </div>
+        <div class="analytics-actions">
+          <button type="button" class="analytics-secondary" (click)="refreshData()">Refresh data</button>
+          <button type="button" class="analytics-secondary" (click)="printAnalyticsReport()">Print report</button>
+          <button type="button" class="analytics-primary" (click)="downloadAnalyticsReport()">Download CSV report</button>
+        </div>
+      </div>
+
+      <div class="analytics-kpis">
+        <article><span>Total requests</span><strong>{{ allRequests.length }}</strong></article>
+        <article><span>Completed clearances</span><strong>{{ completedRequestCount }}</strong></article>
+        <article><span>In progress</span><strong>{{ inProgressRequestCount }}</strong></article>
+        <article><span>Clearance rate</span><strong>{{ clearanceRate }}%</strong></article>
+      </div>
+
+      <div class="analytics-charts">
+        <article class="analytics-chart-card">
+          <div class="chart-heading"><h3>Most-cleared programmes</h3><span>Completed requests</span></div>
+          <div class="bar-list" *ngIf="programmeClearanceBars.length; else noProgrammeStats">
+            <div class="bar-row" *ngFor="let bar of programmeClearanceBars">
+              <div class="bar-label"><span>{{ bar.label }}</span><strong>{{ bar.count }}</strong></div>
+              <div class="bar-track"><span [style.width.%]="bar.width"></span></div>
+            </div>
+          </div>
+          <ng-template #noProgrammeStats><p class="analytics-empty">Completed programme data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card">
+          <div class="chart-heading"><h3>Clearances by year</h3><span>Academic year when available</span></div>
+          <div class="bar-list" *ngIf="yearClearanceBars.length; else noYearStats">
+            <div class="bar-row" *ngFor="let bar of yearClearanceBars">
+              <div class="bar-label"><span>{{ bar.label }}</span><strong>{{ bar.count }}</strong></div>
+              <div class="bar-track year-track"><span [style.width.%]="bar.width"></span></div>
+            </div>
+          </div>
+          <ng-template #noYearStats><p class="analytics-empty">Completed year data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card college-chart-card">
+          <div class="chart-heading"><h3>Clearances by college</h3><span>Completed requests</span></div>
+          <div class="bar-list" *ngIf="collegeClearanceBars.length; else noCollegeStats">
+            <div class="bar-row" *ngFor="let bar of collegeClearanceBars">
+              <div class="bar-label"><span>{{ bar.label }}</span><strong>{{ bar.count }}</strong></div>
+              <div class="bar-track college-track"><span [style.width.%]="bar.width"></span></div>
+            </div>
+          </div>
+          <ng-template #noCollegeStats><p class="analytics-empty">Completed college data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card status-chart-card">
+          <div class="chart-heading"><h3>Overall request status</h3><span>All requests</span></div>
+          <div class="status-breakdown">
+            <div><span class="status-dot completed-dot"></span><span>Completed</span><strong>{{ completedRequestCount }}</strong></div>
+            <div><span class="status-dot progress-dot"></span><span>In progress</span><strong>{{ inProgressRequestCount }}</strong></div>
+            <div><span class="status-dot rejected-dot"></span><span>Rejected</span><strong>{{ rejectedRequestCount }}</strong></div>
+          </div>
+          <div class="status-stack" role="img" [attr.aria-label]="'Request statuses: ' + completedRequestCount + ' completed, ' + inProgressRequestCount + ' in progress, ' + rejectedRequestCount + ' rejected'">
+            <span class="completed-segment" [style.flex]="completedRequestCount"></span>
+            <span class="progress-segment" [style.flex]="inProgressRequestCount"></span>
+            <span class="rejected-segment" [style.flex]="rejectedRequestCount"></span>
+          </div>
+        </article>
+      </div>
+      <p class="analytics-note">Analytics use the clearance requests available to this dashboard. Year labels use student academic details when available and the request year otherwise.</p>
+    </section>
 
 
     <!-- FILTER BAR -->
@@ -117,13 +193,29 @@
     </section>
 
 
-    <section class="request-list" *ngIf="filteredRequests.length">
-      <app-parallel-office-request-table
-        [requests]="paginatedRequests"
-        [office]="'Dean of Students'"
-        (approve)="approve($event)"
-        (reject)="openRejectForm($event)"
-      ></app-parallel-office-request-table>
+    <section class="compact-table-wrap" *ngIf="filteredRequests.length">
+      <table class="compact-request-table">
+        <thead><tr>
+          <th>Registration Number</th><th>Full Name</th><th>Email</th><th>Phone Number</th><th>Programme</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          <tr *ngFor="let request of paginatedRequests">
+            <td>{{ getStudentRegNumber(request) }}</td>
+            <td class="compact-name">{{ getStudentListName(request) }}</td>
+            <td>{{ getStudentEmail(request) }}</td>
+            <td>{{ getStudentPhone(request) }}</td>
+            <td>{{ request.programme || '—' }}</td>
+            <td><div class="compact-actions">
+              <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
+              <ng-container *ngIf="getRequestOfficeStatus(request, 'Dean of Students') === 'Pending'; else deanReviewed">
+                <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
+                <button type="button" class="approve-button" (click)="approve(request)">Approve</button>
+              </ng-container>
+              <ng-template #deanReviewed><span class="compact-status">{{ getRequestOfficeStatus(request, 'Dean of Students') }}</span></ng-template>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <div class="pagination" *ngIf="totalPages > 1">
@@ -195,6 +287,30 @@
 
       </div>
 
+    </section>
+
+    <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
+      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
+        <button type="button" class="compact-close" aria-label="Close" (click)="detailsRequest = null">×</button>
+        <div class="compact-details-heading">
+          <div class="student-photo">
+            <img *ngIf="hasPhoto(detailsRequest)" [src]="getStudentPhoto(detailsRequest)" alt="Student photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(detailsRequest))" />
+            <span *ngIf="!hasPhoto(detailsRequest)">{{ getStudentInitials(detailsRequest) }}</span>
+          </div>
+          <div><span class="request-label">Student Information</span><h2>{{ getStudentName(detailsRequest) }}</h2></div>
+        </div>
+        <dl class="compact-details-grid">
+          <div><dt>Registration Number</dt><dd>{{ getStudentRegNumber(detailsRequest) }}</dd></div>
+          <div><dt>Gender</dt><dd>{{ getStudentGender(detailsRequest) }}</dd></div>
+          <div><dt>Email</dt><dd>{{ getStudentEmail(detailsRequest) }}</dd></div>
+          <div><dt>Phone Number</dt><dd>{{ getStudentPhone(detailsRequest) }}</dd></div>
+          <div><dt>Programme</dt><dd>{{ detailsRequest.programme || '—' }}</dd></div>
+          <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
+          <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
+          <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
+          <div><dt>Convocation Approval</dt><dd>{{ getRequestOfficeStatus(detailsRequest, 'Convocation') }}</dd></div>
+        </dl>
+      </div>
     </section>
   </main>
 

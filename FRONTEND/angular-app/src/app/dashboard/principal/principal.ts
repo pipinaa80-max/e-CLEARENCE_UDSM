@@ -29,9 +29,9 @@ export class PrincipalComponent implements OnInit {
     isLoading = false;
     message = '';
     searchTerm = '';
-    filterStatus = 'all';
+    filterStatus = 'pending';
     currentPage = 1;
-    pageSize = 3;
+    pageSize = 10;
 
     get paginatedRequests(): ClearanceRequest[] {
         const start = (this.currentPage - 1) * this.pageSize;
@@ -63,12 +63,10 @@ export class PrincipalComponent implements OnInit {
 
     pendingRequests: ClearanceRequest[] = [];
     filteredRequests: ClearanceRequest[] = [];
+    detailsRequest: ClearanceRequest | null = null;
 
     private studentCache: Map<string, any> = new Map();
 
-    totalPending = 0;
-    totalApproved = 0;
-    totalRejected = 0;
 
     get currentUser() {
         return this.authService.getCurrentUser();
@@ -76,6 +74,12 @@ export class PrincipalComponent implements OnInit {
 
     get collegeName(): string {
         return this.currentUser?.college || 'College';
+    }
+
+    get pendingRequestCount(): number {
+        return this.pendingRequests.filter(request =>
+            this.getRequestOfficeStatus(request, 'Principal') === 'Pending'
+        ).length;
     }
 
     ngOnInit(): void {
@@ -105,25 +109,10 @@ export class PrincipalComponent implements OnInit {
                 request.status === 'Completed';
         });
 
-        this.updateStats();
         this.applyFilters();
 
         this.isLoading = false;
         console.log('Principal requests loaded:', this.pendingRequests.length);
-    }
-
-    updateStats(): void {
-        this.totalPending = this.pendingRequests.filter(r =>
-            r.currentStage === 'Principal' && r.status === 'Pending'
-        ).length;
-
-        this.totalApproved = this.pendingRequests.filter(r =>
-            r.currentStage === 'Finance' || r.status === 'Completed'
-        ).length;
-
-        this.totalRejected = this.pendingRequests.filter(r =>
-            r.status === 'Rejected'
-        ).length;
     }
 
     getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
@@ -133,7 +122,7 @@ export class PrincipalComponent implements OnInit {
     applyFilters(): void {
         let filtered = [...this.pendingRequests];
 
-        if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+        if (this.filterStatus === 'pending') {
             filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Pending');
         } else if (this.filterStatus === 'approved') {
             filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Approved');
@@ -184,6 +173,18 @@ export class PrincipalComponent implements OnInit {
         return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
     }
 
+    getStudentListName(request: ClearanceRequest): string {
+        const user = this.getStudentData(request.studentId);
+        const firstName = user?.firstName?.trim();
+        const middleName = user?.middleName?.trim();
+        const lastName = user?.lastName?.trim();
+        if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
+        const fullName = (request.studentName || user?.fullName || '').trim();
+        if (!fullName) return '—';
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
+    }
+
     getStudentRegNumber(request: ClearanceRequest): string {
         if (request.registrationNumber) return request.registrationNumber;
         const user = this.getStudentData(request.studentId);
@@ -191,6 +192,28 @@ export class PrincipalComponent implements OnInit {
             return user.registrationNumber || user.studentId || 'Not available';
         }
         return 'Not available';
+    }
+
+    getStudentGender(request: ClearanceRequest): string {
+        const gender = this.getStudentData(request.studentId)?.gender || (request as ClearanceRequest & { gender?: string }).gender;
+        return typeof gender === 'string' && gender.trim() ? gender.trim() : '—';
+    }
+
+    getStudentEmail(request: ClearanceRequest): string {
+        return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
+    }
+
+    getStudentPhone(request: ClearanceRequest): string {
+        const user = this.getStudentData(request.studentId);
+        return request.phoneNumber?.trim() || user?.phoneNumber?.trim() || user?.phone?.trim() || '—';
+    }
+
+    getStudentProgramme(request: ClearanceRequest): string {
+        return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
+    }
+
+    openDetails(request: ClearanceRequest): void {
+        this.detailsRequest = request;
     }
 
     getStudentPhoto(request: ClearanceRequest): string | null {
@@ -269,17 +292,6 @@ export class PrincipalComponent implements OnInit {
             'success'
         );
         this.message = `Student ${this.getStudentName(request)} was approved successfully.`;
-    }
-
-    refreshData(): void {
-        this.message = '🔄 Refreshing data...';
-        this.loadData();
-        setTimeout(() => {
-            this.message = '✅ Data refreshed successfully.';
-            setTimeout(() => {
-                this.message = '';
-            }, 3000);
-        }, 500);
     }
 
     toggleSidebar(): void {

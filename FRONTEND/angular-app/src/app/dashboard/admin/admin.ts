@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -27,6 +27,7 @@ interface AcademicUnitData {
 export class AdminDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly adminService = inject(AdminService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
   private readonly projectAdminService = inject(ProjectAdminService);
   private readonly awardService = inject(AwardService);
@@ -38,6 +39,8 @@ export class AdminDashboard implements OnInit {
   activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'overview';
   newAwardName: string = '';
   awardsList: string[] = [];
+  editingAwardName: string | null = null;
+  editedAwardName = '';
 
   get currentUser() {
     return this.authService.getCurrentUser();
@@ -484,16 +487,18 @@ export class AdminDashboard implements OnInit {
         if (Array.isArray(users)) {
           this.users = users.map(u => this.authService.mapUserResponse(u));
           console.log('📦 Admin mapped users:', this.users);
-          this.calculateStats();
         } else {
           console.error('📦 Admin users data is not an array:', users);
           this.users = [];
         }
+        this.calculateStats();
       },
       error: (err) => {
         console.error('Error loading users', err);
         this.message = 'Failed to load users. Please check backend connection.';
         this.isError = true;
+        this.users = [];
+        this.calculateStats();
       }
     });
 
@@ -558,6 +563,7 @@ export class AdminDashboard implements OnInit {
     this.stats.completed = this.clearanceRequests.filter(r => ['COMPLETED', 'APPROVED', 'CLEARED'].includes(String(r.status ?? '').toUpperCase())).length;
     this.stats.pending = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'PENDING').length;
     this.stats.rejected = this.clearanceRequests.filter(r => String(r.status ?? '').toUpperCase() === 'REJECTED').length;
+    this.changeDetector.markForCheck();
   }
 
   private readonly defaultProjectDashboards: ProjectDashboard[] = [
@@ -654,6 +660,36 @@ export class AdminDashboard implements OnInit {
       this.loadAwards();
     } else {
       this.message = `Award "${trimmed}" already exists or could not be added.`;
+      this.isError = true;
+    }
+  }
+
+  startEditAward(award: string): void {
+    this.editingAwardName = award;
+    this.editedAwardName = award;
+  }
+
+  cancelEditAward(): void {
+    this.editingAwardName = null;
+    this.editedAwardName = '';
+  }
+
+  saveAwardEdit(): void {
+    const currentName = this.editingAwardName;
+    const updatedName = this.editedAwardName.trim();
+    if (!currentName || !updatedName) {
+      this.message = 'Please enter an award name.';
+      this.isError = true;
+      return;
+    }
+
+    if (this.awardService.updateAward(currentName, updatedName)) {
+      this.message = `Award "${currentName}" updated successfully.`;
+      this.isError = false;
+      this.cancelEditAward();
+      this.loadAwards();
+    } else {
+      this.message = `Award "${updatedName}" already exists or could not be updated.`;
       this.isError = true;
     }
   }

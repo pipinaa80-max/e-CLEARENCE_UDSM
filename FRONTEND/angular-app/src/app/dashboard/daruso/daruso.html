@@ -1,5 +1,11 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
 
+  <div
+    class="sidebar-overlay"
+    *ngIf="sidebarOpen"
+    (click)="closeSidebar()"
+  ></div>
+
   <!-- SIDEBAR -->
 
   <aside class="sidebar">
@@ -24,6 +30,7 @@
       <a
         routerLink="/dashboard/daruso"
         routerLinkActive="active"
+        (click)="closeSidebar()"
       >
         Pending Requests
       </a>
@@ -144,7 +151,8 @@
             <td>{{ getStudentPhone(request) }}</td>
             <td>{{ getStudentProgramme(request) }}</td>
             <td>
-              <div class="actions" *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'; else reviewedStatus">
+              <div class="actions">
+                <ng-container *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'; else reviewedStatus">
                 <button
                   type="button"
                   class="reject-button"
@@ -161,10 +169,11 @@
                 >
                   {{ processingRequests.has(request.id) ? 'Processing...' : 'Approve' }}
                 </button>
+                </ng-container>
+                <ng-template #reviewedStatus>
+                  <span class="reviewed-status">{{ getRequestOfficeStatus(request, 'DARUSO') }}</span>
+                </ng-template>
               </div>
-              <ng-template #reviewedStatus>
-                <span class="reviewed-status">{{ getRequestOfficeStatus(request, 'DARUSO') }}</span>
-              </ng-template>
             </td>
           </tr>
         </tbody>

@@ -508,6 +508,41 @@ textarea:focus-visible {
   min-width: 0 !important;
 }
 
+.office-page .pending-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 70px;
+  min-width: 70px;
+  height: 48px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 59, 92, 0.16);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--udsm-blue-dark);
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: none;
+}
+
+.office-page .pending-box strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.office-page .pending-box small {
+  color: #66737c;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 @media (min-width: 769px) {
   .office-page:not(.sidebar-open),
   .dashboard-shell:not(.sidebar-open) {

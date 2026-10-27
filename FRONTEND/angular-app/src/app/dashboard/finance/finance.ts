@@ -24,18 +24,23 @@ export class FinanceDashboard {
 
   sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
+  detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
 
   searchTerm = '';
-  filterStatus = 'all';
+  filterStatus = 'pending';
 
   // Pagination
   currentPage = 1;
-  pageSize = 3;
+  pageSize = 10;
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
   }
 
   get currentUser() {
@@ -57,6 +62,12 @@ export class FinanceDashboard {
     return this.clearanceService.getRequestsForOffice('Finance');
   }
 
+  get pendingRequestCount(): number {
+    return this.requests.filter(request =>
+      this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
+    ).length;
+  }
+
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
 
@@ -69,7 +80,7 @@ export class FinanceDashboard {
       );
     }
 
-    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+    if (this.filterStatus === 'pending') {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending');
     } else if (this.filterStatus === 'approved') {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved');
@@ -221,8 +232,43 @@ export class FinanceDashboard {
     return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
   }
 
+  getStudentListName(request: ClearanceRequest): string {
+    const user = this.getStudentData(request.studentId);
+    const firstName = user?.firstName?.trim();
+    const middleName = user?.middleName?.trim();
+    const lastName = user?.lastName?.trim();
+    if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
+    const fullName = (request.studentName || user?.fullName || '').trim();
+    if (!fullName) return '—';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
+  }
+
   getStudentRegNumber(request: ClearanceRequest): string {
-    return request.registrationNumber || request.studentId;
+    const user = this.getStudentData(request.studentId);
+    return request.registrationNumber?.trim() || user?.registrationNumber?.trim() || user?.studentId?.trim() || '—';
+  }
+
+  getStudentGender(request: ClearanceRequest): string {
+    const gender = this.getStudentData(request.studentId)?.gender || (request as ClearanceRequest & { gender?: string }).gender;
+    return typeof gender === 'string' && gender.trim() ? gender.trim() : '—';
+  }
+
+  getStudentEmail(request: ClearanceRequest): string {
+    return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
+  }
+
+  getStudentPhone(request: ClearanceRequest): string {
+    const user = this.getStudentData(request.studentId);
+    return request.phoneNumber?.trim() || user?.phoneNumber?.trim() || user?.phone?.trim() || '—';
+  }
+
+  getStudentProgramme(request: ClearanceRequest): string {
+    return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
+  }
+
+  openDetails(request: ClearanceRequest): void {
+    this.detailsRequest = request;
   }
 
   getStudentPhoto(request: ClearanceRequest): string | null {

@@ -27,6 +27,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findByRegistrationNumber(String registrationNumber);
 
+    Optional<User> findByRegistrationNumberIgnoreCase(String registrationNumber);
+
     Optional<User> findByResetToken(String resetToken);
 
     Optional<User> findByVerificationToken(String verificationToken);

@@ -166,8 +166,9 @@ public interface ClearanceRequestRepository extends JpaRepository<ClearanceReque
     List<ClearanceRequest> findPendingByDepartment(@Param("department") String department);
 
     // Add: Find requests by student registration number
-    @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.student.registrationNumber = :registrationNumber")
+    @Query("SELECT cr FROM ClearanceRequest cr WHERE LOWER(cr.student.registrationNumber) = LOWER(:registrationNumber)")
     List<ClearanceRequest> findByStudentRegistrationNumber(@Param("registrationNumber") String registrationNumber);
+
 
     // Add: Find active requests (not completed or rejected)
     @Query("SELECT cr FROM ClearanceRequest cr WHERE cr.status NOT IN ('COMPLETED', 'REJECTED')")

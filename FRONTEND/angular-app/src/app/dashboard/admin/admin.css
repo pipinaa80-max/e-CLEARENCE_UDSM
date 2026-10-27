@@ -89,24 +89,6 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar-toggle-in {
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.sidebar-toggle-float {
-  display: none;
-}
-
 .topbar {
   margin-bottom: 24px;
   padding: 22px 28px;
@@ -479,6 +461,24 @@ tr:hover { background: rgba(0,0,0,0.02); transition: background 0.15s ease; }
   overflow: hidden;
   border: 1px solid var(--border-soft);
   background: #fff;
+}
+
+.users-table-container {
+  overflow-x: auto;
+}
+
+.users-table {
+  min-width: 900px;
+}
+
+.users-actions-heading,
+.users-actions-cell,
+.users-actions-cell .btn-sm {
+  white-space: nowrap;
+}
+
+.users-actions-heading {
+  min-width: 88px;
 }
 
 table { width: 100%; border-collapse: collapse; text-align: left; }

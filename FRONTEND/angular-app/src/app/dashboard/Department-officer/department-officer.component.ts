@@ -1,5 +1,5 @@
 // department-officer.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -7,8 +7,11 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { StudentDebtService } from '../../core/services/student-debt.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { timeout } from 'rxjs';
 
 @Component({
     selector: 'app-department-officer',
@@ -17,19 +20,21 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
     templateUrl: './department-officer.html',
     styleUrl: './department-officer.css'
 })
-export class DepartmentOfficerComponent implements OnInit {
+export class DepartmentOfficerComponent implements OnInit, OnDestroy {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
     private readonly notificationService = inject(NotificationService);
+    private readonly toastService = inject(ToastService);
+    private readonly studentDebtService = inject(StudentDebtService);
     private readonly router = inject(Router);
 
     sidebarOpen = false;
     isLoading = false;
     message = '';
     searchTerm = '';
-    filterStatus = 'all';
+    filterStatus = 'pending';
     currentPage = 1;
-    pageSize = 3;
+    pageSize = 10;
 
     get paginatedRequests(): ClearanceRequest[] {
         const start = (this.currentPage - 1) * this.pageSize;
@@ -61,12 +66,15 @@ export class DepartmentOfficerComponent implements OnInit {
 
     pendingRequests: ClearanceRequest[] = [];
     filteredRequests: ClearanceRequest[] = [];
+    selectedRequest: ClearanceRequest | null = null;
+    rejectionComment = '';
+    openDebtRegistrations = new Set<string>();
+    debtFlagsLoaded = false;
+    debtFlagsLoading = false;
+    debtFlagCheckError = '';
+    private debtFlagRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
     private studentCache: Map<string, any> = new Map();
-
-    totalPending = 0;
-    totalApproved = 0;
-    totalRejected = 0;
 
     get currentUser() {
         return this.authService.getCurrentUser();
@@ -76,8 +84,19 @@ export class DepartmentOfficerComponent implements OnInit {
         return this.currentUser?.department || 'Department';
     }
 
+    get pendingRequestCount(): number {
+        return this.pendingRequests.filter(request =>
+            this.getRequestOfficeStatus(request, 'Department') === 'Pending'
+        ).length;
+    }
+
     ngOnInit(): void {
         this.loadData();
+        this.debtFlagRefreshTimer = setInterval(() => this.loadOpenDebtFlags(), 30000);
+    }
+
+    ngOnDestroy(): void {
+        if (this.debtFlagRefreshTimer) clearInterval(this.debtFlagRefreshTimer);
     }
 
     loadData(): void {
@@ -90,6 +109,8 @@ export class DepartmentOfficerComponent implements OnInit {
             this.isLoading = false;
             return;
         }
+
+        this.loadOpenDebtFlags();
 
         const departmentRequests = this.clearanceService.getRequestsForOffice(
             'Department',
@@ -108,35 +129,51 @@ export class DepartmentOfficerComponent implements OnInit {
                 request.status === 'Completed';
         });
 
-        this.updateStats();
         this.applyFilters();
+        this.currentPage = Math.min(this.currentPage, this.totalPages);
 
         this.isLoading = false;
         console.log('Department requests loaded:', this.pendingRequests.length);
     }
 
-    updateStats(): void {
-        this.totalPending = this.pendingRequests.filter(r =>
-            r.currentStage === 'Department' && r.status === 'Pending'
-        ).length;
-
-        this.totalApproved = this.pendingRequests.filter(r =>
-            r.status === 'Completed'
-        ).length;
-
-        this.totalRejected = this.pendingRequests.filter(r =>
-            r.status === 'Rejected'
-        ).length;
+    loadOpenDebtFlags(): void {
+        if (this.debtFlagsLoading) return;
+        this.debtFlagsLoading = true;
+        this.debtFlagCheckError = '';
+        this.studentDebtService.listOpenForDepartment().pipe(timeout({ first: 8000 })).subscribe({
+            next: flags => {
+                const safeFlags = Array.isArray(flags) ? flags : [];
+                this.openDebtRegistrations = new Set(safeFlags
+                    .map(flag => this.normalizeRegistrationNumber(flag?.registrationNumber ?? ''))
+                    .filter(Boolean));
+                this.debtFlagsLoaded = true;
+                this.debtFlagsLoading = false;
+            },
+            error: error => {
+                this.debtFlagsLoaded = false;
+                this.debtFlagsLoading = false;
+                this.debtFlagCheckError = 'Could not check the lecturer debt register. Retry the check before approving.';
+                console.error('Could not load departmental debt flags:', error);
+            }
+        });
     }
 
     getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
         return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
     }
 
+    hasOpenDebtFlag(request: ClearanceRequest): boolean {
+        return this.openDebtRegistrations.has(this.normalizeRegistrationNumber(this.getStudentRegNumber(request)));
+    }
+
+    private normalizeRegistrationNumber(value: string): string {
+        return (value || '').trim().toUpperCase();
+    }
+
     applyFilters(): void {
         let filtered = [...this.pendingRequests];
 
-        if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+        if (this.filterStatus === 'pending') {
             filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Department') === 'Pending');
         } else if (this.filterStatus === 'approved') {
             filtered = filtered.filter(r => this.getRequestOfficeStatus(r, 'Department') === 'Approved');
@@ -187,6 +224,18 @@ export class DepartmentOfficerComponent implements OnInit {
         return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
     }
 
+    getStudentListName(request: ClearanceRequest): string {
+        const user = this.getStudentData(request.studentId);
+        const firstName = user?.firstName?.trim();
+        const middleName = user?.middleName?.trim();
+        const lastName = user?.lastName?.trim();
+        if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
+        const fullName = (request.studentName || user?.fullName || '').trim();
+        if (!fullName) return '—';
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
+    }
+
     getStudentRegNumber(request: ClearanceRequest): string {
         if (request.registrationNumber) return request.registrationNumber;
         const user = this.getStudentData(request.studentId);
@@ -196,80 +245,117 @@ export class DepartmentOfficerComponent implements OnInit {
         return 'Not available';
     }
 
-    getStudentPhoto(request: ClearanceRequest): string | null {
-        let photo = request.photo;
-        if (!photo) {
-            const user = this.getStudentData(request.studentId);
-            if (user) {
-                photo = user.photo || user.profilePhoto || user.profileImageUrl;
+    getStudentGender(request: ClearanceRequest): string {
+        const gender = this.getStudentData(request.studentId)?.gender || (request as ClearanceRequest & { gender?: string }).gender;
+        return typeof gender === 'string' && gender.trim() ? gender.trim() : '—';
+    }
+
+    getStudentEmail(request: ClearanceRequest): string {
+        return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
+    }
+
+    getStudentPhone(request: ClearanceRequest): string {
+        const user = this.getStudentData(request.studentId);
+        return request.phoneNumber?.trim() || user?.phoneNumber?.trim() || user?.phone?.trim() || '—';
+    }
+
+    getStudentProgramme(request: ClearanceRequest): string {
+        return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
+    }
+
+    readonly processingRequests = new Set<string>();
+
+    approveRequest(request: ClearanceRequest): void {
+        if (!this.debtFlagsLoaded) {
+            this.toastService.warning('Debt Flags Unavailable', 'Verification is disabled until the student debt register can be checked.');
+            return;
+        }
+        if (this.hasOpenDebtFlag(request)) {
+            this.toastService.warning('Debt Flag Open', 'Department verification is disabled until the Lecturer resolves the student debt flag.');
+            return;
+        }
+        if (this.processingRequests.has(request.id) || this.getRequestOfficeStatus(request, 'Department') !== 'Pending') return;
+        const staff = this.currentUser;
+        if (!staff) {
+            this.router.navigate(['/login']);
+            return;
+        }
+
+        this.processingRequests.add(request.id);
+        try {
+            const approved = this.clearanceService.approveRequest(
+                request.id,
+                'Department',
+                staff.fullName || staff.firstName + ' ' + staff.lastName
+            );
+            if (!approved) {
+                this.toastService.error('Approve Failed', 'This request is no longer pending Department approval.');
+                return;
             }
-        }
-        if (!photo) return null;
-
-        if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
-            return photo;
-        }
-        if (photo.length > 50) {
-            return 'data:image/jpeg;base64,' + photo;
-        }
-        return photo;
-    }
-
-    getStudentInitials(request: ClearanceRequest): string {
-        const name = this.getStudentName(request);
-        if (!name || name === 'Student') return 'ST';
-        const parts = name.split(' ');
-        let initials = '';
-        for (let i = 0; i < parts.length && i < 2; i++) {
-            if (parts[i]) initials += parts[i].charAt(0);
-        }
-        return initials.toUpperCase();
-    }
-
-    hasPhoto(request: ClearanceRequest): boolean {
-        const photo = this.getStudentPhoto(request);
-        return !!photo;
-    }
-
-    enlargedPhotoUrl: string | null = null;
-
-    openEnlargedPhoto(photoUrl: string | null): void {
-        if (photoUrl) {
-            this.enlargedPhotoUrl = photoUrl;
+            this.notificationService.createNotification(
+                request.studentId,
+                'Department Clearance Approved',
+                'Your clearance request has been approved by the Department.',
+                'success'
+            );
+            this.toastService.success('Success', 'Request approved successfully!');
+            this.loadData();
+        } catch (error: any) {
+            this.toastService.error('Approve Failed', error?.message || 'Failed to approve request.');
+        } finally {
+            this.processingRequests.delete(request.id);
         }
     }
 
-    closeEnlargedPhoto(): void {
-        this.enlargedPhotoUrl = null;
+    openRejectForm(request: ClearanceRequest): void {
+        this.selectedRequest = request;
+        this.rejectionComment = '';
     }
 
-    getDocumentStatus(request: ClearanceRequest): { total: number; uploaded: number; verified: number } {
-        const hasPhoto = this.hasPhoto(request);
-        return {
-            total: 4,
-            uploaded: hasPhoto ? 4 : 3,
-            verified: hasPhoto ? 3 : 2
-        };
-    }
+    rejectRequest(): void {
+        const request = this.selectedRequest;
+        if (!request || this.processingRequests.has(request.id)) return;
+        if (!this.rejectionComment.trim()) {
+            this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+            return;
+        }
+        const staff = this.currentUser;
+        if (!staff) {
+            this.router.navigate(['/login']);
+            return;
+        }
 
-    getOfficeStatus(request: ClearanceRequest, office: string): string {
-        const approval = request.approvals.find(a => a.office === office);
-        return approval?.status || 'Pending';
+        this.processingRequests.add(request.id);
+        try {
+            const rejected = this.clearanceService.rejectRequest(
+                request.id,
+                'Department',
+                staff.fullName || staff.firstName + ' ' + staff.lastName,
+                this.rejectionComment.trim()
+            );
+            if (!rejected) {
+                this.toastService.error('Reject Failed', 'This request is no longer pending Department approval.');
+                return;
+            }
+            this.notificationService.createNotification(
+                request.studentId,
+                'Department Clearance Rejected',
+                this.rejectionComment.trim(),
+                'warning'
+            );
+            this.toastService.success('Success', 'Request rejected successfully.');
+            this.selectedRequest = null;
+            this.rejectionComment = '';
+            this.loadData();
+        } catch (error: any) {
+            this.toastService.error('Reject Failed', error?.message || 'Failed to reject request.');
+        } finally {
+            this.processingRequests.delete(request.id);
+        }
     }
 
     reviewRequest(requestId: string): void {
         this.router.navigate(['/department/review', requestId]);
-    }
-
-    refreshData(): void {
-        this.message = '🔄 Refreshing data...';
-        this.loadData();
-        setTimeout(() => {
-            this.message = '✅ Data refreshed successfully.';
-            setTimeout(() => {
-                this.message = '';
-            }, 3000);
-        }, 500);
     }
 
     toggleSidebar(): void {

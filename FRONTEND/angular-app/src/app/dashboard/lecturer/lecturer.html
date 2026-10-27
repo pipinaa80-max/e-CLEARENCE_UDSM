@@ -1,0 +1,60 @@
+<section class="lecturer-page office-page" [class.sidebar-open]="sidebarOpen">
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+  <aside class="sidebar">
+    <div class="brand"><img src="/udsm-logo.png" alt="UDSM Logo"><div><strong>LECTURER</strong><small>Student Debt Register</small></div></div>
+    <nav><a routerLink="/dashboard/lecturer" routerLinkActive="active" (click)="closeSidebar()">Debt Register</a></nav>
+    <button type="button" class="logout-link" (click)="logout()">Log out</button>
+  </aside>
+
+  <main class="content">
+    <app-dashboard-header eyebrow="Academic Office" title="Lecturer Debt Register" subtitle="Record student debts, document negotiations, and resolve issues." [user]="currentUser" [showToggle]="true" (toggleSidebar)="toggleSidebar()">
+      <div header-actions class="lecturer-header-chip">{{ currentUser?.college }} · {{ currentUser?.department }}</div>
+    </app-dashboard-header>
+
+    <div class="notice success" *ngIf="message">{{ message }}</div>
+    <div class="notice error" *ngIf="error">{{ error }}</div>
+
+    <section class="debt-stats">
+      <article><span>Open flags</span><strong>{{ openCount }}</strong></article>
+      <article><span>Resolved</span><strong>{{ resolvedCount }}</strong></article>
+      <article><span>Total debt records</span><strong>{{ flags.length }}</strong></article>
+    </section>
+
+    <section class="debt-panel" id="debt-flag-form">
+      <div class="panel-heading"><div><h2>Record payment due</h2><p>Enter the registration number; clearance status is checked automatically when you leave the field.</p></div></div>
+      <form class="debt-form" (ngSubmit)="createFlag()">
+        <label>Registration number<input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345"></label>
+        <div class="clearance-lookup-progress" *ngIf="clearanceLookupLoading">Checking clearance status for this registration number…</div>
+        <div class="clearance-lookup-result" *ngIf="clearanceLookup" [class.cleared]="clearanceLookup.cleared" [class.not-cleared]="!clearanceLookup.cleared"><strong>{{ clearanceLookup.studentName }}</strong><span>{{ clearanceLookup.registrationNumber }} · {{ clearanceLookup.college }} / {{ clearanceLookup.department }}</span><span class="lookup-status">{{ clearanceLookup.cleared ? 'Already cleared' : clearanceLookup.clearanceStatus === 'NOT_STARTED' ? 'Clearance not started' : 'Clearance: ' + clearanceLookup.clearanceStatus }}<ng-container *ngIf="clearanceLookup.currentStage && !clearanceLookup.cleared"> · Current stage: {{ clearanceLookup.currentStage }}</ng-container></span></div>
+        <div class="clearance-lookup-error" *ngIf="clearanceLookupError">{{ clearanceLookupError }}</div>
+        <label>Amount owed (TZS)<input name="amount" type="number" min="0.01" step="0.01" [(ngModel)]="amount" required placeholder="0.00"></label>
+        <label class="wide">Debt reason<textarea name="reason" [(ngModel)]="reason" rows="3" required placeholder="Describe the outstanding debt"></textarea></label>
+        <label class="wide">Negotiation notes (optional)<textarea name="negotiationNotes" [(ngModel)]="negotiationNotes" rows="2" placeholder="Record any agreed payment plan or discussion"></textarea></label>
+        <div class="form-actions"><button type="submit" class="primary-button" [disabled]="isSubmitting || !clearanceLookupVerified || clearanceLookup?.cleared">{{ isSubmitting ? 'Recording…' : 'Record debt and notify Department' }}</button></div>
+      </form>
+    </section>
+
+    <section class="debt-panel register-panel">
+      <div class="panel-heading register-heading"><div><h2>Students requiring payment</h2><p>Open records appear here until the debt is resolved; an open flag disables Department verification.</p></div><div class="payment-register-tools"><select [(ngModel)]="showAllPaymentRecords" aria-label="Payment records filter"><option [ngValue]="false">Payment due</option><option [ngValue]="true">All records</option></select><input class="register-search" [(ngModel)]="searchTerm" placeholder="Search student or registration number"></div></div>
+      <div class="table-scroll" *ngIf="paymentDueFlags.length; else emptyRegister">
+        <table><thead><tr><th>Registration Number</th><th>Student</th><th>Programme</th><th>Amount</th><th>Reason and negotiation</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody><tr *ngFor="let flag of paymentDueFlags">
+            <td>{{ flag.registrationNumber }}</td><td><strong>{{ flag.studentName }}</strong><small>{{ flag.college }} · {{ flag.department }}</small></td><td>{{ flag.programme || '—' }}</td>
+            <td>{{ flag.amount | currency:'TZS ':'symbol':'1.0-2' }}</td><td>{{ flag.reason }}<small *ngIf="flag.negotiationNotes">Negotiation: {{ flag.negotiationNotes }}</small><small *ngIf="flag.resolutionNote">Resolution: {{ flag.resolutionNote }}</small></td>
+            <td><span class="status-pill" [class.resolved]="flag.status === 'RESOLVED'">{{ flag.status === 'OPEN' ? 'Open flag' : 'Resolved' }}</span></td>
+            <td><button *ngIf="flag.status === 'OPEN'" type="button" class="resolve-button" (click)="beginResolution(flag)">Clear after negotiation</button><span *ngIf="flag.status === 'RESOLVED'">Cleared {{ flag.resolvedAt | date:'mediumDate' }}</span></td>
+          </tr></tbody>
+        </table>
+      </div>
+      <ng-template #emptyRegister><div class="empty-register">{{ isLoading ? 'Loading debt records…' : showAllPaymentRecords ? 'No payment records have been filed for your department.' : 'No students currently require payment.' }}</div></ng-template>
+    </section>
+
+    <section class="resolve-overlay" *ngIf="resolvingFlag" (click)="resolvingFlag = null">
+      <form class="resolve-dialog" (ngSubmit)="resolveFlag()" (click)="$event.stopPropagation()">
+        <h2>Clear debt after negotiation</h2><p>{{ resolvingFlag.studentName }} · {{ resolvingFlag.registrationNumber }}</p>
+        <label>Negotiation outcome / settlement note<textarea name="resolutionNote" [(ngModel)]="resolutionNote" required rows="4" placeholder="Record what was agreed with the student and why this debt can be cleared"></textarea></label>
+        <div class="form-actions"><button type="button" class="cancel-button" (click)="resolvingFlag = null">Cancel</button><button type="submit" class="primary-button" [disabled]="!resolutionNote.trim()">Clear debt and notify Department</button></div>
+      </form>
+    </section>
+  </main>
+</section>

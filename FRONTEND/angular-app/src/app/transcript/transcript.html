@@ -54,6 +54,8 @@
 
   <main class="content-panel">
 
+    <ng-container *ngIf="isClearanceComplete; else clearanceRequired">
+
     <app-dashboard-header
       eyebrow="Clearance Step 3"
       title="Transcript"
@@ -193,6 +195,25 @@
         </section>
       </div>
     </div>
+
+    </ng-container>
+
+    <ng-template #clearanceRequired>
+      <section class="clearance-required-page">
+        <div class="clearance-required-card">
+          <div class="clearance-warning-icon">!</div>
+          <h1>{{ request ? 'Clearance Process Incomplete' : 'Clearance Request Required' }}</h1>
+          <p *ngIf="request">Please complete your clearance process before starting the transcript process.</p>
+          <p *ngIf="!request">Please complete your clearance request before starting the transcript process.</p>
+          <a
+            [routerLink]="request ? '/clearance/status' : '/clearance/request'"
+            class="clearance-request-button"
+          >
+            {{ request ? 'View Clearance Process' : 'Complete Clearance Request' }}
+          </a>
+        </div>
+      </section>
+    </ng-template>
 
   </main>
 </section>

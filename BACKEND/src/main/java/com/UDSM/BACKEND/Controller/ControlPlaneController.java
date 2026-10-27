@@ -29,6 +29,15 @@ public class ControlPlaneController {
         return ResponseEntity.ok(service.overview());
     }
 
+    @GetMapping("/audit-events")
+    @PreAuthorize("hasRole('SUPERUSER')")
+    public ResponseEntity<Map<String, Object>> auditEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "") String search) {
+        return ResponseEntity.ok(service.auditEvents(page, size, search));
+    }
+
     @GetMapping("/sub-admins")
     @PreAuthorize("hasRole('SUPERUSER')")
     public ResponseEntity<List<Map<String, Object>>> admins() {

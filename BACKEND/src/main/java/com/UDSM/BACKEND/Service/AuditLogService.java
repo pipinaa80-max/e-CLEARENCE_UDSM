@@ -13,7 +13,8 @@ import java.util.Map;
 import lombok.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -24,7 +25,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
 
-    @Async
     public void logAction(String userId, String action, String details) {
         try {
             AuditLog auditLog = AuditLog.builder().userId(userId).username(this.getCurrentUsername()).action(action).details(details).ipAddress(this.getClientIpAddress()).userAgent(this.getUserAgent()).status("SUCCESS").createdAt(LocalDateTime.now()).build();
@@ -34,7 +34,6 @@ public class AuditLogService {
 
     }
 
-    @Async
     public void logAction(String userId, String action, String details, String status) {
         try {
             AuditLog auditLog = AuditLog.builder().userId(userId).username(this.getCurrentUsername()).action(action).details(details).ipAddress(this.getClientIpAddress()).userAgent(this.getUserAgent()).status(status).createdAt(LocalDateTime.now()).build();
@@ -44,7 +43,6 @@ public class AuditLogService {
 
     }
 
-    @Async
     public void logAction(String userId, String username, String action, String details, String ipAddress, String userAgent, String status) {
         try {
             AuditLog auditLog = AuditLog.builder().userId(userId).username(username).action(action).details(details).ipAddress(ipAddress).userAgent(userAgent).status(status).createdAt(LocalDateTime.now()).build();
@@ -139,7 +137,13 @@ public class AuditLogService {
     }
 
     private String getCurrentUsername() {
-        return "SYSTEM";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return "SYSTEM";
+        }
+        String username = authentication.getName();
+        return username == null || username.isBlank() ? "SYSTEM" : username;
     }
 
     private String getClientIpAddress() {

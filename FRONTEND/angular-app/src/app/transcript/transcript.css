@@ -31,6 +31,72 @@
   background-attachment: fixed;
 }
 
+.clearance-required-page {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 80px);
+  padding: 32px 20px;
+  box-sizing: border-box;
+}
+
+.clearance-required-card {
+  width: min(100%, 360px);
+  padding: 48px 32px;
+  box-sizing: border-box;
+  border: 1px solid #e0e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 26px rgba(0, 59, 92, 0.12);
+  text-align: center;
+}
+
+.clearance-warning-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff7df;
+  color: #795700;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.clearance-required-card h1 {
+  margin: 0 0 10px;
+  color: var(--udsm-blue-dark);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.clearance-required-card p {
+  margin: 0 auto 18px;
+  color: #647580;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.clearance-request-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 7px;
+  background: #0067b1;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.clearance-request-button:hover {
+  background: #005494;
+}
+
 @media (max-width: 768px) {
   .dashboard-shell { display: block; }
   .sidebar { position: fixed !important; transform: translateX(-100%); flex: none; width: 270px; z-index: 2000; }

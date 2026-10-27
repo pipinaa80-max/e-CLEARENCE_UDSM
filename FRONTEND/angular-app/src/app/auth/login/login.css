@@ -11,9 +11,9 @@
   z-index: 10;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
-  padding: 18px 48px;
+  padding: 18px 28px;
   background: var(--udsm-blue);
   border-bottom: 1px solid var(--border-soft);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 6%, transparent);
@@ -22,7 +22,7 @@
 .header-content {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 14px;
 }
 
@@ -153,7 +153,8 @@
   font-weight: 400;
 }
 
-.field span {
+.field span,
+.field > label {
   font-size: 12px !important;
   color: #000000;
   font-weight: 500;
@@ -174,6 +175,64 @@
   font-size: 13px !important;
   font-weight: 400;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.field-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.field-input-wrap .field-icon {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 18px;
+  height: 18px;
+  color: var(--udsm-blue);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.field-input-wrap input {
+  padding-left: 42px;
+}
+
+.field-input-wrap input#password {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #52677a;
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+
+.password-toggle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.password-toggle:hover {
+  background: #edf4f8;
+  color: var(--udsm-blue);
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--udsm-blue);
+  outline-offset: 2px;
 }
 
 .field input:focus,
@@ -238,8 +297,8 @@ button:active {
 
 @media (max-width: 760px) {
   .login-header {
-    padding: 16px 24px;
-    justify-content: center;
+    padding: 16px 18px;
+    justify-content: flex-start;
   }
 
   .header-logo {

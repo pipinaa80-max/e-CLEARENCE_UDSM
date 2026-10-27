@@ -1,5 +1,5 @@
 const API = 'http://localhost:8090/api';
-const state = { token: localStorage.getItem('superuser-token'), tab: 'overview', data: null, detail: null, message: '', systemStatus: 'checking', lastChecked: null, filter: '', adminFilter: '', auditFilter: '', showCreateForm: false };
+const state = { token: localStorage.getItem('superuser-token'), tab: 'overview', data: null, detail: null, message: '', systemStatus: 'checking', lastChecked: null, filter: '', adminFilter: '', auditFilter: '', auditEvents: [], auditPage: 0, auditTotal: 0, auditTotalPages: 0, auditLoading: false, auditSearchTimer: null, showCreateForm: false };
 const permissions = ['INSTITUTIONAL_ADMIN', 'VIEW_USERS', 'MANAGE_CLEARANCE'];
 
 async function request(path, options = {}) {
@@ -16,7 +16,7 @@ function render() { document.querySelector('#app').innerHTML = state.token ? she
 function login() { return `<section class="login"><div class="login-orbit orbit-one"></div><div class="login-orbit orbit-two"></div><div class="login-panel"><div class="login-brand"><div><strong style="color:#F6B418; font-size:12px; letter-spacing:0.1em; text-transform:uppercase">E-CLEARENCE MIS</strong><h1 style="font-family:Georgia,serif; margin:5px 0 0; font-size:32px; color:#000000">SUPERADMIN</h1></div></div><div class="login-rule"></div><div class="eyebrow">SECURE OPERATIONS CONSOLE</div><h1>Welcome back.</h1><p>Govern delegated access, institutional ownership, and clearance operations from one focused workspace.</p>${state.message ? `<div class="message">${esc(state.message)}</div>` : ''}<form id="login-form"><div class="field"><label>Email address</label><div class="input-wrap"><span>@</span><input name="email" type="email" value="superuser@admin.local" autocomplete="username" required></div></div><div class="field"><label>Password</label><div class="input-wrap"><span>••</span><input name="password" type="password" autocomplete="current-password" required></div></div><button class="primary login-submit">Enter control center <span>→</span></button></form><div class="login-foot"><span class="online-dot"></span>Protected local workspace <span class="login-version">MIS / 01</span></div></div></section>`; }
 function shell() {
   const isInstAdmin = state.data?.role === 'INSTITUTIONAL_ADMIN';
-  const tabs = isInstAdmin ? [['overview','Overview'],['branding','Theme'],['dashboards','Dashboards']] : [['overview','Overview'],['admins','Institutional Administrators'],['dashboards','Enabled Dashboards'],['audit','Audit Events'],['posture','Access Posture']];
+  const tabs = isInstAdmin ? [['overview','Overview'],['branding','Theme'],['dashboards','Dashboards']] : [['overview','Overview'],['admins','Institutional Administrators'],['audit','Audit Events'],['posture','Access Posture']];
   const statusText = state.systemStatus === 'connected' ? 'API connected' : state.systemStatus === 'error' ? 'Connection issue' : 'Checking API';
   const statusTitle = state.lastChecked ? `Last checked ${formatDate(state.lastChecked)}` : 'Checking the Superadmin API';
   const user = { name: isInstAdmin ? 'Admin' : 'Superadmin', email: isInstAdmin ? 'admin@udsm.ac.tz' : 'superuser@admin.local' };
@@ -76,9 +76,8 @@ function overview() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return `<div class="topline"><div><div class="eyebrow">Operations / overview</div><h1>${greeting}, Superadmin.</h1><div class="muted">A live view of delegated access and institutional activity.</div></div><button class="primary" data-tab="admins">Manage administrators →</button></div>
-  <div class="metric-grid">
+  <div class="metric-grid ${d.role === 'SUPERUSER' ? 'superuser-overview-metrics' : ''}">
     ${metric('Institutional administrators', d.subAdmins.length, `${active} active accounts`, 'blue', 'admins')}
-    ${metric('Enabled dashboards', d.dashboards.filter(x => x.enabled).length, `${d.dashboards.length} configured surfaces`, 'mint', 'dashboards')}
     ${metric('Audit events', events.length, 'Latest recorded actions', 'amber', 'audit')}
     ${metric('System throughput', totalRequests, 'Total clearance requests', 'green', 'posture')}
   </div>
@@ -139,17 +138,34 @@ function dashboards() {
   return `<div class="topline"><div><div class="eyebrow">${isSuperuser ? 'Global / surfaces' : 'Institutional surfaces'}</div><h1>Dashboards</h1><div class="muted">Monitor configured dashboard entries and their active clearance counts.</div></div></div>${!isSuperuser ? `<div class="card"><h2>Add dashboard</h2><form id="dashboard-form" class="form-grid"><div class="field"><label>Identifier</label><input name="id" pattern="[a-z0-9-]+" required></div><div class="field"><label>Name</label><input name="name" required></div><div class="field full"><label>Description</label><textarea name="description" rows="3"></textarea></div><button class="primary">Add dashboard</button></form></div>` : `<div class="panel filter-panel" style="margin-bottom: 24px;"><div class="field" style="margin: 0"><label>Filter dashboards</label><div class="input-wrap"><span>🔍</span><input type="text" id="dashboard-filter" placeholder="Search by name, university, or ID..." value="${esc(state.filter)}"></div></div></div>`}<div class="section grid">${items.map(d => `<div class="card dashboard-stat-card"><div class="eyebrow" style="font-size: 12px">${esc(d.university || 'Institutional Surface')}</div><h3>${esc(d.name)}</h3><p class="muted" style="font-size: 12px; margin-bottom: 15px;">${esc(d.description)}</p><div class="metric-value" style="font-size: 24px; margin: 10px 0">${d.requestCount || 0}</div><div class="metric-detail" style="margin-bottom: 15px">Active clearance requests</div><div class="actions">${!isSuperuser ? `<button class="${d.enabled ? 'primary' : 'danger'}" data-toggle-dashboard="${d.id}">${d.enabled ? 'Enabled' : 'Disabled'}</button><button class="danger" data-delete-dashboard="${d.id}">Delete</button>` : `<span class="status ${d.enabled ? 'active' : 'suspended'}"><i></i>${d.enabled ? 'Operational' : 'Disabled'}</span>`}</div></div>`).join('') || '<div class="empty-state">No matching dashboards found.</div>'}</div>`;
 }
 function audit() {
-  let events = state.data?.activity || [];
-  if (state.auditFilter) {
-    const f = state.auditFilter.toLowerCase();
-    events = events.filter(e =>
-      esc(e.description).toLowerCase().includes(f) ||
-      esc(e.adminName || 'System').toLowerCase().includes(f) ||
-      e.action.toLowerCase().includes(f)
-    );
-  }
-  return `<div class="topline"><div><div class="eyebrow">Governance / stream</div><h1>Audit events</h1><div class="muted">A complete ledger of system operations and administrative actions.</div></div></div><div class="panel filter-panel" style="margin-bottom: 24px;"><div class="field" style="margin: 0"><label>Search activity</label><div class="input-wrap"><span>🔍</span><input type="text" id="audit-search" placeholder="Filter by description, administrator, or action..." value="${esc(state.auditFilter)}"></div></div></div><section class="panel"><div class="panel-head"><div><div class="eyebrow">Audit stream</div><h2>Recent activity</h2></div><span class="live-label"><i></i> Live</span></div>${events.length ? `<div class="activity-list">${events.map(event => `<div class="activity-item"><div class="activity-icon">${event.action === 'LOGIN' ? '↗' : '+'}</div><div><strong>${esc(event.description)}</strong><p>${esc(event.adminName || 'System')} · ${formatDate(event.createdAt)}</p></div></div>`).join('')}</div>` : '<div class="empty-state">No activity matches your search.</div>'}</section>`;
+  const events = state.auditEvents || [];
+  return `<div class="topline"><div><div class="eyebrow">Governance / stream</div><h1>Audit events</h1><div class="muted">Review who did what, when, and from which browser, device, and network address.</div></div><span class="audit-total">${state.auditTotal.toLocaleString()} recorded events</span></div>
+    <div class="panel filter-panel audit-filter-panel"><div class="field" style="margin:0"><label for="audit-search">Search all audit records</label><div class="input-wrap"><span>🔍</span><input type="search" id="audit-search" placeholder="User, action, details, IP, browser, device, or status..." value="${esc(state.auditFilter)}"></div></div></div>
+    <section class="panel audit-table-panel"><div class="panel-head"><div><div class="eyebrow">Full audit ledger</div><h2>System activity</h2></div><span class="live-label"><i></i>${state.auditLoading ? 'Loading' : `Page ${state.auditPage + 1} of ${Math.max(1, state.auditTotalPages)}`}</span></div>
+      ${events.length ? `<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>Action</th><th>Details</th><th>IP address</th><th>Browser</th><th>Device</th><th>Result</th></tr></thead><tbody>${events.map(event => { const client = parseClient(event.userAgent); return `<tr><td>${esc(formatAuditDate(event.createdAt))}</td><td>${esc(formatAuditTime(event.createdAt))}</td><td><strong>${esc(event.username || 'System')}</strong><small>${esc(event.userId || '—')}</small></td><td><span class="audit-action">${esc(event.action || '—')}</span></td><td class="audit-details" title="${esc(event.details || '')}">${esc(event.details || '—')}</td><td>${esc(event.ipAddress || '—')}</td><td title="${esc(event.userAgent || '')}">${esc(client.browser)}<small>${esc(client.browserVersion)}</small></td><td>${esc(client.device)}<small>${esc(client.platform)}</small></td><td><span class="audit-result ${String(event.status || '').toLowerCase()}">${esc(event.status || 'Unknown')}</span></td></tr>`; }).join('')}</tbody></table></div>` : `<div class="empty-state">${state.auditLoading ? 'Loading audit records…' : 'No audit records match this search.'}</div>`}
+      <div class="audit-pagination"><button class="outline" data-audit-page="prev" ${state.auditPage <= 0 || state.auditLoading ? 'disabled' : ''}>← Previous</button><span>Showing ${events.length ? (state.auditPage * 50 + 1).toLocaleString() : 0}–${Math.min((state.auditPage + 1) * 50, state.auditTotal).toLocaleString()} of ${state.auditTotal.toLocaleString()}</span><button class="outline" data-audit-page="next" ${state.auditPage + 1 >= state.auditTotalPages || state.auditLoading ? 'disabled' : ''}>Next →</button></div>
+    </section>`;
 }
+function parseClient(userAgent = '') {
+  const ua = String(userAgent || '');
+  let browser = 'Unknown browser', browserVersion = '';
+  const browserMatch = ua.match(/(Edg|Edge|OPR|Opera|Chrome|CriOS|Firefox|FxiOS|Safari)\/([\d.]+)/i);
+  if (browserMatch) {
+    const names = { edg: 'Microsoft Edge', edge: 'Microsoft Edge', opr: 'Opera', opera: 'Opera', chrome: 'Google Chrome', crios: 'Chrome for iOS', firefox: 'Mozilla Firefox', fxios: 'Firefox for iOS', safari: 'Safari' };
+    browser = names[browserMatch[1].toLowerCase()] || browserMatch[1];
+    browserVersion = `Version ${browserMatch[2]}`;
+  }
+  let platform = 'Unknown platform', device = 'Desktop';
+  if (/iPad/i.test(ua)) { platform = 'iPadOS'; device = 'Tablet'; }
+  else if (/iPhone|iPod/i.test(ua)) { platform = 'iOS'; device = 'Mobile'; }
+  else if (/Android/i.test(ua)) { platform = 'Android'; device = /Mobile/i.test(ua) ? 'Mobile' : 'Tablet'; }
+  else if (/Windows/i.test(ua)) platform = 'Windows';
+  else if (/Macintosh|Mac OS X/i.test(ua)) platform = 'macOS';
+  else if (/Linux/i.test(ua)) platform = 'Linux';
+  return { browser, browserVersion, platform, device };
+}
+function formatAuditDate(value) { return value ? new Date(value).toLocaleDateString([], { year: 'numeric', month: 'short', day: '2-digit' }) : '—'; }
+function formatAuditTime(value) { return value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'; }
 function posture() { return `<div class="topline"><div><div class="eyebrow">System / status</div><h1>Access posture</h1><div class="muted">Monitor the security health and connectivity of the Superadmin API.</div></div></div><div class="metric-grid">${metric('System status', 'Healthy', 'All services operational', 'green')}${metric('API Latency', '24ms', 'Excellent response time', 'blue')}${metric('Active Sessions', '3', 'Current superadmin access', 'amber')}</div><section class="panel"><div class="panel-head"><div><h2>Security Overview</h2></div></div><div class="padded"><p>The system is currently operating within normal parameters. No critical alerts have been triggered in the last 24 hours.</p><ul class="muted"><li>SSL Certificates: Valid</li><li>Database Connectivity: Stable</li><li>Authentication Gateway: Active</li></ul></div></section>`; }
 function adminDetail() {
   const d = state.detail;
@@ -214,15 +230,36 @@ function adminDetail() {
   `;
 }
 async function refresh() { try { state.data = await request('/overview'); state.systemStatus = 'connected'; state.lastChecked = new Date().toISOString(); state.message = ''; render(); } catch (error) { state.systemStatus = 'error'; state.lastChecked = new Date().toISOString(); throw error; } }
+async function loadAuditPage(page = state.auditPage) {
+  state.auditLoading = true;
+  render();
+  try {
+    const query = new URLSearchParams({ page: String(page), size: '50', search: state.auditFilter });
+    const result = await request(`/audit-events?${query.toString()}`);
+    state.auditEvents = Array.isArray(result.content) ? result.content : [];
+    state.auditPage = Number(result.page) || 0;
+    state.auditTotal = Number(result.totalElements) || 0;
+    state.auditTotalPages = Number(result.totalPages) || 0;
+  } catch (error) {
+    state.auditEvents = [];
+    state.message = error.message || 'Audit records could not be loaded.';
+  } finally {
+    state.auditLoading = false;
+    render();
+  }
+}
 async function loadDetail(adminId) { state.detail = await request(`/sub-admins/${adminId}/activity`); render(); }
 document.addEventListener('input', event => {
   if (event.target.id === 'dashboard-filter') { state.filter = event.target.value; render(); const input = document.getElementById('dashboard-filter'); if (input) { input.focus(); input.setSelectionRange(state.filter.length, state.filter.length); } }
   if (event.target.id === 'admin-search') { state.adminFilter = event.target.value; render(); const input = document.getElementById('admin-search'); if (input) { input.focus(); input.setSelectionRange(state.adminFilter.length, state.adminFilter.length); } }
   if (event.target.id === 'audit-search') {
     state.auditFilter = event.target.value;
+    state.auditPage = 0;
     render();
     const input = document.getElementById('audit-search');
     if (input) { input.focus(); input.setSelectionRange(state.auditFilter.length, state.auditFilter.length); }
+    clearTimeout(state.auditSearchTimer);
+    state.auditSearchTimer = setTimeout(() => loadAuditPage(0), 300);
   }
 });
 document.addEventListener('submit', async event => {
@@ -242,7 +279,8 @@ document.addEventListener('click', async event => {
       return;
     }
     if (target.id === 'toggle-admin-form') { state.showCreateForm = !state.showCreateForm; render(); if (state.showCreateForm) document.getElementById('admin-form')?.scrollIntoView({ behavior: 'smooth' }); return; }
-    if (target.dataset.tab) { state.detail = null; state.tab = target.dataset.tab; state.message = ''; render(); }
+    if (target.dataset.tab) { state.detail = null; state.tab = target.dataset.tab; state.message = ''; render(); if (state.tab === 'audit' && state.data?.role === 'SUPERUSER') await loadAuditPage(0); }
+    if (target.dataset.auditPage) await loadAuditPage(state.auditPage + (target.dataset.auditPage === 'next' ? 1 : -1));
     if (target.dataset.viewAdmin) await loadDetail(target.dataset.viewAdmin);
     if (target.id === 'logout') { localStorage.removeItem('superuser-token'); state.token = null; render(); }
     if (target.dataset.toggleAdmin) {

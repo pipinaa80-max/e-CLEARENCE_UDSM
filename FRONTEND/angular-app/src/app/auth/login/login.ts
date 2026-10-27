@@ -34,6 +34,7 @@ export class Login implements OnInit {
   });
 
   isLoading = false;
+  showPassword = false;
 
   ngOnInit(): void {
     // If the page was previously stuck in a loop, clear local storage once
@@ -114,6 +115,7 @@ export class Login implements OnInit {
       Finance: '/dashboard/finance',
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
+      Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',
       Principal: '/dashboard/principal',
       Workshop: '/dashboard/workshop',

@@ -31,6 +31,17 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, String> {
 
     Page<AuditLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    @Query("SELECT a FROM AuditLog a WHERE " +
+            "(:term = '' OR LOWER(COALESCE(a.username, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.userId, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.action, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.details, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.ipAddress, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.userAgent, '')) LIKE LOWER(CONCAT('%', :term, '%')) " +
+            "OR LOWER(COALESCE(a.status, '')) LIKE LOWER(CONCAT('%', :term, '%'))) " +
+            "ORDER BY a.createdAt DESC")
+    Page<AuditLog> searchAuditEvents(@Param("term") String term, Pageable pageable);
+
     @Query("SELECT a FROM AuditLog a ORDER BY a.createdAt DESC")
     List<AuditLog> findTopNByOrderByCreatedAtDesc(@Param("limit") int limit);
 

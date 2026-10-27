@@ -16,8 +16,9 @@ function send(res, status, body, headers = {}) {
 
 async function route(req, res) {
   if (req.method === 'OPTIONS') return send(res, 204, '');
-  const path = new URL(req.url, `http://localhost:${PORT}`).pathname.replace(/^\/api/, '');
-  const target = `${BACKEND_URL}${path}`;
+  const incomingUrl = new URL(req.url, `http://localhost:${PORT}`);
+  const path = incomingUrl.pathname.replace(/^\/api/, '');
+  const target = `${BACKEND_URL}${path}${incomingUrl.search}`;
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
 

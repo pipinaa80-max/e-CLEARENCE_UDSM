@@ -217,8 +217,8 @@
 
 .student-profile-card {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
+  align-items: center;
+  gap: 16px;
 
   padding: 23px;
 
@@ -265,7 +265,7 @@
 }
 
 .student-info h2 {
-  margin: 2px 0 15px;
+  margin: 0;
 
   color: var(--udsm-blue-dark);
 
@@ -273,54 +273,11 @@
   font-weight: 800;
 }
 
-.student-details {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-
-  border: 1px solid #e4e9ec;
-  border-radius: 8px;
-
-  overflow: hidden;
-}
-
-.detail-item {
-  min-height: 65px;
-
-  padding: 11px 13px;
-
-  border-right: 1px solid #e4e9ec;
-  border-bottom: 1px solid #e4e9ec;
-}
-
-.detail-item:nth-child(4n) {
-  border-right: none;
-}
-
-.detail-item:nth-last-child(-n + 4) {
-  border-bottom: none;
-}
-
-.detail-item span {
+.profile-subtitle {
   display: block;
-
-  margin-bottom: 5px;
-
-  color: #4b5563;
-
+  margin-top: 6px;
+  color: #748089;
   font-size: 12px;
-  font-weight: 800;
-
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.detail-item strong {
-  color: var(--udsm-blue-dark);
-
-  font-size: 12px;
-  font-weight: 700;
-
-  line-height: 1.4;
 }
 
 
@@ -488,161 +445,6 @@
 
 
 /* =========================================================
-   DOCUMENTS
-========================================================= */
-
-.documents-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.document-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  padding: 14px;
-
-  border: 1px solid #e3e8eb;
-  border-radius: 8px;
-
-  background: #ffffff;
-}
-
-.doc-icon {
-  width: 37px;
-  height: 37px;
-
-  display: grid;
-  place-items: center;
-
-  flex-shrink: 0;
-
-  border-radius: 7px;
-
-  background: #eef5f8;
-
-  font-size: 16px;
-}
-
-.doc-info {
-  flex: 1;
-}
-
-.doc-info h4 {
-  margin: 0 0 5px;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 12px;
-}
-
-.doc-status {
-  font-size: 12px;
-  font-weight: 700;
-
-  color: #c73535;
-}
-
-.doc-status.uploaded {
-  color: #0876a9;
-}
-
-.doc-status.verified {
-  color: #2e7d32;
-}
-
-.view-doc-btn {
-  min-height: 32px;
-
-  padding: 0 12px;
-
-  border: 1px solid #d6e0e5;
-  border-radius: 5px;
-
-  background: #ffffff;
-  color: #52646f;
-
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-
-  cursor: pointer;
-}
-
-.view-doc-btn:hover:not(:disabled) {
-  border-color: #0876a9;
-  color: #0876a9;
-}
-
-.view-doc-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-
-/* DOCUMENT SUMMARY */
-
-.document-summary {
-  grid-column: span 2;
-
-  padding: 17px;
-
-  border: 1px solid #e3e8eb;
-  border-radius: 8px;
-
-  background: #f8fafb;
-}
-
-.document-summary h3 {
-  margin: 0 0 14px;
-
-  color: #073c59;
-
-  font-size: 12px;
-}
-
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.stat {
-  padding: 12px;
-
-  border-radius: 7px;
-
-  background: #ffffff;
-
-  text-align: center;
-}
-
-.stat-label {
-  display: block;
-
-  color: #4b5563;
-
-  font-size: 12px;
-  font-weight: 800;
-
-  text-transform: uppercase;
-}
-
-.stat-value {
-  display: block;
-
-  margin-top: 5px;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 18px;
-  font-weight: 800;
-}
-
-
-/* =========================================================
    APPROVALS
 ========================================================= */
 
@@ -683,11 +485,6 @@
   font-weight: 800;
 }
 
-.approval-status.pending {
-  background: #fff7df;
-  color: #795700;
-}
-
 .approval-status.approved {
   background: #eef8f0;
   color: #2e7d32;
@@ -698,178 +495,13 @@
   color: #c73535;
 }
 
-.approval-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-
-  margin-top: 10px;
-  padding-top: 10px;
-
-  border-top: 1px solid #edf0f2;
-
-  color: #7a858d;
-
-  font-size: 12px;
-}
-
-
-/* =========================================================
-   ACTION SECTION
-========================================================= */
-
-.action-section {
-  margin-top: 18px;
-
-  padding: 23px;
-
-  border: 1px solid #dce5e9;
-  border-radius: 10px;
-
-  background: #f8fafb;
-}
-
-.action-header h3 {
+.approval-empty {
   margin: 0;
-
-  color: var(--udsm-blue-dark);
-
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.action-header p {
-  margin: 6px 0 0;
-
-  color: #7a858d;
-
-  font-size: 12px;
-}
-
-.action-area {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  gap: 20px;
-
-  margin-top: 18px;
-}
-
-.comment-section label {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: #304854;
-
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.comment-section textarea {
-  width: 100%;
-  min-height: 105px;
-
-  padding: 12px;
-
-  border: 1px solid #d7e0e5;
-  border-radius: 7px;
-
-  outline: none;
-
-  background: #ffffff;
-
-  color: #26343d;
-
-  font-family: inherit;
-  font-size: 12px;
-
-  resize: vertical;
-}
-
-.comment-section textarea:focus {
-  border-color: #0876a9;
-
-  box-shadow: 0 0 0 3px rgba(8, 118, 169, 0.08);
-}
-
-
-/* =========================================================
-   ACTION BUTTONS
-========================================================= */
-
-.action-buttons {
-  display: flex;
-  gap: 9px;
-}
-
-.reject-btn,
-.approve-btn {
-  min-height: 40px;
-
-  padding: 0 17px;
-
-  border-radius: 6px;
-
-  font-family: inherit;
-
-  font-size: 12px;
-  font-weight: 800;
-
-  cursor: pointer;
-}
-
-.reject-btn {
-  border: 1px solid #c73535;
-
-  background: #ffffff;
-  color: #c73535;
-}
-
-.reject-btn:hover:not(:disabled) {
-  background: #c73535;
-  color: #ffffff;
-}
-
-.approve-btn {
-  border: 1px solid #2e7d32;
-
-  background: #2e7d32;
-  color: #ffffff;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.approve-btn:hover:not(:disabled) {
-  background: #256628;
-  transform: scale(1.06);
-  box-shadow: 0 6px 14px rgba(46, 125, 50, 0.3);
-}
-
-.approve-btn:active:not(:disabled) {
-  transform: scale(0.96);
-}
-
-.reject-btn:disabled,
-.approve-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-
-/* =========================================================
-   ACTION INFO
-========================================================= */
-
-.action-info {
-  margin-top: 14px;
-
-  padding-top: 13px;
-
-  border-top: 1px solid #e1e7ea;
-
-  color: #7a858d;
-
-  font-size: 12px;
+  padding: 16px;
+  border: 1px dashed #d7e0e5;
+  border-radius: 8px;
+  color: #748089;
+  font-size: 13px;
 }
 
 
@@ -883,37 +515,14 @@
     padding: 30px 25px 50px;
   }
 
-  .student-profile-card {
-    flex-wrap: wrap;
-  }
-
   .request-status-large {
-    width: 100%;
-  }
-
-  .student-details {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .detail-item:nth-child(2n) {
-    border-right: none;
-  }
-
-  .detail-item:nth-last-child(-n + 4) {
-    border-bottom: 1px solid #e4e9ec;
-  }
-
-  .detail-item:nth-last-child(-n + 2) {
-    border-bottom: none;
+    margin-left: auto;
   }
 
   .profile-grid {
     grid-template-columns: 1fr;
   }
 
-  .action-area {
-    grid-template-columns: 1fr;
-  }
 }
 
 
@@ -945,17 +554,13 @@
     font-size: 17px;
   }
 
-  .student-details {
-    grid-template-columns: 1fr;
+  .student-profile-card {
+    gap: 12px;
+    padding: 15px;
   }
 
-  .detail-item {
-    border-right: none !important;
-    border-bottom: 1px solid #e4e9ec !important;
-  }
-
-  .detail-item:last-child {
-    border-bottom: none !important;
+  .request-status-large {
+    align-self: flex-start;
   }
 
   .tab-navigation {
@@ -967,31 +572,8 @@
     padding: 0 13px;
   }
 
-  .tab-content,
-  .action-section {
+  .tab-content {
     padding: 17px;
-  }
-
-  .documents-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .document-summary {
-    grid-column: span 1;
-  }
-
-  .summary-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .action-buttons {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .reject-btn,
-  .approve-btn {
-    width: 100%;
   }
 }
 

@@ -49,6 +49,18 @@ describe('AwardService', () => {
     expect(awards.filter(a => a.toLowerCase() === 'higher diploma').length).toBe(1);
   });
 
+  it('should update an award name', () => {
+    expect(service.updateAward('Diploma', 'Higher Diploma')).toBe(true);
+    expect(service.getAwards()).toContain('Higher Diploma');
+    expect(service.getAwards()).not.toContain('Diploma');
+  });
+
+  it('should reject empty or duplicate award names when updating', () => {
+    expect(service.updateAward('Diploma', '  ')).toBe(false);
+    expect(service.updateAward('Diploma', 'Certificate')).toBe(false);
+    expect(service.getAwards()).toContain('Diploma');
+  });
+
   it('should delete an existing award successfully', () => {
     service.addAward('Executive MBA');
     expect(service.getAwards()).toContain('Executive MBA');

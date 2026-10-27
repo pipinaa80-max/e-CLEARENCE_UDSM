@@ -1,12 +1,10 @@
 // department-review.component.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
-import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
@@ -14,14 +12,13 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
 @Component({
     selector: 'app-department-review',
     standalone: true,
-    imports: [CommonModule, FormsModule, DashboardHeaderComponent],
+    imports: [CommonModule, DashboardHeaderComponent],
     templateUrl: './department-review.html',
     styleUrl: './department-review.css'
 })
 export class DepartmentReviewComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
-    private readonly notificationService = inject(NotificationService);
     private readonly toastService = inject(ToastService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
@@ -31,11 +28,7 @@ export class DepartmentReviewComponent implements OnInit {
     request: ClearanceRequest | null = null;
     studentData: any = null;
     isLoading = false;
-    isSubmitting = false;
-    comment = '';
-    selectedTab: 'profile' | 'documents' | 'approvals' = 'profile';
-
-    readonly documentCategories = ['Transcript', 'O-Level Certificate', 'A-Level Certificate', 'Identity Document'];
+    selectedTab: 'profile' | 'approvals' = 'profile';
 
     get currentUser() {
         return this.authService.getCurrentUser();
@@ -154,136 +147,17 @@ export class DepartmentReviewComponent implements OnInit {
         return 'Not available';
     }
 
-    getOfficeStatus(office: string): string {
-        if (!this.request) return 'Pending';
-        const approval = this.request.approvals.find(a => a.office === office);
-        return approval?.status || 'Pending';
-    }
-
-    getApprovalComment(office: string): string {
-        if (!this.request) return '';
-        const approval = this.request.approvals.find(a => a.office === office);
-        return approval?.comment || '';
-    }
-
-    getApprovalReviewer(office: string): string {
-        if (!this.request) return '';
-        const approval = this.request.approvals.find(a => a.office === office);
-        return approval?.reviewedBy || '';
-    }
-
-    getApprovalDate(office: string): string {
-        if (!this.request) return '';
-        const approval = this.request.approvals.find(a => a.office === office);
-        return approval?.reviewedAt || '';
-    }
-
-    getDocumentStatus(docType: string): 'uploaded' | 'missing' | 'verified' {
-        const hasPhoto = this.hasPhoto();
-        if (docType === 'Identity Document' && hasPhoto) {
-            return 'verified';
-        }
-        return hasPhoto ? 'uploaded' : 'missing';
-    }
-
-    approveRequest(): void {
-        this.isSubmitting = true;
-
-        const staff = this.currentUser;
-        if (!staff || !this.request) {
-            this.toastService.error('Error', 'Unable to approve request.');
-            this.isSubmitting = false;
-            return;
-        }
-
-        try {
-            const approved = this.clearanceService.approveRequest(
-                this.request.id,
-                'Department',
-                staff.fullName || staff.firstName + ' ' + staff.lastName
-            );
-
-            if (!approved) {
-                throw new Error('This request is no longer pending Department approval.');
-            }
-
-            this.loadRequest();
-
-            this.notificationService.createNotification(
-                this.request.studentId,
-                'Department Clearance Approved',
-                `Your clearance request has been approved by the Department.`,
-                'success'
-            );
-
-            this.toastService.success('Success', 'Request approved successfully!');
-
-            setTimeout(() => {
-                this.router.navigate(['/department/dashboard']);
-            }, 2000);
-
-        } catch (error: any) {
-            this.toastService.error('Approve Failed', error.message || 'Failed to approve request.');
-        } finally {
-            this.isSubmitting = false;
-        }
-    }
-
-    rejectRequest(): void {
-        this.isSubmitting = true;
-
-        if (!this.comment.trim()) {
-            this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
-            this.isSubmitting = false;
-            return;
-        }
-
-        const staff = this.currentUser;
-        if (!staff || !this.request) {
-            this.toastService.error('Error', 'Unable to reject request.');
-            this.isSubmitting = false;
-            return;
-        }
-
-        try {
-            const rejected = this.clearanceService.rejectRequest(
-                this.request.id,
-                'Department',
-                staff.fullName || staff.firstName + ' ' + staff.lastName,
-                this.comment.trim()
-            );
-
-            if (!rejected) {
-                throw new Error('This request is no longer pending Department approval.');
-            }
-
-            this.loadRequest();
-
-            this.notificationService.createNotification(
-                this.request.studentId,
-                'Department Clearance Rejected',
-                this.comment.trim(),
-                'warning'
-            );
-
-            this.toastService.success('Success', 'Request rejected successfully.');
-
-            setTimeout(() => {
-                this.router.navigate(['/department/dashboard']);
-            }, 2000);
-
-        } catch (error: any) {
-            this.toastService.error('Reject Failed', error.message || 'Failed to reject request.');
-        } finally {
-            this.isSubmitting = false;
-        }
+    get decisionApprovals() {
+        return this.request?.approvals.filter(approval =>
+            approval.status === 'Approved' || approval.status === 'Rejected'
+        ) ?? [];
     }
 
     goBack(): void {
         this.router.navigate(['/department/dashboard']);
     }
 
-    selectTab(tab: 'profile' | 'documents' | 'approvals'): void {
+    selectTab(tab: 'profile' | 'approvals'): void {
         this.selectedTab = tab;
     }
 

@@ -1,4 +1,8 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ConfigService } from './config.service';
 
 import { NotificationItem, NotificationType } from '../models/notification.model';
 import { StorageService } from './storage.service';
@@ -7,6 +11,26 @@ import { StorageService } from './storage.service';
 export class NotificationService {
   private readonly storage = new StorageService();
   private readonly key = 'udsm-notifications';
+  private readonly http = inject(HttpClient);
+  private readonly config = inject(ConfigService);
+
+  getStudentNotifications(): Observable<NotificationItem[]> {
+    const token = this.storage.get<string>('udsm-auth-token')?.replace(/^"|"$/g, '') || null;
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+    return this.http.get<NotificationItem[]>(`${this.config.apiUrl}/notifications`, { headers });
+  }
+
+  markStudentNotificationRead(id: string): void {
+    const token = this.storage.get<string>('udsm-auth-token')?.replace(/^"|"$/g, '') || null;
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+    this.http.patch(`${this.config.apiUrl}/notifications/${encodeURIComponent(id)}/read`, {}, { headers }).subscribe();
+  }
+
+  markAllStudentNotificationsRead(): void {
+    const token = this.storage.get<string>('udsm-auth-token')?.replace(/^"|"$/g, '') || null;
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+    this.http.post(`${this.config.apiUrl}/notifications/read-all`, {}, { headers }).subscribe();
+  }
 
   createNotification(userId: string, title: string, message: string, type: NotificationType): NotificationItem {
     const item: NotificationItem = {

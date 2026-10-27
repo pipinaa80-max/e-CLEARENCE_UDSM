@@ -1,0 +1,23 @@
+.audit-total { align-self: center; color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.superuser-overview-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.audit-filter-panel { margin-bottom: 18px; }
+.audit-table-panel { min-width: 0; }
+.audit-table-wrap { overflow-x: auto; width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.audit-table { width: 100%; min-width: 1350px; border-collapse: collapse; background: #fff; }
+.audit-table th, .audit-table td { padding: 12px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 12px; }
+.audit-table th { position: sticky; top: 0; z-index: 1; background: #f4f8fa; color: var(--muted); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+.audit-table tbody tr:hover { background: #f7fbfc; }
+.audit-table td small { display: block; max-width: 210px; margin-top: 4px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.audit-table td:nth-child(3) { min-width: 150px; }
+.audit-table td:nth-child(5) { min-width: 260px; max-width: 420px; overflow-wrap: anywhere; line-height: 1.5; }
+.audit-table td:nth-child(6) { white-space: nowrap; }
+.audit-action { display: inline-block; padding: 4px 7px; border-radius: 4px; background: #edf4f7; color: var(--primary); font-size: 10px; font-weight: 800; white-space: nowrap; }
+.audit-result { display: inline-block; padding: 4px 8px; border-radius: 20px; background: #eef2f5; color: #53616b; font-size: 10px; font-weight: 800; }
+.audit-result.success { background: #e7f5ed; color: #167344; }
+.audit-result.failed { background: #fff0ee; color: #b42318; }
+.audit-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; color: var(--muted); font-size: 12px; }
+.audit-pagination button { padding: 8px 12px; }
+.audit-pagination button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 900px) { .superuser-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .superuser-overview-metrics { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .audit-total { display: block; margin-top: 12px; } .audit-pagination { justify-content: space-between; gap: 8px; } .audit-pagination span { font-size: 10px; } }

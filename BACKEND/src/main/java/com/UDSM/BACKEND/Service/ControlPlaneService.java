@@ -151,6 +151,35 @@ public class ControlPlaneService {
     }
 
     @Transactional(readOnly = true)
+    public Map<String, Object> auditEvents(int requestedPage, int requestedSize, String search) {
+        requireSuperuser();
+        int pageNumber = Math.max(0, requestedPage);
+        int pageSize = Math.max(1, Math.min(requestedSize, 200));
+        var pageable = PageRequest.of(pageNumber, pageSize);
+        var page = auditLogRepository.searchAuditEvents(search == null ? "" : search.trim(), pageable);
+        List<Map<String, Object>> events = page.getContent().stream().map(log -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", log.getId());
+            item.put("userId", log.getUserId());
+            item.put("username", log.getUsername());
+            item.put("action", log.getAction());
+            item.put("details", log.getDetails());
+            item.put("ipAddress", log.getIpAddress());
+            item.put("userAgent", log.getUserAgent());
+            item.put("status", log.getStatus());
+            item.put("createdAt", log.getCreatedAt());
+            return item;
+        }).toList();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("content", events);
+        result.put("page", pageNumber);
+        result.put("size", pageSize);
+        result.put("totalElements", page.getTotalElements());
+        result.put("totalPages", page.getTotalPages());
+        return result;
+    }
+
+    @Transactional(readOnly = true)
     public Map<String, Object> adminActivity(String id) {
         requireSuperuser();
         User admin = userRepository.findById(id).filter(user -> user.getRole() == ERole.ADMINISTRATOR)
@@ -438,7 +467,7 @@ public class ControlPlaneService {
         String[] offices = {
             "Academic Staff", "Administrator", "Convocation", "DARUSO", "Dean of Students",
             "Department", "Finance", "Games Coach", "Hall Warden", "ICT", "Laboratory",
-            "Library", "Principal", "Smart Card", "USAB", "Workshop"
+            "Lecturer", "Library", "Principal", "Smart Card", "USAB", "Workshop"
         };
         List<Map<String, Object>> list = new ArrayList<>();
         for (String name : offices) {

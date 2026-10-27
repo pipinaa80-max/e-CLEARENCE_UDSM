@@ -9,12 +9,17 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
-import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
+
+interface AnalyticsBar {
+  label: string;
+  count: number;
+  width: number;
+}
 
 @Component({
   selector: 'app-dean-of-students',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './dean_of_students.html',
   styleUrl: './dean_of_students.css'
 })
@@ -26,10 +31,12 @@ export class DeanOfStudentsComponent implements OnInit {
 
   sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
+  detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
   isLoading = false;
   pendingRequests: ClearanceRequest[] = [];
+  allRequests: ClearanceRequest[] = [];
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -84,11 +91,41 @@ export class DeanOfStudentsComponent implements OnInit {
   }
 
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
+    return (Array.isArray(request?.approvals)
+      ? request.approvals.find(approval => approval?.office === office)?.status
+      : undefined) ?? 'Pending';
   }
 
   get pendingRequestCount(): number {
     return this.requests.filter(request => this.getRequestOfficeStatus(request, 'Dean of Students') === 'Pending').length;
+  }
+
+  get completedRequestCount(): number {
+    return this.allRequests.filter(request => this.isCompleted(request)).length;
+  }
+
+  get rejectedRequestCount(): number {
+    return this.allRequests.filter(request => request.status === 'Rejected').length;
+  }
+
+  get inProgressRequestCount(): number {
+    return Math.max(0, this.allRequests.length - this.completedRequestCount - this.rejectedRequestCount);
+  }
+
+  get clearanceRate(): number {
+    return this.allRequests.length ? Math.round(this.completedRequestCount / this.allRequests.length * 100) : 0;
+  }
+
+  get programmeClearanceBars(): AnalyticsBar[] {
+    return this.buildBars(this.groupCompleted(request => request.programme || 'Not recorded'));
+  }
+
+  get yearClearanceBars(): AnalyticsBar[] {
+    return this.buildBars(this.groupCompleted(request => this.getAnalyticsYear(request)));
+  }
+
+  get collegeClearanceBars(): AnalyticsBar[] {
+    return this.buildBars(this.groupCompleted(request => request.college || 'Not recorded'));
   }
 
   get filteredRequests(): ClearanceRequest[] {
@@ -99,7 +136,7 @@ export class DeanOfStudentsComponent implements OnInit {
       list = list.filter(r =>
         this.getStudentName(r).toLowerCase().includes(s) ||
         this.getStudentRegNumber(r).toLowerCase().includes(s) ||
-        r.programme.toLowerCase().includes(s)
+        (r.programme || '').toLowerCase().includes(s)
       );
     }
 
@@ -116,9 +153,90 @@ export class DeanOfStudentsComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+    this.allRequests = this.clearanceService.getAllRequests();
     this.pendingRequests = this.clearanceService.getRequestsForOffice('Dean of Students');
-    console.log('Dean of Students - Loaded requests:', this.pendingRequests.length);
     this.isLoading = false;
+  }
+
+  private isCompleted(request: ClearanceRequest): boolean {
+    return request.status === 'Completed' || request.currentStage === 'Completed';
+  }
+
+  private groupCompleted(labelFor: (request: ClearanceRequest) => string): Map<string, number> {
+    const counts = new Map<string, number>();
+    this.allRequests.filter(request => this.isCompleted(request)).forEach(request => {
+      const label = labelFor(request).trim() || 'Not recorded';
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    });
+    return counts;
+  }
+
+  private buildBars(counts: Map<string, number>): AnalyticsBar[] {
+    const sorted = [...counts.entries()].sort((left, right) => right[1] - left[1]).slice(0, 6);
+    const maximum = Math.max(1, ...sorted.map(([, count]) => count));
+    return sorted.map(([label, count]) => ({
+      label,
+      count,
+      width: Math.max(6, Math.round(count / maximum * 100))
+    }));
+  }
+
+  private getAnalyticsYear(request: ClearanceRequest): string {
+    const student = this.getStudentData(request.studentId);
+    const academicYear = student?.academicYear;
+    if (academicYear !== undefined && academicYear !== null && String(academicYear).trim()) {
+      return String(academicYear).trim();
+    }
+    const graduationYear = student?.graduationYear;
+    if (graduationYear !== undefined && graduationYear !== null && String(graduationYear).trim()) {
+      return `Graduation ${String(graduationYear).trim()}`;
+    }
+    const yearOfStudy = student?.yearOfStudy;
+    if (yearOfStudy !== undefined && yearOfStudy !== null && String(yearOfStudy).trim()) {
+      return `Year ${String(yearOfStudy).trim()}`;
+    }
+    const submittedYear = new Date(request.requestDate).getFullYear();
+    return Number.isNaN(submittedYear) ? 'Not recorded' : `Request ${submittedYear}`;
+  }
+
+  downloadAnalyticsReport(): void {
+    const rows: string[][] = [
+      ['UDSM Clearance MIS - Dean of Students Analytics'],
+      ['Generated', new Date().toLocaleString()],
+      ['Total requests', String(this.allRequests.length)],
+      ['Completed clearances', String(this.completedRequestCount)],
+      ['In progress', String(this.inProgressRequestCount)],
+      ['Rejected', String(this.rejectedRequestCount)],
+      ['Clearance rate', `${this.clearanceRate}%`],
+      [],
+      ['Completed clearances by programme', 'Count'],
+      ...this.programmeClearanceBars.map(bar => [bar.label, String(bar.count)]),
+      [],
+      ['Completed clearances by academic/graduation year', 'Count'],
+      ...this.yearClearanceBars.map(bar => [bar.label, String(bar.count)]),
+      [],
+      ['Completed clearances by college', 'Count'],
+      ...this.collegeClearanceBars.map(bar => [bar.label, String(bar.count)]),
+      [],
+      ['Registration number', 'Student', 'Programme', 'College', 'Department', 'Status', 'Request date', 'Clearance year'],
+      ...this.allRequests.map(request => [
+        this.getStudentRegNumber(request), this.getStudentName(request), request.programme || '',
+        request.college || '', request.department || '', request.status,
+        request.requestDate || '', this.getAnalyticsYear(request)
+      ])
+    ];
+    const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `dean-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  printAnalyticsReport(): void {
+    window.print();
   }
 
   // =====================================================
@@ -172,7 +290,20 @@ export class DeanOfStudentsComponent implements OnInit {
       return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
     }
 
-    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
+    const studentId = request.studentId || '';
+    return request.registrationNumber || (studentId ? 'Student #' + studentId.substring(0, 8) : 'Student');
+  }
+
+  getStudentListName(request: ClearanceRequest): string {
+    const user = this.getStudentData(request.studentId);
+    const firstName = user?.firstName?.trim();
+    const middleName = user?.middleName?.trim();
+    const lastName = user?.lastName?.trim();
+    if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
+    const fullName = (request.studentName || user?.fullName || '').trim();
+    if (!fullName) return '—';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
   }
 
   // =====================================================
@@ -192,6 +323,12 @@ export class DeanOfStudentsComponent implements OnInit {
     return 'Not available';
   }
 
+  getStudentGender(request: ClearanceRequest): string {
+    const gender = this.getStudentData(request.studentId)?.gender
+      || (request as ClearanceRequest & { gender?: string }).gender;
+    return typeof gender === 'string' && gender.trim() ? gender.trim() : '—';
+  }
+
   // =====================================================
   // GET STUDENT PHOTO
   // =====================================================
@@ -207,7 +344,7 @@ export class DeanOfStudentsComponent implements OnInit {
       }
     }
 
-    if (!photo) {
+    if (typeof photo !== 'string' || !photo) {
       return null;
     }
 
@@ -247,6 +384,7 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   getStudentEmail(request: ClearanceRequest): string {
+    if (request.email?.trim()) return request.email.trim();
     const user = this.getStudentData(request.studentId);
     if (user) {
       return user.email || 'Not available';
@@ -259,6 +397,7 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   getStudentPhone(request: ClearanceRequest): string {
+    if (request.phoneNumber?.trim()) return request.phoneNumber.trim();
     const user = this.getStudentData(request.studentId);
     if (user) {
       return user.phone || user.phoneNumber || 'Not available';
@@ -302,11 +441,16 @@ export class DeanOfStudentsComponent implements OnInit {
     }
 
     try {
-      this.clearanceService.approveRequest(
+      const approved = this.clearanceService.approveRequest(
           request.id,
           'Dean of Students',
           staff.fullName || 'Dean of Students'
       );
+
+      if (!approved) {
+        this.message = 'This request could not be approved in its current state. Refresh the dashboard and try again.';
+        return;
+      }
 
       // Reload data
       this.loadData();

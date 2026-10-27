@@ -13,6 +13,7 @@ export type UserRole =
   | 'Finance'
   | 'ICT'
   | 'Academic Staff'
+  | 'Lecturer'
   | 'Workshop'
   | 'Laboratory'
   | 'Administrator';

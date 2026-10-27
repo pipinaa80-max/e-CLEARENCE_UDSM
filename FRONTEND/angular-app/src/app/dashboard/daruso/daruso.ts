@@ -21,6 +21,11 @@ interface StudentProfile {
 	phone?: string;
 	phoneNumber?: string;
 	programme?: string;
+	gender?: string;
+	physicalAddress?: string;
+	college?: string;
+	department?: string;
+	hall?: string;
 }
 
 @Component({
@@ -82,6 +87,10 @@ export class DarusoComponent {
 		this.sidebarOpen = !this.sidebarOpen;
 	}
 
+	closeSidebar(): void {
+		this.sidebarOpen = false;
+	}
+
 	getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
 		return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
 	}
@@ -100,7 +109,7 @@ export class DarusoComponent {
 		if (this.searchTerm.trim()) {
 			const s = this.searchTerm.trim().toLowerCase();
 			list = list.filter(r =>
-				this.getStudentName(r).toLowerCase().includes(s) ||
+				this.getStudentSearchText(r).includes(s) ||
 				this.getStudentRegNumber(r).toLowerCase().includes(s) ||
 				this.getStudentProgramme(r).toLowerCase().includes(s)
 			);
@@ -167,6 +176,25 @@ export class DarusoComponent {
 		return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
 	}
 
+	getStudentGender(request: ClearanceRequest): string {
+		const user = this.getStudentData(request.studentId);
+		const gender = user?.gender?.trim() || (request as ClearanceRequest & { gender?: string }).gender?.trim();
+		return gender || '—';
+	}
+
+	private getStudentSearchText(request: ClearanceRequest): string {
+		const user = this.getStudentData(request.studentId);
+		return [
+			this.getStudentName(request),
+			request.studentName,
+			user?.fullName,
+			user?.firstName,
+			user?.middleName,
+			user?.lastName,
+			[user?.firstName, user?.middleName, user?.lastName].filter(Boolean).join(' ')
+		].filter(Boolean).join(' ').toLowerCase();
+	}
+
 	getStudentPhone(request: ClearanceRequest): string {
 		const user = this.getStudentData(request.studentId);
 		return request.phoneNumber?.trim() || user?.phoneNumber?.trim() || user?.phone?.trim() || '—';
@@ -199,6 +227,9 @@ export class DarusoComponent {
 			);
 			this.message = 'Student clearance was approved successfully.';
 			this.keepCurrentPageInRange();
+		} catch (error) {
+			console.error('Error approving DARUSO clearance request:', error);
+			this.message = 'The request could not be approved. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);
 		}
@@ -243,6 +274,9 @@ export class DarusoComponent {
 			this.selectedRequest = null;
 			this.rejectionComment = '';
 			this.keepCurrentPageInRange();
+		} catch (error) {
+			console.error('Error rejecting DARUSO clearance request:', error);
+			this.message = 'The request could not be rejected. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);
 		}

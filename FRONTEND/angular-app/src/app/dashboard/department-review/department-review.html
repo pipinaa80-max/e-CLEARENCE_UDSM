@@ -30,40 +30,7 @@
 
             <div class="student-info">
                 <h2>{{ getStudentName() }}</h2>
-                <div class="student-details">
-                    <div class="detail-item">
-                        <span>Registration Number</span>
-                        <strong>{{ getStudentRegNumber() }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Programme</span>
-                        <strong>{{ request.programme }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Department</span>
-                        <strong>{{ request.department }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>College</span>
-                        <strong>{{ request.college }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Email</span>
-                        <strong>{{ getStudentEmail() }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Phone</span>
-                        <strong>{{ getStudentPhone() }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Request Date</span>
-                        <strong>{{ request.requestDate | date:'mediumDate' }}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Clearance Type</span>
-                        <strong>{{ request.clearanceType || 'Graduation Clearance' }}</strong>
-                    </div>
-                </div>
+                <span class="profile-subtitle">Department clearance request</span>
             </div>
 
             <div class="request-status-large">
@@ -82,9 +49,6 @@
             <button class="tab-btn" [class.active]="selectedTab === 'profile'" (click)="selectTab('profile')">
                 👤 Profile
             </button>
-            <button class="tab-btn" [class.active]="selectedTab === 'documents'" (click)="selectTab('documents')">
-                📄 Documents
-            </button>
             <button class="tab-btn" [class.active]="selectedTab === 'approvals'" (click)="selectTab('approvals')">
                 ✅ Approvals
             </button>
@@ -95,10 +59,6 @@
             <div class="profile-grid">
                 <div class="profile-section">
                     <h3>Personal Information</h3>
-                    <div class="field-row">
-                        <span class="field-label">Full Name</span>
-                        <span class="field-value">{{ getStudentName() }}</span>
-                    </div>
                     <div class="field-row">
                         <span class="field-label">Registration Number</span>
                         <span class="field-value">{{ getStudentRegNumber() }}</span>
@@ -161,118 +121,23 @@
             </div>
         </section>
 
-        <!-- Tab Content: Documents -->
-        <section class="tab-content" *ngIf="selectedTab === 'documents'">
-            <div class="documents-grid">
-                <div class="document-card" *ngFor="let docType of documentCategories">
-                    <div class="doc-icon">📄</div>
-                    <div class="doc-info">
-                        <h4>{{ docType }}</h4>
-                        <span class="doc-status" [class.uploaded]="getDocumentStatus(docType) !== 'missing'" [class.verified]="getDocumentStatus(docType) === 'verified'">
-                            {{ getDocumentStatus(docType) === 'verified' ? '✓ Verified' :
-                               getDocumentStatus(docType) === 'uploaded' ? 'Uploaded' : 'Missing' }}
-                        </span>
-                    </div>
-                    <button class="view-doc-btn" [disabled]="getDocumentStatus(docType) === 'missing'">
-                        View
-                    </button>
-                </div>
-
-                <div class="document-summary">
-                    <h3>Document Summary</h3>
-                    <div class="summary-stats">
-                        <div class="stat">
-                            <span class="stat-label">Total Required</span>
-                            <span class="stat-value">{{ documentCategories.length }}</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Uploaded</span>
-                            <span class="stat-value">{{ documentCategories.filter(d => getDocumentStatus(d) !== 'missing').length }}</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Verified</span>
-                            <span class="stat-value">{{ documentCategories.filter(d => getDocumentStatus(d) === 'verified').length }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <!-- Tab Content: Approvals -->
         <section class="tab-content" *ngIf="selectedTab === 'approvals'">
-            <div class="approvals-list">
-                <div class="approval-item" *ngFor="let office of ['Convocation', 'Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Workshop', 'Laboratory', 'Department']">
+            <div class="approvals-list" *ngIf="decisionApprovals.length; else noDecisionApprovals">
+                <div class="approval-item" *ngFor="let approval of decisionApprovals">
                     <div class="approval-info">
-                        <strong>{{ office }}</strong>
-                        <span class="approval-status" [class.approved]="getOfficeStatus(office) === 'Approved'" [class.rejected]="getOfficeStatus(office) === 'Rejected'" [class.pending]="getOfficeStatus(office) === 'Pending'">
-                            {{ getOfficeStatus(office) }}
+                        <strong>{{ approval.office }}</strong>
+                        <span class="approval-status" [class.approved]="approval.status === 'Approved'" [class.rejected]="approval.status === 'Rejected'">
+                            {{ approval.status }}
                         </span>
                     </div>
-                    <div class="approval-details" *ngIf="getOfficeStatus(office) !== 'Pending'">
-                        <span class="approval-comment" *ngIf="getApprovalComment(office)">Comment: {{ getApprovalComment(office) }}</span>
-                        <span class="approval-reviewer">By: {{ getApprovalReviewer(office) }}</span>
-                        <span class="approval-date">Date: {{ getApprovalDate(office) | date:'mediumDate' }}</span>
-                    </div>
                 </div>
             </div>
+            <ng-template #noDecisionApprovals>
+                <p class="approval-empty">No approved or rejected decisions have been recorded yet.</p>
+            </ng-template>
         </section>
 
-        <!-- Action Section -->
-        <section class="action-section">
-            <div class="action-header">
-                <h3>Department Action</h3>
-                <p>Review the student's information and documents before making a decision</p>
-            </div>
-
-            <div class="action-area">
-                <div class="comment-section">
-                    <label for="comment">Comment (Required for rejection)</label>
-                    <textarea
-                            id="comment"
-                            [(ngModel)]="comment"
-                            rows="4"
-                            placeholder="Enter your comments about this request..."
-                    ></textarea>
-                </div>
-
-                <div class="action-buttons">
-                    <button
-                            type="button"
-                            class="reject-btn"
-                            (click)="rejectRequest()"
-                            [disabled]="isSubmitting || request.status !== 'Pending'"
-                    >
-                        <span *ngIf="!isSubmitting">❌ Return with Reason</span>
-                        <span *ngIf="isSubmitting">Processing...</span>
-                    </button>
-
-                    <button
-                            type="button"
-                            class="approve-btn"
-                            (click)="approveRequest()"
-                            [disabled]="isSubmitting || request.status !== 'Pending'"
-                    >
-                        <span *ngIf="!isSubmitting">✅ Approve</span>
-                        <span *ngIf="isSubmitting">Processing...</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="action-info">
-                <span *ngIf="request.status === 'Pending' && request.currentStage === 'Department'">
-                    ⏳ This request is pending review
-                </span>
-                <span *ngIf="getOfficeStatus('Department') === 'Approved'">
-                    ✅ This request has been approved by Department
-                </span>
-                <span *ngIf="request.status === 'Rejected'">
-                    ❌ This request has been rejected
-                </span>
-                <span *ngIf="request.status === 'Completed'">
-                    🎉 This clearance has been completed
-                </span>
-            </div>
-        </section>
     </div>
 
     <!-- ENLARGED PHOTO MODAL -->

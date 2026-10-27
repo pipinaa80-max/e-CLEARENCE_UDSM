@@ -8,5 +8,6 @@ public enum Role {
     ACCOMMODATION_OFFICER,
     ICT_OFFICER,
     ACADEMIC_STAFF,
+    LECTURER,
     ADMIN
 }
