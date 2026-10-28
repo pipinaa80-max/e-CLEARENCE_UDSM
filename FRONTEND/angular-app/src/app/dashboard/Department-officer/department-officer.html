@@ -179,6 +179,7 @@
               </ng-container>
               <ng-template #reviewedStatus>
                 <span class="compact-status">{{ getRequestOfficeStatus(request, 'Department') }}</span>
+                <button type="button" class="compact-view" (click)="withdrawDecision(request)" [disabled]="processingRequests.has(request.id)">Withdraw</button>
               </ng-template>
             </div></td>
           </tr>

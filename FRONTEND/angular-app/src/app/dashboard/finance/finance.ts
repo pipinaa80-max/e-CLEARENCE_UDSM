@@ -129,6 +129,20 @@ export class FinanceDashboard {
     return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
   }
 
+  async withdrawDecision(request: ClearanceRequest): Promise<void> {
+    if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Finance')) return;
+    this.message = 'Finance decision withdrawn. The request is pending again.';
+    this.detailsRequest = request;
+  }
+
+  getFinanceRejectionReason(request: ClearanceRequest): string {
+    return request.approvals.find(approval => approval.office === 'Finance')?.comment || 'No reason was recorded.';
+  }
+
+  getRejectionHistory(request: ClearanceRequest) {
+    return request.rejectionHistory ?? [];
+  }
+
   getRejectionReason(office: string): string {
     const request = this.studentRequest;
     if (!request) return '';
@@ -136,19 +150,18 @@ export class FinanceDashboard {
     return approval?.comment ?? '';
   }
 
-  approve(request: ClearanceRequest): void {
+  async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
-
-    this.clearanceService.approveRequest(
+      if (!await this.clearanceService.approveRequest(
       request.id,
       'Finance',
       staff.fullName
-    );
+    )) return;
 
     this.notificationService.createNotification(
       request.studentId,
@@ -166,19 +179,18 @@ export class FinanceDashboard {
     this.message = '';
   }
 
-  reject(): void {
+  async reject(): Promise<void> {
     const staff = this.currentUser;
 
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
-
-    this.clearanceService.rejectRequest(
+      if (!await this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Finance',
       staff.fullName,
       this.rejectionComment
-    );
+    )) return;
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,

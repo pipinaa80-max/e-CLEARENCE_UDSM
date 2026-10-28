@@ -176,7 +176,7 @@
             <td><div class="compact-actions">
               <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
               <button *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'" type="button" class="review-button" (click)="approve(request)">Approve</button>
-              <span *ngIf="getRequestOfficeStatus(request, 'Principal') !== 'Pending'" class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span>
+              <ng-container *ngIf="getRequestOfficeStatus(request, 'Principal') !== 'Pending'"><span class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span><button type="button" class="compact-view" (click)="withdrawDecision(request)">Withdraw</button></ng-container>
             </div></td>
           </tr>
         </tbody>
@@ -203,7 +203,13 @@
           <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
           <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
           <div><dt>Documents Uploaded</dt><dd>{{ getDocumentStatus(detailsRequest).uploaded }} / {{ getDocumentStatus(detailsRequest).total }}</dd></div>
+          <div><dt>Address</dt><dd>{{ detailsRequest.physicalAddress || detailsRequest.address || '—' }}</dd></div>
+          <div><dt>Residence</dt><dd>{{ detailsRequest.residenceType || '—' }}</dd></div>
+          <div><dt>Hall / Room</dt><dd>{{ detailsRequest.hall || '—' }} {{ detailsRequest.roomNumber || '' }}</dd></div>
+          <div><dt>Remarks</dt><dd>{{ detailsRequest.remarks || '—' }}</dd></div>
         </dl>
+        <section class="rejection-reason" *ngIf="getRequestOfficeStatus(detailsRequest, 'Principal') === 'Rejected'"><h3>Rejection reason · Principal</h3><p>{{ getRejectionReason(detailsRequest) }}</p></section>
+        <section class="rejection-reason history-reason" *ngFor="let rejection of getRejectionHistory(detailsRequest)"><h3>Previously rejected · {{ rejection.office }}<span *ngIf="detailsRequest.status === 'Pending'"> (request is now pending)</span></h3><p>{{ rejection.reason }}</p><small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small></section>
       </div>
     </section>
     <div class="pagination" *ngIf="totalPages > 1">

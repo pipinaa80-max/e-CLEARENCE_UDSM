@@ -405,7 +405,7 @@ export class ConvocationDashboardComponent implements OnInit {
     }
   }
 
-  approveRequest(request: ClearanceRequest): void {
+  async approveRequest(request: ClearanceRequest): Promise<void> {
     this.message = '';
 
     if (!request.convocation?.receiptSubmittedAt) {
@@ -413,20 +413,14 @@ export class ConvocationDashboardComponent implements OnInit {
       return;
     }
 
-    const confirmApprove = confirm(
-        `Final Approval: Are you sure you want to approve Convocation clearance for ${this.getStudentName(request)}?`
-    );
-
-    if (!confirmApprove) return;
-
     this.isLoading = true;
 
     try {
-      this.clearanceService.approveRequest(
+      if (!await this.clearanceService.approveRequest(
           request.id,
           'Convocation',
           this.currentUser?.fullName || 'Convocation Officer'
-      );
+      )) return;
 
       this.loadData();
 

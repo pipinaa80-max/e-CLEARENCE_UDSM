@@ -277,9 +277,23 @@ export class PrincipalComponent implements OnInit {
         return approval?.status || 'Pending';
     }
 
-    approve(request: ClearanceRequest): void {
+    async withdrawDecision(request: ClearanceRequest): Promise<void> {
+        if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Principal')) return;
+        this.message = 'Principal decision withdrawn. The request is pending again.';
+        this.loadData();
+    }
+
+    getRejectionReason(request: ClearanceRequest): string {
+        return request.approvals.find(approval => approval.office === 'Principal')?.comment || 'No reason was recorded.';
+    }
+
+    getRejectionHistory(request: ClearanceRequest) {
+        return request.rejectionHistory ?? [];
+    }
+
+    async approve(request: ClearanceRequest): Promise<void> {
         const staff = this.currentUser;
-        if (!staff || !this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
+        if (!staff || !await this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
             this.toastService.error('Error', 'Failed to approve request. Please try again.');
             return;
         }

@@ -123,6 +123,12 @@
 
         <!-- Tab Content: Approvals -->
         <section class="tab-content" *ngIf="selectedTab === 'approvals'">
+            <div class="rejection-history" *ngFor="let rejection of request.rejectionHistory">
+                <strong>Previously rejected · {{ rejection.office }}</strong>
+                <span *ngIf="request.status === 'Pending'">Request is now pending review.</span>
+                <p>{{ rejection.reason }}</p>
+                <small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
+            </div>
             <div class="approvals-list" *ngIf="decisionApprovals.length; else noDecisionApprovals">
                 <div class="approval-item" *ngFor="let approval of decisionApprovals">
                     <div class="approval-info">
@@ -131,6 +137,7 @@
                             {{ approval.status }}
                         </span>
                     </div>
+                    <p class="approval-comment" *ngIf="approval.status === 'Rejected'">Rejection reason: {{ approval.comment || 'No reason was recorded.' }}</p>
                 </div>
             </div>
             <ng-template #noDecisionApprovals>

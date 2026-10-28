@@ -494,6 +494,11 @@
   background: #fff0f0;
   color: #c73535;
 }
+.approval-comment { margin: 8px 0 0; color: #7f2929; white-space: pre-wrap; }
+.rejection-history { margin: 0 0 12px; padding: 14px; border-left: 4px solid #c73535; border-radius: 6px; background: #fff1f0; }
+.rejection-history strong { display: block; color: #a52c2c; }
+.rejection-history span, .rejection-history small { display: block; margin-top: 4px; color: #667983; }
+.rejection-history p { margin: 8px 0 0; white-space: pre-wrap; }
 
 .approval-empty {
   margin: 0;

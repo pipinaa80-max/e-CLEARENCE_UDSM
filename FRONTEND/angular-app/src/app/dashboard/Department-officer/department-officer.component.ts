@@ -265,7 +265,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     readonly processingRequests = new Set<string>();
 
-    approveRequest(request: ClearanceRequest): void {
+    async approveRequest(request: ClearanceRequest): Promise<void> {
         if (!this.debtFlagsLoaded) {
             this.toastService.warning('Debt Flags Unavailable', 'Verification is disabled until the student debt register can be checked.');
             return;
@@ -283,7 +283,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
         this.processingRequests.add(request.id);
         try {
-            const approved = this.clearanceService.approveRequest(
+            const approved = await this.clearanceService.approveRequest(
                 request.id,
                 'Department',
                 staff.fullName || staff.firstName + ' ' + staff.lastName
@@ -312,7 +312,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
         this.rejectionComment = '';
     }
 
-    rejectRequest(): void {
+    async rejectRequest(): Promise<void> {
         const request = this.selectedRequest;
         if (!request || this.processingRequests.has(request.id)) return;
         if (!this.rejectionComment.trim()) {
@@ -327,7 +327,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
         this.processingRequests.add(request.id);
         try {
-            const rejected = this.clearanceService.rejectRequest(
+            const rejected = await this.clearanceService.rejectRequest(
                 request.id,
                 'Department',
                 staff.fullName || staff.firstName + ' ' + staff.lastName,
@@ -356,6 +356,16 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     reviewRequest(requestId: string): void {
         this.router.navigate(['/department/review', requestId]);
+    }
+
+    async withdrawDecision(request: ClearanceRequest): Promise<void> {
+        if (this.processingRequests.has(request.id)) return;
+        if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Department')) {
+            this.toastService.error('Withdraw Failed', 'This Department decision could not be withdrawn.');
+            return;
+        }
+        this.toastService.success('Decision Withdrawn', 'The request is pending Department review again.');
+        this.loadData();
     }
 
     toggleSidebar(): void {

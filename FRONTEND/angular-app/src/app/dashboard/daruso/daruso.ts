@@ -204,7 +204,7 @@ export class DarusoComponent {
 		return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
 	}
 
-	approve(request: ClearanceRequest): void {
+	async approve(request: ClearanceRequest): Promise<void> {
 		if (this.processingRequests.has(request.id)) return;
 		const staff = this.authService.getCurrentUser();
 		if (!staff) {
@@ -214,7 +214,7 @@ export class DarusoComponent {
 
 		this.processingRequests.add(request.id);
 		try {
-			const approved = this.clearanceService.approveRequest(request.id, 'DARUSO', staff.fullName);
+			const approved = await this.clearanceService.approveRequest(request.id, 'DARUSO', staff.fullName);
 			if (!approved) {
 				this.message = 'This request could not be approved. It may have already been reviewed.';
 				return;
@@ -241,7 +241,7 @@ export class DarusoComponent {
 		this.message = '';
 	}
 
-	reject(): void {
+	async reject(): Promise<void> {
 		const request = this.selectedRequest;
 		if (!request || this.processingRequests.has(request.id) || !this.rejectionComment.trim()) {
 			return;
@@ -254,7 +254,7 @@ export class DarusoComponent {
 
 		this.processingRequests.add(request.id);
 		try {
-			const rejected = this.clearanceService.rejectRequest(
+			const rejected = await this.clearanceService.rejectRequest(
 				request.id,
 				'DARUSO',
 				staff.fullName,

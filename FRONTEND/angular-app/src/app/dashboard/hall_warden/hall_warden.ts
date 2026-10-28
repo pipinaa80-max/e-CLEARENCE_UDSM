@@ -178,19 +178,18 @@ export class HallWardenComponent {
     this.enlargedPhotoUrl = null;
   }
 
-  approve(request: ClearanceRequest): void {
+  async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.authService.getCurrentUser();
 
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
-
-    this.clearanceService.approveRequest(
+      if (!await this.clearanceService.approveRequest(
       request.id,
       'Hall Warden',
       staff.fullName
-    );
+    )) return;
 
     this.notificationService.createNotification(
       request.studentId,
@@ -208,19 +207,18 @@ export class HallWardenComponent {
     this.message = '';
   }
 
-  reject(): void {
+  async reject(): Promise<void> {
     const staff = this.authService.getCurrentUser();
 
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
-
-    this.clearanceService.rejectRequest(
+      if (!await this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Hall Warden',
       staff.fullName,
       this.rejectionComment
-    );
+    )) return;
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,

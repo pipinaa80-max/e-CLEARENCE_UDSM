@@ -18,15 +18,45 @@
         <td>{{ getPhoneNumber(request) }}</td>
         <td>{{ getProgramme(request) }}</td>
         <td>
-          <div class="actions" *ngIf="getOfficeStatus(request) === 'Pending'; else reviewedStatus">
+          <div class="actions">
+            <button type="button" class="view-button" (click)="detailsRequest = request">View</button>
+            <ng-container *ngIf="getOfficeStatus(request) === 'Pending'; else reviewedStatus">
             <button type="button" class="reject-button" (click)="reject.emit(request)">Reject</button>
             <button type="button" class="approve-button" (click)="approve.emit(request)">Approve</button>
+            </ng-container>
+            <ng-template #reviewedStatus>
+              <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>
+              <button type="button" class="withdraw-button" (click)="withdraw(request)">Withdraw</button>
+            </ng-template>
           </div>
-          <ng-template #reviewedStatus>
-            <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>
-          </ng-template>
         </td>
       </tr>
     </tbody>
   </table>
 </div>
+
+<section class="details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
+  <div class="details-card" role="dialog" aria-modal="true" aria-label="Student and clearance details" (click)="$event.stopPropagation()">
+    <button type="button" class="close-button" aria-label="Close" (click)="detailsRequest = null">×</button>
+    <h2>{{ getStudentName(detailsRequest) }}</h2>
+    <dl>
+      <div><dt>Registration Number</dt><dd>{{ getRegistrationNumber(detailsRequest) }}</dd></div>
+      <div><dt>Email</dt><dd>{{ getEmail(detailsRequest) }}</dd></div>
+      <div><dt>Phone</dt><dd>{{ getPhoneNumber(detailsRequest) }}</dd></div>
+      <div><dt>Programme</dt><dd>{{ getProgramme(detailsRequest) }}</dd></div>
+      <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
+      <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
+      <div><dt>Address</dt><dd>{{ detailsRequest.physicalAddress || detailsRequest.address || '—' }}</dd></div>
+      <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
+    </dl>
+    <section class="rejection-reason" *ngIf="getOfficeStatus(detailsRequest) === 'Rejected'">
+      <h3>Rejection reason · {{ office }}</h3>
+      <p>{{ getRejectionReason(detailsRequest) }}</p>
+    </section>
+    <section class="rejection-reason history-reason" *ngFor="let rejection of getRejectionHistory(detailsRequest)">
+      <h3>Previously rejected · {{ rejection.office }}<span *ngIf="getOfficeStatus(detailsRequest) !== 'Rejected' && detailsRequest.status === 'Pending'"> (request is now pending)</span></h3>
+      <p>{{ rejection.reason }}</p>
+      <small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
+    </section>
+  </div>
+</section>

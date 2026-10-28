@@ -25,6 +25,13 @@ export interface OfficeApproval {
   reviewedAt?: string;
 }
 
+export interface ClearanceRejectionRecord {
+  office: ClearanceOffice;
+  reason: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
 export interface ConvocationPayment {
   controlNumber?: string;
   controlNumberRequestedAt?: string;
@@ -63,4 +70,5 @@ export interface ClearanceRequest {
   currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Completed';
   convocation?: ConvocationPayment;
   approvals: OfficeApproval[];
+  rejectionHistory?: ClearanceRejectionRecord[];
 }

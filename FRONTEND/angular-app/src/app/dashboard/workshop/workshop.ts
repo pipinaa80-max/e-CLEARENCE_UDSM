@@ -182,19 +182,18 @@ export class WorkshopComponent {
     this.enlargedPhotoUrl = null;
   }
 
-  approve(request: ClearanceRequest): void {
+  async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
-
-    this.clearanceService.approveRequest(
+      if (!await this.clearanceService.approveRequest(
       request.id,
       'Workshop',
       staff.fullName
-    );
+    )) return;
 
     this.notificationService.createNotification(
       request.studentId,
@@ -212,7 +211,7 @@ export class WorkshopComponent {
     this.message = '';
   }
 
-  reject(): void {
+  async reject(): Promise<void> {
     const staff = this.currentUser;
 
     if (
@@ -222,13 +221,12 @@ export class WorkshopComponent {
     ) {
       return;
     }
-
-    this.clearanceService.rejectRequest(
+      if (!await this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Workshop',
       staff.fullName,
       this.rejectionComment.trim()
-    );
+    )) return;
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,

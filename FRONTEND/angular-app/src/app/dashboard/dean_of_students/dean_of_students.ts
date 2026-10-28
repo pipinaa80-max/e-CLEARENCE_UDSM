@@ -430,7 +430,7 @@ export class DeanOfStudentsComponent implements OnInit {
   // APPROVE
   // =====================================================
 
-  approve(request: ClearanceRequest): void {
+  async approve(request: ClearanceRequest): Promise<void> {
     this.isLoading = true;
     const staff = this.authService.getCurrentUser();
 
@@ -441,7 +441,7 @@ export class DeanOfStudentsComponent implements OnInit {
     }
 
     try {
-      const approved = this.clearanceService.approveRequest(
+      const approved = await this.clearanceService.approveRequest(
           request.id,
           'Dean of Students',
           staff.fullName || 'Dean of Students'
@@ -490,7 +490,7 @@ export class DeanOfStudentsComponent implements OnInit {
   // REJECT
   // =====================================================
 
-  reject(): void {
+  async reject(): Promise<void> {
     this.isLoading = true;
     const staff = this.authService.getCurrentUser();
 
@@ -500,12 +500,12 @@ export class DeanOfStudentsComponent implements OnInit {
     }
 
     try {
-      this.clearanceService.rejectRequest(
+      if (!await this.clearanceService.rejectRequest(
           this.selectedRequest.id,
           'Dean of Students',
           staff.fullName || 'Dean of Students',
           this.rejectionComment
-      );
+      )) return;
 
       // Reload data
       this.loadData();

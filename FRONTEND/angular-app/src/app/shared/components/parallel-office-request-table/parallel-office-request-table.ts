@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 
 import { ClearanceOffice, ClearanceRequest } from '../../../core/models/clearance.model';
+import { ClearanceService } from '../../../core/services/clearance.service';
 
 interface StudentProfile {
   id?: string;
@@ -25,15 +26,39 @@ interface StudentProfile {
   styleUrl: './parallel-office-request-table.css'
 })
 export class ParallelOfficeRequestTableComponent {
+  private readonly clearanceService = inject(ClearanceService);
   @Input({ required: true }) requests: ClearanceRequest[] = [];
   @Input({ required: true }) office!: ClearanceOffice;
   @Output() approve = new EventEmitter<ClearanceRequest>();
   @Output() reject = new EventEmitter<ClearanceRequest>();
 
   private readonly studentCache = new Map<string, StudentProfile | null>();
+  detailsRequest: ClearanceRequest | null = null;
+
+  async withdraw(request: ClearanceRequest): Promise<void> {
+    if (await this.clearanceService.withdrawOfficeDecision(request.id, this.office)) {
+      request.approvals = request.approvals.map(approval => approval.office === this.office
+        ? { ...approval, status: 'Pending', comment: undefined, reviewedBy: undefined, reviewedAt: undefined }
+        : approval);
+      request.status = 'Pending';
+      request.currentStage = this.office === 'Department' ? 'Department'
+        : this.office === 'Principal' ? 'Principal'
+        : this.office === 'Finance' ? 'Finance'
+        : this.office === 'Convocation' ? 'Convocation' : 'Parallel';
+      request.currentOffice = this.office;
+    }
+  }
 
   getOfficeStatus(request: ClearanceRequest): string {
     return request.approvals.find(approval => approval.office === this.office)?.status ?? 'Pending';
+  }
+
+  getRejectionReason(request: ClearanceRequest): string {
+    return request.approvals.find(approval => approval.office === this.office)?.comment || 'No reason was recorded.';
+  }
+
+  getRejectionHistory(request: ClearanceRequest) {
+    return request.rejectionHistory ?? [];
   }
 
   getStudentName(request: ClearanceRequest): string {

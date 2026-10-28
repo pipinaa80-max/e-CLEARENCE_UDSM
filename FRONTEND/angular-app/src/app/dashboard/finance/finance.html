@@ -104,7 +104,7 @@
                 <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
                 <button type="button" class="approve-button" (click)="approve(request)">Approve</button>
               </ng-container>
-              <ng-template #financeReviewed><span class="compact-status">{{ getRequestOfficeStatus(request, 'Finance') }}</span></ng-template>
+              <ng-template #financeReviewed><span class="compact-status">{{ getRequestOfficeStatus(request, 'Finance') }}</span><button type="button" class="compact-view" (click)="withdrawDecision(request)">Withdraw</button></ng-template>
             </div></td>
           </tr>
         </tbody>
@@ -137,7 +137,18 @@
           <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
           <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
           <div><dt>Convocation Approval</dt><dd>{{ getRequestOfficeStatus(detailsRequest, 'Convocation') }}</dd></div>
+          <div><dt>Address</dt><dd>{{ detailsRequest.physicalAddress || detailsRequest.address || '—' }}</dd></div>
+          <div><dt>Residence</dt><dd>{{ detailsRequest.residenceType || '—' }}</dd></div>
+          <div><dt>Hall / Room</dt><dd>{{ detailsRequest.hall || '—' }} {{ detailsRequest.roomNumber || '' }}</dd></div>
+          <div><dt>Remarks</dt><dd>{{ detailsRequest.remarks || '—' }}</dd></div>
         </dl>
+        <section class="rejection-reason" *ngIf="getRequestOfficeStatus(detailsRequest, 'Finance') === 'Rejected'">
+          <h3>Rejection reason · Finance</h3><p>{{ getFinanceRejectionReason(detailsRequest) }}</p>
+        </section>
+        <section class="rejection-reason history-reason" *ngFor="let rejection of getRejectionHistory(detailsRequest)">
+          <h3>Previously rejected · {{ rejection.office }}<span *ngIf="detailsRequest.status === 'Pending'"> (request is now pending)</span></h3>
+          <p>{{ rejection.reason }}</p><small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
+        </section>
       </div>
     </section>
     <!-- EMPTY STATE -->

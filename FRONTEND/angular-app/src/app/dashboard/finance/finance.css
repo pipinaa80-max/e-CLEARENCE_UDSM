@@ -428,6 +428,9 @@
 }
 
 .compact-view:hover { border-color: #0b5b94; background: #eaf3f8; }
+.rejection-reason { margin-top: 18px; padding: 14px; border-left: 4px solid #c73535; border-radius: 6px; background: #fff1f0; }
+.rejection-reason h3 { margin: 0 0 8px; color: #a52c2c; font-size: 14px; }
+.rejection-reason p { margin: 0; white-space: pre-wrap; }
 
 .compact-status {
   color: #52636d;

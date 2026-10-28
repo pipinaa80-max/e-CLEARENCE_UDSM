@@ -503,11 +503,11 @@ export class ClearanceService {
   // APPROVE
   // =====================================================
 
-  approveRequest(
+  async approveRequest(
       requestId: string,
       office: ClearanceOffice,
       staffName: string
-  ): boolean {
+  ): Promise<boolean> {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
@@ -526,6 +526,13 @@ export class ClearanceService {
       return false;
     }
 
+    const confirmed = await this.confirmStaffAction(
+      'Confirm approval',
+      `Please confirm that you want to approve this clearance request.\n\n${this.getStudentConfirmationDetails(request)}\nOffice: ${office}`,
+      'Approve request'
+    );
+    if (!confirmed) return false;
+
     approval.status = 'Approved';
     approval.comment = 'Approved';
     approval.reviewedBy = staffName;
@@ -540,12 +547,12 @@ export class ClearanceService {
   // REJECT
   // =====================================================
 
-  rejectRequest(
+  async rejectRequest(
       requestId: string,
       office: ClearanceOffice,
       staffName: string,
       comment: string
-  ): boolean {
+  ): Promise<boolean> {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
@@ -561,14 +568,66 @@ export class ClearanceService {
       return false;
     }
 
+    const confirmed = await this.confirmStaffAction(
+      'Confirm rejection',
+      `Please confirm that you want to reject this clearance request.\n\n${this.getStudentConfirmationDetails(request)}\nOffice: ${office}\nReason: ${comment.trim()}`,
+      'Reject request'
+    );
+    if (!confirmed) return false;
+
     approval.status = 'Rejected';
     approval.comment = comment.trim();
     approval.reviewedBy = staffName;
     approval.reviewedAt = new Date().toISOString();
 
+    request.rejectionHistory ??= [];
+    request.rejectionHistory.push({
+      office,
+      reason: comment.trim(),
+      reviewedBy: staffName,
+      reviewedAt: approval.reviewedAt
+    });
+
     request.status = 'Rejected';
     request.revisionOffice = office;
 
+    this.save(request);
+    return true;
+  }
+
+  async withdrawOfficeDecision(requestId: string, office: ClearanceOffice): Promise<boolean> {
+    const request = this.getRequest(requestId);
+    const approval = request?.approvals.find(item => item.office === office);
+    if (!request || !approval || approval.status === 'Pending') return false;
+
+    const previousDecision = approval.status.toLowerCase();
+    const withdrawalMessage = `Please confirm that you want to withdraw the ${previousDecision} decision and return this request to Pending.\n\n${this.getStudentConfirmationDetails(request)}\nOffice: ${office}${approval.status === 'Rejected' && approval.comment ? `\nThe rejection reason will remain in the request history: ${approval.comment}` : ''}`;
+    const confirmed = await this.confirmStaffAction('Confirm withdrawal', withdrawalMessage, 'Withdraw decision');
+    if (!confirmed) return false;
+
+
+    // Keep older rejected requests visible when they predate rejectionHistory.
+    if (approval.status === 'Rejected' && approval.comment?.trim()) {
+      request.rejectionHistory ??= [];
+      const alreadyRecorded = request.rejectionHistory.some(record =>
+        record.office === office && record.reason === approval.comment && record.reviewedAt === approval.reviewedAt
+      );
+      if (!alreadyRecorded) {
+        request.rejectionHistory.push({ office, reason: approval.comment, reviewedBy: approval.reviewedBy, reviewedAt: approval.reviewedAt });
+      }
+    }
+
+    approval.status = 'Pending';
+    approval.comment = undefined;
+    approval.reviewedBy = undefined;
+    approval.reviewedAt = undefined;
+    request.status = 'Pending';
+    request.revisionOffice = undefined;
+    request.currentStage = office === 'Department' ? 'Department'
+      : office === 'Principal' ? 'Principal'
+      : office === 'Finance' ? 'Finance'
+      : office === 'Convocation' ? 'Convocation' : 'Parallel';
+    request.currentOffice = office;
     this.save(request);
     return true;
   }
@@ -719,5 +778,89 @@ export class ClearanceService {
 
     requests[index] = request;
     this.storage.save(this.requestKey, requests);
+  }
+
+  private getStudentConfirmationDetails(request: ClearanceRequest): string {
+    let profile: Record<string, unknown> | undefined;
+    if (typeof window !== 'undefined') {
+      try {
+        const users: unknown = JSON.parse(window.localStorage.getItem('udsm-local-users') ?? 'null');
+        profile = Array.isArray(users)
+          ? users.find((user): user is Record<string, unknown> =>
+              typeof user === 'object' && user !== null && 'id' in user && user.id === request.studentId)
+          : undefined;
+      } catch {
+        profile = undefined;
+      }
+    }
+
+    const profileName = [profile?.['firstName'], profile?.['middleName'], profile?.['lastName']]
+      .filter((part): part is string => typeof part === 'string' && !!part.trim())
+      .join(' ');
+    const fullName = profileName || request.studentName?.trim() ||
+      (typeof profile?.['fullName'] === 'string' ? profile['fullName'].trim() : '') || 'Name unavailable';
+    const registrationNumber = request.registrationNumber?.trim() ||
+      (typeof profile?.['registrationNumber'] === 'string' ? profile['registrationNumber'].trim() : '') ||
+      (typeof profile?.['studentId'] === 'string' ? profile['studentId'].trim() : '') || 'Not available';
+
+    return `Student: ${fullName}\nRegistration number: ${registrationNumber}`;
+  }
+
+  private confirmStaffAction(title: string, message: string, confirmLabel: string): Promise<boolean> {
+    if (typeof document === 'undefined') return Promise.resolve(false);
+
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.setAttribute('role', 'presentation');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:20000;display:grid;place-items:center;padding:20px;background:rgba(12,27,38,.62);';
+
+      const dialog = document.createElement('section');
+      dialog.setAttribute('role', 'alertdialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-labelledby', 'clearance-confirm-title');
+      dialog.style.cssText = 'width:min(520px,100%);max-height:90vh;overflow:auto;padding:24px;border-radius:14px;background:#fff;color:#183747;box-shadow:0 20px 60px rgba(0,0,0,.28);font:14px/1.55 system-ui,sans-serif;';
+
+      const heading = document.createElement('h2');
+      heading.id = 'clearance-confirm-title';
+      heading.textContent = title;
+      heading.style.cssText = 'margin:0 0 14px;font-size:20px;line-height:1.3;';
+
+      const body = document.createElement('p');
+      body.textContent = message;
+      body.style.cssText = 'margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#334b57;';
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:24px;';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.textContent = 'Cancel';
+      cancel.style.cssText = 'min-height:40px;padding:0 16px;border:1px solid #9aaab1;border-radius:7px;background:#fff;color:#29434f;font-weight:700;cursor:pointer;';
+      const confirm = document.createElement('button');
+      confirm.type = 'button';
+      confirm.textContent = confirmLabel;
+      confirm.style.cssText = 'min-height:40px;padding:0 16px;border:1px solid #0b5b94;border-radius:7px;background:#0b5b94;color:#fff;font-weight:700;cursor:pointer;';
+      actions.append(cancel, confirm);
+      dialog.append(heading, body, actions);
+      overlay.append(dialog);
+
+      const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const finish = (accepted: boolean) => {
+        document.removeEventListener('keydown', onKeyDown);
+        overlay.remove();
+        previousFocus?.focus();
+        resolve(accepted);
+      };
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') finish(false);
+      };
+      cancel.addEventListener('click', () => finish(false));
+      confirm.addEventListener('click', () => finish(true));
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay) finish(false);
+      });
+      document.addEventListener('keydown', onKeyDown);
+      document.body.append(overlay);
+      cancel.focus();
+    });
   }
 }

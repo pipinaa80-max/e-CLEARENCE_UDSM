@@ -73,7 +73,7 @@ export class DepartmentStatusComponent {
     return approval?.comment ?? '';
   }
 
-  approve(request: ClearanceRequest): void {
+  async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
     if (!staff) {
@@ -81,7 +81,7 @@ export class DepartmentStatusComponent {
       return;
     }
 
-    const approved = this.clearanceService.approveRequest(
+    const approved = await this.clearanceService.approveRequest(
       request.id,
       'Department',
       staff.fullName
@@ -109,14 +109,14 @@ export class DepartmentStatusComponent {
     this.message = '';
   }
 
-  reject(): void {
+  async reject(): Promise<void> {
     const staff = this.currentUser;
 
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
 
-    const rejected = this.clearanceService.rejectRequest(
+    const rejected = await this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Department',
       staff.fullName,
