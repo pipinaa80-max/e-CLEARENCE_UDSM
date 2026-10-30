@@ -1,11 +1,14 @@
 // clearance.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import {
+  ApprovalStatus,
   ClearanceOffice,
-  ClearanceRequest
+  ClearanceRequest,
+  OfficeApproval
 } from '../models/clearance.model';
 
 import { StorageService } from './storage.service';
@@ -22,6 +25,9 @@ export class ClearanceService {
   private readonly requestKey = 'udsm-clearance-requests';
   private readonly draftKey = 'udsm-clearance-drafts';
 
+  private readonly lastOfficeFetchTime: Record<string, number> = {};
+  private readonly lastStudentFetchTime: Record<string, number> = {};
+
   /*
    * These seven offices work independently.
    */
@@ -34,6 +40,177 @@ export class ClearanceService {
     'Dean of Students',
     'Smart Card'
   ];
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = this.storage.get<string>('udsm-auth-token')
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem('udsm-auth-token') : null);
+    if (!token) {
+      return new HttpHeaders();
+    }
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+  }
+
+  // =====================================================
+  // BACKEND INTEGRATION & DATA MAPPING
+  // =====================================================
+
+  mapBackendResponseToClearanceRequest(res: any): ClearanceRequest {
+    const mapApprovalStatus = (st: string): ApprovalStatus => {
+      if (!st) return 'Pending';
+      const s = String(st).toUpperCase();
+      if (s === 'APPROVED' || s === 'CLEARED' || s === 'COMPLETED') return 'Approved';
+      if (s === 'REJECTED') return 'Rejected';
+      return 'Pending';
+    };
+
+    const mapOverallStatus = (st: string): 'Pending' | 'Completed' | 'Rejected' => {
+      if (!st) return 'Pending';
+      const s = String(st).toUpperCase();
+      if (s === 'APPROVED' || s === 'CLEARED' || s === 'COMPLETED') return 'Completed';
+      if (s === 'REJECTED') return 'Rejected';
+      return 'Pending';
+    };
+
+    const rawApprovals = res.approvals || [];
+    const approvals: OfficeApproval[] = Array.isArray(rawApprovals)
+      ? rawApprovals.map((a: any) => ({
+          office: (a.office || a.departmentName || a.department) as ClearanceOffice,
+          status: mapApprovalStatus(a.status),
+          comment: a.comment || a.comments || '',
+          reviewedBy: a.reviewedBy || a.approvedBy || '',
+          reviewedAt: a.reviewedAt || a.approvalDate || ''
+        }))
+      : [];
+
+    return {
+      id: String(res.requestId || res.id),
+      studentId: res.studentId || '',
+      studentName: res.studentName || '',
+      registrationNumber: res.registrationNumber || '',
+      email: res.email || '',
+      phoneNumber: res.phoneNumber || '',
+      physicalAddress: res.physicalAddress || res.address || '',
+      address: res.address || res.physicalAddress || '',
+      college: res.college || res.faculty || '',
+      department: res.department || '',
+      programme: res.programme || '',
+      hall: res.hall || '',
+      wing: res.wing || '',
+      block: res.block || '',
+      roomNumber: res.roomNumber || '',
+      sponsor: res.sponsor || '',
+      photo: res.photo || '',
+      requestDate: res.requestDate ? (typeof res.requestDate === 'string' ? res.requestDate : new Date(res.requestDate).toISOString()) : new Date().toISOString(),
+      status: mapOverallStatus(res.status),
+      currentOffice: res.currentOffice as ClearanceOffice,
+      currentStage: (res.currentStage || 'Convocation') as any,
+      approvals: approvals.length > 0 ? approvals : this.getDefaultApprovals(res.college || res.faculty)
+    };
+  }
+
+  mergeRequestsIntoStorage(incoming: ClearanceRequest[]): void {
+    if (!incoming || incoming.length === 0) return;
+    const existing = this.storage.get<ClearanceRequest[]>(this.requestKey) ?? [];
+    const map = new Map<string, ClearanceRequest>();
+
+    for (const req of existing) {
+      if (req.id) map.set(req.id, req);
+    }
+
+    for (const inc of incoming) {
+      let foundKey: string | null = null;
+      for (const [key, val] of map.entries()) {
+        if (val.id === inc.id || (inc.registrationNumber && val.registrationNumber === inc.registrationNumber)) {
+          foundKey = key;
+          break;
+        }
+      }
+      if (foundKey) {
+        const curr = map.get(foundKey)!;
+        map.delete(foundKey);
+        map.set(inc.id, { ...curr, ...inc });
+      } else {
+        map.set(inc.id, inc);
+      }
+    }
+
+    const merged = Array.from(map.values());
+    this.storage.save(this.requestKey, merged);
+  }
+
+  fetchOfficeRequests(office: ClearanceOffice, status?: string): Observable<ClearanceRequest[]> {
+    const headers = this.getAuthHeaders();
+    let url = `${this.config.apiUrl}/clearance/office/requests?office=${encodeURIComponent(office)}`;
+    if (status) {
+      url += `&status=${encodeURIComponent(status)}`;
+    }
+
+    return this.http.get<any[]>(url, { headers }).pipe(
+      map(responses => {
+        const mapped = (responses || []).map(r => this.mapBackendResponseToClearanceRequest(r));
+        this.mergeRequestsIntoStorage(mapped);
+        return mapped;
+      }),
+      catchError(err => {
+        console.warn(`Could not fetch backend requests for ${office}:`, err);
+        return of(this.getRequestsForOffice(office));
+      })
+    );
+  }
+
+  fetchMyRequest(): Observable<ClearanceRequest | null> {
+    const headers = this.getAuthHeaders();
+    return this.http.get<any>(`${this.config.apiUrl}/clearance/my-request`, { headers }).pipe(
+      map(response => {
+        if (!response) return null;
+        const mapped = this.mapBackendResponseToClearanceRequest(response);
+        this.mergeRequestsIntoStorage([mapped]);
+        return mapped;
+      }),
+      catchError(err => {
+        console.warn('Could not fetch student clearance request from backend:', err);
+        return of(null);
+      })
+    );
+  }
+
+  approveOfficeBackend(requestId: string, office: ClearanceOffice, comments: string = 'Approved'): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.config.apiUrl}/clearance/office/approve`, {
+      requestId,
+      office,
+      comments
+    }, { headers });
+  }
+
+  rejectOfficeBackend(requestId: string, office: ClearanceOffice, reason: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.config.apiUrl}/clearance/office/reject`, {
+      requestId,
+      office,
+      reason
+    }, { headers });
+  }
+
+  withdrawOfficeBackend(requestId: string, office: ClearanceOffice): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.config.apiUrl}/clearance/office/withdraw`, {
+      requestId,
+      office
+    }, { headers });
+  }
+
+  getDefaultApprovals(college: string): OfficeApproval[] {
+    return [
+      { office: 'Convocation', status: 'Pending' },
+      ...this.getClearanceOffices(college).map(office => ({ office, status: 'Pending' as ApprovalStatus })),
+      { office: 'Department', status: 'Pending' },
+      { office: 'Principal', status: 'Pending' },
+      { office: 'Finance', status: 'Pending' }
+    ];
+  }
 
   submitBackendRequest(requestData: {
     studentName: string;
@@ -53,15 +230,11 @@ export class ClearanceService {
     sponsor?: string;
     photo?: string;
   }): Observable<any> {
-    const token = this.storage.get<string>('udsm-auth-token');
-    const headers = token
-      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
-      : undefined;
-
+    const headers = this.getAuthHeaders();
     return this.http.post(`${this.config.apiUrl}/clearance/request`, {
       ...requestData,
       confirm: true
-    }, headers ? { headers } : {});
+    }, { headers });
   }
 
   getClearanceOffices(college: string): ClearanceOffice[] {
@@ -278,11 +451,26 @@ export class ClearanceService {
   }
 
   // =====================================================
-  // GET STUDENT REQUESTS
+  // GET STUDENT REQUESTS (AUTO-SYNC WITH BACKEND)
   // =====================================================
 
   getStudentRequests(studentId: string): ClearanceRequest[] {
-    return this.getAllRequests().filter(request => request.studentId === studentId);
+    const now = Date.now();
+    if (!this.lastStudentFetchTime[studentId] || (now - this.lastStudentFetchTime[studentId] > 10000)) {
+      this.lastStudentFetchTime[studentId] = now;
+      this.fetchMyRequest().subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    }
+    const authUser = this.storage.get<any>('udsm-auth-user');
+    const userReg = authUser?.registrationNumber?.trim()?.toLowerCase();
+    const userEmail = authUser?.email?.trim()?.toLowerCase();
+    return this.getAllRequests().filter(request =>
+      request.studentId === studentId ||
+      (userReg && request.registrationNumber && request.registrationNumber.trim().toLowerCase() === userReg) ||
+      (userEmail && request.email && request.email.trim().toLowerCase() === userEmail)
+    );
   }
 
   // =====================================================
@@ -330,7 +518,7 @@ export class ClearanceService {
   }
 
   // =====================================================
-  // GET REQUESTS FOR OFFICE
+  // GET REQUESTS FOR OFFICE (AUTO-SYNC WITH BACKEND)
   // =====================================================
 
   getRequestsForOffice(
@@ -338,10 +526,17 @@ export class ClearanceService {
       college?: string,
       department?: string
   ): ClearanceRequest[] {
-    return this.getAllRequests().filter(request => {
-      const approval = request.approvals.find(item => item.office === office);
+    const now = Date.now();
+    const cacheKey = `${office}_${college || ''}_${department || ''}`;
+    if (!this.lastOfficeFetchTime[cacheKey] || (now - this.lastOfficeFetchTime[cacheKey] > 10000)) {
+      this.lastOfficeFetchTime[cacheKey] = now;
+      this.fetchOfficeRequests(office).subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    }
 
-      // If checking for all requests or custom status from dashboard filter, we can evaluate approval existence
+    return this.getAllRequests().filter(request => {
       if (office === 'Convocation') {
         return request.approvals.some(item => item.office === 'Convocation');
       }
@@ -352,9 +547,13 @@ export class ClearanceService {
 
       if (office === 'Department') {
         return (
-            request.college === college &&
-            request.department === department
+            (!college || request.college === college) &&
+            (!department || request.department === department)
         );
+      }
+
+      if (office === 'Principal') {
+        return !college || request.college === college;
       }
 
       return true;
@@ -376,9 +575,6 @@ export class ClearanceService {
       return;
     }
 
-    /*
-     * Do not request it again if one has already been requested.
-     */
     if (request.convocation?.controlNumberRequestedAt) {
       return;
     }
@@ -407,16 +603,10 @@ export class ClearanceService {
       return null;
     }
 
-    /*
-     * If a control number already exists, return the existing number.
-     */
     if (request.convocation?.controlNumber) {
       return request.convocation.controlNumber;
     }
 
-    /*
-     * Generate one if Convocation did not enter one manually.
-     */
     const issuedNumber = controlNumber?.trim() || 'UDSM-' + Date.now().toString().slice(-8);
 
     request.convocation = {
@@ -445,17 +635,14 @@ export class ClearanceService {
       return;
     }
 
-    /*
-     * Receipt cannot be submitted without a control number.
-     */
     if (!request.convocation?.controlNumber) {
       return;
     }
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      receiptFileName: 'Payment Receipt', // Display name
-      receiptData: receiptData, // Store the base64 or reference
+      receiptFileName: 'Payment Receipt',
+      receiptData: receiptData,
       receiptSubmittedAt: new Date().toISOString()
     };
 
@@ -477,19 +664,9 @@ export class ClearanceService {
       return;
     }
 
-    /*
-     * Cannot verify what doesn't exist.
-     */
     if (!request.convocation?.receiptFileName) {
       return;
     }
-
-    // We keep the receipt submitted at date, but we can add a verification date if we want
-    // For now, this just serves as a state transition trigger if needed,
-    // but usually Convocation approval is the final step.
-
-    // In our logic, 'receiptSubmittedAt' is what triggers the 'Final Approval' button.
-    // If the student didn't upload it but the officer physically saw it, they can use this.
 
     if (!request.convocation.receiptSubmittedAt) {
         request.convocation.receiptSubmittedAt = new Date().toISOString();
@@ -500,44 +677,45 @@ export class ClearanceService {
   }
 
   // =====================================================
-  // APPROVE
+  // APPROVE (UPDATES LOCAL STORAGE + BACKEND POSTGRESQL)
   // =====================================================
 
   approveRequest(
       requestId: string,
       office: ClearanceOffice,
-      staffName: string
+      staffName: string,
+      comment?: string
   ): boolean {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
-    if (!request || !approval || approval.status !== 'Pending') {
-      return false;
+    if (request && approval) {
+      approval.status = 'Approved';
+      approval.comment = comment || 'Approved';
+      approval.reviewedBy = staffName;
+      approval.reviewedAt = new Date().toISOString();
+
+      this.moveToNextStage(request);
+      this.save(request);
     }
 
-    if (office === 'Department' && request.currentStage !== 'Department') {
-      return false;
-    }
+    // Call backend API asynchronously
+    this.approveOfficeBackend(requestId, office, comment || 'Approved').subscribe({
+      next: (res) => {
+        console.log(`Backend approval succeeded for ${office} on request ${requestId}`);
+        if (res && res.data) {
+          const updated = this.mapBackendResponseToClearanceRequest(res.data);
+          this.mergeRequestsIntoStorage([updated]);
+        }
+      },
+      error: (err) => console.error(`Backend approval error for ${office}:`, err)
+    });
 
-    /*
-     * Convocation should only approve after receipt has been submitted.
-     */
-    if (office === 'Convocation' && !request.convocation?.receiptSubmittedAt) {
-      return false;
-    }
-
-    approval.status = 'Approved';
-    approval.comment = 'Approved';
-    approval.reviewedBy = staffName;
-    approval.reviewedAt = new Date().toISOString();
-
-    this.moveToNextStage(request);
-    this.save(request);
     return true;
   }
 
   // =====================================================
-  // REJECT
+  // REJECT (UPDATES LOCAL STORAGE + BACKEND POSTGRESQL)
   // =====================================================
 
   rejectRequest(
@@ -549,27 +727,59 @@ export class ClearanceService {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
 
-    if (!request || !approval || approval.status !== 'Pending') {
-      return false;
+    if (request && approval) {
+      approval.status = 'Rejected';
+      approval.comment = comment.trim();
+      approval.reviewedBy = staffName;
+      approval.reviewedAt = new Date().toISOString();
+
+      request.status = 'Rejected';
+      request.revisionOffice = office;
+
+      this.save(request);
     }
 
-    if (office === 'Department' && request.currentStage !== 'Department') {
-      return false;
+    // Call backend API asynchronously
+    this.rejectOfficeBackend(requestId, office, comment.trim()).subscribe({
+      next: (res) => {
+        console.log(`Backend rejection succeeded for ${office} on request ${requestId}`);
+        if (res && res.data) {
+          const updated = this.mapBackendResponseToClearanceRequest(res.data);
+          this.mergeRequestsIntoStorage([updated]);
+        }
+      },
+      error: (err) => console.error(`Backend rejection error for ${office}:`, err)
+    });
+
+    return true;
+  }
+
+  // =====================================================
+  // WITHDRAW DECISION (UPDATES LOCAL STORAGE + BACKEND)
+  // =====================================================
+
+  withdrawOfficeDecision(requestId: string, office: ClearanceOffice): boolean {
+    const request = this.getRequest(requestId);
+    const approval = request?.approvals.find(item => item.office === office);
+
+    if (request && approval) {
+      approval.status = 'Pending';
+      approval.comment = undefined;
+      approval.reviewedBy = undefined;
+      approval.reviewedAt = undefined;
+      this.save(request);
     }
 
-    if (!comment.trim()) {
-      return false;
-    }
+    this.withdrawOfficeBackend(requestId, office).subscribe({
+      next: (res) => {
+        if (res && res.data) {
+          const updated = this.mapBackendResponseToClearanceRequest(res.data);
+          this.mergeRequestsIntoStorage([updated]);
+        }
+      },
+      error: (err) => console.error(`Backend withdraw error for ${office}:`, err)
+    });
 
-    approval.status = 'Rejected';
-    approval.comment = comment.trim();
-    approval.reviewedBy = staffName;
-    approval.reviewedAt = new Date().toISOString();
-
-    request.status = 'Rejected';
-    request.revisionOffice = office;
-
-    this.save(request);
     return true;
   }
 
@@ -612,18 +822,12 @@ export class ClearanceService {
   // =====================================================
 
   private moveToNextStage(request: ClearanceRequest): void {
-    /*
-     * STEP 1: Convocation → Step 2
-     */
     if (request.currentStage === 'Convocation') {
       request.currentStage = 'Parallel';
       request.currentOffice = undefined;
       return;
     }
 
-    /*
-     * STEP 2: All seven offices must approve.
-     */
     if (request.currentStage === 'Parallel') {
       const allApproved = this.getClearanceOffices(request.college).every(office =>
           request.approvals.find(approval => approval.office === office)?.status === 'Approved'
@@ -637,27 +841,18 @@ export class ClearanceService {
       return;
     }
 
-    /*
-     * STEP 3: Department → Principal
-     */
     if (request.currentStage === 'Department') {
       request.currentStage = 'Principal';
       request.currentOffice = 'Principal';
       return;
     }
 
-    /*
-     * STEP 4: Principal → Finance
-     */
     if (request.currentStage === 'Principal') {
       request.currentStage = 'Finance';
       request.currentOffice = 'Finance';
       return;
     }
 
-    /*
-     * STEP 5: Finance → Completed
-     */
     if (request.currentStage === 'Finance') {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
@@ -670,16 +865,10 @@ export class ClearanceService {
   // =====================================================
 
   private normaliseRequest(request: ClearanceRequest): ClearanceRequest {
-    /*
-     * Older requests may not have the new Convocation object.
-     */
     if (!request.convocation) {
       request.convocation = {};
     }
 
-    /*
-     * Ensure approvals exist for all required offices.
-     */
     const existing = request.approvals ?? [];
     const offices: ClearanceOffice[] = [
       'Convocation',

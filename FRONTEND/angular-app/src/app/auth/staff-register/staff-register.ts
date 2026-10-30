@@ -228,7 +228,8 @@ export class StaffRegister implements OnInit {
       Administrator: '/dashboard/admin',
       Principal: '/dashboard/principal',
       Workshop: '/dashboard/workshop',
-      Laboratory: '/dashboard/laboratory'
+      Laboratory: '/dashboard/laboratory',
+      'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies'
     };
     return map[role] ?? '/dashboard';
   }

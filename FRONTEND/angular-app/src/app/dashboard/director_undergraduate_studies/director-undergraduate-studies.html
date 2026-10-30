@@ -1,0 +1,391 @@
+<section class="office-page" [class.sidebar-open]="sidebarOpen">
+
+  <aside class="sidebar">
+
+    <div class="brand">
+      <a routerLink="/">
+        <img
+          src="/udsm-logo.png"
+          alt="Institutional Logo"
+        />
+      </a>
+      <div>
+        <strong>DIRECTOR OF UNDERGRADUATE STUDIES</strong>
+        <small>Clearance Analytics</small>
+      </div>
+    </div>
+
+    <nav>
+      <a
+        routerLink="/dashboard/director-undergraduate-studies"
+        routerLinkActive="active"
+        (click)="setTab('overview')"
+      >
+        Analytics &amp; Overview
+      </a>
+
+      <a href="#process-overview" (click)="sidebarOpen = false">
+        Clearance Process Flow
+      </a>
+
+      <a href="#office-status" (click)="sidebarOpen = false">
+        Corresponding Offices
+      </a>
+
+      <a href="#student-tracker" (click)="sidebarOpen = false">
+        Student Clearance Tracker
+      </a>
+
+      <button
+        type="button"
+        (click)="logout()"
+      >
+        Log out
+      </button>
+    </nav>
+
+  </aside>
+
+
+  <main class="content">
+
+    <app-dashboard-header
+      eyebrow="Directorate of Undergraduate Studies"
+      title="Director of Undergraduate Studies Analytics"
+      subtitle="Track clearance analytics across colleges, students, academic years, and corresponding clearance offices."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions class="count">
+        <strong>{{ clearedCount }} / {{ totalRequestsCount }}</strong>
+        <small>Cleared ({{ overallClearanceRate }}%)</small>
+      </div>
+    </app-dashboard-header>
+
+    <!-- INSTITUTION-WIDE ANALYTICS SECTION (MATCHING DEAN OF STUDENTS LAYOUT) -->
+    <section class="analytics-section" id="analytics">
+      <div class="analytics-heading">
+        <div>
+          <span class="analytics-eyebrow">Institution-wide overview</span>
+          <h2>Clearance analytics &amp; statistical overview</h2>
+          <p>Track completed, pending, and rejected clearances across colleges, programmes, academic years, and students.</p>
+        </div>
+        <div class="analytics-actions">
+          <button type="button" class="analytics-secondary" (click)="loadAnalyticsData()">Refresh data</button>
+          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownCsv()">Download Office CSV</button>
+          <button type="button" class="analytics-secondary" (click)="printExecutiveReport()">Print report</button>
+          <button type="button" class="analytics-primary" (click)="downloadComprehensiveReport()">Download CSV report</button>
+        </div>
+      </div>
+
+      <div class="analytics-kpis dus-kpis">
+        <article>
+          <span>Total requests</span>
+          <strong>{{ totalRequestsCount }}</strong>
+          <small class="kpi-note">{{ totalRegisteredStudents }} registered students</small>
+        </article>
+        <article>
+          <span>Completed clearances</span>
+          <strong>{{ clearedCount }}</strong>
+          <small class="kpi-note">{{ overallClearanceRate }}% completion rate</small>
+        </article>
+        <article>
+          <span>Pending / In progress</span>
+          <strong>{{ pendingCount }}</strong>
+          <small class="kpi-note">{{ pendingRate }}% active in pipeline</small>
+        </article>
+        <article>
+          <span>Rejected</span>
+          <strong>{{ rejectedCount }}</strong>
+          <small class="kpi-note">{{ rejectedRate }}% require action</small>
+        </article>
+        <article>
+          <span>Most cleared college</span>
+          <strong class="kpi-compact-title">{{ topClearedCollege?.label || 'Not recorded' }}</strong>
+          <small class="kpi-note" *ngIf="topClearedCollege">{{ topClearedCollege.cleared }} cleared ({{ topClearedCollege.rate }}%)</small>
+        </article>
+        <article>
+          <span>Most cleared year</span>
+          <strong class="kpi-compact-title">{{ topClearedYear?.label || 'Not recorded' }}</strong>
+          <small class="kpi-note" *ngIf="topClearedYear">{{ topClearedYear.cleared }} cleared ({{ topClearedYear.rate }}%)</small>
+        </article>
+      </div>
+
+      <div class="analytics-charts">
+        <article class="analytics-chart-card">
+          <div class="chart-heading">
+            <h3>Most-cleared colleges</h3>
+            <span>Cleared / Total requests</span>
+          </div>
+          <div class="bar-list" *ngIf="collegeBreakdown.length; else noCollegeStats">
+            <div class="bar-row" *ngFor="let col of collegeBreakdown.slice(0, 6)">
+              <div class="bar-label">
+                <span>{{ col.label }}</span>
+                <strong>{{ col.cleared }} / {{ col.total }} ({{ col.rate }}%)</strong>
+              </div>
+              <div class="bar-track college-track"><span [style.width.%]="col.barWidth"></span></div>
+            </div>
+          </div>
+          <ng-template #noCollegeStats><p class="analytics-empty">College clearance statistics will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card">
+          <div class="chart-heading">
+            <h3>Most-cleared academic / study years</h3>
+            <span>Frequently cleared cohorts</span>
+          </div>
+          <div class="bar-list" *ngIf="yearBreakdown.length; else noYearStats">
+            <div class="bar-row" *ngFor="let yr of yearBreakdown.slice(0, 6)">
+              <div class="bar-label">
+                <span>{{ yr.label }}</span>
+                <strong>{{ yr.cleared }} / {{ yr.total }} ({{ yr.rate }}%)</strong>
+              </div>
+              <div class="bar-track year-track"><span [style.width.%]="yr.barWidth"></span></div>
+            </div>
+          </div>
+          <ng-template #noYearStats><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card">
+          <div class="chart-heading">
+            <h3>Most-cleared programmes</h3>
+            <span>Undergraduate degree programmes</span>
+          </div>
+          <div class="bar-list" *ngIf="programmeBreakdown.length; else noProgrammeStats">
+            <div class="bar-row" *ngFor="let prog of programmeBreakdown.slice(0, 6)">
+              <div class="bar-label">
+                <span>{{ prog.label }}</span>
+                <strong>{{ prog.cleared }} / {{ prog.total }} ({{ prog.rate }}%)</strong>
+              </div>
+              <div class="bar-track"><span [style.width.%]="prog.barWidth"></span></div>
+            </div>
+          </div>
+          <ng-template #noProgrammeStats><p class="analytics-empty">Programme clearance data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card status-chart-card">
+          <div class="chart-heading">
+            <h3>Overall clearance system status</h3>
+            <span>All undergraduate requests</span>
+          </div>
+          <div class="status-breakdown">
+            <div><span class="status-dot completed-dot"></span><span>Cleared (Completed)</span><strong>{{ clearedCount }} ({{ overallClearanceRate }}%)</strong></div>
+            <div><span class="status-dot progress-dot"></span><span>Pending (In progress)</span><strong>{{ pendingCount }} ({{ pendingRate }}%)</strong></div>
+            <div><span class="status-dot rejected-dot"></span><span>Rejected (Action needed)</span><strong>{{ rejectedCount }} ({{ rejectedRate }}%)</strong></div>
+          </div>
+          <div class="status-stack" role="img" [attr.aria-label]="'Clearance statuses: ' + clearedCount + ' cleared, ' + pendingCount + ' pending, ' + rejectedCount + ' rejected'">
+            <span class="completed-segment" [style.flex]="clearedCount || (totalRequestsCount === 0 ? 1 : 0)"></span>
+            <span class="progress-segment" [style.flex]="pendingCount"></span>
+            <span class="rejected-segment" [style.flex]="rejectedCount"></span>
+          </div>
+          <p class="analytics-note" *ngIf="topClearedStudents.length" style="margin-top: 14px;">
+            <strong>Recently cleared student:</strong> {{ topClearedStudents[0].studentName }} ({{ topClearedStudents[0].registrationNumber }} · {{ topClearedStudents[0].college }})
+          </p>
+        </article>
+      </div>
+
+      <p class="analytics-note">
+        Analytics aggregate all undergraduate clearance requests across colleges, departments, and corresponding clearance offices.
+      </p>
+    </section>
+
+    <!-- GENERAL OVERVIEW WITH REFERENCE TO THE CLEARANCE PROCESS -->
+    <section class="analytics-section" id="process-overview">
+      <div class="analytics-heading">
+        <div>
+          <span class="analytics-eyebrow">Clearance workflow reference</span>
+          <h2>General overview of the clearance process</h2>
+          <p>Graphical progression of undergraduate students across the 5 sequential clearance stages.</p>
+        </div>
+      </div>
+
+      <div class="process-stage-grid">
+        <article class="analytics-chart-card process-stage-card" *ngFor="let step of stagePipeline">
+          <div class="chart-heading">
+            <h3>{{ step.stage }} · {{ step.title }}</h3>
+            <span>{{ step.percentage }}%</span>
+          </div>
+          <p class="stage-desc">{{ step.description }}</p>
+          <div class="bar-label">
+            <span>Active / completed at stage</span>
+            <strong>{{ step.count }} student(s)</strong>
+          </div>
+          <div class="bar-track" [class.college-track]="step.tone === 'green'" [class.year-track]="step.tone === 'amber'">
+            <span [style.width.%]="step.percentage"></span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- CORRESPONDING OFFICES STATUS BREAKDOWN -->
+    <section class="analytics-section" id="office-status">
+      <div class="analytics-heading">
+        <div>
+          <span class="analytics-eyebrow">Office-by-office tracking</span>
+          <h2>Clearance status by corresponding office</h2>
+          <p>Cleared, pending, rejected, and total student clearance counts across each corresponding office.</p>
+        </div>
+        <div class="analytics-actions">
+          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownCsv()">Export office CSV</button>
+        </div>
+      </div>
+
+      <div class="compact-table-wrap office-table-wrap">
+        <table class="compact-request-table">
+          <thead>
+            <tr>
+              <th>Corresponding Office</th>
+              <th>Clearance Stage</th>
+              <th>Cleared</th>
+              <th>Pending</th>
+              <th>Rejected</th>
+              <th>Total</th>
+              <th>Office Clearance Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of officeStatusSummaries">
+              <td class="compact-name">{{ o.office }}</td>
+              <td>{{ o.stageGroup }}</td>
+              <td><span class="office-stat cleared">{{ o.cleared }}</span></td>
+              <td><span class="office-stat pending">{{ o.pending }}</span></td>
+              <td><span class="office-stat rejected">{{ o.rejected }}</span></td>
+              <td><strong>{{ o.total }}</strong></td>
+              <td>
+                <div class="office-progress-cell">
+                  <div class="status-stack office-stack">
+                    <span class="completed-segment" [style.flex]="o.cleared || (o.total === 0 ? 1 : 0)"></span>
+                    <span class="progress-segment" [style.flex]="o.pending"></span>
+                    <span class="rejected-segment" [style.flex]="o.rejected"></span>
+                  </div>
+                  <strong>{{ o.clearanceRate }}%</strong>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="office-total-row">
+              <td class="compact-name">TOTAL (ALL OFFICES)</td>
+              <td>All Clearance Stages</td>
+              <td><span class="office-stat cleared">{{ totalOfficeApprovalsCount }}</span></td>
+              <td><span class="office-stat pending">{{ totalOfficePendingCount }}</span></td>
+              <td><span class="office-stat rejected">{{ totalOfficeRejectedCount }}</span></td>
+              <td><strong>{{ totalOfficeApprovalsCount + totalOfficePendingCount + totalOfficeRejectedCount }}</strong></td>
+              <td><strong>{{ overallClearanceRate }}% Overall Cleared</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- FILTER BAR (MATCHING DEAN OF STUDENTS TOOLBAR) -->
+    <section class="toolbar" id="student-tracker">
+      <div class="search-box">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="Search student, registration number, college, or programme..."
+        />
+      </div>
+
+      <select [(ngModel)]="selectedCollege">
+        <option value="ALL">All Colleges</option>
+        <option *ngFor="let c of availableColleges" [value]="c">{{ c }}</option>
+      </select>
+
+      <select [(ngModel)]="selectedYear">
+        <option value="ALL">All Years</option>
+        <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+      </select>
+
+      <select [(ngModel)]="selectedStatus">
+        <option value="ALL">All Statuses</option>
+        <option value="Completed">Cleared</option>
+        <option value="Pending">Pending</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+    </section>
+
+    <!-- EMPTY STATE -->
+    <section class="empty-state" *ngIf="!filteredRequests.length">
+      <div class="empty-icon">✓</div>
+      <h2>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' ? 'No matching clearance records' : 'No clearance requests recorded yet' }}</h2>
+      <p>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' ? 'Try adjusting your search term or status filter.' : 'Student clearance applications will appear here automatically as they are submitted.' }}</p>
+    </section>
+
+    <!-- STUDENT CLEARANCE COMPACT TABLE (MATCHING DEAN OF STUDENTS) -->
+    <section class="compact-table-wrap" *ngIf="filteredRequests.length">
+      <table class="compact-request-table">
+        <thead>
+          <tr>
+            <th>Registration Number</th>
+            <th>Full Name</th>
+            <th>College</th>
+            <th>Programme</th>
+            <th>Year</th>
+            <th>Current Stage / Office</th>
+            <th>Offices Cleared</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let request of filteredRequests">
+            <td>{{ request.registrationNumber || '—' }}</td>
+            <td class="compact-name">{{ request.studentName || 'Student' }}</td>
+            <td>{{ request.college || '—' }}</td>
+            <td>{{ request.programme || '—' }}</td>
+            <td>{{ getYearLabel(request) }}</td>
+            <td>{{ request.status === 'Completed' ? 'Completed (All Offices)' : (request.currentStage + ' · ' + (request.currentOffice || 'Pending')) }}</td>
+            <td><strong>{{ getApprovedOfficesCount(request) }} / {{ getTotalOfficesCount(request) }}</strong> ({{ getRequestProgressPercent(request) }}%)</td>
+            <td><span class="compact-status">{{ request.status === 'Completed' ? 'Cleared' : request.status }}</span></td>
+            <td>
+              <div class="compact-actions">
+                <button type="button" class="compact-view" (click)="openStudentModal(request)">View</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- STUDENT DETAILS OVERLAY (MATCHING DEAN OF STUDENTS COMPACT DETAILS MODAL) -->
+    <section class="compact-details-overlay" *ngIf="selectedRequestForModal" (click)="closeStudentModal()">
+      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student clearance details" (click)="$event.stopPropagation()">
+        <button type="button" class="compact-close" aria-label="Close" (click)="closeStudentModal()">×</button>
+        <div class="compact-details-heading">
+          <div>
+            <span class="request-label">Student Clearance Breakdown</span>
+            <h2>{{ selectedRequestForModal.studentName }} ({{ selectedRequestForModal.registrationNumber }})</h2>
+          </div>
+        </div>
+
+        <dl class="compact-details-grid">
+          <div><dt>Registration Number</dt><dd>{{ selectedRequestForModal.registrationNumber || '—' }}</dd></div>
+          <div><dt>Year / Cohort</dt><dd>{{ getYearLabel(selectedRequestForModal) }}</dd></div>
+          <div><dt>College</dt><dd>{{ selectedRequestForModal.college || '—' }}</dd></div>
+          <div><dt>Department</dt><dd>{{ selectedRequestForModal.department || '—' }}</dd></div>
+          <div><dt>Programme</dt><dd>{{ selectedRequestForModal.programme || '—' }}</dd></div>
+          <div><dt>Overall Status</dt><dd>{{ selectedRequestForModal.status === 'Completed' ? 'Cleared (Completed)' : selectedRequestForModal.status }}</dd></div>
+        </dl>
+
+        <div class="modal-office-section">
+          <h3>Corresponding Offices Approval Status ({{ getApprovedOfficesCount(selectedRequestForModal) }} / {{ getTotalOfficesCount(selectedRequestForModal) }} Cleared)</h3>
+          <dl class="compact-details-grid">
+            <div *ngFor="let app of selectedRequestForModal.approvals">
+              <dt>{{ app.office }}</dt>
+              <dd>
+                <strong>{{ app.status === 'Approved' ? 'Cleared' : app.status }}</strong>
+                <span *ngIf="app.reviewedBy"> · {{ app.reviewedBy }}</span>
+                <span *ngIf="app.comment" style="display:block; color:#b42318; margin-top:3px;">Reason/Note: {{ app.comment }}</span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</section>

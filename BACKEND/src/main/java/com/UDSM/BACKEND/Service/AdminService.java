@@ -127,21 +127,92 @@ public class AdminService {
             // Mapping for human-readable frontend strings to backend enums
             String normalized = roleName.toUpperCase().trim();
             switch(normalized) {
-                case "CONVOCATION": role = ERole.CONVOCATION_OFFICER; break;
-                case "LIBRARY": role = ERole.LIBRARY_OFFICER; break;
-                case "ICT": role = ERole.ICT_OFFICER; break;
-                case "DEPARTMENT": role = ERole.DEPARTMENT_OFFICER; break;
-                case "USAB": role = ERole.USAB_OFFICER; break;
-                case "DARUSO": role = ERole.DARUSO_OFFICER; break;
-                case "SMART CARD": role = ERole.SMART_CARD_OFFICER; break;
-                case "WORKSHOP": role = ERole.WORKSHOP_OFFICER; break;
-                case "LABORATORY": role = ERole.LABORATORY_OFFICER; break;
-                case "DEAN OF STUDENTS": role = ERole.DEAN_OF_STUDENTS; break;
-                case "GAMES COACH": role = ERole.GAMES_COACH; break;
-                case "HALL WARDEN": role = ERole.HALL_WARDEN; break;
-                case "ACADEMIC STAFF": role = ERole.PRINCIPAL; break; // Fallback or specific mapping
+                case "FINANCE":
+                case "FINANCE OFFICER":
+                case "FINANCE_OFFICER":
+                    role = ERole.FINANCE_OFFICER;
+                    break;
+                case "CONVOCATION":
+                case "CONVOCATION OFFICER":
+                case "CONVOCATION_OFFICER":
+                    role = ERole.CONVOCATION_OFFICER;
+                    break;
+                case "LIBRARY":
+                case "LIBRARY OFFICER":
+                case "LIBRARY_OFFICER":
+                    role = ERole.LIBRARY_OFFICER;
+                    break;
+                case "ICT":
+                case "ICT OFFICER":
+                case "ICT_OFFICER":
+                    role = ERole.ICT_OFFICER;
+                    break;
+                case "DEPARTMENT":
+                case "DEPARTMENT OFFICER":
+                case "DEPARTMENT_OFFICER":
+                    role = ERole.DEPARTMENT_OFFICER;
+                    break;
+                case "USAB":
+                case "USAB OFFICER":
+                case "USAB_OFFICER":
+                    role = ERole.USAB_OFFICER;
+                    break;
+                case "DARUSO":
+                case "DARUSO OFFICER":
+                case "DARUSO_OFFICER":
+                    role = ERole.DARUSO_OFFICER;
+                    break;
+                case "SMART CARD":
+                case "SMART_CARD":
+                case "SMART CARD OFFICER":
+                case "SMART_CARD_OFFICER":
+                    role = ERole.SMART_CARD_OFFICER;
+                    break;
+                case "WORKSHOP":
+                case "WORKSHOP OFFICER":
+                case "WORKSHOP_OFFICER":
+                    role = ERole.WORKSHOP_OFFICER;
+                    break;
+                case "LABORATORY":
+                case "LABORATORY OFFICER":
+                case "LABORATORY_OFFICER":
+                    role = ERole.LABORATORY_OFFICER;
+                    break;
+                case "DEAN OF STUDENTS":
+                case "DEAN_OF_STUDENTS":
+                    role = ERole.DEAN_OF_STUDENTS;
+                    break;
+                case "GAMES COACH":
+                case "GAMES_COACH":
+                    role = ERole.GAMES_COACH;
+                    break;
+                case "HALL WARDEN":
+                case "HALL_WARDEN":
+                    role = ERole.HALL_WARDEN;
+                    break;
+                case "LECTURER":
+                    role = ERole.LECTURER;
+                    break;
+                case "DIRECTOR OF UNDERGRADUATE STUDIES":
+                case "DIRECTOR OF UNDEGRADUATE STUDIES":
+                case "DIRECTOR_OF_UNDERGRADUATE_STUDIES":
+                case "DUS":
+                    role = ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
+                    break;
+                case "PRINCIPAL":
+                    role = ERole.PRINCIPAL;
+                    break;
+                case "ACADEMIC STAFF":
+                case "ACADEMIC_STAFF":
+                    role = ERole.ACADEMIC_STAFF;
+                    break;
                 case "ADMINISTRATOR": 
-                case "ADMIN": role = ERole.ADMINISTRATOR; break;
+                case "ADMIN":
+                    role = ERole.ADMINISTRATOR;
+                    break;
+                case "STUDENT":
+                    role = ERole.STUDENT;
+                    break;
                 default: 
                     log.error("Failed to map role: {}", roleName);
                     throw new ApiException("Invalid role name: " + roleName, HttpStatus.BAD_REQUEST);

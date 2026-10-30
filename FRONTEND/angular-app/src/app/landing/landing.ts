@@ -63,7 +63,8 @@ export class Landing implements OnInit {
       ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
-      Administrator: '/dashboard/admin'
+      Administrator: '/dashboard/admin',
+      'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies'
     };
 
     return map[role] ?? '/dashboard';

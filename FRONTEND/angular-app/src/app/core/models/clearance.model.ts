@@ -23,6 +23,8 @@ export interface OfficeApproval {
   comment?: string;
   reviewedBy?: string;
   reviewedAt?: string;
+  reviewerEmail?: string;
+  reviewerPhone?: string;
 }
 
 export interface ConvocationPayment {

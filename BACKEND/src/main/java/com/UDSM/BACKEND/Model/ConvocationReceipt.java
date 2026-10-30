@@ -25,7 +25,7 @@ public class ConvocationReceipt {
     @Column(name = "project_id", length = 100)
     private String projectId;
 
-    @Column(name = "control_number", nullable = false)
+    @Column(name = "control_number", nullable = true)
     private String controlNumber;
 
     @Column(name = "receipt_number", nullable = false)

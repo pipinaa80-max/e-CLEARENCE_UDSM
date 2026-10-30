@@ -1,5 +1,3 @@
-
-
 package com.UDSM.BACKEND.Model;
 
 public enum ERole {
@@ -22,7 +20,8 @@ public enum ERole {
     PRINCIPAL,
     LABORATORY_OFFICER,
     ACADEMIC_STAFF,
-    LECTURER;
+    LECTURER,
+    DIRECTOR_OF_UNDERGRADUATE_STUDIES;
 
     private ERole() {
     }

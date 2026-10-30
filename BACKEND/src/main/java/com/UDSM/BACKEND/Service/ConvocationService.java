@@ -62,7 +62,7 @@ public class ConvocationService {
         // Create receipt record
         ConvocationReceipt receipt = ConvocationReceipt.builder()
                 .studentId(request.getStudentId())
-                .controlNumber(request.getControlNumber())
+                .controlNumber(request.getControlNumber() != null && !request.getControlNumber().isBlank() ? request.getControlNumber() : "DIRECT-PAYMENT")
                 .receiptNumber(request.getReceiptNumber())
                 .paymentDate(request.getPaymentDate())
                 .fileName(file.getOriginalFilename())

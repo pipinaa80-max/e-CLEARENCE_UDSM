@@ -146,6 +146,9 @@
 .approval-item strong { display: block; color: #000000; font-size: 0.9rem; font-weight: 700; }
 .approval-item small { display: block; margin-top: 5px; color: #374151; font-size: 0.75rem; line-height: 1.4; font-weight: 500; }
 .approval-item p { margin: 8px 0 0; color: var(--danger); font-size: 12px; line-height: 1.45; }
+.approval-item .rejection-comment { margin: 6px 0 3px !important; color: #991b1b !important; font-size: 13px !important; line-height: 1.4; }
+.approval-item .rejection-comment strong { display: inline !important; color: #991b1b !important; font-size: 13px !important; font-weight: 700; margin-right: 4px; }
+.approval-item .reviewer-contact { display: block; margin-top: 4px; color: #4b5563 !important; font-size: 0.75rem !important; line-height: 1.4; }
 
 .step-action { margin-top: 18px; padding: 14px 16px; border-radius: var(--radius-control); background: var(--surface-soft); }
 .step-action p { margin: 0; color: var(--text-muted); font-size: 0.78rem; line-height: 1.5; }

@@ -37,6 +37,7 @@ import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import { DepartmentOfficerComponent } from "./dashboard/Department-officer/department-officer.component";
 import { LecturerDashboard } from './dashboard/lecturer/lecturer';
+import { DirectorUndergraduateStudiesDashboard } from './dashboard/director_undergraduate_studies/director-undergraduate-studies';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -94,6 +95,11 @@ export const routes: Routes = [
     path: 'dashboard/lecturer',
     component: LecturerDashboard,
     canActivate: [authGuard, roleGuard(['Lecturer'])]
+  },
+  {
+    path: 'dashboard/director-undergraduate-studies',
+    component: DirectorUndergraduateStudiesDashboard,
+    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies'])]
   },
   {
     path: 'dashboard/admin',

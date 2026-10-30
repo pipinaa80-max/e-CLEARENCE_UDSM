@@ -135,6 +135,63 @@ export class ClearanceStatusComponent {
   // REVIEWED BY
   // =====================================================
 
+  getReviewerContact(office: ClearanceOffice): { name: string; email: string; phone: string } {
+    const approval = this.getApproval(office);
+    const name = approval?.reviewedBy || '';
+    let email = approval?.reviewerEmail || '';
+    let phone = approval?.reviewerPhone || '';
+
+    // If not recorded directly on approval, search local users
+    if (!email || !phone) {
+      try {
+        const usersJson = localStorage.getItem('udsm-local-users');
+        if (usersJson) {
+          const users = JSON.parse(usersJson);
+          const nameClean = name.trim().toLowerCase();
+          const officeClean = office.trim().toLowerCase();
+          const found = users.find((u: any) => {
+            const uName = (u.fullName || `${u.firstName || ''} ${u.lastName || ''}`).trim().toLowerCase();
+            const uRole = (u.role || '').trim().toLowerCase();
+            const uDept = (u.department || '').trim().toLowerCase();
+            return (nameClean && uName === nameClean) ||
+                   (uRole && (uRole === officeClean || uRole.includes(officeClean) || officeClean.includes(uRole))) ||
+                   (uDept && (uDept === officeClean || uDept.includes(officeClean)));
+          });
+          if (found) {
+            email = email || found.email || '';
+            phone = phone || found.phoneNumber || found.phone || '';
+          }
+        }
+      } catch (e) {
+        console.error('Error looking up staff contact:', e);
+      }
+    }
+
+    // Institutional contacts fallback for offices
+    if (!email || !phone) {
+      const defaultContacts: Record<string, { email: string; phone: string }> = {
+        'Library': { email: 'library@udsm.ac.tz', phone: '+255 22 2410500' },
+        'DARUSO': { email: 'daruso@udsm.ac.tz', phone: '+255 22 2410515' },
+        'USAB': { email: 'usab@udsm.ac.tz', phone: '+255 22 2410520' },
+        'Games Coach': { email: 'sports@udsm.ac.tz', phone: '+255 22 2410530' },
+        'Hall Warden': { email: 'warden@udsm.ac.tz', phone: '+255 22 2410540' },
+        'Dean of Students': { email: 'dos@udsm.ac.tz', phone: '+255 22 2410510' },
+        'Department': { email: 'department@udsm.ac.tz', phone: '+255 22 2410550' },
+        'Principal': { email: 'principal@udsm.ac.tz', phone: '+255 22 2410560' },
+        'Finance': { email: 'finance@udsm.ac.tz', phone: '+255 22 2410570' },
+        'Smart Card': { email: 'smartcard@udsm.ac.tz', phone: '+255 22 2410580' },
+        'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
+        'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
+        'Convocation': { email: 'convocation@udsm.ac.tz', phone: '+255 22 2410505' },
+      };
+      const def = defaultContacts[office] || { email: 'clearance@udsm.ac.tz', phone: '+255 22 2410500' };
+      email = email || def.email;
+      phone = phone || def.phone;
+    }
+
+    return { name, email, phone };
+  }
+
   getReviewedBy(office: ClearanceOffice): string {
     return this.getApproval(office)?.reviewedBy ?? '';
   }
