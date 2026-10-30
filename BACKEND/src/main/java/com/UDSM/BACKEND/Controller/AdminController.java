@@ -85,6 +85,13 @@ public class AdminController {
 
     }
 
+    @PostMapping("/users/seed-sample-data")
+    public ResponseEntity<ApiResponse> seedSampleData() {
+        log.info("Admin: Seeding UDSM sample table data (20 students and clearance staff)");
+        int count = adminService.seedUdsmSampleData();
+        return ResponseEntity.ok(ApiResponse.success("Successfully seeded " + count + " users matching UDSM table format."));
+    }
+
     @PostMapping("/import/local-storage")
     public ResponseEntity<?> importLocalStorage(@RequestBody JsonNode export) {
         return ResponseEntity.ok(adminService.importLocalStorage(export));

@@ -60,6 +60,9 @@ public class JwtResponse {
     @JsonProperty("faculty")
     private String faculty;
 
+    @JsonProperty("college")
+    private String college;
+
     @JsonProperty("programme")
     private String programme;
 

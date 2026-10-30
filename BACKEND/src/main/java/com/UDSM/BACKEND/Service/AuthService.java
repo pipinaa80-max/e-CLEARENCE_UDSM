@@ -151,6 +151,7 @@ public class AuthService {
                     .isActive(user.isActive())
                     .department(user.getDepartment() != null ? user.getDepartment() : student != null ? student.getDepartment() : null)
                     .faculty(user.getCollege() != null ? user.getCollege() : student != null ? student.getCollege() : null)
+                    .college(user.getCollege() != null ? user.getCollege() : student != null ? student.getCollege() : null)
                     .programme(user.getProgramme() != null ? user.getProgramme() : student != null ? student.getProgramme() : null)
                     .photo(user.getPhoto() != null ? user.getPhoto() : student != null ? student.getPhoto() : null)
                     .build();
@@ -296,6 +297,7 @@ public class AuthService {
         user.setPhoneNumber(request.getPhone());
         user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
+        user.setProgramme(request.getProgramme());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         
@@ -327,7 +329,8 @@ public class AuthService {
             student.setEmail(email);
             student.setPhoneNumber(request.getPhone());
             student.setProgramme(request.getProgramme());
-            student.setFaculty(request.getFaculty());
+            student.setFaculty(request.getCollege() != null ? request.getCollege() : request.getFaculty());
+            student.setCollege(request.getCollege() != null ? request.getCollege() : request.getFaculty());
             student.setDepartment(request.getDepartment());
             student.setYearOfStudy(request.getYearOfStudy());
             student.setAcademicYear(request.getAcademicYear());
@@ -1253,6 +1256,35 @@ public class AuthService {
 
     private void syncMissingInfo(User user) {
         if (user.getRole() == ERole.STUDENT && user.getRegistrationNumber() != null) {
+            Student student = studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
+                    .or(() -> studentRepository.findByUserId(user.getId()))
+                    .orElse(null);
+
+            if (student != null) {
+                if ((user.getProgramme() == null || user.getProgramme().isEmpty()) && student.getProgramme() != null) {
+                    user.setProgramme(student.getProgramme());
+                }
+                if ((user.getCollege() == null || user.getCollege().isEmpty()) && (student.getCollege() != null || student.getFaculty() != null)) {
+                    user.setCollege(student.getCollege() != null ? student.getCollege() : student.getFaculty());
+                }
+                if ((user.getDepartment() == null || user.getDepartment().isEmpty()) && student.getDepartment() != null) {
+                    user.setDepartment(student.getDepartment());
+                }
+                if (student.getCollege() == null && user.getCollege() != null) {
+                    student.setCollege(user.getCollege());
+                    student.setFaculty(user.getCollege());
+                    studentRepository.save(student);
+                }
+                if (student.getDepartment() == null && user.getDepartment() != null) {
+                    student.setDepartment(user.getDepartment());
+                    studentRepository.save(student);
+                }
+                if (student.getProgramme() == null && user.getProgramme() != null) {
+                    student.setProgramme(user.getProgramme());
+                    studentRepository.save(student);
+                }
+            }
+
             boolean infoMissing = (user.getProgramme() == null || user.getProgramme().isEmpty()) ||
                     (user.getCollege() == null || user.getCollege().isEmpty());
 
@@ -1268,13 +1300,13 @@ public class AuthService {
                 // Also update corresponding student record
                 studentRepository.findByRegistrationNumber(user.getRegistrationNumber())
                         .or(() -> studentRepository.findByUserId(user.getId()))
-                        .ifPresent(student -> {
-                            student.setFullName(registryInfo.fullName);
-                            student.setProgramme(registryInfo.programme);
-                            student.setCollege(registryInfo.college);
-                            student.setFaculty(registryInfo.college);
-                            student.setDepartment(registryInfo.department);
-                            studentRepository.save(student);
+                        .ifPresent(s -> {
+                            s.setFullName(registryInfo.fullName);
+                            s.setProgramme(registryInfo.programme);
+                            s.setCollege(registryInfo.college);
+                            s.setFaculty(registryInfo.college);
+                            s.setDepartment(registryInfo.department);
+                            studentRepository.save(s);
                         });
             }
         }

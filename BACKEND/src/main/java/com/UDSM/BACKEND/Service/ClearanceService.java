@@ -843,14 +843,37 @@ public class ClearanceService {
             return item;
         }).toList();
 
-        long totalRegisteredStudents = (projectId == null ? userRepository.findAll() : userRepository.findByProjectIdIncludeGlobal(projectId))
+        List<User> students = (projectId == null ? userRepository.findAll() : userRepository.findByProjectIdIncludeGlobal(projectId))
                 .stream()
                 .filter(u -> u.getRole() == ERole.STUDENT)
-                .count();
+                .toList();
+
+        long totalRegisteredStudents = students.size();
+
+        java.util.Map<String, Long> registeredStudentsByYear = new java.util.LinkedHashMap<>();
+        for (User u : students) {
+            String y = u.getYearOfStudy();
+            String label;
+            if (y != null && y.matches(".*20\\d{2}.*")) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("20\\d{2}").matcher(y);
+                label = m.find() ? "Year " + m.group() : "Year 2026";
+            } else if (u.getRegistrationNumber() != null && u.getRegistrationNumber().matches(".*20\\d{2}.*")) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("20\\d{2}").matcher(u.getRegistrationNumber());
+                label = m.find() ? "Year " + m.group() : "Year 2026";
+            } else if (y != null && y.trim().matches("\\d+")) {
+                int yrNum = Integer.parseInt(y.trim());
+                int calYear = 2026 - yrNum + 1;
+                label = "Year " + calYear;
+            } else {
+                label = "Year 2026";
+            }
+            registeredStudentsByYear.put(label, registeredStudentsByYear.getOrDefault(label, 0L) + 1L);
+        }
 
         java.util.Map<String, Object> summary = new java.util.LinkedHashMap<>();
         summary.put("requests", mappedRequests);
         summary.put("totalRegisteredStudents", totalRegisteredStudents);
+        summary.put("registeredStudentsByYear", registeredStudentsByYear);
         return summary;
     }
 }

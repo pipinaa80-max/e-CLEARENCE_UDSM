@@ -9,7 +9,10 @@ import com.UDSM.BACKEND.dto.RegisterRequest;
 import com.UDSM.BACKEND.exception.ApiException;
 import com.UDSM.BACKEND.exception.ResourceNotFoundException;
 import com.UDSM.BACKEND.config.ProjectScope;
-import com.lowagie.text.Row;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -45,8 +48,10 @@ public class AdminService {
     private final StudentRepository studentRepository;
     private final ClearanceRequestRepository clearanceRequestRepository;
     private final AuthService authService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ProjectLocalStorageRepository projectLocalStorageRepository;
+    private final DataFormatter dataFormatter = new DataFormatter();
 
     public List<User> getAllUsers() {
         String projectId = ProjectScope.currentProjectId();
@@ -311,31 +316,26 @@ public class AdminService {
         int count = 0;
         try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             BufferedReader br = new BufferedReader(reader);
+            String headerLine = br.readLine();
+            if (headerLine == null) return 0;
+
+            String[] headers = parseCsvLine(headerLine);
+            Map<String, Integer> headerMap = mapHeaders(headers);
+
             String line;
-            br.readLine(); // skip header
-            
             while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-                if (data.length < 5) continue; 
-                
-                RegisterRequest request = new RegisterRequest();
-                request.setFirstName(data[0].trim());
-                request.setMiddleName(data.length > 1 ? data[1].trim() : "");
-                request.setLastName(data.length > 2 ? data[2].trim() : "");
-                request.setEmail(data.length > 3 ? data[3].trim() : "");
-                request.setRegistrationNumber(data.length > 4 ? data[4].trim() : "");
-                request.setPassword(data.length > 5 ? data[5].trim() : "Welcome@UDSM123");
-                request.setRole(data.length > 6 ? data[6].trim() : "STUDENT");
-                request.setDepartment(data.length > 7 ? data[7].trim() : "");
-                request.setProgramme(data.length > 8 ? data[8].trim() : "");
-                request.setFaculty(data.length > 9 ? data[9].trim() : "");
-                request.setYearOfStudy(data.length > 10 ? data[10].trim() : "");
-                
+                if (line.trim().isEmpty()) continue;
+                String[] data = parseCsvLine(line);
+                if (data.length < 2) continue;
+
+                RegisterRequest request = buildRequestFromMap(data, headerMap);
+                if (request.getFirstName() == null || request.getFirstName().isEmpty()) continue;
+
                 try {
-                    authService.register(request);
+                    saveOrUpdateUserAndStudent(request);
                     count++;
                 } catch (Exception e) {
-                    log.error("Error registering user from CSV: {} - {}", request.getEmail(), e.getMessage());
+                    log.error("Error saving/updating user from CSV: {} - {}", request.getEmail(), e.getMessage());
                 }
             }
         }
@@ -347,33 +347,278 @@ public class AdminService {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<org.apache.poi.ss.usermodel.Row> rows = sheet.iterator();
-            
-            if (rows.hasNext()) rows.next(); // Skip header
-            
+
+            if (!rows.hasNext()) return 0;
+            org.apache.poi.ss.usermodel.Row headerRow = rows.next();
+            List<String> headerList = new java.util.ArrayList<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                headerList.add(getCellValue(headerRow.getCell(i)));
+            }
+            Map<String, Integer> headerMap = mapHeaders(headerList.toArray(new String[0]));
+
             while (rows.hasNext()) {
-                Row row = (Row) rows.next();
-                
-                RegisterRequest request = new RegisterRequest();
-                request.setFirstName(getCellValue((Cell) row.getCell(0)));
-                request.setMiddleName(getCellValue((Cell) row.getCell(1)));
-                request.setLastName(getCellValue((Cell) row.getCell(2)));
-                request.setEmail(getCellValue((Cell) row.getCell(3)));
-                request.setRegistrationNumber(getCellValue((Cell) row.getCell(4)));
-                request.setPassword(getCellValue((Cell) row.getCell(5), "Welcome@UDSM123"));
-                request.setRole(getCellValue((Cell) row.getCell(6), "STUDENT"));
-                request.setDepartment(getCellValue((Cell) row.getCell(7)));
-                request.setProgramme(getCellValue((Cell) row.getCell(8)));
-                request.setFaculty(getCellValue((Cell) row.getCell(9)));
-                request.setYearOfStudy(getCellValue((Cell) row.getCell(10)));
-                
-                if (request.getEmail().isEmpty() || request.getFirstName().isEmpty()) continue;
+                org.apache.poi.ss.usermodel.Row row = rows.next();
+                List<String> rowList = new java.util.ArrayList<>();
+                for (int i = 0; i < Math.max(row.getLastCellNum(), 20); i++) {
+                    rowList.add(getCellValue(row.getCell(i)));
+                }
+                String[] data = rowList.toArray(new String[0]);
+
+                RegisterRequest request = buildRequestFromMap(data, headerMap);
+                if (request.getFirstName() == null || request.getFirstName().isEmpty()) continue;
 
                 try {
-                    authService.register(request);
+                    saveOrUpdateUserAndStudent(request);
                     count++;
                 } catch (Exception e) {
-                    log.error("Error registering user from Excel: {} - {}", request.getEmail(), e.getMessage());
+                    log.error("Error saving/updating user from Excel: {} - {}", request.getEmail(), e.getMessage());
                 }
+            }
+        }
+        return count;
+    }
+
+    private void saveOrUpdateUserAndStudent(RegisterRequest request) {
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        String regNo = request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim() : "";
+
+        User user = null;
+        if (!email.isEmpty()) {
+            user = userRepository.findByEmail(email).orElse(null);
+        }
+        if (user == null && !regNo.isEmpty()) {
+            user = userRepository.findByRegistrationNumber(regNo).orElse(null);
+        }
+
+        if (user == null) {
+            try {
+                authService.register(request);
+            } catch (Exception ex) {
+                log.warn("Registration fallback during bulk upload for {}: {}", email, ex.getMessage());
+            }
+            if (!email.isEmpty()) {
+                user = userRepository.findByEmail(email).orElse(null);
+            }
+            if (user == null && !regNo.isEmpty()) {
+                user = userRepository.findByRegistrationNumber(regNo).orElse(null);
+            }
+        }
+
+        if (user != null) {
+            if (request.getFirstName() != null && !request.getFirstName().isEmpty()) user.setFirstName(request.getFirstName());
+            if (request.getMiddleName() != null) user.setMiddleName(request.getMiddleName());
+            if (request.getLastName() != null && !request.getLastName().isEmpty()) user.setLastName(request.getLastName());
+
+            String fullName = (user.getFirstName() + " " + (user.getMiddleName() != null ? user.getMiddleName() + " " : "") + user.getLastName()).trim();
+            user.setFullName(fullName);
+
+            if (!regNo.isEmpty()) user.setRegistrationNumber(regNo);
+            if (request.getCollege() != null && !request.getCollege().isEmpty()) {
+                user.setCollege(request.getCollege());
+            }
+            if (request.getDepartment() != null && !request.getDepartment().isEmpty()) {
+                user.setDepartment(request.getDepartment());
+            }
+            if (request.getProgramme() != null && !request.getProgramme().isEmpty()) {
+                user.setProgramme(request.getProgramme());
+            }
+            if (request.getPhone() != null && !request.getPhone().isEmpty()) {
+                user.setPhoneNumber(request.getPhone());
+            }
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+            user.setActive(true);
+            user.setEmailVerified(true);
+            user.setUpdatedAt(LocalDateTime.now());
+            userRepository.save(user);
+
+            // Synchronize with Student entity if role is student
+            String finalRegNo = user.getRegistrationNumber() != null ? user.getRegistrationNumber() : regNo;
+            if (user.getRole() == ERole.STUDENT || (request.getRole() != null && "STUDENT".equalsIgnoreCase(request.getRole()))) {
+                Student student = null;
+                if (finalRegNo != null && !finalRegNo.isEmpty()) {
+                    student = studentRepository.findByRegistrationNumber(finalRegNo).orElse(null);
+                }
+                if (student == null) {
+                    student = studentRepository.findByUserId(user.getId()).orElse(null);
+                }
+                if (student == null) {
+                    student = new Student();
+                    student.setCreatedAt(LocalDateTime.now());
+                }
+                student.setUser(user);
+                student.setRegistrationNumber(finalRegNo);
+                student.setFullName(user.getFullName());
+                student.setEmail(user.getEmail());
+                student.setPhoneNumber(user.getPhoneNumber());
+                student.setCollege(user.getCollege());
+                student.setFaculty(user.getCollege());
+                student.setDepartment(user.getDepartment());
+                student.setProgramme(user.getProgramme());
+                if (student.getClearanceStatus() == null) {
+                    student.setClearanceStatus(ClearanceStatus.PENDING);
+                }
+                student.setUpdatedAt(LocalDateTime.now());
+                studentRepository.save(student);
+            }
+        }
+    }
+
+    private String[] parseCsvLine(String line) {
+        List<String> tokens = new java.util.ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                tokens.add(sb.toString().trim());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        tokens.add(sb.toString().trim());
+        return tokens.toArray(new String[0]);
+    }
+
+    private Map<String, Integer> mapHeaders(String[] headers) {
+        Map<String, Integer> map = new java.util.HashMap<>();
+        for (int i = 0; i < headers.length; i++) {
+            String h = headers[i].toLowerCase().replaceAll("[^a-z0-9]", "");
+            if (h.contains("reg") || h.contains("matric")) map.putIfAbsent("reg", i);
+            else if (h.contains("first") || h.equals("fname")) map.putIfAbsent("firstName", i);
+            else if (h.contains("other") || h.contains("middle") || h.equals("mname")) map.putIfAbsent("middleName", i);
+            else if (h.contains("sur") || h.contains("last") || h.equals("lname")) map.putIfAbsent("lastName", i);
+            else if (h.contains("email") || h.contains("mail")) map.putIfAbsent("email", i);
+            else if (h.contains("role") || h.contains("designation")) map.putIfAbsent("role", i);
+            else if (h.contains("phone") || h.contains("mobile") || h.contains("tel")) map.putIfAbsent("phone", i);
+            else if (h.contains("prog") || h.contains("course")) map.putIfAbsent("programme", i);
+            else if (h.contains("colleg") || h.contains("facult") || h.contains("school")) map.putIfAbsent("college", i);
+            else if (h.contains("dept") || h.contains("department")) map.putIfAbsent("department", i);
+            else if (h.contains("year") || h.contains("cohort")) map.putIfAbsent("year", i);
+            else if (h.contains("pass") || h.contains("pwd")) map.putIfAbsent("password", i);
+        }
+        return map;
+    }
+
+    private RegisterRequest buildRequestFromMap(String[] data, Map<String, Integer> headerMap) {
+        RegisterRequest request = new RegisterRequest();
+        if (headerMap.containsKey("firstName") || headerMap.containsKey("reg")) {
+            request.setFirstName(getVal(data, headerMap.get("firstName")));
+            request.setMiddleName(getVal(data, headerMap.get("middleName")));
+            request.setLastName(getVal(data, headerMap.get("lastName")));
+            request.setRegistrationNumber(getVal(data, headerMap.get("reg")));
+            request.setEmail(getVal(data, headerMap.get("email")));
+            request.setRole(getVal(data, headerMap.get("role")));
+            request.setPhone(getVal(data, headerMap.get("phone")));
+            request.setProgramme(getVal(data, headerMap.get("programme")));
+            request.setCollege(getVal(data, headerMap.get("college")));
+            request.setFaculty(request.getCollege());
+            request.setDepartment(getVal(data, headerMap.get("department")));
+            request.setYearOfStudy(getVal(data, headerMap.get("year")));
+            request.setPassword(getVal(data, headerMap.get("password")));
+        } else {
+            // legacy positional fallback
+            request.setFirstName(getVal(data, 0));
+            request.setMiddleName(getVal(data, 1));
+            request.setLastName(getVal(data, 2));
+            request.setEmail(getVal(data, 3));
+            request.setRegistrationNumber(getVal(data, 4));
+            request.setPassword(getVal(data, 5));
+            request.setRole(getVal(data, 6));
+            request.setDepartment(getVal(data, 7));
+            request.setProgramme(getVal(data, 8));
+            request.setFaculty(getVal(data, 9));
+            request.setCollege(getVal(data, 9));
+            request.setYearOfStudy(getVal(data, 10));
+        }
+
+        if (request.getPassword() == null || request.getPassword().isEmpty()) {
+            if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().isEmpty()) {
+                request.setPassword(request.getRegistrationNumber());
+            } else {
+                request.setPassword("Welcome@UDSM123");
+            }
+        }
+        if (request.getPhone() == null || request.getPhone().isEmpty()) {
+            int seedVal = request.getRegistrationNumber() != null ? Math.abs(request.getRegistrationNumber().hashCode()) : 123456;
+            request.setPhone("+255712" + String.format("%06d", seedVal % 900000 + 100000));
+        }
+        if (request.getEmail() == null || request.getEmail().isEmpty()) {
+            String f = request.getFirstName() != null ? request.getFirstName().toLowerCase().replaceAll("[^a-z0-9]", "") : "user";
+            String l = request.getLastName() != null ? request.getLastName().toLowerCase().replaceAll("[^a-z0-9]", "") : "udsm";
+            request.setEmail(f + "." + l + "@udsm.ac.tz");
+        }
+        if (request.getRole() == null || request.getRole().isEmpty()) {
+            String reg = request.getRegistrationNumber() != null ? request.getRegistrationNumber().toUpperCase() : "";
+            if (reg.startsWith("STF")) {
+                if (reg.contains("LIB")) request.setRole("LIBRARY");
+                else if (reg.contains("SPO")) request.setRole("GAMES_COACH");
+                else if (reg.contains("WRD")) request.setRole("WARDEN");
+                else if (reg.contains("USB")) request.setRole("USAB");
+                else if (reg.contains("DAR")) request.setRole("DARUSO");
+                else if (reg.contains("DOS")) request.setRole("DEAN_OF_STUDENTS");
+                else if (reg.contains("SMC")) request.setRole("SMART_CARD");
+                else if (reg.contains("DPT")) request.setRole("DEPARTMENT");
+                else if (reg.contains("PRN")) request.setRole("PRINCIPAL");
+                else if (reg.contains("FIN")) request.setRole("FINANCE");
+                else if (reg.contains("DUS")) request.setRole("DUS");
+                else if (reg.contains("ADM")) request.setRole("ADMIN");
+                else request.setRole("STAFF");
+            } else {
+                request.setRole("STUDENT");
+            }
+        }
+        if (request.getYearOfStudy() == null || request.getYearOfStudy().isEmpty()) {
+            String reg = request.getRegistrationNumber() != null ? request.getRegistrationNumber() : "";
+            if (reg.matches("^\\d{4}-.*")) {
+                request.setYearOfStudy(reg.substring(0, 4));
+            } else {
+                request.setYearOfStudy("2026");
+            }
+        }
+        return request;
+    }
+
+    private String getVal(String[] data, Integer index) {
+        if (index == null || index < 0 || index >= data.length) return "";
+        return data[index] != null ? data[index].trim() : "";
+    }
+
+    @Transactional
+    public int seedUdsmSampleData() {
+        int count = 0;
+        java.io.File csvFile = new java.io.File("udsm_20_students_and_staff_data.csv");
+        if (!csvFile.exists()) {
+            csvFile = new java.io.File("/home/mulimila/e-CLEARENCE_UDSM/udsm_20_students_and_staff_data.csv");
+        }
+        if (csvFile.exists()) {
+            try (BufferedReader br = new BufferedReader(new java.io.FileReader(csvFile))) {
+                String header = br.readLine();
+                String[] headers = parseCsvLine(header);
+                Map<String, Integer> headerMap = mapHeaders(headers);
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (line.trim().isEmpty()) continue;
+                    String[] data = parseCsvLine(line);
+                    RegisterRequest req = buildRequestFromMap(data, headerMap);
+                    try {
+                        authService.register(req);
+                        userRepository.findByEmail(req.getEmail().trim().toLowerCase()).ifPresent(u -> {
+                            u.setActive(true);
+                            u.setEmailVerified(true);
+                            userRepository.save(u);
+                        });
+                        count++;
+                    } catch (Exception e) {
+                        log.warn("Seed skipped/failed for {}: {}", req.getEmail(), e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Failed to seed from CSV file", e);
             }
         }
         return count;
@@ -385,10 +630,11 @@ public class AdminService {
 
     private String getCellValue(Cell cell, String defaultValue) {
         if (cell == null) return defaultValue;
-        switch (cell.getCellType()) {
-            case STRING: return cell.getStringCellValue().trim();
-            case NUMERIC: return String.valueOf((long)cell.getNumericCellValue());
-            default: return defaultValue;
+        try {
+            String val = dataFormatter.formatCellValue(cell);
+            return (val != null && !val.trim().isEmpty()) ? val.trim() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
         }
     }
 }
