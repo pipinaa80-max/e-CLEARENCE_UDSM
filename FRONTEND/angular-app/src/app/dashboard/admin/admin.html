@@ -235,20 +235,49 @@
 
     <!-- Data Upload Tab -->
     <div *ngIf="activeTab === 'upload'" class="tab-content">
-      <h3>Bulk Data Population</h3>
-      <div class="upload-container">
-        <p>Upload a CSV or Excel (.xlsx) file to register multiple students at once.</p>
-        <div class="file-input-group">
-          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
-          <button class="btn-primary" [disabled]="!selectedFile" (click)="uploadFile()">Upload & Process</button>
+      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="margin: 0;">Bulk Data Upload &amp; UDSM Clearance List Registration</h3>
+          <p style="margin: 4px 0 0; color: #4b5563; font-size: 0.85rem;">Download the 50 students &amp; staff template or upload your Excel/CSV file to register users.</p>
         </div>
-        <div class="file-input-group">
-          <button class="btn-primary" (click)="importBrowserData()">Import existing browser data</button>
-          <span>Copies this project’s localStorage records into clearance_db.</span>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-primary" (click)="downloadSampleExcel()">
+            ⬇ Download 50 Students &amp; Staff (.xlsx)
+          </button>
+          <button type="button" class="btn-secondary" (click)="downloadSampleCsv()">
+            ⬇ Download CSV (.csv)
+          </button>
         </div>
-        <div class="format-info">
-          <h5>Expected File Columns:</h5>
-          <code>FirstName, MiddleName, LastName, Email, RegistrationNumber, Password, Role, Department, Programme, College, YearOfStudy</code>
+      </div>
+
+      <div class="upload-container" style="margin-top: 18px;">
+        <p style="color: #374151; font-size: 0.9rem; line-height: 1.5;">
+          Upload a CSV or Excel (<code>.xlsx</code>) file to register students and clearance staff into the system. The system automatically reads the clearance graduation table format, including the <strong>Password</strong> column (which reflects the user's Registration Number).
+        </p>
+
+        <div class="file-input-group" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 18px 0; padding: 16px; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px;">
+          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.88rem;">
+          <button class="btn-primary" [disabled]="!selectedFile || isUploading" (click)="uploadFile()" style="padding: 9px 20px; font-weight: 600;">
+            <span *ngIf="!isUploading">⬆ Upload &amp; Process</span>
+            <span *ngIf="isUploading">Processing Upload...</span>
+          </button>
+          <span *ngIf="selectedFile" style="font-size: 0.85rem; color: #0284c7; font-weight: 600;">
+            ✓ Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+          </span>
+        </div>
+
+        <div class="format-info" style="margin-top: 24px; padding: 18px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <h5 style="margin: 0 0 8px; color: var(--udsm-blue-dark); font-size: 0.95rem;">Official UDSM Clearance Table Columns:</h5>
+          <p style="margin: 0 0 10px; font-size: 0.83rem; color: #64748b;">
+            The uploaded file must follow the table format below with the <strong>Password</strong> column reflecting the Registration Number:
+          </p>
+          <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 12px 14px; border-radius: 6px; font-family: monospace; font-size: 0.83rem; overflow-x: auto; color: #1e293b; line-height: 1.8;">
+            <strong>SN</strong>, <strong>Registration</strong>, <strong>Password</strong>, <strong>First Name</strong>, <strong>Other Name</strong>, <strong>Surname</strong>, <strong>Gender</strong>, <strong>Programme</strong>, <strong>GPA</strong>, <strong>Classification</strong>, <strong>Qualification</strong>, <strong>Prefix</strong>, <strong>Campus</strong>, <strong>Color</strong>, <strong>College</strong>, <strong>Department</strong>, <strong>Role</strong>, <strong>Email</strong>, <strong>Phone</strong>, <strong>Added By</strong>, <strong>Reason</strong>, <strong>DUS COMMENT</strong>
+          </div>
+          <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #0369a1;">
+            <span>ℹ️</span>
+            <span>Each student's and staff member's password is set to their registration number (e.g. <code>2020-04-02302</code> or <code>STF-LIB-001</code>).</span>
+          </div>
         </div>
       </div>
     </div>

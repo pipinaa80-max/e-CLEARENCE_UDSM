@@ -107,6 +107,9 @@
             <span>College</span>
             <select formControlName="college" (change)="onCollegeChange()">
               <option value="" disabled>Select College</option>
+              <option *ngIf="requestForm.controls.college.value && !collegeList.includes(requestForm.controls.college.value)" [value]="requestForm.controls.college.value">
+                {{ requestForm.controls.college.value }}
+              </option>
               <option *ngFor="let college of collegeList" [value]="college">
                 {{ college }}
               </option>
@@ -117,6 +120,9 @@
             <span>Department</span>
             <select formControlName="department" (change)="onDepartmentChange()" [disabled]="!requestForm.controls.college.value">
               <option value="" disabled>Select Department</option>
+              <option *ngIf="requestForm.controls.department.value && !departments.includes(requestForm.controls.department.value)" [value]="requestForm.controls.department.value">
+                {{ requestForm.controls.department.value }}
+              </option>
               <option *ngFor="let department of departments" [value]="department">
                 {{ department }}
               </option>
@@ -125,8 +131,11 @@
 
           <label class="field full-width">
             <span>Programme</span>
-            <select formControlName="programme" [disabled]="!requestForm.controls.department.value">
+            <select formControlName="programme" [disabled]="!requestForm.controls.department.value && !requestForm.controls.programme.value">
               <option value="" disabled>Select Programme</option>
+              <option *ngIf="requestForm.controls.programme.value && !programmeOptions.includes(requestForm.controls.programme.value)" [value]="requestForm.controls.programme.value">
+                {{ requestForm.controls.programme.value }}
+              </option>
               <option *ngFor="let programme of programmeOptions" [value]="programme">
                 {{ programme }}
               </option>

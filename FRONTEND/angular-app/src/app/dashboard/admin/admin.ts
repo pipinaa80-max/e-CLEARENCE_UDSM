@@ -945,21 +945,47 @@ export class AdminDashboard implements OnInit {
     this.selectedFile = event.target.files[0];
   }
 
+  isUploading: boolean = false;
+
   uploadFile(): void {
     if (!this.selectedFile) return;
 
+    this.isUploading = true;
+    this.message = 'Uploading and processing records...';
+    this.isError = false;
+
     this.adminService.bulkUploadUsers(this.selectedFile).subscribe({
       next: (res) => {
-        this.message = res.message;
+        this.isUploading = false;
+        this.message = res.message || 'Users uploaded and processed successfully!';
         this.isError = false;
-        this.loadData();
         this.selectedFile = null;
+        this.loadData();
       },
       error: (err) => {
-        this.message = 'Upload failed: ' + (err.error?.message || err.message);
+        this.isUploading = false;
+        this.message = 'Upload failed: ' + (err.error?.message || err.message || 'Unknown error');
         this.isError = true;
       }
     });
+  }
+
+  downloadSampleCsv(): void {
+    const link = document.createElement('a');
+    link.href = '/udsm_clearance_50_students_and_staff.csv';
+    link.download = 'udsm_clearance_50_students_and_staff.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  downloadSampleExcel(): void {
+    const link = document.createElement('a');
+    link.href = '/udsm_clearance_50_students_and_staff.xlsx';
+    link.download = 'udsm_clearance_50_students_and_staff.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   importBrowserData(): void {

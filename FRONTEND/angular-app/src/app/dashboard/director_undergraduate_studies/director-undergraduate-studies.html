@@ -72,51 +72,73 @@
           <p>Track completed, pending, and rejected clearances across colleges, programmes, academic years, and students.</p>
         </div>
         <div class="analytics-actions">
-          <button type="button" class="analytics-secondary" (click)="loadAnalyticsData()">Refresh data</button>
-          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownCsv()">Download Office CSV</button>
-          <button type="button" class="analytics-secondary" (click)="printExecutiveReport()">Print report</button>
-          <button type="button" class="analytics-primary" (click)="downloadComprehensiveReport()">Download CSV report</button>
+          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownPdf()">Download Office PDF</button>
+          <button type="button" class="analytics-primary" (click)="downloadComprehensivePdf()">Download PDF report</button>
         </div>
       </div>
 
-      <div class="analytics-kpis dus-kpis">
-        <article>
-          <span>Total requests</span>
-          <strong>{{ totalRequestsCount }}</strong>
-          <small class="kpi-note">{{ totalRegisteredStudents }} registered students</small>
-        </article>
-        <article>
-          <span>Completed clearances</span>
-          <strong>{{ clearedCount }}</strong>
-          <small class="kpi-note">{{ overallClearanceRate }}% completion rate</small>
-        </article>
-        <article>
-          <span>Pending / In progress</span>
-          <strong>{{ pendingCount }}</strong>
-          <small class="kpi-note">{{ pendingRate }}% active in pipeline</small>
-        </article>
-        <article>
-          <span>Rejected</span>
-          <strong>{{ rejectedCount }}</strong>
-          <small class="kpi-note">{{ rejectedRate }}% require action</small>
-        </article>
-        <article>
-          <span>Most cleared college</span>
-          <strong class="kpi-compact-title">{{ topClearedCollege?.label || 'Not recorded' }}</strong>
-          <small class="kpi-note" *ngIf="topClearedCollege">{{ topClearedCollege.cleared }} cleared ({{ topClearedCollege.rate }}%)</small>
-        </article>
-        <article>
-          <span>Most cleared year</span>
-          <strong class="kpi-compact-title">{{ topClearedYear?.label || 'Not recorded' }}</strong>
-          <small class="kpi-note" *ngIf="topClearedYear">{{ topClearedYear.cleared }} cleared ({{ topClearedYear.rate }}%)</small>
-        </article>
-      </div>
-
       <div class="analytics-charts">
+        <article class="analytics-chart-card registered-students-card">
+          <div class="chart-heading">
+            <div>
+              <h3>Total students registered for every year</h3>
+              <span>Undergraduate student enrollment breakdown across study years</span>
+            </div>
+            <div class="card-head-actions">
+              <span class="total-registered-pill">{{ totalRegisteredStudents }} total registered</span>
+              <button type="button" class="btn-card-pdf" (click)="downloadRegisteredStudentsPdf()" title="Download PDF for registered students">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
+          </div>
+          <div class="bar-list" *ngIf="registeredStudentsByYear.length; else noRegisteredYearStats">
+            <div class="bar-row" *ngFor="let yr of registeredStudentsByYear">
+              <div class="bar-label">
+                <span class="registered-year-title">
+                  <i class="year-color-indicator" [style.background-color]="yr.color"></i>
+                  <strong>{{ yr.label }}</strong>
+                </span>
+                <div class="registered-counts">
+                  <strong>{{ yr.totalRegistered }} registered</strong>
+                  <span class="registered-pct-badge" *ngIf="totalRegisteredStudents > 0">({{ yr.percentage }}%)</span>
+                </div>
+              </div>
+              <div class="bar-track registered-year-track">
+                <span [style.width.%]="yr.barWidth" [style.background]="yr.color"></span>
+              </div>
+              <div class="bar-sub-info" *ngIf="yr.clearanceRequests > 0">
+                <small>{{ yr.clearanceRequests }} applied for clearance · {{ yr.clearedRequests }} cleared</small>
+              </div>
+            </div>
+          </div>
+          <ng-template #noRegisteredYearStats><p class="analytics-empty">Registered student data will appear here.</p></ng-template>
+        </article>
+
         <article class="analytics-chart-card">
           <div class="chart-heading">
-            <h3>Most-cleared colleges</h3>
-            <span>Cleared / Total requests</span>
+            <div>
+              <h3>Most-cleared colleges</h3>
+              <span>Cleared / Total requests</span>
+            </div>
+            <div class="card-head-actions">
+              <button type="button" class="btn-card-pdf" (click)="downloadCollegesPdf()" title="Download PDF for colleges">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
           </div>
           <div class="bar-list" *ngIf="collegeBreakdown.length; else noCollegeStats">
             <div class="bar-row" *ngFor="let col of collegeBreakdown.slice(0, 6)">
@@ -130,27 +152,167 @@
           <ng-template #noCollegeStats><p class="analytics-empty">College clearance statistics will appear here.</p></ng-template>
         </article>
 
-        <article class="analytics-chart-card">
+        <article class="analytics-chart-card year-histogram-card">
           <div class="chart-heading">
-            <h3>Most-cleared academic / study years</h3>
-            <span>Frequently cleared cohorts</span>
-          </div>
-          <div class="bar-list" *ngIf="yearBreakdown.length; else noYearStats">
-            <div class="bar-row" *ngFor="let yr of yearBreakdown.slice(0, 6)">
-              <div class="bar-label">
-                <span>{{ yr.label }}</span>
-                <strong>{{ yr.cleared }} / {{ yr.total }} ({{ yr.rate }}%)</strong>
+            <div>
+              <h3>Clearances by academic year (Histogram)</h3>
+              <span>Volume &amp; clearance distribution per year</span>
+            </div>
+            <div class="card-head-actions">
+              <div class="histogram-legend">
+                <span class="legend-chip"><i class="chip-color chip-cleared"></i> Cleared</span>
+                <span class="legend-chip"><i class="chip-color chip-pending"></i> Pending</span>
+                <span class="legend-chip"><i class="chip-color chip-rejected"></i> Rejected</span>
               </div>
-              <div class="bar-track year-track"><span [style.width.%]="yr.barWidth"></span></div>
+              <button type="button" class="btn-card-pdf" (click)="downloadYearHistogramPdf()" title="Download PDF for year histogram">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
             </div>
           </div>
-          <ng-template #noYearStats><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
+
+          <div class="histogram-wrapper" *ngIf="yearHistogramData.length; else noYearHistogram">
+            <div class="histogram-chart">
+              <!-- Y-Axis Ticks -->
+              <div class="histogram-y-axis">
+                <span *ngFor="let tick of histogramYAxisTicks">{{ tick }}</span>
+              </div>
+
+              <!-- Plot Area -->
+              <div class="histogram-plot">
+                <!-- Horizontal Guide Lines -->
+                <div class="histogram-grid-line" style="top: 0%;"></div>
+                <div class="histogram-grid-line" style="top: 33%;"></div>
+                <div class="histogram-grid-line" style="top: 66%;"></div>
+                <div class="histogram-grid-line" style="bottom: 0%;"></div>
+
+                <!-- Columns -->
+                <div class="histogram-columns">
+                  <div class="histogram-col-item"
+                       *ngFor="let yr of yearHistogramData"
+                       [class.highlighted]="hoveredYear === yr.yearLabel"
+                       (mouseenter)="setHoveredYear(yr.yearLabel)"
+                       (mouseleave)="setHoveredYear(null)">
+                    <div class="col-value-badge">{{ yr.total }}</div>
+                    <div class="col-bar-track">
+                      <div class="col-bar-fill" [style.height.%]="yr.barHeightPercent">
+                        <span class="bar-seg cleared-seg" [style.height.%]="yr.clearedPercent" [title]="yr.cleared + ' Cleared'"></span>
+                        <span class="bar-seg pending-seg" [style.height.%]="yr.pendingPercent" [title]="yr.pending + ' Pending'"></span>
+                        <span class="bar-seg rejected-seg" [style.height.%]="yr.rejectedPercent" [title]="yr.rejected + ' Rejected'"></span>
+                      </div>
+                    </div>
+                    <div class="col-x-label">
+                      <strong>{{ yr.yearLabel }}</strong>
+                      <span class="col-rate-pill">{{ yr.clearanceRate }}% clr</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noYearHistogram><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
+        </article>
+
+        <article class="analytics-chart-card year-pie-card">
+          <div class="chart-heading">
+            <div>
+              <h3>Clearance share by academic year (Pie chart)</h3>
+              <span>Cohort proportion &amp; clearance progress</span>
+            </div>
+            <div class="card-head-actions">
+              <span class="cohort-count-badge" *ngIf="yearPieSlices.length">{{ yearPieSlices.length }} active cohorts</span>
+              <button type="button" class="btn-card-pdf" (click)="downloadYearPiePdf()" title="Download PDF for year pie chart">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pie-layout-wrap" *ngIf="yearPieSlices.length; else noYearPie">
+            <div class="pie-svg-container">
+              <svg class="donut-svg" viewBox="0 0 240 240" aria-label="Academic year distribution pie chart">
+                <defs>
+                  <filter id="pieShadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
+                  </filter>
+                </defs>
+                <g filter="url(#pieShadow)">
+                  <path *ngFor="let slice of yearPieSlices"
+                        [attr.d]="slice.svgPath"
+                        [attr.fill]="slice.color"
+                        class="pie-slice-path"
+                        [class.active-slice]="hoveredYear === slice.yearLabel"
+                        (mouseenter)="setHoveredYear(slice.yearLabel)"
+                        (mouseleave)="setHoveredYear(null)">
+                    <title>{{ slice.yearLabel }}: {{ slice.total }} students ({{ slice.percentage }}%)</title>
+                  </path>
+                </g>
+                <!-- Central stats -->
+                <circle cx="120" cy="120" r="50" fill="#ffffff" stroke="#e1e8ed" stroke-width="1"></circle>
+                <text x="120" y="112" text-anchor="middle" class="donut-center-total">{{ totalRequestsCount }}</text>
+                <text x="120" y="126" text-anchor="middle" class="donut-center-sub">Students</text>
+                <text x="120" y="139" text-anchor="middle" class="donut-center-rate">{{ overallClearanceRate }}% cleared</text>
+              </svg>
+            </div>
+
+            <div class="pie-legend-list">
+              <div class="pie-legend-row"
+                   *ngFor="let slice of yearPieSlices"
+                   [class.active-legend]="hoveredYear === slice.yearLabel"
+                   (mouseenter)="setHoveredYear(slice.yearLabel)"
+                   (mouseleave)="setHoveredYear(null)">
+                <div class="legend-header">
+                  <span class="legend-dot" [style.background-color]="slice.color"></span>
+                  <div class="legend-title-wrap">
+                    <span class="legend-year-name">{{ slice.yearLabel }}</span>
+                  </div>
+                  <strong class="legend-pct">{{ slice.percentage }}%</strong>
+                </div>
+                <div class="legend-progress-bar">
+                  <span class="legend-progress-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                </div>
+                <div class="legend-stats-sub">
+                  <span>{{ slice.total }} total</span>
+                  <span class="legend-sub-cleared">{{ slice.cleared }} cleared</span>
+                  <span class="legend-sub-pending" *ngIf="slice.pending">{{ slice.pending }} pending</span>
+                  <span class="legend-sub-rejected" *ngIf="slice.rejected">{{ slice.rejected }} rejected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noYearPie><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
         </article>
 
         <article class="analytics-chart-card">
           <div class="chart-heading">
-            <h3>Most-cleared programmes</h3>
-            <span>Undergraduate degree programmes</span>
+            <div>
+              <h3>Most-cleared programmes</h3>
+              <span>Undergraduate degree programmes</span>
+            </div>
+            <div class="card-head-actions">
+              <button type="button" class="btn-card-pdf" (click)="downloadProgrammesPdf()" title="Download PDF for programmes">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
           </div>
           <div class="bar-list" *ngIf="programmeBreakdown.length; else noProgrammeStats">
             <div class="bar-row" *ngFor="let prog of programmeBreakdown.slice(0, 6)">
@@ -166,8 +328,22 @@
 
         <article class="analytics-chart-card status-chart-card">
           <div class="chart-heading">
-            <h3>Overall clearance system status</h3>
-            <span>All undergraduate requests</span>
+            <div>
+              <h3>Overall clearance system status</h3>
+              <span>All undergraduate requests</span>
+            </div>
+            <div class="card-head-actions">
+              <button type="button" class="btn-card-pdf" (click)="downloadOverallStatusPdf()" title="Download PDF for system status">
+                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
           </div>
           <div class="status-breakdown">
             <div><span class="status-dot completed-dot"></span><span>Cleared (Completed)</span><strong>{{ clearedCount }} ({{ overallClearanceRate }}%)</strong></div>
@@ -227,7 +403,7 @@
           <p>Cleared, pending, rejected, and total student clearance counts across each corresponding office.</p>
         </div>
         <div class="analytics-actions">
-          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownCsv()">Export office CSV</button>
+          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownPdf()">Export office PDF</button>
         </div>
       </div>
 
