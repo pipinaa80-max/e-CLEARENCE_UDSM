@@ -321,8 +321,8 @@ public class AuthService {
                 savedUser.getEmail(), savedUser.getId(), savedUser.getProjectId(), savedUser.isActive());
         String userId = savedUser.getId();
 
-        // Create student record
-        if (request.getRegistrationNumber() != null && !request.getRegistrationNumber().trim().isEmpty()) {
+        // Create student record ONLY for student users
+        if (userRole == ERole.STUDENT && request.getRegistrationNumber() != null && !request.getRegistrationNumber().trim().isEmpty()) {
             Student student = new Student();
             student.setRegistrationNumber(request.getRegistrationNumber());
             student.setFullName(fullName);

@@ -116,12 +116,10 @@ export class TranscriptPaymentComponent {
         graduationYear: savedDetails.graduationYear || new Date().getFullYear().toString(),
         transcriptCount: this.transcriptCount
       });
-      this.message = 'Your control number request has been sent to Finance.';
+      this.toastService.success('Control Number Ready', 'Control number generated. Please pay and upload your receipt.');
+      this.message = 'Payment control number generated. Please pay and submit your receipt.';
       return;
     }
-
-    if (this.request.status !== 'Pending Control Number') return;
-    this.message = 'Your control number request has already been sent to Finance.';
   }
 
   onFileSelected(event: Event): void {

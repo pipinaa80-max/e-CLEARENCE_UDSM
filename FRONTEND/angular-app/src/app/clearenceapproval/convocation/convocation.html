@@ -6,9 +6,7 @@
   <div class="convocation-wrapper">
 
     <!-- HEADER -->
-
     <header class="page-header">
-
       <div>
         <span class="step-label">
           Clearance Step 1
@@ -29,146 +27,114 @@
       >
         ← Back to Process
       </a>
-
     </header>
 
-
     <!-- MAIN CARD -->
-
     <main class="convocation-card">
 
       <!-- ==============================================
-           REQUEST CONTROL NUMBER
+           NO ACTIVE CLEARANCE REQUEST
       =============================================== -->
+      <section
+        *ngIf="!studentRequest"
+        class="convocation-state"
+      >
+        <div class="state-icon warning-icon">
+          !
+        </div>
 
+        <span class="state-label">
+          Notice
+        </span>
+
+        <h2>
+          No Active Clearance Request
+        </h2>
+
+        <p>
+          You do not have an active clearance request yet. Please initiate your clearance request first to begin the clearance process.
+        </p>
+
+        <a
+          routerLink="/clearance/request"
+          class="primary-button link-button"
+        >
+          Start Clearance Request
+        </a>
+      </section>
+
+      <!-- ==============================================
+           CONVOCATION APPROVED (STEP 1 COMPLETE)
+      =============================================== -->
+      <section
+        *ngIf="studentRequest && isConvocationApproved"
+        class="convocation-state success-state"
+      >
+        <div class="state-icon success-icon">
+          ✓
+        </div>
+
+        <span class="state-label">
+          Step 1 Complete
+        </span>
+
+        <h2>
+          Convocation Clearance Approved
+        </h2>
+
+        <p>
+          Your Convocation clearance and payment have been verified and approved.
+          You can now proceed to Step 2 for clearance with your department and institutional offices.
+        </p>
+
+        <div class="waiting-message approved-message">
+          ✓ Approved by Convocation Office
+        </div>
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="isLoading"
+          (click)="continueToStep2()"
+        >
+          Next: Proceed to Step 2 →
+        </button>
+      </section>
+
+      <!-- ==============================================
+           STEP 1: UPLOAD PAYMENT RECEIPT
+      =============================================== -->
       <section
         *ngIf="
-          !controlNumberRequested &&
-          !controlNumber
+          studentRequest &&
+          !isConvocationApproved &&
+          !receiptSubmitted
         "
         class="convocation-state"
       >
-
         <div class="state-icon">
           1
         </div>
 
         <span class="state-label">
-          Step 1
+          Payment Receipt
         </span>
 
         <h2>
-          Request Control Number
+          Submit Payment Receipt
         </h2>
 
         <p>
-          Request your Convocation control number
-          before making your payment.
+          Please upload your Convocation payment receipt obtained after making payment.
         </p>
 
-        <button
-          type="button"
-          class="primary-button"
-          (click)="requestControlNumber()"
-        >
-          Request Control Number
-        </button>
-
-      </section>
-
-
-      <!-- ==============================================
-           CONTROL NUMBER REQUESTED
-      =============================================== -->
-
-      <section
-        *ngIf="
-          controlNumberRequested &&
-          !controlNumber
-        "
-        class="convocation-state waiting-state"
-      >
-
-        <div class="state-icon waiting-icon">
-          ✓
-        </div>
-
-        <span class="state-label">
-          Control Number
-        </span>
-
-        <h2>
-          Control Number Requested
-        </h2>
-
-        <p>
-          Your request has been sent to Convocation.
-          Please wait for your control number to be issued.
-        </p>
-
-        <div class="waiting-message">
-          Waiting for Convocation Office
-        </div>
-
-      </section>
-
-
-      <!-- ==============================================
-           CONTROL NUMBER ISSUED
-      =============================================== -->
-
-      <section
-        *ngIf="
-          controlNumber &&
-          !receiptSubmitted
-        "
-        class="convocation-state"
-      >
-
-        <div class="state-icon">
-          2
-        </div>
-
-        <span class="state-label">
-          Payment
-        </span>
-
-        <h2>
-          Control Number Issued
-        </h2>
-
-        <p>
-          Your control number has been issued.
-          Use it to make your Convocation payment,
-          then upload your payment receipt below.
-        </p>
-
-
-        <!-- CONTROL NUMBER -->
-
-        <div class="control-number-section">
-
-          <span>
-            Your Control Number
-          </span>
-
-          <strong>
-            {{ controlNumber }}
-          </strong>
-
-        </div>
-
-
-        <!-- RECEIPT -->
-
+        <!-- RECEIPT FORM -->
         <form
           [formGroup]="form"
           (ngSubmit)="submit()"
           class="receipt-form"
         >
-
           <label class="file-field">
-
             <span>
               Payment Receipt
             </span>
@@ -189,30 +155,29 @@
             >
               Selected: {{ selectedFileName }}
             </small>
-
           </label>
 
           <button
             type="submit"
             class="primary-button"
+            [disabled]="isLoading || !selectedFile"
           >
-            Next
+            {{ isLoading ? 'Submitting...' : 'Submit Receipt' }}
           </button>
-
         </form>
-
       </section>
 
-
       <!-- ==============================================
-           RECEIPT SUBMITTED
+           STEP 3: RECEIPT SUBMITTED, AWAITING APPROVAL
       =============================================== -->
-
       <section
-        *ngIf="receiptSubmitted"
+        *ngIf="
+          studentRequest &&
+          !isConvocationApproved &&
+          receiptSubmitted
+        "
         class="convocation-state success-state"
       >
-
         <div class="state-icon success-icon">
           ✓
         </div>
@@ -226,29 +191,26 @@
         </h2>
 
         <p>
-          Your payment receipt has been submitted
-          to Convocation for verification.
+          Your payment receipt has been submitted to Convocation for verification.
         </p>
 
         <div class="waiting-message">
           Waiting for Convocation verification
         </div>
 
-        <button
-          *ngIf="canContinueToStep2"
-          type="button"
-          class="primary-button"
-          [disabled]="isLoading"
-          (click)="continueToStep2()"
-        >
-          Next
-        </button>
-
+        <div class="demo-actions">
+          <button
+            type="button"
+            class="secondary-button demo-btn"
+            (click)="approveDemoConvocation()"
+            title="Fast-track Convocation approval for live demo"
+          >
+            ⚡ Fast-track Convocation Approval (Live Demo)
+          </button>
+        </div>
       </section>
 
-
       <!-- MESSAGE -->
-
       <p
         *ngIf="message"
         class="success-message"
@@ -256,9 +218,7 @@
         {{ message }}
       </p>
 
-
-      <!-- BACK -->
-
+      <!-- BACK LINK -->
       <a
         routerLink="/clearance/status"
         class="status-link"

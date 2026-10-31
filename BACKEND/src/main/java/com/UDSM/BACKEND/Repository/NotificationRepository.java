@@ -21,6 +21,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     void deleteByUser(User user);
 
+    void deleteByStudent(com.UDSM.BACKEND.Model.Student student);
+
     Page<Notification> findByUser(User user, Pageable pageable);
 
     List<Notification> findByUserAndIsReadFalse(User user);

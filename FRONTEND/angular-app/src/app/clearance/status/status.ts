@@ -375,12 +375,7 @@ export class ClearanceStatusComponent {
       }
 
       // Update the request
-      allRequests[requestIndex].currentStage = nextStage as any;
-      allRequests[requestIndex].currentOffice = nextOffice;
-
-      // Save back to storage
-      const storage = new (this.clearanceService as any).storage.constructor();
-      storage.save('udsm-clearance-requests', allRequests);
+      this.clearanceService.advanceStage(request.id, nextStage as any, nextOffice);
 
       // Reload data
       this.loadData();
@@ -537,7 +532,7 @@ export class ClearanceStatusComponent {
       number: 1,
       label: 'Convocation',
       office: 'Convocation',
-      detail: 'Request your control number, make payment and submit your receipt.',
+      detail: 'Submit your payment receipt for Convocation verification.',
       status: convocationStatus
     });
 

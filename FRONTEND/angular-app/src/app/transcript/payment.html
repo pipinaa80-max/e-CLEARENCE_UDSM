@@ -89,7 +89,7 @@
       </p>
 
       <section class="payment-step" *ngIf="!request">
-        <h2>Request payment control number</h2>
+        <h2>Payment &amp; Receipt Submission</h2>
         <label class="copy-count-field" *ngIf="isStandaloneMode">
           <span>Number of additional copies</span>
           <input type="number" min="1" step="1" [(ngModel)]="transcriptCount" aria-label="Total number of transcripts" />
@@ -99,12 +99,12 @@
 
         <div style="display: flex; gap: 12px; margin-top: 20px; align-items: center; flex-wrap: wrap;">
           <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-          <button type="button" class="primary-button" (click)="requestControlNumber()">Request Control Number</button>
+          <button type="button" class="primary-button" (click)="requestControlNumber()">Generate Control Number &amp; Proceed</button>
         </div>
       </section>
 
       <ng-container *ngIf="request">
-      <p>Use the control number issued by Finance to pay for your transcript {{ isStandaloneMode ? 'additional copies' : 'request' }}.</p>
+      <p>Use your control number below to complete payment, then upload your official receipt (risiti) for Finance review.</p>
 
       <div class="payment-summary">
         <div><span>Request</span><strong>#{{ request.attemptNumber }}</strong></div>
@@ -112,21 +112,17 @@
         <div><span>Status</span><strong>{{ request.status }}</strong></div>
       </div>
 
-      <section class="payment-step" *ngIf="request.status === 'Pending Control Number'">
-        <h2>Waiting for Finance</h2>
-        <p>Your control number request for Request #{{ request.attemptNumber }} has been sent to the Finance transcript payment team.</p>
-        <div class="step-navigation">
-          <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-          <a routerLink="/transcript" class="approval-button">View History</a>
-        </div>
-      </section>
-
-      <section class="payment-step" *ngIf="request.status === 'Awaiting Payment'">
+      <section class="payment-step" *ngIf="request.status === 'Awaiting Payment' || request.status === 'Pending Control Number' || request.status === 'Receipt Rejected'">
         <h2>Pay using your control number</h2>
         <div class="control-number">{{ request.controlNumber }}</div>
-        <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your receipt.</p>
+
+        <div *ngIf="request.status === 'Receipt Rejected'" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 14px; border-radius: 8px; margin: 12px 0; font-size: 0.9rem;">
+          <strong>Receipt Returned by Finance:</strong> {{ request.rejectionReason || 'Please upload a clear and valid payment receipt.' }}
+        </div>
+
+        <p>Pay TSh {{ request.amount | number }} using this control number, then upload a clear photo of your payment receipt (risiti).</p>
         <label class="receipt-upload">
-          <span>Upload payment receipt photo</span>
+          <span>Upload payment receipt photo (risiti)</span>
           <input type="file" accept="image/*" (change)="onFileSelected($event)" />
         </label>
 

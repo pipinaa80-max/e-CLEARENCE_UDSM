@@ -228,6 +228,17 @@ public class ClearanceService {
                         }
                     }
 
+                    // Enforce that requests or receipts do NOT reach Finance until all other offices are cleared
+                    if ("Finance".equalsIgnoreCase(targetOffice)) {
+                        List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(cr);
+                        boolean allOtherOfficesCleared = allApprovals.stream()
+                                .filter(a -> !a.getDepartment().equalsIgnoreCase("Finance"))
+                                .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        if (!allOtherOfficesCleared) {
+                            return false;
+                        }
+                    }
+
                     return true;
                 })
                 .sorted((a, b) -> {
@@ -271,6 +282,16 @@ public class ClearanceService {
 
         DepartmentApproval approval = findMatchingApproval(request, department)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department approval not found for: " + department));
+
+        if ("Finance".equalsIgnoreCase(department)) {
+            List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(request);
+            boolean allOtherOfficesCleared = allApprovals.stream()
+                    .filter(a -> !a.getDepartment().equalsIgnoreCase("Finance"))
+                    .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+            if (!allOtherOfficesCleared) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Clearance request cannot reach or be approved by Finance until all other offices are cleared.");
+            }
+        }
 
         approval.setStatus(ClearanceStatus.APPROVED);
         approval.setApprovedBy(user != null ? user.getFullName() : "Authorized Officer");

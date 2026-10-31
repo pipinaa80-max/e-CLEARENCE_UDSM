@@ -541,6 +541,11 @@ export class ClearanceService {
         return request.approvals.some(item => item.office === 'Convocation');
       }
 
+      if (office === 'Finance') {
+        const otherApprovals = request.approvals.filter(a => a.office !== 'Finance');
+        return otherApprovals.length > 0 && otherApprovals.every(a => a.status === 'Approved');
+      }
+
       if (this.getClearanceOffices(request.college).includes(office)) {
         return true;
       }
@@ -575,14 +580,17 @@ export class ClearanceService {
       return;
     }
 
-    if (request.convocation?.controlNumberRequestedAt) {
+    if (request.convocation?.controlNumber) {
       return;
     }
+
+    const issuedNumber = controlNumber?.trim() || '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
 
     request.convocation = {
       ...(request.convocation ?? {}),
       controlNumberRequestedAt: new Date().toISOString(),
-      ...(controlNumber ? { controlNumber, controlNumberIssuedAt: new Date().toISOString() } : {})
+      controlNumber: issuedNumber,
+      controlNumberIssuedAt: new Date().toISOString()
     };
 
     this.save(request);
@@ -635,10 +643,6 @@ export class ClearanceService {
       return;
     }
 
-    if (!request.convocation?.controlNumber) {
-      return;
-    }
-
     request.convocation = {
       ...(request.convocation ?? {}),
       receiptFileName: 'Payment Receipt',
@@ -688,6 +692,15 @@ export class ClearanceService {
   ): boolean {
     const request = this.getRequest(requestId);
     const approval = request?.approvals.find(item => item.office === office);
+
+    if (office === 'Finance') {
+      const otherApprovals = request?.approvals.filter(a => a.office !== 'Finance') || [];
+      const allCleared = otherApprovals.length > 0 && otherApprovals.every(a => a.status === 'Approved');
+      if (!allCleared) {
+        console.warn(`Request ${requestId} cannot reach or be approved by Finance until all other offices are cleared.`);
+        return false;
+      }
+    }
 
     if (request && approval) {
       approval.status = 'Approved';
@@ -895,10 +908,26 @@ export class ClearanceService {
   }
 
   // =====================================================
+  // ADVANCE STAGE
+  // =====================================================
+
+  advanceStage(requestId: string, nextStage: any, nextOffice?: ClearanceOffice): boolean {
+    const request = this.getRequest(requestId);
+    if (!request) return false;
+    request.currentStage = nextStage;
+    request.currentOffice = nextOffice;
+    if (nextStage === 'Completed') {
+      request.status = 'Completed';
+    }
+    this.save(request);
+    return true;
+  }
+
+  // =====================================================
   // SAVE
   // =====================================================
 
-  private save(request: ClearanceRequest): void {
+  save(request: ClearanceRequest): void {
     const requests = this.getAllRequests();
     const index = requests.findIndex(item => item.id === request.id);
 

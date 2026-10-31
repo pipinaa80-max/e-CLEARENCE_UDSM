@@ -1,102 +1,838 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
       <a routerLink="/">
         <img src="/udsm-logo.png" alt="Institutional Logo" />
       </a>
       <div>
-        <strong>Smart Card Office</strong>
+        <strong>SMART CARD</strong>
         <small>Clearance Workspace</small>
       </div>
     </div>
 
     <nav>
-      <a
-        routerLink="/smart-card"
-        routerLinkActive="active"
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'all'"
+        (click)="setViewMode('all')"
       >
-        Pending Requests
-      </a>
-
+        <span></span> Dashboard Overview
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
+      >
+        <span></span> Clearance Requests ({{ pendingRequestCount }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'stations'"
+        (click)="setViewMode('stations')"
+      >
+        <span></span> Card Stations ({{ stations.length }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <span></span> Card Analytics
+      </button>
       <button type="button" (click)="logout()">
         Log out
       </button>
     </nav>
   </aside>
 
+  <!-- MAIN CONTENT -->
   <main class="content">
     <app-dashboard-header
       eyebrow="Clearance Office"
       title="Smart Card Approval"
-      subtitle="Review student clearance applications and approve or reject requests."
+      subtitle="Review student smart card and identity surrender, verify lost card penalty receipts, and approve clearance requests."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="count">
-        <strong>{{ pendingRequestCount }}</strong>
-        <small>Pending</small>
-      </div>
     </app-dashboard-header>
 
+    <!-- MESSAGE -->
     <p class="message" *ngIf="message">{{ message }}</p>
 
-    <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
+    <!-- =========================================================================
+         SMART CARD STATISTICAL ANALYTICS BOARD
+         (Shown in 'all' or 'analytics')
+    ========================================================================== -->
+    <section class="dashboard-board analytics-board" id="analytics-section" *ngIf="viewMode === 'all' || viewMode === 'analytics'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge analytics-badge"></div>
+          <div>
+            <h2>Smart Card Surrender &amp; Biometric Deactivation Analytics</h2>
+            <p>Real-time statistics on student identity card handover, RFID deactivation, lost card replacement receipts, and clearance throughput.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <!-- COHORT FILTER -->
+          <select [(ngModel)]="selectedAnalyticsYear" class="board-select" aria-label="Filter cohort year" title="Filter by Academic Year">
+            <option value="all">All Cohorts (Years)</option>
+            <option value="2024">1st Year (2024)</option>
+            <option value="2023">2nd Year (2023)</option>
+            <option value="2022">3rd Year (2022)</option>
+            <option value="2021">4th Year (2021)</option>
+          </select>
+
+          <!-- GENDER FILTER -->
+          <select [(ngModel)]="selectedAnalyticsGender" class="board-select" aria-label="Filter gender" title="Filter by Gender">
+            <option value="all">All Genders</option>
+            <option value="Male">Male Students</option>
+            <option value="Female">Female Students</option>
+          </select>
+
+          <button type="button" class="action-btn secondary" (click)="printAnalytics()" title="Print smart card analytics report">
+            Print Report
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" title="Download CSV statistical summary">
+            Export CSV
+          </button>
+        </div>
       </div>
 
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+      <div class="board-body analytics-body">
+
+        <!-- 1. EXECUTIVE KPIS -->
+        <div class="analytics-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap blue"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Student IDs Analyzed</span>
+              <strong class="kpi-value">{{ totalCardStudents | number }}</strong>
+              <small class="kpi-sub">Registered university scholars</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap green">✓</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Smart IDs Surrendered</span>
+              <strong class="kpi-value text-green">{{ clearedCardsCount | number }}</strong>
+              <small class="kpi-sub text-green"><strong>{{ smartCardClearanceRate }}%</strong> overall clearance rate</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap amber"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Pending Card Handover</span>
+              <strong class="kpi-value text-amber">{{ pendingCardsCount | number }}</strong>
+              <small class="kpi-sub text-amber">Cards awaiting surrender desk</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap purple"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Lost Card Fines / Flagged</span>
+              <strong class="kpi-value">{{ flaggedCardsCount | number }}</strong>
+              <small class="kpi-sub">Returned for loss receipt</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-label">Total Station Capacity</span>
+              <strong class="kpi-value">{{ totalStationCapacity | number }}</strong>
+              <small class="kpi-sub">{{ stations.length }} campus biometric service units</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap teal"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Card Clearance Rate</span>
+              <strong class="kpi-value text-teal">{{ smartCardClearanceRate }}%</strong>
+              <small class="kpi-sub">Approved identity surrender</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PICTORIAL FEATURE & GENDER CLASSIFICATION -->
+        <div class="pictorial-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Pictorial Gender &amp; Smart Card Surrender Classification</h3>
+              <p>Visual representation of male and female students across smart identity surrender and biometric deactivation.</p>
+            </div>
+            <div class="gender-pill-badge">
+              <span>Ratio: <strong>{{ genderStats.malePercent }}% M</strong> : <strong>{{ genderStats.femalePercent }}% F</strong></span>
+            </div>
+          </div>
+
+          <div class="pictorial-cards-grid">
+            <!-- MALE CARD -->
+            <div class="pictorial-card male-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar male-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Male Students</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.maleTotal | number }}</strong>
+                    <span class="pct-pill male-pill">{{ genderStats.malePercent }}% of total</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.malePercent }}% representation">
+                <span class="silhouette-figure filled-male" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.malePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- MALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Cards Surrendered</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.maleTotal * (smartCardClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ smartCardClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Handover</span>
+                  <strong class="b-val text-amber">{{ genderStats.maleTotal - Math.round(genderStats.maleTotal * (smartCardClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - smartCardClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FEMALE CARD -->
+            <div class="pictorial-card female-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar female-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Female Students</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.femaleTotal | number }}</strong>
+                    <span class="pct-pill female-pill">{{ genderStats.femalePercent }}% of total</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.femalePercent }}% representation">
+                <span class="silhouette-figure filled-female" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.femalePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- FEMALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Cards Surrendered</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.femaleTotal * (smartCardClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ smartCardClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Handover</span>
+                  <strong class="b-val text-amber">{{ genderStats.femaleTotal - Math.round(genderStats.femaleTotal * (smartCardClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - smartCardClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ADVANCED HISTOGRAMS (CARD STATIONS & YEAR COHORT) -->
+        <div class="analytics-charts-grid">
+
+          <!-- HISTOGRAM 1: CARD STATIONS & SURRENDER TRAFFIC -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Card Verification Stations &amp; Return Traffic (Histogram)</h3>
+                <span>Clearance volume and physical card handover per biometric station</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="stationHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div
+                      class="hist-column"
+                      *ngFor="let s of stationHistogram"
+                      [class.highlighted]="hoveredStationName === s.label"
+                      (mouseenter)="setHoveredStation(s.label)"
+                      (mouseleave)="setHoveredStation(null)"
+                    >
+                      <div class="col-count-bubble">{{ s.count }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="s.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="s.clearedPercent" [title]="s.cleared + ' Cleared at ' + s.label"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="s.pendingPercent" [title]="(s.count - s.cleared) + ' Pending at ' + s.label"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name" [title]="s.label">{{ s.label }}</strong>
+                        <span class="col-cap-tag">{{ s.clearedPercent }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HISTOGRAM 2: COHORT CARD SURRENDER -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>ID Surrender by Academic Year (Histogram)</h3>
+                <span>Clearance progress and smart identity checkout rate per cohort</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="yearResidencyHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div class="hist-column" *ngFor="let yr of yearResidencyHistogram">
+                      <div class="col-count-bubble">{{ yr.total }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="yr.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="yr.clearanceRate" [title]="yr.cleared + ' Cleared in ' + yr.cohort"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="100 - yr.clearanceRate" [title]="(yr.total - yr.cleared) + ' Pending in ' + yr.cohort"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name">{{ yr.yearLabel }}</strong>
+                        <span class="col-rate-badge">{{ yr.clearanceRate }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 4. PIE / DONUT CHARTS (CARD STATUS & STATION CAPACITY SHARE) -->
+        <div class="analytics-charts-grid">
+
+          <!-- PIE CHART 1: CARD SURRENDER STATUS SHARE -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Card Surrender Status Share (Pie Chart)</h3>
+                <span>Surrendered IDs, pending returns, and replacement receipts</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Smart card status donut chart">
+                  <defs>
+                    <filter id="cardDonutShadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#cardDonutShadow)">
+                    <path
+                      *ngFor="let slice of cardStatusPieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} students ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ totalCardStudents }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Students</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-teal">{{ smartCardClearanceRate }}% Cleared</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of cardStatusPieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                  <small class="legend-slice-count">{{ slice.count | number }} cards / receipts</small>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- PIE CHART 2: STATION PROCESSING VOLUME DISTRIBUTION -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Station Processing Distribution (Pie Chart)</h3>
+                <span>Verification traffic share across campus biometric desks</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Station processing donut chart">
+                  <g filter="url(#cardDonutShadow)">
+                    <path
+                      *ngFor="let slice of stationSharePieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} capacity ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ stations.length }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Stations</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-amber">Active Desks</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of stationSharePieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 5. COLLEGIATE CARD LEADERBOARD TABLE -->
+        <div class="mostly-booked-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Collegiate Smart Card Deactivation Ranking</h3>
+              <p>Official collegiate ranking sorted by registered students, identity card handover, and deactivation throughput.</p>
+            </div>
+          </div>
+
+          <div class="ranking-table-card">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">Rank</th>
+                  <th>College / Academic Unit</th>
+                  <th>College Full Name</th>
+                  <th class="text-right">Students</th>
+                  <th class="text-right">IDs Surrendered</th>
+                  <th>Clearance Progress</th>
+                  <th class="text-center">Clearance Rate</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of collegeCardRankings" [class.top-ranked]="c.rank === 1">
+                  <td class="col-rank">
+                    <span class="rank-badge" [class.gold-badge]="c.rank === 1" [class.silver-badge]="c.rank === 2" [class.bronze-badge]="c.rank === 3">
+                      #{{ c.rank }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="hostel-table-name">{{ c.collegeCode }}</strong>
+                  </td>
+                  <td>
+                    <span class="location-text">{{ c.fullName }}</span>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ c.studentCount | number }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong class="booked-number">{{ c.clearedCount | number }}</strong>
+                  </td>
+                  <td>
+                    <div class="table-progress-wrap">
+                      <div class="table-progress-track">
+                        <span class="table-progress-bar" [style.width.%]="c.clearanceRate" [class.bar-high]="c.clearanceRate >= 75"></span>
+                      </div>
+                      <small class="table-progress-pct">{{ c.clearanceRate }}%</small>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <strong class="rate-tag">{{ c.clearanceRate }}%</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="demand-pill" [ngClass]="c.badgeClass">{{ c.activityLevel }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </section>
 
-    <section class="empty-state" *ngIf="!filteredRequests.length">
-      <div class="empty-icon">✓</div>
-      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Smart Card.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Smart Card.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
+    <!-- STATIONS DIRECTORY BOARD (Shown in 'all' or 'stations') -->
+    <section class="dashboard-board" id="stations-section" *ngIf="viewMode === 'all' || viewMode === 'stations'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Smart Card Verification &amp; Deactivation Stations Directory</h2>
+            <p>Manage campus smart ID desks, biometric centers, turnstile integration points, and registrar contacts.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="stationSearchTerm"
+              placeholder="Search station name, service, or officer..."
+              aria-label="Search card stations"
+            />
+          </div>
+          <button type="button" class="action-btn secondary" (click)="resetStations()" title="Reset to standard university card stations">
+            Restore Defaults
+          </button>
+          <button type="button" class="action-btn primary" (click)="openAddStationModal()">
+            + Add New Station
+          </button>
+        </div>
+      </div>
+
+      <div class="board-body">
+        <!-- STATIONS GRID -->
+        <div class="hostels-grid" *ngIf="filteredStations.length">
+          <div class="hostel-card compact" *ngFor="let station of filteredStations">
+            <div class="hostel-card-header">
+              <div class="header-main">
+                <h3>{{ station.name }}</h3>
+                <span class="location-badge" *ngIf="station.category"> {{ station.category }}</span>
+              </div>
+              <div class="card-actions">
+                <button type="button" class="btn-icon edit" (click)="openEditStationModal(station)" title="Edit station details">
+                  ✎ Edit
+                </button>
+                <button type="button" class="btn-icon delete" (click)="deleteStation(station)" title="Delete station">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- COMPACT QUICK INFO -->
+            <div class="compact-info-row">
+              <span class="compact-item" *ngIf="station.capacity">
+                <strong>{{ station.capacity | number }}</strong> capacity
+              </span>
+              <span class="compact-dot" *ngIf="station.capacity && station.location">•</span>
+              <span class="compact-item" *ngIf="station.location">
+                📍 {{ station.location }}
+              </span>
+              <span class="compact-dot" *ngIf="station.services.length">•</span>
+              <span class="compact-item units-count" *ngIf="station.services.length">
+                {{ station.services.length }} {{ station.services.length === 1 ? 'Service' : 'Services' }}
+              </span>
+            </div>
+
+            <!-- EXPANDABLE DETAILS -->
+            <div class="hostel-expanded-details" *ngIf="isStationExpanded(station.id)">
+              <p class="hostel-desc" *ngIf="station.description">{{ station.description }}</p>
+
+              <div class="hostel-meta-grid">
+                <div class="meta-item" *ngIf="station.capacity">
+                  <span class="meta-label">Processing Capacity</span>
+                  <strong>{{ station.capacity | number }} cards / day</strong>
+                </div>
+                <div class="meta-item" *ngIf="station.officerName">
+                  <span class="meta-label">Officer in Charge</span>
+                  <strong>{{ station.officerName }}</strong>
+                </div>
+                <div class="meta-item" *ngIf="station.officerContact">
+                  <span class="meta-label">Contact</span>
+                  <span>{{ station.officerContact }}</span>
+                </div>
+                <div class="meta-item" *ngIf="station.location">
+                  <span class="meta-label">Station Location</span>
+                  <span>{{ station.location }}</span>
+                </div>
+              </div>
+
+              <!-- SERVICES TAGS -->
+              <div class="units-breakdown" *ngIf="station.services && station.services.length">
+                <span class="unit-title">Supported Services &amp; Capabilities:</span>
+                <div class="tags-container">
+                  <span class="tag block-tag" *ngFor="let srv of station.services">{{ srv }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW MORE / VIEW LESS TOGGLE -->
+            <div class="card-footer-toggle">
+              <button
+                type="button"
+                class="view-more-btn"
+                (click)="toggleStationDetails(station.id)"
+              >
+                {{ isStationExpanded(station.id) ? 'View Less ▲' : 'View More ▼' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-empty-state" *ngIf="!filteredStations.length">
+          <div class="empty-icon"></div>
+          <h2>No Card Stations Found</h2>
+          <p>No station matches your search criteria. Click "+ Add New Station" to create one.</p>
+        </div>
+      </div>
     </section>
 
-    <section class="request-list" *ngIf="filteredRequests.length">
-      <app-parallel-office-request-table
-        [requests]="paginatedRequests"
-        [office]="'Smart Card'"
-        (approve)="approve($event)"
-        (reject)="openRejectForm($event)"
-      ></app-parallel-office-request-table>
+    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
+    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'all' || viewMode === 'requests'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications, verify smart identity card surrender &amp; fee receipts, and approve or return requests.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search student, registration number or programme..."
+              aria-label="Search requests"
+            />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="board-body board-table-body">
+        <!-- EMPTY STATE -->
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon">✓</div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Smart Card.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Smart Card.' : 'There are currently no student applications awaiting Smart Card approval.' }}</p>
+        </div>
+
+        <!-- REQUEST LIST TABLE -->
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'Smart Card'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+          ></app-parallel-office-request-table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            &larr; Previous
+          </button>
+          <span class="page-info">
+            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+          </span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
     </section>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+    <!-- STUDENT SMART CARD DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
+
+        <div class="student-modal-body">
+          <!-- SMART CARD DETAILS -->
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <span class="section-icon"></span>
+              <h4>Smart ID &amp; Biometric Handover Status</h4>
+            </div>
+
+            <div class="residence-status-pill hostel">
+              <strong>Smart ID Serial:</strong> {{ getStudentCardNumber(viewingRequest) }}
+            </div>
+
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Card Handover Status</span>
+                <strong class="detail-value text-primary">{{ getStudentCardStatus(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Replacement Fee Status</span>
+                <strong class="detail-value text-accent">{{ getStudentReplacementFee(viewingRequest) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACADEMIC & INSTITUTIONAL INFO -->
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT DETAILS -->
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SMART CARD CLEARANCE STATUS -->
+          <div class="detail-section">
+            <h4>Smart Card Clearance Status</h4>
+            <div class="office-status-row">
+              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'Smart Card') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'Smart Card') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'Smart Card') }}</strong></span>
+              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
+            Close
+          </button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'Smart Card') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              Reject / Return
+            </button>
+            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              Approve Card Clearance
+            </button>
+          </div>
+        </footer>
+      </div>
+    </section>
 
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest">
       <div class="modal-card">
         <div class="modal-icon">!</div>
         <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take before the clearance can proceed.</p>
+        <p>Write the reason and action the student must take regarding smart card surrender or lost card replacement receipts.</p>
 
         <label>Reason for Rejection</label>
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
+          placeholder="Enter reason e.g. physical smart card not surrendered, loss police report required, or replacement fee receipt missing..."
         ></textarea>
 
         <div class="modal-actions">
@@ -119,13 +855,119 @@
         </div>
       </div>
     </section>
-  </main>
 
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
-    </div>
-  </div>
+    <!-- STATION ADD/EDIT MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="showStationModal" (click)="closeStationModal()">
+      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div>
+            <h3>{{ editingStationId ? 'Edit Card Station' : 'Add New Card Station' }}</h3>
+            <p>{{ editingStationId ? 'Update details and services for this smart card desk.' : 'Register a new smart card verification or deactivation desk.' }}</p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStationModal()">✕</button>
+        </header>
+
+        <form (ngSubmit)="saveStation()" class="hostel-modal-form">
+          <div class="form-row">
+            <label class="form-field">
+              <span>Station Name *</span>
+              <input
+                type="text"
+                [(ngModel)]="stationForm.name"
+                name="stationName"
+                placeholder="e.g. Central Admin Card Center (DUS Desk)..."
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Category</span>
+              <input
+                type="text"
+                [(ngModel)]="stationForm.category"
+                name="stationCategory"
+                placeholder="e.g. Central Issuance, Collegiate Biometric Unit..."
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Daily Processing Capacity</span>
+              <input
+                type="number"
+                min="0"
+                [(ngModel)]="stationForm.capacity"
+                name="stationCapacity"
+                placeholder="e.g. 5000"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Officer in Charge</span>
+              <input
+                type="text"
+                [(ngModel)]="stationForm.officerName"
+                name="stationOfficerName"
+                placeholder="e.g. Officer J. Mtei"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Contact (Phone/Email)</span>
+              <input
+                type="text"
+                [(ngModel)]="stationForm.officerContact"
+                name="stationOfficerContact"
+                placeholder="e.g. +255 22 241 0801"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Campus Location</span>
+              <input
+                type="text"
+                [(ngModel)]="stationForm.location"
+                name="stationLocation"
+                placeholder="e.g. Main Administration Block Room 12"
+              />
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span>Services Supported (comma-separated)</span>
+            <input
+              type="text"
+              [(ngModel)]="stationForm.servicesText"
+              name="stationServicesText"
+              placeholder="e.g. Smart Card Surrender, RFID Deactivation, Lost Card Receipt"
+            />
+            <small class="field-help">Separate service names with commas.</small>
+          </label>
+
+          <label class="form-field">
+            <span>Description / Remarks</span>
+            <textarea
+              [(ngModel)]="stationForm.description"
+              name="stationDescription"
+              rows="3"
+              placeholder="Additional information about card surrender requirements, office opening hours, or lost card procedures..."
+            ></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-button" (click)="closeStationModal()">
+              Cancel
+            </button>
+            <button type="submit" class="return-button save-btn" [disabled]="!stationForm.name.trim()">
+              {{ editingStationId ? 'Save Changes' : 'Create Station' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
 </section>

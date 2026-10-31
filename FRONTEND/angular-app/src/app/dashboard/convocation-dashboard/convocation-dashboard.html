@@ -36,8 +36,8 @@
 
     <app-dashboard-header
       eyebrow="Convocation Office"
-      title="Control Number Dashboard"
-      subtitle="Manage student control number requests and payment receipts"
+      title="Convocation Clearance Dashboard"
+      subtitle="Verify student payment receipts and approve Step 1 clearance"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
@@ -46,20 +46,21 @@
 
     <section class="stats-grid">
       <article class="stat-card pending">
-        <span>Pending Requests</span>
+        <span>Awaiting Receipts</span>
         <strong>{{ totalPending }}</strong>
-        <small>Students waiting for control number</small>
+        <small>Students yet to submit receipts</small>
       </article>
 
       <article class="stat-card issued">
-        <span>Control Numbers Issued</span>
+        <span>Receipts Received</span>
         <strong>{{ totalIssued }}</strong>
-        <small>Awaiting receipt submission</small>
+        <small>Pending officer verification</small>
       </article>
 
       <article class="stat-card completed">
-        <span>Receipts Received</span>
+        <span>Cleared &amp; Approved</span>
         <strong>{{ totalCompleted }}</strong>
+        <small>Convocation approved</small>
       </article>
     </section>
 
@@ -106,7 +107,7 @@
               <h3>{{ receipt.studentName }}</h3>
               <div class="student-meta">
                 <span class="reg-number"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>{{ receipt.registrationNumber }}</span>
-                <span class="control-number"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>CN: {{ receipt.controlNumber }}</span>
+                <span class="control-number" *ngIf="receipt.controlNumber && receipt.controlNumber !== 'DIRECT-PAYMENT'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Ref: {{ receipt.controlNumber }}</span>
               </div>
               <small class="submitted-date">Submitted: {{ receipt.submittedAt | date:'medium' }}</small>
             </div>
@@ -167,34 +168,20 @@
             </div>
 
             <div class="request-status">
-              <span class="status-badge" [class.control-requested]="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber" [class.control-issued]="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" [class.receipt-received]="request.convocation?.receiptSubmittedAt">
-                <span *ngIf="!request.convocation?.controlNumberRequestedAt"> Awaiting Request</span>
-                <span *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 8l9 6 9-6"/></svg>Control Number Requested</span>
-                <span *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Control Number Issued</span>
+              <span class="status-badge" [class.receipt-received]="request.convocation?.receiptSubmittedAt">
+                <span *ngIf="!request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Awaiting Receipt</span>
                 <span *ngIf="request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Receipt Received</span>
               </span>
             </div>
           </div>
 
           <div class="control-section">
-            <div *ngIf="!request.convocation?.controlNumber" class="control-number-box">
+            <div *ngIf="!request.convocation?.receiptSubmittedAt" class="control-number-box">
               <div class="requested-info">
                 <div>
-                  <strong>{{ request.convocation?.controlNumberRequestedAt ? 'Control Number Requested' : 'Awaiting Request' }}</strong>
-                  <small>{{ request.convocation?.controlNumberRequestedAt ? 'Student is waiting for control number issuance' : 'Student has not requested a control number yet.' }}</small>
+                  <strong>Awaiting Receipt Submission</strong>
+                  <small>Student will submit receipt obtained after making payment.</small>
                 </div>
-              </div>
-            </div>
-
-            <div *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt" class="issued-control">
-              <div class="requested-info">
-                <div>
-                  <span class="control-label"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Control Number Issued</span>
-                  <strong class="control-number">{{ request.convocation?.controlNumber }}</strong>
-                </div>
-              </div>
-              <div class="instruction-box">
-                <span>Student should upload payment receipt</span>
               </div>
             </div>
 
@@ -202,29 +189,17 @@
               <span class="success-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
               <div style="flex: 1;">
                 <strong>Receipt Received</strong>
-                <small>Awaiting final Convocation approval</small>
+                <small>Awaiting final Convocation verification &amp; approval</small>
               </div>
               <button type="button" class="view-btn" (click)="viewReceipt(request)" style="margin-left: auto;">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View Receipt
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View Receipt
               </button>
             </div>
           </div>
 
           <div class="action-buttons" *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending'">
-            <!-- STEP 1: ISSUE CONTROL NUMBER -->
             <button
-              *ngIf="request.convocation?.controlNumberRequestedAt && !request.convocation?.controlNumber"
-              type="button"
-              class="issue-btn"
-              (click)="issueControlNumber(request)"
-              [disabled]="isLoading"
-            >
-              <span *ngIf="!isLoading"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Issue Control Number</span>
-              <span *ngIf="isLoading">Processing...</span>
-            </button>
-
-            <button
-              *ngIf="request.convocation?.controlNumber && !request.convocation?.receiptSubmittedAt"
+              *ngIf="!request.convocation?.receiptSubmittedAt"
               type="button"
               class="approve-btn"
               (click)="markReceiptReceived(request)"
@@ -240,7 +215,7 @@
               (click)="approveRequest(request)"
               [disabled]="isLoading"
             >
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Final Approval
+              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
             </button>
           </div>
 

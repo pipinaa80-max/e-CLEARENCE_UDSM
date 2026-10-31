@@ -14,6 +14,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { HostelService } from '../../core/services/hostel.service';
 import { firstValueFrom } from 'rxjs';
 
 interface DepartmentData {
@@ -43,6 +44,7 @@ export class ClearanceRequestComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly hostelService = inject(HostelService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -363,27 +365,19 @@ export class ClearanceRequestComponent implements OnInit {
     'Non-Hostel Dwellers'
   ];
 
-  readonly hallOptions = [
-    'CoICT Hostels',
-    'Kunduchi Hostels',
-    'Mabibo Hostels',
-    'Magufuli Hostels',
-    'Mikocheni Hostels'
-  ];
+  get hallOptions(): string[] {
+    return this.hostelService.getHostelNames();
+  }
 
-  readonly coictWings = [
-    'Wing A',
-    'Wing B'
-  ];
+  get coictWings(): string[] {
+    const hall = this.requestForm.controls.hostelHall.value;
+    return this.hostelService.getWingsForHostel(hall);
+  }
 
-  readonly blockOptions = [
-    'Block A',
-    'Block B',
-    'Block C',
-    'Block D',
-    'Block E',
-    'Block F'
-  ];
+  get blockOptions(): string[] {
+    const hall = this.requestForm.controls.hostelHall.value;
+    return this.hostelService.getBlocksForHostel(hall);
+  }
 
   readonly sponsorOptions = [
     'HELBS',
@@ -397,12 +391,15 @@ export class ClearanceRequestComponent implements OnInit {
   }
 
   get isCoictHostel(): boolean {
-    return this.isHostelDweller && this.requestForm.controls.hostelHall.value === 'CoICT Hostels';
+    const hall = this.requestForm.controls.hostelHall.value;
+    const wings = this.hostelService.getWingsForHostel(hall);
+    return this.isHostelDweller && wings.length > 0;
   }
 
   get isBlockHostel(): boolean {
     const hall = this.requestForm.controls.hostelHall.value;
-    return this.isHostelDweller && (hall === 'Mabibo Hostels' || hall === 'Magufuli Hostels');
+    const blocks = this.hostelService.getBlocksForHostel(hall);
+    return this.isHostelDweller && blocks.length > 0;
   }
 
   get currentUser() {

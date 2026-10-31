@@ -181,8 +181,7 @@
         </h2>
 
         <p>
-          Request your control number, make the required
-          payment and upload your payment receipt.
+          Upload your Convocation payment receipt to complete Step 1 clearance.
         </p>
 
         <div class="step-navigation">
@@ -531,24 +530,74 @@
 
         <div class="no-request-card">
 
-          <div class="warning-icon">
-            !
+          <div class="corresponding-mark-wrapper">
+            <div class="corresponding-mark" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="12" x2="12" y2="16"></line>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <span class="mark-badge">Clearance Required</span>
           </div>
 
           <h1>
             Clearance Request Required
           </h1>
 
-          <p>
-            Please complete your clearance request before
-            starting the clearance process.
+          <p class="subtitle">
+            Please complete and submit your clearance request before starting the graduation clearance process.
           </p>
+
+          <!-- INFORMATIONAL WELL -->
+          <div class="info-well">
+            <div class="well-student-section" *ngIf="student">
+              <span class="well-label">Student Information</span>
+              <div class="well-grid">
+                <div class="well-item">
+                  <span class="item-label">Full Name</span>
+                  <strong class="item-value">{{ student.fullName || 'Student' }}</strong>
+                </div>
+                <div class="well-item" *ngIf="student.registrationNumber || student.username">
+                  <span class="item-label">Registration No</span>
+                  <strong class="item-value">{{ student.registrationNumber || student.username }}</strong>
+                </div>
+                <div class="well-item" *ngIf="student.programme">
+                  <span class="item-label">Programme</span>
+                  <span class="item-value">{{ student.programme }}</span>
+                </div>
+                <div class="well-item" *ngIf="student.college || student.faculty">
+                  <span class="item-label">College / Unit</span>
+                  <span class="item-value">{{ student.college || student.faculty }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="well-guide-section">
+              <span class="well-label">Required Information &amp; Steps:</span>
+              <ul class="well-checklist">
+                <li>
+                  <span class="step-num">1</span>
+                  <span>Confirm and verify your personal and academic department details</span>
+                </li>
+                <li>
+                  <span class="step-num">2</span>
+                  <span>Specify residence details (Hostel room number or non-hostel proof)</span>
+                </li>
+                <li>
+                  <span class="step-num">3</span>
+                  <span>Submit application to initiate approvals through all clearance stages</span>
+                </li>
+              </ul>
+            </div>
+          </div>
 
           <a
             routerLink="/clearance/request"
             class="request-button"
           >
-            Complete Clearance Request
+            Complete Clearance Request &rarr;
           </a>
 
         </div>

@@ -142,17 +142,16 @@ export class ConvocationDashboardComponent implements OnInit {
     this.totalPending = requests.filter(r =>
         r.status === 'Pending' &&
         r.currentStage === 'Convocation' &&
-        !r.convocation?.controlNumber
-    ).length;
-
-    this.totalIssued = requests.filter(r =>
-        r.convocation?.controlNumber &&
         !r.convocation?.receiptSubmittedAt
     ).length;
 
-    this.totalCompleted = requests.filter(r =>
+    this.totalIssued = requests.filter(r =>
         r.convocation?.receiptSubmittedAt &&
-        r.status === 'Pending'
+        this.getRequestOfficeStatus(r, 'Convocation') === 'Pending'
+    ).length;
+
+    this.totalCompleted = requests.filter(r =>
+        this.getRequestOfficeStatus(r, 'Convocation') === 'Approved'
     ).length;
   }
 

@@ -120,9 +120,6 @@ public class ConvocationService {
         if (request == null || request.getStudentId() == null || request.getStudentId().isBlank()) {
             throw new IllegalArgumentException("Student ID is required");
         }
-        if (request.getControlNumber() == null || request.getControlNumber().isBlank()) {
-            throw new IllegalArgumentException("Control number is required");
-        }
         if (request.getReceiptNumber() == null || request.getReceiptNumber().isBlank()) {
             throw new IllegalArgumentException("Receipt number is required");
         }

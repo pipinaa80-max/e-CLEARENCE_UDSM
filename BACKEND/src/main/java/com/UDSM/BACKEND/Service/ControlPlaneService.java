@@ -50,14 +50,15 @@ public class ControlPlaneService {
     @Value("${control-plane.superuser.password:ChangeMeImmediately!2026}")
     private String configuredSuperuserPassword;
 
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     @Transactional
-    public Map<String, Object> login(String email, String password) {
-        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
-        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
-        if (user == null && normalizedEmail.equals(configuredSuperuserEmail.toLowerCase())) {
+    public void initSuperuser() {
+        String email = configuredSuperuserEmail == null ? "superuser@admin.local" : configuredSuperuserEmail.trim().toLowerCase();
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
             user = new User();
-            user.setUsername(normalizedEmail);
-            user.setEmail(normalizedEmail);
+            user.setUsername(email);
+            user.setEmail(email);
             user.setFirstName("System");
             user.setLastName("Superuser");
             user.setFullName("System Superuser");
@@ -65,7 +66,39 @@ public class ControlPlaneService {
             user.setRole(ERole.SUPERUSER);
             user.setActive(true);
             user.setEmailVerified(true);
-            user = userRepository.save(user);
+            userRepository.save(user);
+            log.info("Initialized default superuser account: {}", email);
+        } else if (user.getRole() != ERole.SUPERUSER || !user.isActive()) {
+            user.setRole(ERole.SUPERUSER);
+            user.setActive(true);
+            userRepository.save(user);
+            log.warn("Restored superuser account role to SUPERUSER: {}", email);
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> login(String email, String password) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+        if (normalizedEmail.equalsIgnoreCase(configuredSuperuserEmail)) {
+            if (user == null) {
+                user = new User();
+                user.setUsername(normalizedEmail);
+                user.setEmail(normalizedEmail);
+                user.setFirstName("System");
+                user.setLastName("Superuser");
+                user.setFullName("System Superuser");
+                user.setPassword(passwordEncoder.encode(configuredSuperuserPassword));
+                user.setRole(ERole.SUPERUSER);
+                user.setActive(true);
+                user.setEmailVerified(true);
+                user = userRepository.save(user);
+            } else if (user.getRole() != ERole.SUPERUSER || !user.isActive()) {
+                log.warn("Auto-correcting superuser {} role from {} to SUPERUSER upon login", normalizedEmail, user.getRole());
+                user.setRole(ERole.SUPERUSER);
+                user.setActive(true);
+                user = userRepository.save(user);
+            }
         }
         if (user == null || user.getRole() == null
                 || (user.getRole() != ERole.SUPERUSER && user.getRole() != ERole.ADMINISTRATOR)
@@ -176,7 +209,63 @@ public class ControlPlaneService {
         result.put("size", pageSize);
         result.put("totalElements", page.getTotalElements());
         result.put("totalPages", page.getTotalPages());
+        result.put("blockedIps", getBlockedIps());
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getBlockedIps() {
+        ProjectSetting value = setting("default");
+        String json = value.getBlockedIpsJson();
+        if (json == null || json.isBlank()) return new ArrayList<>();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> toggleBlockIp(String ipAddress) {
+        requireSuperuser();
+        if (ipAddress == null || ipAddress.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IP address is required");
+        }
+        String targetIp = ipAddress.trim();
+        List<String> blocked = new ArrayList<>(getBlockedIps());
+        boolean isNowBlocked;
+        if (blocked.contains(targetIp)) {
+            blocked.remove(targetIp);
+            isNowBlocked = false;
+        } else {
+            blocked.add(targetIp);
+            isNowBlocked = true;
+        }
+
+        ProjectSetting value = setting("default");
+        try {
+            value.setBlockedIpsJson(objectMapper.writeValueAsString(blocked));
+            projectSettingRepository.save(value);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update blocked IPs", e);
+        }
+
+        try {
+            AuditLog audit = new AuditLog();
+            audit.setUserId(currentUser().getId());
+            audit.setUsername(currentUser().getUsername());
+            audit.setAction(isNowBlocked ? "BLOCK_IP" : "UNBLOCK_IP");
+            audit.setDetails((isNowBlocked ? "Blocked IP address: " : "Unblocked IP address: ") + targetIp);
+            audit.setIpAddress(targetIp);
+            audit.setStatus("SUCCESS");
+            auditLogRepository.save(audit);
+        } catch (Exception ignored) {}
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("ipAddress", targetIp);
+        response.put("blocked", isNowBlocked);
+        response.put("blockedIps", blocked);
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -239,9 +328,10 @@ public class ControlPlaneService {
         if (email.isBlank() || name.isBlank() || password.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name, email, and password are required");
         }
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+        if (userRepository.findByEmail(email).isPresent() || userRepository.findByUsername(email).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A user with this email or username already exists");
         }
+        String projectId = "project-" + UUID.randomUUID();
         User admin = new User();
         admin.setUsername(email);
         admin.setEmail(email);
@@ -252,8 +342,35 @@ public class ControlPlaneService {
         admin.setRole(ERole.ADMINISTRATOR);
         admin.setActive(true);
         admin.setEmailVerified(true);
-        admin.setProjectId("project-" + UUID.randomUUID());
+        admin.setProjectId(projectId);
         userRepository.save(admin);
+
+        ProjectSetting setting = new ProjectSetting();
+        setting.setProjectId(projectId);
+        setting.setUniversityName(name);
+        setting.setShortName(name.length() > 25 ? name.substring(0, 25) : name);
+        setting.setLogoUrl("/udsm-logo.png");
+        setting.setBackgroundUrl("/public/background.png");
+        setting.setPrimaryColor("#123c69");
+        setting.setFontFamily("Georgia");
+        try {
+            setting.setDashboardsJson(objectMapper.writeValueAsString(defaultDashboards()));
+        } catch (Exception e) {
+            setting.setDashboardsJson("[]");
+        }
+        setting.setFooterLinksJson("[{\"label\":\"ARIS 3\",\"url\":\"https://aris3.udsm.ac.tz/\"},{\"label\":\"UDSM\",\"url\":\"https://www.udsm.ac.tz/\"}]");
+        projectSettingRepository.save(setting);
+
+        try {
+            AuditLog audit = new AuditLog();
+            audit.setUserId(currentUser().getId());
+            audit.setUsername(currentUser().getUsername());
+            audit.setAction("CREATE_ADMIN");
+            audit.setDetails("Created institutional administrator: " + email + " (" + name + ")");
+            audit.setStatus("SUCCESS");
+            auditLogRepository.save(audit);
+        } catch (Exception ignored) {}
+
         return userView(admin);
     }
 

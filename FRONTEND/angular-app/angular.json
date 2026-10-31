@@ -40,7 +40,10 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "optimization": {
+              "fonts": false
+            }
           }
         },
         "serve": {

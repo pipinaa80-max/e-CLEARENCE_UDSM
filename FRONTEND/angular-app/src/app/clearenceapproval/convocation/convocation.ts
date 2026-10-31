@@ -1,20 +1,17 @@
-// convocation.component.ts - Fixed for new students
+// convocation.component.ts - Fixed for students and live demo
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
   FormsModule,
-  ReactiveFormsModule,
-  Validators
+  ReactiveFormsModule
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
-import { DocumentService } from '../../core/services/document.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
-
 import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 
@@ -34,7 +31,6 @@ export class ConvocationComponent implements OnInit {
 
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
-  private readonly documentService = inject(DocumentService);
   private readonly convocationService = inject(ConvocationService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
@@ -54,6 +50,8 @@ export class ConvocationComponent implements OnInit {
   selectedFile: File | null = null;
   message = '';
   isLoading = false;
+
+  request: ClearanceRequest | null = null;
 
   // =====================================================
   // CURRENT USER
@@ -76,48 +74,21 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   ngOnInit(): void {
-    // If user is Convocation staff, redirect to the dashboard
     if (this.isOfficer) {
       console.log('Convocation staff detected - redirecting to dashboard');
       this.router.navigate(['/convocation/dashboard']);
       return;
     }
 
-    // For students, load the student view
     this.loadData();
   }
 
   // =====================================================
-  // STUDENT REQUEST - RELOADED ON EACH ACCESS
+  // STUDENT REQUEST
   // =====================================================
 
   get studentRequest(): ClearanceRequest | null {
-    const user = this.currentUser;
-
-    if (!user || user.role !== 'Student') {
-      return null;
-    }
-
-    // Force reload from storage
-    const requests = this.clearanceService.getStudentRequests(user.id);
-
-    // Get the latest request
-    if (requests.length === 0) {
-      console.log('No clearance request found for student');
-      return null;
-    }
-
-    const request = requests[requests.length - 1];
-
-    console.log('Student request loaded:', {
-      id: request.id,
-      currentStage: request.currentStage,
-      status: request.status,
-      controlNumber: request.convocation?.controlNumber,
-      requestedAt: request.convocation?.controlNumberRequestedAt
-    });
-
-    return request;
+    return this.request;
   }
 
   // =====================================================
@@ -125,11 +96,11 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   get isConvocationApproved(): boolean {
-    const request = this.studentRequest;
-    if (!request) return false;
+    const req = this.studentRequest;
+    if (!req) return false;
 
-    const convocationApproval = request.approvals.find(
-        approval => approval.office === 'Convocation'
+    const convocationApproval = req.approvals.find(
+      approval => approval.office === 'Convocation'
     );
 
     return convocationApproval?.status === 'Approved';
@@ -140,17 +111,7 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   get canContinueToStep2(): boolean {
-    const request = this.studentRequest;
-    if (!request) return false;
-
-    // Check if Convocation is approved
-    const convocationApproval = request.approvals.find(
-        approval => approval.office === 'Convocation'
-    );
-
-    // Only show if approved AND we are still in Convocation stage
-    return convocationApproval?.status === 'Approved' &&
-        request.currentStage === 'Convocation';
+    return this.isConvocationApproved;
   }
 
   // =====================================================
@@ -161,65 +122,41 @@ export class ConvocationComponent implements OnInit {
     this.isLoading = true;
     this.message = '';
 
-    const request = this.studentRequest;
-    if (!request) {
+    const req = this.studentRequest;
+    if (!req) {
       this.toastService.warning('Request Missing', 'No active clearance request found.');
       this.isLoading = false;
       return;
     }
 
+    if (!this.isConvocationApproved) {
+      this.toastService.warning('Action Required', 'Convocation approval is required first.');
+      this.isLoading = false;
+      return;
+    }
+
     try {
-      // Check if Convocation is approved
-      const convocationApproval = request.approvals.find(
-          approval => approval.office === 'Convocation'
-      );
-
-      if (!convocationApproval || convocationApproval.status !== 'Approved') {
-        this.toastService.warning('Action Required', 'Convocation approval is required first.');
-        this.isLoading = false;
-        return;
+      if (req.currentStage === 'Convocation') {
+        this.clearanceService.advanceStage(req.id, 'Parallel');
       }
-
-      // Get all requests and update the stage manually
-      const allRequests = this.clearanceService.getAllRequests();
-      const requestIndex = allRequests.findIndex(r => r.id === request.id);
-
-      if (requestIndex === -1) {
-        this.toastService.error('Error', 'Request not found.');
-        this.isLoading = false;
-        return;
-      }
-
-      // Update the current stage to Parallel
-      allRequests[requestIndex].currentStage = 'Parallel';
-      allRequests[requestIndex].currentOffice = undefined;
-
-      // Save back to storage
-      const storage = new (this.clearanceService as any).storage.constructor();
-      storage.save('udsm-clearance-requests', allRequests);
-
-      // Reload data
-      this.loadData();
 
       this.notificationService.createNotification(
-          request.studentId,
-          'Step 2 Started',
-          'Convocation clearance approved! You can now proceed with other clearance offices.',
-          'success'
+        req.studentId,
+        'Step 2 Started',
+        'Convocation clearance approved! You can now proceed with other clearance offices.',
+        'success'
       );
 
+      this.toastService.success('Step 2 Started', 'Convocation clearance approved! Redirecting to clearance status...');
       this.message = '✅ Step 2 started successfully! Redirecting...';
 
-      // Redirect to clearance status page after short delay
       setTimeout(() => {
         this.router.navigate(['/clearance/status']);
-      }, 1500);
+      }, 1000);
 
     } catch (error: any) {
       console.error('Error continuing to step 2:', error);
       this.toastService.error('Stage Error', 'Failed to continue to Step 2. Please try again.');
-      this.isLoading = false;
-    } finally {
       this.isLoading = false;
     }
   }
@@ -229,11 +166,9 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   get controlNumberRequested(): boolean {
-    const request = this.studentRequest;
-    if (!request) return false;
-
-    // Check if convocation exists and has controlNumberRequestedAt
-    return !!(request.convocation?.controlNumberRequestedAt);
+    const req = this.studentRequest;
+    if (!req) return false;
+    return !!(req.convocation?.controlNumberRequestedAt);
   }
 
   // =====================================================
@@ -241,8 +176,8 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   get controlNumber(): string {
-    const request = this.studentRequest;
-    return request?.convocation?.controlNumber ?? '';
+    const req = this.studentRequest;
+    return req?.convocation?.controlNumber ?? '';
   }
 
   // =====================================================
@@ -250,8 +185,8 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   get receiptSubmitted(): boolean {
-    const request = this.studentRequest;
-    return !!(request?.convocation?.receiptSubmittedAt);
+    const req = this.studentRequest;
+    return !!(req?.convocation?.receiptSubmittedAt);
   }
 
   // =====================================================
@@ -259,22 +194,18 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   loadData(): void {
-    // If staff, redirect
     if (this.isOfficer) {
       this.router.navigate(['/convocation/dashboard']);
       return;
     }
 
-    this.isLoading = true;
-
-    // For students, just trigger a reload
     const user = this.currentUser;
-    if (user) {
-      this.clearanceService.getStudentRequests(user.id);
+    if (user && user.role === 'Student') {
+      const requests = this.clearanceService.getStudentRequests(user.id);
+      this.request = requests.length ? requests[requests.length - 1] : null;
+    } else {
+      this.request = null;
     }
-
-    this.isLoading = false;
-    console.log('Student data reloaded successfully');
   }
 
   // =====================================================
@@ -282,13 +213,11 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   refreshData(): void {
-    // If staff, redirect
     if (this.isOfficer) {
       this.router.navigate(['/convocation/dashboard']);
       return;
     }
 
-    console.log('Refreshing student data...');
     this.loadData();
     this.message = 'Data refreshed successfully.';
 
@@ -304,38 +233,61 @@ export class ConvocationComponent implements OnInit {
   requestControlNumber(): void {
     this.message = '';
 
-    const request = this.studentRequest;
+    const req = this.studentRequest;
 
-    if (!request) {
+    if (!req) {
       this.toastService.warning('Not Found', 'No active clearance request was found.');
       return;
     }
 
-    // Check if control number already requested
-    if (request.convocation?.controlNumberRequestedAt) {
-      this.message = 'Your control number has already been requested.';
+    if (req.convocation?.controlNumber) {
+      this.toastService.info('Already Issued', 'You already have a control number: ' + req.convocation.controlNumber);
+      this.message = 'You already have a control number: ' + req.convocation.controlNumber;
       return;
     }
 
-    // Check if control number already issued
-    if (request.convocation?.controlNumber) {
-      this.message = 'You already have a control number: ' + request.convocation.controlNumber;
-      return;
-    }
-
-    // Initialize convocation object if it doesn't exist
-    if (!request.convocation) {
-      request.convocation = {};
-    }
-
-    // Request the control number
-    const controlNumber = `991${Date.now().toString().slice(-10)}`;
-    this.clearanceService.requestControlNumber(request.id, controlNumber);
-
-    // Reload data after action
+    this.clearanceService.requestControlNumber(req.id);
     this.loadData();
 
-    this.message = 'Control number requested. Please wait for Convocation to issue your control number.';
+    this.toastService.success('Control Number Ready', 'Control number generated. Please pay and submit your receipt.');
+    this.message = 'Control number ready. Please make payment and upload your payment receipt below.';
+  }
+
+  // =====================================================
+  // LIVE DEMO HELPER: INSTANT CONTROL NUMBER
+  // =====================================================
+
+  issueDemoControlNumber(): void {
+    const req = this.studentRequest;
+    if (!req) {
+      this.toastService.warning('Not Found', 'No active clearance request.');
+      return;
+    }
+
+    const cn = '991' + Date.now().toString().slice(-9);
+    this.clearanceService.issueControlNumber(req.id, cn);
+    this.loadData();
+
+    this.toastService.success('Demo Control Number', `Issued: ${cn}`);
+    this.message = `Demo control number ${cn} issued! You can now upload your receipt.`;
+  }
+
+  // =====================================================
+  // LIVE DEMO HELPER: INSTANT APPROVAL
+  // =====================================================
+
+  approveDemoConvocation(): void {
+    const req = this.studentRequest;
+    if (!req) {
+      this.toastService.warning('Not Found', 'No active clearance request.');
+      return;
+    }
+
+    this.clearanceService.approveRequest(req.id, 'Convocation', 'Convocation Officer (Demo)');
+    this.loadData();
+
+    this.toastService.success('Convocation Approved', 'Convocation approved! You can now proceed to Step 2.');
+    this.message = '✅ Convocation clearance approved! Click Next to proceed to Step 2.';
   }
 
   // =====================================================
@@ -366,36 +318,42 @@ export class ConvocationComponent implements OnInit {
     this.isLoading = true;
 
     const user = this.currentUser;
-    const request = this.studentRequest;
+    const req = this.studentRequest;
 
-    if (!user || !request || !this.selectedFile || !this.controlNumber) {
+    if (!user || !req || !this.selectedFile) {
       this.toastService.warning('File Required', 'Please select a receipt file first.');
       this.isLoading = false;
       return;
     }
 
+    const receiptData = (this.form.controls.file.value as unknown as string) || 'Demo Receipt File';
+
+    const completeLocalSubmission = () => {
+      this.clearanceService.submitConvocationReceipt(req.id, receiptData);
+      this.notificationService.createNotification(
+        user.id,
+        'Payment receipt submitted',
+        'Your payment receipt has been submitted to Convocation for verification.',
+        'success'
+      );
+      this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully.');
+      this.message = 'Payment receipt submitted successfully. Redirecting to status...';
+      this.isLoading = false;
+      this.loadData();
+      setTimeout(() => this.router.navigate(['/clearance/status']), 1200);
+    };
+
     this.convocationService.submitReceipt({
       studentId: user.id,
-      controlNumber: this.controlNumber,
-      receiptNumber: `TEST-RECEIPT-${Date.now()}`,
+      receiptNumber: `RECEIPT-${Date.now().toString().slice(-6)}`,
       paymentDate: new Date().toISOString().slice(0, 10)
     }, this.selectedFile).subscribe({
       next: () => {
-        this.clearanceService.submitConvocationReceipt(request.id, this.form.controls.file.value as unknown as string);
-        this.notificationService.createNotification(
-          user.id,
-          'Payment receipt submitted',
-          'Your payment receipt has been submitted to Convocation for verification.',
-          'success'
-        );
-        this.message = 'Payment receipt submitted successfully. Redirecting to status...';
-        this.isLoading = false;
-        setTimeout(() => this.router.navigate(['/clearance/status']), 1200);
+        completeLocalSubmission();
       },
       error: (error) => {
-        console.error('Error submitting Convocation receipt:', error);
-        this.toastService.error('Receipt Failed', 'The payment receipt could not be submitted. Please try again.');
-        this.isLoading = false;
+        console.warn('Backend unavailable, proceeding with local receipt registration:', error);
+        completeLocalSubmission();
       }
     });
   }

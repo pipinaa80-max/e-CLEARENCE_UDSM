@@ -1,5 +1,5 @@
 const API = 'http://localhost:8090/api';
-const state = { token: localStorage.getItem('superuser-token'), tab: 'overview', data: null, detail: null, message: '', systemStatus: 'checking', lastChecked: null, filter: '', adminFilter: '', auditFilter: '', auditEvents: [], auditPage: 0, auditTotal: 0, auditTotalPages: 0, auditLoading: false, auditSearchTimer: null, showCreateForm: false };
+const state = { token: localStorage.getItem('superuser-token'), tab: 'overview', data: null, detail: null, message: '', systemStatus: 'checking', lastChecked: null, filter: '', adminFilter: '', auditFilter: '', auditEvents: [], blockedIps: [], auditPage: 0, auditTotal: 0, auditTotalPages: 0, auditLoading: false, auditSearchTimer: null, showCreateForm: false };
 const permissions = ['INSTITUTIONAL_ADMIN', 'VIEW_USERS', 'MANAGE_CLEARANCE'];
 
 async function request(path, options = {}) {
@@ -140,9 +140,9 @@ function dashboards() {
 function audit() {
   const events = state.auditEvents || [];
   return `<div class="topline"><div><div class="eyebrow">Governance / stream</div><h1>Audit events</h1><div class="muted">Review who did what, when, and from which browser, device, and network address.</div></div><span class="audit-total">${state.auditTotal.toLocaleString()} recorded events</span></div>
-    <div class="panel filter-panel audit-filter-panel"><div class="field" style="margin:0"><label for="audit-search">Search all audit records</label><div class="input-wrap"><span>🔍</span><input type="search" id="audit-search" placeholder="User, action, details, IP, browser, device, or status..." value="${esc(state.auditFilter)}"></div></div></div>
+    <div class="panel filter-panel audit-filter-panel"><div class="field" style="margin:0"><label for="audit-search">Search all audit records</label><div class="input-wrap"><span>🔍</span><input type="search" id="audit-search" placeholder="User, action, IP, browser, device, or status..." value="${esc(state.auditFilter)}"></div></div></div>
     <section class="panel audit-table-panel"><div class="panel-head"><div><div class="eyebrow">Full audit ledger</div><h2>System activity</h2></div><span class="live-label"><i></i>${state.auditLoading ? 'Loading' : `Page ${state.auditPage + 1} of ${Math.max(1, state.auditTotalPages)}`}</span></div>
-      ${events.length ? `<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>Action</th><th>Details</th><th>IP address</th><th>Browser</th><th>Device</th><th>Result</th></tr></thead><tbody>${events.map(event => { const client = parseClient(event.userAgent); return `<tr><td>${esc(formatAuditDate(event.createdAt))}</td><td>${esc(formatAuditTime(event.createdAt))}</td><td><strong>${esc(event.username || 'System')}</strong><small>${esc(event.userId || '—')}</small></td><td><span class="audit-action">${esc(event.action || '—')}</span></td><td class="audit-details" title="${esc(event.details || '')}">${esc(event.details || '—')}</td><td>${esc(event.ipAddress || '—')}</td><td title="${esc(event.userAgent || '')}">${esc(client.browser)}<small>${esc(client.browserVersion)}</small></td><td>${esc(client.device)}<small>${esc(client.platform)}</small></td><td><span class="audit-result ${String(event.status || '').toLowerCase()}">${esc(event.status || 'Unknown')}</span></td></tr>`; }).join('')}</tbody></table></div>` : `<div class="empty-state">${state.auditLoading ? 'Loading audit records…' : 'No audit records match this search.'}</div>`}
+      ${events.length ? `<div class="audit-table-wrap"><table class="audit-table"><thead><tr><th>Date</th><th>Time</th><th>User</th><th>Action</th><th>IP address</th><th>Browser</th><th>Device</th><th>Result</th><th>Actions</th></tr></thead><tbody>${events.map(event => { const client = parseClient(event.userAgent); const isBlocked = (state.blockedIps || []).includes(event.ipAddress); return `<tr><td>${esc(formatAuditDate(event.createdAt))}</td><td>${esc(formatAuditTime(event.createdAt))}</td><td><strong>${esc(event.username || 'System')}</strong><small>${esc(event.userId || '—')}</small></td><td><span class="audit-action">${esc(event.action || '—')}</span></td><td>${esc(event.ipAddress || '—')}${isBlocked ? ' <span class="blocked-tag">BLOCKED</span>' : ''}</td><td title="${esc(event.userAgent || '')}">${esc(client.browser)}<small>${esc(client.browserVersion)}</small></td><td>${esc(client.device)}<small>${esc(client.platform)}</small></td><td><span class="audit-result ${String(event.status || '').toLowerCase()}">${esc(event.status || 'Unknown')}</span></td><td>${event.ipAddress && event.ipAddress !== '—' ? `<button class="action-btn ${isBlocked ? 'unblock-btn' : 'block-btn'}" data-toggle-block-ip="${esc(event.ipAddress)}">${isBlocked ? 'Unblock' : 'Block'}</button>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : `<div class="empty-state">${state.auditLoading ? 'Loading audit records…' : 'No audit records match this search.'}</div>`}
       <div class="audit-pagination"><button class="outline" data-audit-page="prev" ${state.auditPage <= 0 || state.auditLoading ? 'disabled' : ''}>← Previous</button><span>Showing ${events.length ? (state.auditPage * 50 + 1).toLocaleString() : 0}–${Math.min((state.auditPage + 1) * 50, state.auditTotal).toLocaleString()} of ${state.auditTotal.toLocaleString()}</span><button class="outline" data-audit-page="next" ${state.auditPage + 1 >= state.auditTotalPages || state.auditLoading ? 'disabled' : ''}>Next →</button></div>
     </section>`;
 }
@@ -237,6 +237,7 @@ async function loadAuditPage(page = state.auditPage) {
     const query = new URLSearchParams({ page: String(page), size: '50', search: state.auditFilter });
     const result = await request(`/audit-events?${query.toString()}`);
     state.auditEvents = Array.isArray(result.content) ? result.content : [];
+    state.blockedIps = Array.isArray(result.blockedIps) ? result.blockedIps : (state.blockedIps || []);
     state.auditPage = Number(result.page) || 0;
     state.auditTotal = Number(result.totalElements) || 0;
     state.auditTotalPages = Number(result.totalPages) || 0;
@@ -266,7 +267,18 @@ document.addEventListener('submit', async event => {
   event.preventDefault(); const form = event.target;
   try {
     if (form.id === 'login-form') { const result = await request('/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(form))) }); state.token = result.token; localStorage.setItem('superuser-token', state.token); await refresh(); }
-    else if (form.id === 'admin-form-submit') { const input = Object.fromEntries(new FormData(form)); input.permissions = [form.querySelector('[name=permissions]').value]; await request('/sub-admins', { method: 'POST', body: JSON.stringify(input) }); state.tab = 'admins'; state.showCreateForm = false; await refresh(); }
+    else if (form.id === 'admin-form-submit') {
+      const input = Object.fromEntries(new FormData(form));
+      input.permissions = [form.querySelector('[name=permissions]').value];
+      await request('/sub-admins', { method: 'POST', body: JSON.stringify(input) });
+      state.tab = 'admins';
+      state.showCreateForm = false;
+      state.message = `Administrator account for ${input.name} created successfully.`;
+      const msg = state.message;
+      await refresh();
+      state.message = msg;
+      render();
+    }
     else if (form.id === 'branding-form') { const input = Object.fromEntries(new FormData(form)); delete input.logoFile; await request(state.data?.role === 'SUPERUSER' ? '/global-branding' : '/branding', { method: 'PUT', body: JSON.stringify(input) }); await refresh(); state.tab = 'branding'; render(); }
   } catch (error) { state.message = error.message; render(); }
 });
@@ -303,6 +315,13 @@ document.addEventListener('click', async event => {
       render();
     }
     if (target.dataset.toggleDashboard) { const dashboard = state.data.dashboards.find(d => d.id === target.dataset.toggleDashboard); await request(`/dashboards/${dashboard.id}`, { method: 'PUT', body: JSON.stringify({ enabled: !dashboard.enabled }) }); await refresh(); render(); }
+    if (target.dataset.toggleBlockIp) {
+      const ip = target.dataset.toggleBlockIp;
+      const result = await request('/toggle-block-ip', { method: 'POST', body: JSON.stringify({ ipAddress: ip }) });
+      state.blockedIps = Array.isArray(result.blockedIps) ? result.blockedIps : [];
+      state.message = result.blocked ? `IP address ${ip} has been blocked.` : `IP address ${ip} has been unblocked.`;
+      render();
+    }
   } catch (error) { state.message = error.message; render(); }
 });
 if (state.token) refresh().catch(() => { state.token = null; localStorage.removeItem('superuser-token'); render(); }); else render();

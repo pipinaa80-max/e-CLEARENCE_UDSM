@@ -38,6 +38,18 @@ public class ControlPlaneController {
         return ResponseEntity.ok(service.auditEvents(page, size, search));
     }
 
+    @GetMapping("/blocked-ips")
+    @PreAuthorize("hasRole('SUPERUSER')")
+    public ResponseEntity<List<String>> getBlockedIps() {
+        return ResponseEntity.ok(service.getBlockedIps());
+    }
+
+    @PostMapping("/toggle-block-ip")
+    @PreAuthorize("hasRole('SUPERUSER')")
+    public ResponseEntity<Map<String, Object>> toggleBlockIp(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(service.toggleBlockIp(body.get("ipAddress")));
+    }
+
     @GetMapping("/sub-admins")
     @PreAuthorize("hasRole('SUPERUSER')")
     public ResponseEntity<List<Map<String, Object>>> admins() {

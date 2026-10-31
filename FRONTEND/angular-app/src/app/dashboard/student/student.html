@@ -158,24 +158,6 @@
       </div>
     </section>
 
-    <!-- =========================
-         QUICK ACTIONS
-    ========================== -->
-
-    <section class="quick-actions">
-      <a routerLink="/profile" class="quick-action">
-        <strong>My Profile</strong>
-        <span>View your student information</span>
-      </a>
-      <a *ngIf="!isTranscriptSystem" routerLink="/clearance/request" class="quick-action">
-        <strong>Clearance Request</strong>
-        <span>Complete or review your request</span>
-      </a>
-      <a *ngIf="!isTranscriptSystem" routerLink="/clearance/status" class="quick-action">
-        <strong>Clearance Process</strong>
-        <span>Follow each clearance stage</span>
-      </a>
-    </section>
   </main>
 
 </section>

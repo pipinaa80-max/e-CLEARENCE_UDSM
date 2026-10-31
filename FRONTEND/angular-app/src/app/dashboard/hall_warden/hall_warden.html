@@ -13,12 +13,38 @@
     </div>
 
     <nav>
-      <a
-        routerLink="/dashboard/hall-warden"
-        routerLinkActive="active"
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'all'"
+        (click)="setViewMode('all')"
       >
-        Pending Requests
-      </a>
+        <span></span> Dashboard Overview
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
+      >
+        <span></span> Clearance Requests ({{ pendingRequestCount }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'halls'"
+        (click)="setViewMode('halls')"
+      >
+        <span></span> Halls &amp; Blocks ({{ halls.length }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <span></span> Hall Analytics
+      </button>
       <button type="button" (click)="logout()">
         Log out
       </button>
@@ -30,78 +56,792 @@
     <app-dashboard-header
       eyebrow="Clearance Office"
       title="Hall Warden Approval"
-      subtitle="Review student clearance applications and approve or reject requests."
+      subtitle="Review student hall clearance, inspect room inventory, and verify key return."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="count">
-        <strong>{{ pendingRequestCount }}</strong>
-        <small>Pending</small>
-      </div>
     </app-dashboard-header>
 
     <!-- MESSAGE -->
     <p class="message" *ngIf="message">{{ message }}</p>
 
-    <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
+    <!-- =========================================================================
+         HALL WARDEN STATISTICAL ANALYTICS BOARD
+         (Shown in 'all' or 'analytics')
+    ========================================================================== -->
+    <section class="dashboard-board analytics-board" id="analytics-section" *ngIf="viewMode === 'all' || viewMode === 'analytics'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge analytics-badge"></div>
+          <div>
+            <h2>Hall Clearance &amp; Room Inspection Analytics</h2>
+            <p>Real-time statistics on student room key returns, hall inventory inspection, resident gender ratio, and clearance progress.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <!-- COHORT FILTER -->
+          <select [(ngModel)]="selectedAnalyticsYear" class="board-select" aria-label="Filter cohort year" title="Filter by Academic Year">
+            <option value="all">All Cohorts (Years)</option>
+            <option value="2024">1st Year (2024)</option>
+            <option value="2023">2nd Year (2023)</option>
+            <option value="2022">3rd Year (2022)</option>
+            <option value="2021">4th Year (2021)</option>
+          </select>
+
+          <!-- GENDER FILTER -->
+          <select [(ngModel)]="selectedAnalyticsGender" class="board-select" aria-label="Filter gender" title="Filter by Gender">
+            <option value="all">All Genders</option>
+            <option value="Male">Male Residents</option>
+            <option value="Female">Female Residents</option>
+          </select>
+
+          <button type="button" class="action-btn secondary" (click)="printAnalytics()" title="Print hall analytics report">
+            Print Report
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" title="Download CSV statistical summary">
+            Export CSV
+          </button>
+        </div>
       </div>
 
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+      <div class="board-body analytics-body">
+
+        <!-- 1. EXECUTIVE KPIS -->
+        <div class="analytics-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap blue"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Hall Residents</span>
+              <strong class="kpi-value">{{ totalHallStudents | number }}</strong>
+              <small class="kpi-sub">Assigned campus residents</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap green">✓</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Room Keys Cleared</span>
+              <strong class="kpi-value text-green">{{ keysReturnedCount | number }}</strong>
+              <small class="kpi-sub text-green"><strong>{{ hallClearanceRate }}%</strong> keys returned &amp; cleared</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap amber"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Pending Inspections</span>
+              <strong class="kpi-value text-amber">{{ pendingInspectionsCount | number }}</strong>
+              <small class="kpi-sub text-amber">Awaiting warden check</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap purple"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Property Dues / Damages</span>
+              <strong class="kpi-value">{{ returnedDamagesCount | number }}</strong>
+              <small class="kpi-sub">Returned for action</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap primary"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Bed Capacity</span>
+              <strong class="kpi-value">{{ totalBedCapacity | number }}</strong>
+              <small class="kpi-sub">{{ halls.length }} residential halls</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap teal"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Hall Clearance Rate</span>
+              <strong class="kpi-value text-teal">{{ hallClearanceRate }}%</strong>
+              <small class="kpi-sub">Approved room clearance</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PICTORIAL FEATURE & GENDER CLASSIFICATION -->
+        <div class="pictorial-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Pictorial Gender &amp; Hall Residency Classification</h3>
+              <p>Visual representation of male and female students across university residential halls and key surrender metrics.</p>
+            </div>
+            <div class="gender-pill-badge">
+              <span>Ratio: <strong>{{ genderStats.malePercent }}% M</strong> : <strong>{{ genderStats.femalePercent }}% F</strong></span>
+            </div>
+          </div>
+
+          <div class="pictorial-cards-grid">
+            <!-- MALE CARD -->
+            <div class="pictorial-card male-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar male-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Male Residents</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.maleTotal | number }}</strong>
+                    <span class="pct-pill male-pill">{{ genderStats.malePercent }}% of residents</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.malePercent }}% representation">
+                <span class="silhouette-figure filled-male" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.malePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- MALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Keys Returned Clean</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.maleTotal * (hallClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ hallClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Inspection Pending</span>
+                  <strong class="b-val text-amber">{{ genderStats.maleTotal - Math.round(genderStats.maleTotal * (hallClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - hallClearanceRate }}% awaiting checkout</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FEMALE CARD -->
+            <div class="pictorial-card female-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar female-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Female Residents</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.femaleTotal | number }}</strong>
+                    <span class="pct-pill female-pill">{{ genderStats.femalePercent }}% of residents</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.femalePercent }}% representation">
+                <span class="silhouette-figure filled-female" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.femalePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- FEMALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Keys Returned Clean</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.femaleTotal * (hallClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ hallClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Inspection Pending</span>
+                  <strong class="b-val text-amber">{{ genderStats.femaleTotal - Math.round(genderStats.femaleTotal * (hallClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - hallClearanceRate }}% awaiting checkout</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ADVANCED HISTOGRAMS (BLOCK DISTRIBUTION & YEAR COHORT) -->
+        <div class="analytics-charts-grid">
+
+          <!-- HISTOGRAM 1: RESIDENTIAL BLOCK KEY CLEARANCE -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Residential Block Key Clearance (Histogram)</h3>
+                <span>Room key return volume and pending inspections by hall block</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="blockHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div
+                      class="hist-column"
+                      *ngFor="let b of blockHistogram"
+                      [class.highlighted]="hoveredHallName === b.label"
+                      (mouseenter)="setHoveredHall(b.label)"
+                      (mouseleave)="setHoveredHall(null)"
+                    >
+                      <div class="col-count-bubble">{{ b.count }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="b.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="b.clearedPercent" [title]="b.cleared + ' Cleared in ' + b.label"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="b.pendingPercent" [title]="(b.count - b.cleared) + ' Pending in ' + b.label"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name" [title]="b.label">{{ b.label }}</strong>
+                        <span class="col-cap-tag">{{ b.clearedPercent }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HISTOGRAM 2: COHORT KEY RETURNS & CLEARANCE -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Key Returns by Academic Year (Histogram)</h3>
+                <span>Clearance progress and room key checkout rate per cohort</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="yearResidencyHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div class="hist-column" *ngFor="let yr of yearResidencyHistogram">
+                      <div class="col-count-bubble">{{ yr.total }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="yr.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="yr.clearanceRate" [title]="yr.cleared + ' Cleared in ' + yr.cohort"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="100 - yr.clearanceRate" [title]="(yr.total - yr.cleared) + ' Pending in ' + yr.cohort"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name">{{ yr.yearLabel }}</strong>
+                        <span class="col-rate-badge">{{ yr.clearanceRate }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 4. PIE / DONUT CHARTS (KEY STATUS & HALL CAPACITY SHARE) -->
+        <div class="analytics-charts-grid">
+
+          <!-- PIE CHART 1: KEY CLEARANCE & INSPECTION STATUS SHARE -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Key Clearance &amp; Inspection Share (Pie Chart)</h3>
+                <span>Returned keys, pending checkouts, and flagged property proportions</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Key clearance status donut chart">
+                  <defs>
+                    <filter id="hallDonutShadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#hallDonutShadow)">
+                    <path
+                      *ngFor="let slice of keyStatusPieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} residents ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ totalHallStudents }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Residents</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-teal">{{ hallClearanceRate }}% Cleared</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of keyStatusPieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                  <small class="legend-slice-count">{{ slice.count | number }} students</small>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- PIE CHART 2: HALL CAPACITY DISTRIBUTION -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Hall Capacity Distribution (Pie Chart)</h3>
+                <span>Allocation capacity across major halls of residence</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Hall capacity donut chart">
+                  <g filter="url(#hallDonutShadow)">
+                    <path
+                      *ngFor="let slice of hallSharePieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} capacity ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ halls.length }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Halls</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-amber">Active Halls</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of hallSharePieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 5. HALL RESIDENCY LEADERBOARD TABLE -->
+        <div class="mostly-booked-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Halls of Residence Clearance &amp; Inspection Ranking</h3>
+              <p>Official hall ranking sorted by allocated residents, room key returns, and Hall Warden checkout throughput.</p>
+            </div>
+          </div>
+
+          <div class="ranking-table-card">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">Rank</th>
+                  <th>Hall of Residence</th>
+                  <th>Campus Location</th>
+                  <th class="text-right">Active Residents</th>
+                  <th class="text-right">Keys Returned</th>
+                  <th>Clearance Progress</th>
+                  <th class="text-center">Clearance Rate</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let h of hallRankings" [class.top-ranked]="h.rank === 1">
+                  <td class="col-rank">
+                    <span class="rank-badge" [class.gold-badge]="h.rank === 1" [class.silver-badge]="h.rank === 2" [class.bronze-badge]="h.rank === 3">
+                      #{{ h.rank }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="hostel-table-name">{{ h.name }}</strong>
+                  </td>
+                  <td>
+                    <span class="location-text">📍 {{ h.location }}</span>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ h.residentCount | number }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong class="booked-number">{{ h.clearedCount | number }}</strong>
+                  </td>
+                  <td>
+                    <div class="table-progress-wrap">
+                      <div class="table-progress-track">
+                        <span class="table-progress-bar" [style.width.%]="h.clearanceRate" [class.bar-high]="h.clearanceRate >= 75"></span>
+                      </div>
+                      <small class="table-progress-pct">{{ h.clearanceRate }}%</small>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <strong class="rate-tag">{{ h.clearanceRate }}%</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="demand-pill" [ngClass]="h.badgeClass">{{ h.statusBadge }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </section>
 
-    <!-- EMPTY STATE -->
-    <section class="empty-state" *ngIf="!filteredRequests.length">
-      <div class="empty-icon">✓</div>
-      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Hall Warden.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Hall Warden.' : 'There are currently no student applications awaiting Hall Warden approval.' }}</p>
+    <!-- HALLS DIRECTORY BOARD (Shown in 'all' or 'halls') -->
+    <section class="dashboard-board" id="halls-section" *ngIf="viewMode === 'all' || viewMode === 'halls'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Halls of Residence &amp; Blocks Directory</h2>
+            <p>Manage residential halls, room inspection checklists, assigned blocks, and hall warden contacts. Synced across the clearance system.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="hallSearchTerm"
+              placeholder="Search hall name, block, or warden..."
+              aria-label="Search halls"
+            />
+          </div>
+          <button type="button" class="action-btn secondary" (click)="resetHalls()" title="Reset to standard university halls">
+            Restore Defaults
+          </button>
+          <button type="button" class="action-btn primary" (click)="openAddHallModal()">
+            + Add New Hall
+          </button>
+        </div>
+      </div>
+
+      <div class="board-body">
+        <!-- HALLS GRID -->
+        <div class="hostels-grid" *ngIf="filteredHalls.length">
+          <div class="hostel-card compact" *ngFor="let hall of filteredHalls">
+            <div class="hostel-card-header">
+              <div class="header-main">
+                <h3>{{ hall.name }}</h3>
+                <span class="location-badge" *ngIf="hall.category"> {{ hall.category }}</span>
+              </div>
+              <div class="card-actions">
+                <button type="button" class="btn-icon edit" (click)="openEditHallModal(hall)" title="Edit hall details">
+                  ✎ Edit
+                </button>
+                <button type="button" class="btn-icon delete" (click)="deleteHall(hall)" title="Delete hall">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- COMPACT QUICK INFO -->
+            <div class="compact-info-row">
+              <span class="compact-item" *ngIf="hall.capacity">
+                <strong>{{ hall.capacity | number }}</strong> beds
+              </span>
+              <span class="compact-dot" *ngIf="hall.capacity && hall.location">•</span>
+              <span class="compact-item" *ngIf="hall.location">
+                📍 {{ hall.location }}
+              </span>
+              <span class="compact-dot" *ngIf="hall.blocks.length">•</span>
+              <span class="compact-item units-count" *ngIf="hall.blocks.length">
+                {{ hall.blocks.length }} {{ hall.blocks.length === 1 ? 'Block' : 'Blocks' }}
+              </span>
+            </div>
+
+            <!-- EXPANDABLE DETAILS -->
+            <div class="hostel-expanded-details" *ngIf="isHallExpanded(hall.id)">
+              <p class="hostel-desc" *ngIf="hall.description">{{ hall.description }}</p>
+
+              <div class="hostel-meta-grid">
+                <div class="meta-item" *ngIf="hall.capacity">
+                  <span class="meta-label">Bed Capacity</span>
+                  <strong>{{ hall.capacity | number }} residents</strong>
+                </div>
+                <div class="meta-item" *ngIf="hall.wardenName">
+                  <span class="meta-label">Assigned Warden</span>
+                  <strong>{{ hall.wardenName }}</strong>
+                </div>
+                <div class="meta-item" *ngIf="hall.wardenContact">
+                  <span class="meta-label">Warden Contact</span>
+                  <span>{{ hall.wardenContact }}</span>
+                </div>
+                <div class="meta-item" *ngIf="hall.location">
+                  <span class="meta-label">Campus Precinct</span>
+                  <span>{{ hall.location }}</span>
+                </div>
+              </div>
+
+              <!-- BLOCKS TAGS -->
+              <div class="units-breakdown" *ngIf="hall.blocks && hall.blocks.length">
+                <span class="unit-title">Residential Blocks:</span>
+                <div class="tags-container">
+                  <span class="tag block-tag" *ngFor="let b of hall.blocks">{{ b }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW MORE / VIEW LESS TOGGLE -->
+            <div class="card-footer-toggle">
+              <button
+                type="button"
+                class="view-more-btn"
+                (click)="toggleHallDetails(hall.id)"
+              >
+                {{ isHallExpanded(hall.id) ? 'View Less ▲' : 'View More ▼' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-empty-state" *ngIf="!filteredHalls.length">
+          <div class="empty-icon"></div>
+          <h2>No Residential Halls Found</h2>
+          <p>No hall matches your search criteria. Click "+ Add New Hall" to register one.</p>
+        </div>
+      </div>
     </section>
 
-    <!-- REQUEST LIST -->
-    <section class="request-list" *ngIf="filteredRequests.length">
-      <app-parallel-office-request-table
-        [requests]="paginatedRequests"
-        [office]="'Hall Warden'"
-        (approve)="approve($event)"
-        (reject)="openRejectForm($event)"
-      ></app-parallel-office-request-table>
+    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
+    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'all' || viewMode === 'requests'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications, verify room key return and inventory check, and approve or return clearance requests.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search student, registration number or programme..."
+              aria-label="Search requests"
+            />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="board-body board-table-body">
+        <!-- EMPTY STATE -->
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon">✓</div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Hall Warden.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Hall Warden.' : 'There are currently no student applications awaiting Hall Warden approval.' }}</p>
+        </div>
+
+        <!-- REQUEST LIST TABLE -->
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'Hall Warden'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+          ></app-parallel-office-request-table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            &larr; Previous
+          </button>
+          <span class="page-info">
+            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+          </span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
     </section>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+    <!-- STUDENT HALL WARDEN DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
+
+        <div class="student-modal-body">
+          <!-- HALL WARDEN RESIDENTIAL DETAILS -->
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <span class="section-icon"></span>
+              <h4>Hall &amp; Room Checkout Verification</h4>
+            </div>
+
+            <div class="residence-status-pill hostel">
+              <strong>Assigned Residence:</strong> {{ getStudentHall(viewingRequest) }}
+            </div>
+
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Hall Name</span>
+                <strong class="detail-value text-primary">{{ getStudentHall(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Block</span>
+                <strong class="detail-value">{{ getStudentBlock(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Room Number</span>
+                <strong class="detail-value text-accent">Room {{ getStudentRoom(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Key &amp; Room Status</span>
+                <strong class="detail-value text-accent">{{ getStudentKeyStatus(viewingRequest) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACADEMIC & INSTITUTIONAL INFO -->
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT DETAILS -->
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- HALL WARDEN CLEARANCE STATUS -->
+          <div class="detail-section">
+            <h4>Hall Warden Clearance Status</h4>
+            <div class="office-status-row">
+              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'Hall Warden') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'Hall Warden') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'Hall Warden') }}</strong></span>
+              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
+            Close
+          </button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'Hall Warden') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              Reject / Return
+            </button>
+            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              Approve Hall Clearance
+            </button>
+          </div>
+        </footer>
+      </div>
+    </section>
 
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest">
       <div class="modal-card">
         <div class="modal-icon">!</div>
         <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take before the clearance can proceed.</p>
+        <p>Write the reason and action the student must take regarding room key handover or room inspection before clearance can proceed.</p>
 
         <label>Reason for Rejection</label>
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
+          placeholder="Enter reason e.g. unreturned room keys, damaged furniture, or uninspected room..."
         ></textarea>
 
         <div class="modal-actions">
@@ -124,13 +864,119 @@
         </div>
       </div>
     </section>
-  </main>
 
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
-    </div>
-  </div>
+    <!-- HALL ADD/EDIT MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="showHallModal" (click)="closeHallModal()">
+      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div>
+            <h3>{{ editingHallId ? 'Edit Hall Details' : 'Add New Hall' }}</h3>
+            <p>{{ editingHallId ? 'Update details and blocks for this residence hall.' : 'Register a new residential hall in the system.' }}</p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeHallModal()">✕</button>
+        </header>
+
+        <form (ngSubmit)="saveHall()" class="hostel-modal-form">
+          <div class="form-row">
+            <label class="form-field">
+              <span>Hall Name *</span>
+              <input
+                type="text"
+                [(ngModel)]="hallForm.name"
+                name="hallName"
+                placeholder="e.g. Hall 1 (Nyerere Hall)..."
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Category</span>
+              <input
+                type="text"
+                [(ngModel)]="hallForm.category"
+                name="hallCategory"
+                placeholder="e.g. Male Undergraduate, Female, Mixed..."
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Bed / Resident Capacity</span>
+              <input
+                type="number"
+                min="0"
+                [(ngModel)]="hallForm.capacity"
+                name="hallCapacity"
+                placeholder="e.g. 400"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Hall Warden Name</span>
+              <input
+                type="text"
+                [(ngModel)]="hallForm.wardenName"
+                name="hallWardenName"
+                placeholder="e.g. Dr. K. Mvungi"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Warden Contact (Phone/Email)</span>
+              <input
+                type="text"
+                [(ngModel)]="hallForm.wardenContact"
+                name="hallWardenContact"
+                placeholder="e.g. +255 22 241 0501"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Campus Location</span>
+              <input
+                type="text"
+                [(ngModel)]="hallForm.location"
+                name="hallLocation"
+                placeholder="e.g. Main Campus Central Precinct"
+              />
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span>Blocks / Wings (comma-separated)</span>
+            <input
+              type="text"
+              [(ngModel)]="hallForm.blocksText"
+              name="hallBlocksText"
+              placeholder="e.g. Block A, Block B, Block C"
+            />
+            <small class="field-help">Separate block names with commas.</small>
+          </label>
+
+          <label class="form-field">
+            <span>Description / Remarks</span>
+            <textarea
+              [(ngModel)]="hallForm.description"
+              name="hallDescription"
+              rows="3"
+              placeholder="Additional information about accommodation, targeted student year, or specific requirements..."
+            ></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-button" (click)="closeHallModal()">
+              Cancel
+            </button>
+            <button type="submit" class="return-button save-btn" [disabled]="!hallForm.name.trim()">
+              {{ editingHallId ? 'Save Changes' : 'Create Hall' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
 </section>

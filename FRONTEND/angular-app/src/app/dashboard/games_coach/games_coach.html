@@ -13,12 +13,38 @@
     </div>
 
     <nav>
-      <a
-        routerLink="/dashboard/games-coach"
-        routerLinkActive="active"
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'all'"
+        (click)="setViewMode('all')"
       >
-        Pending Requests
-      </a>
+        <span></span> Dashboard Overview
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
+      >
+        <span></span> Clearance Requests ({{ pendingRequestCount }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'facilities'"
+        (click)="setViewMode('facilities')"
+      >
+        <span></span> Sports Facilities ({{ facilities.length }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <span></span> Sports Analytics
+      </button>
       <button type="button" (click)="logout()">
         Log out
       </button>
@@ -30,78 +56,784 @@
     <app-dashboard-header
       eyebrow="Clearance Office"
       title="Games Coach Approval"
-      subtitle="Review student clearance applications and approve or reject requests."
+      subtitle="Review student sports kit returns, sports facilities, and approve clearance applications."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="count">
-        <strong>{{ pendingRequestCount }}</strong>
-        <small>Pending</small>
-      </div>
     </app-dashboard-header>
 
     <!-- MESSAGE -->
     <p class="message" *ngIf="message">{{ message }}</p>
 
-    <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
+    <!-- =========================================================================
+         GAMES & SPORTS STATISTICAL ANALYTICS BOARD
+         (Shown in 'all' or 'analytics')
+    ========================================================================== -->
+    <section class="dashboard-board analytics-board" id="analytics-section" *ngIf="viewMode === 'all' || viewMode === 'analytics'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge analytics-badge"></div>
+          <div>
+            <h2>Sports &amp; Athletics Analytics</h2>
+            <p>Real-time statistics on sports kit returns, collegiate athletic participation, discipline distribution, and equipment clearance.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <!-- COHORT FILTER -->
+          <select [(ngModel)]="selectedAnalyticsYear" class="board-select" aria-label="Filter cohort year" title="Filter by Academic Year">
+            <option value="all">All Cohorts (Years)</option>
+            <option value="2024">1st Year (2024)</option>
+            <option value="2023">2nd Year (2023)</option>
+            <option value="2022">3rd Year (2022)</option>
+            <option value="2021">4th Year (2021)</option>
+          </select>
+
+          <!-- GENDER FILTER -->
+          <select [(ngModel)]="selectedAnalyticsGender" class="board-select" aria-label="Filter gender" title="Filter by Gender">
+            <option value="all">All Genders</option>
+            <option value="Male">Male Athletes</option>
+            <option value="Female">Female Athletes</option>
+          </select>
+
+          <button type="button" class="action-btn secondary" (click)="printAnalytics()" title="Print sports analytics report">
+            Print Report
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" title="Download CSV statistical summary">
+            Export CSV
+          </button>
+        </div>
       </div>
 
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+      <div class="board-body analytics-body">
+
+        <!-- 1. EXECUTIVE KPIS -->
+        <div class="analytics-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap blue"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Students Analyzed</span>
+              <strong class="kpi-value">{{ totalAthletesCount | number }}</strong>
+              <small class="kpi-sub">Registered student athletes</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap green">✓</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Kits Cleared &amp; Returned</span>
+              <strong class="kpi-value text-green">{{ clearedKitsCount | number }}</strong>
+              <small class="kpi-sub text-green"><strong>{{ gamesClearanceRate }}%</strong> overall clearance rate</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap amber"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Pending Equipment</span>
+              <strong class="kpi-value text-amber">{{ pendingKitsCount | number }}</strong>
+              <small class="kpi-sub text-amber">Kits awaiting verification</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap purple"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Flagged / Overdue Gear</span>
+              <strong class="kpi-value">{{ flaggedKitsCount | number }}</strong>
+              <small class="kpi-sub">Returned for student action</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap primary"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Sports Facilities Capacity</span>
+              <strong class="kpi-value">{{ totalSportsCapacity | number }}</strong>
+              <small class="kpi-sub">{{ facilities.length }} campus sports facilities</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap teal"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Games Clearance Rate</span>
+              <strong class="kpi-value text-teal">{{ gamesClearanceRate }}%</strong>
+              <small class="kpi-sub">Verified equipment handover</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PICTORIAL FEATURE & GENDER CLASSIFICATION -->
+        <div class="pictorial-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Pictorial Gender &amp; Sports Participation Classification</h3>
+              <p>Visual representation of male and female students across university sports teams, kit allocations, and games clearance.</p>
+            </div>
+            <div class="gender-pill-badge">
+              <span>Ratio: <strong>{{ genderStats.malePercent }}% M</strong> : <strong>{{ genderStats.femalePercent }}% F</strong></span>
+            </div>
+          </div>
+
+          <div class="pictorial-cards-grid">
+            <!-- MALE CARD -->
+            <div class="pictorial-card male-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar male-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Male Athletes</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.maleTotal | number }}</strong>
+                    <span class="pct-pill male-pill">{{ genderStats.malePercent }}% of athletes</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.malePercent }}% representation">
+                <span class="silhouette-figure filled-male" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.malePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- MALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Cleared Sports Kits</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.maleTotal * (gamesClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ gamesClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Kit Return</span>
+                  <strong class="b-val text-amber">{{ genderStats.maleTotal - Math.round(genderStats.maleTotal * (gamesClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - gamesClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FEMALE CARD -->
+            <div class="pictorial-card female-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar female-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Female Athletes</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.femaleTotal | number }}</strong>
+                    <span class="pct-pill female-pill">{{ genderStats.femalePercent }}% of athletes</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.femalePercent }}% representation">
+                <span class="silhouette-figure filled-female" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.femalePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- FEMALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Cleared Sports Kits</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.femaleTotal * (gamesClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ gamesClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Kit Return</span>
+                  <strong class="b-val text-amber">{{ genderStats.femaleTotal - Math.round(genderStats.femaleTotal * (gamesClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - gamesClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ADVANCED HISTOGRAMS (SPORTS DISCIPLINES & YEAR COHORT) -->
+        <div class="analytics-charts-grid">
+
+          <!-- HISTOGRAM 1: SPORTS DISCIPLINES & EQUIPMENT DEMAND -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Sports Disciplines &amp; Kit Clearance (Histogram)</h3>
+                <span>Equipment return and clearance volume distributed across athletic categories</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="sportsDisciplineHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div
+                      class="hist-column"
+                      *ngFor="let d of sportsDisciplineHistogram"
+                      [class.highlighted]="hoveredFacilityName === d.name"
+                      (mouseenter)="setHoveredFacility(d.name)"
+                      (mouseleave)="setHoveredFacility(null)"
+                    >
+                      <div class="col-count-bubble">{{ d.issuedCount }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="d.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="d.clearedPercent" [title]="d.clearedCount + ' Cleared in ' + d.name"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="d.pendingPercent" [title]="d.pendingCount + ' Pending in ' + d.name"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name" [title]="d.name">{{ d.name }}</strong>
+                        <span class="col-cap-tag">{{ d.clearanceRate }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HISTOGRAM 2: COHORT SPORTS PARTICIPATION & CLEARANCE -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Sports Clearance by Academic Year (Histogram)</h3>
+                <span>Athlete clearance volume and throughput per academic year cohort</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="yearResidencyHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div class="hist-column" *ngFor="let yr of yearResidencyHistogram">
+                      <div class="col-count-bubble">{{ yr.total }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="yr.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="yr.clearanceRate" [title]="yr.cleared + ' Cleared in ' + yr.cohort"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="100 - yr.clearanceRate" [title]="(yr.total - yr.cleared) + ' Pending in ' + yr.cohort"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name">{{ yr.yearLabel }}</strong>
+                        <span class="col-rate-badge">{{ yr.clearanceRate }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 4. PIE / DONUT CHARTS (STATUS SHARE & FACILITY CAPACITY SHARE) -->
+        <div class="analytics-charts-grid">
+
+          <!-- PIE CHART 1: KIT CLEARANCE STATUS SHARE -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Kit Clearance Status Share (Pie Chart)</h3>
+                <span>Returned, pending verification, and flagged equipment proportions</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Kit clearance status donut chart">
+                  <defs>
+                    <filter id="gamesDonutShadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#gamesDonutShadow)">
+                    <path
+                      *ngFor="let slice of statusPieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} kits ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ totalAthletesCount }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Athletes</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-teal">{{ gamesClearanceRate }}% Cleared</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of statusPieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                  <small class="legend-slice-count">{{ slice.count | number }} kits / items</small>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- PIE CHART 2: SPORTS FACILITY CAPACITY SHARE -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Sports Facility Capacity Share (Pie Chart)</h3>
+                <span>Spectator and athlete capacity across sports grounds</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Facility capacity donut chart">
+                  <g filter="url(#gamesDonutShadow)">
+                    <path
+                      *ngFor="let slice of facilityDemandPieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} capacity ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ facilities.length }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Facilities</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-amber">Active Venues</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of facilityDemandPieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 5. COLLEGE SPORTS PARTICIPATION LEADERBOARD TABLE -->
+        <div class="mostly-booked-section">
+          <div class="section-title-row">
+            <div>
+              <h3>College Sports Participation &amp; Clearance Ranking</h3>
+              <p>Official collegiate ranking sorted by registered student athletes, kit returns, and Games Coach clearance throughput.</p>
+            </div>
+          </div>
+
+          <div class="ranking-table-card">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">Rank</th>
+                  <th>College / Academic Unit</th>
+                  <th>Full College Name</th>
+                  <th class="text-right">Student Athletes</th>
+                  <th class="text-right">Kits Cleared</th>
+                  <th>Clearance Progress</th>
+                  <th class="text-center">Clearance Rate</th>
+                  <th class="text-center">Activity Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let c of collegeSportsRankings" [class.top-ranked]="c.rank === 1">
+                  <td class="col-rank">
+                    <span class="rank-badge" [class.gold-badge]="c.rank === 1" [class.silver-badge]="c.rank === 2" [class.bronze-badge]="c.rank === 3">
+                      #{{ c.rank }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="hostel-table-name">{{ c.college }}</strong>
+                  </td>
+                  <td>
+                    <span class="location-text">{{ c.fullName }}</span>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ c.athleteCount | number }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong class="booked-number">{{ c.clearedCount | number }}</strong>
+                  </td>
+                  <td>
+                    <div class="table-progress-wrap">
+                      <div class="table-progress-track">
+                        <span class="table-progress-bar" [style.width.%]="c.clearanceRate" [class.bar-high]="c.clearanceRate >= 75"></span>
+                      </div>
+                      <small class="table-progress-pct">{{ c.clearanceRate }}%</small>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <strong class="rate-tag">{{ c.clearanceRate }}%</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="demand-pill" [ngClass]="c.badgeClass">{{ c.activityLevel }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
     </section>
 
-    <!-- EMPTY STATE -->
-    <section class="empty-state" *ngIf="!filteredRequests.length">
-      <div class="empty-icon">✓</div>
-      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Games Coach.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Games Coach.' : 'There are currently no student applications awaiting Games Coach approval.' }}</p>
+    <!-- SPORTS FACILITIES BOARD (Shown in 'all' or 'facilities') -->
+    <section class="dashboard-board" id="facilities-section" *ngIf="viewMode === 'all' || viewMode === 'facilities'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Sports Facilities &amp; Equipment Inventory</h2>
+            <p>Manage sports grounds, indoor arenas, swimming facilities, and staff coaches. Updates automatically sync across the clearance system.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="facilitySearchTerm"
+              placeholder="Search facility name, sport, or coach..."
+              aria-label="Search facilities"
+            />
+          </div>
+          <button type="button" class="action-btn secondary" (click)="resetFacilities()" title="Reset to standard university facilities">
+            Restore Defaults
+          </button>
+          <button type="button" class="action-btn primary" (click)="openAddFacilityModal()">
+            + Add New Facility
+          </button>
+        </div>
+      </div>
+
+      <div class="board-body">
+        <!-- FACILITIES GRID -->
+        <div class="hostels-grid" *ngIf="filteredFacilities.length">
+          <div class="hostel-card compact" *ngFor="let facility of filteredFacilities">
+            <div class="hostel-card-header">
+              <div class="header-main">
+                <h3>{{ facility.name }}</h3>
+                <span class="location-badge" *ngIf="facility.category"> {{ facility.category }}</span>
+              </div>
+              <div class="card-actions">
+                <button type="button" class="btn-icon edit" (click)="openEditFacilityModal(facility)" title="Edit facility details">
+                  ✎ Edit
+                </button>
+                <button type="button" class="btn-icon delete" (click)="deleteFacility(facility)" title="Delete facility">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- COMPACT QUICK INFO -->
+            <div class="compact-info-row">
+              <span class="compact-item" *ngIf="facility.capacity">
+                <strong>{{ facility.capacity | number }}</strong> capacity
+              </span>
+              <span class="compact-dot" *ngIf="facility.capacity && facility.location">•</span>
+              <span class="compact-item" *ngIf="facility.location">
+                📍 {{ facility.location }}
+              </span>
+              <span class="compact-dot" *ngIf="facility.sports.length">•</span>
+              <span class="compact-item units-count" *ngIf="facility.sports.length">
+                {{ facility.sports.length }} {{ facility.sports.length === 1 ? 'Sport' : 'Sports' }}
+              </span>
+            </div>
+
+            <!-- EXPANDABLE DETAILS -->
+            <div class="hostel-expanded-details" *ngIf="isFacilityExpanded(facility.id)">
+              <p class="hostel-desc" *ngIf="facility.description">{{ facility.description }}</p>
+
+              <div class="hostel-meta-grid">
+                <div class="meta-item" *ngIf="facility.capacity">
+                  <span class="meta-label">Capacity</span>
+                  <strong>{{ facility.capacity | number }} athletes / spectators</strong>
+                </div>
+                <div class="meta-item" *ngIf="facility.coachName">
+                  <span class="meta-label">Assigned Coach</span>
+                  <strong>{{ facility.coachName }}</strong>
+                </div>
+                <div class="meta-item" *ngIf="facility.coachContact">
+                  <span class="meta-label">Coach Contact</span>
+                  <span>{{ facility.coachContact }}</span>
+                </div>
+                <div class="meta-item" *ngIf="facility.location">
+                  <span class="meta-label">Campus Precinct</span>
+                  <span>{{ facility.location }}</span>
+                </div>
+              </div>
+
+              <!-- SPORTS TAGS -->
+              <div class="units-breakdown" *ngIf="facility.sports && facility.sports.length">
+                <span class="unit-title">Supported Sports:</span>
+                <div class="tags-container">
+                  <span class="tag wing-tag" *ngFor="let s of facility.sports">{{ s }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW MORE / VIEW LESS TOGGLE -->
+            <div class="card-footer-toggle">
+              <button
+                type="button"
+                class="view-more-btn"
+                (click)="toggleFacilityDetails(facility.id)"
+              >
+                {{ isFacilityExpanded(facility.id) ? 'View Less ▲' : 'View More ▼' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-empty-state" *ngIf="!filteredFacilities.length">
+          <div class="empty-icon"></div>
+          <h2>No Sports Facilities Found</h2>
+          <p>No facility matches your search criteria. Click "+ Add New Facility" to create one.</p>
+        </div>
+      </div>
     </section>
 
-    <!-- REQUEST LIST -->
-    <section class="request-list" *ngIf="filteredRequests.length">
-      <app-parallel-office-request-table
-        [requests]="paginatedRequests"
-        [office]="'Games Coach'"
-        (approve)="approve($event)"
-        (reject)="openRejectForm($event)"
-      ></app-parallel-office-request-table>
+    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
+    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'all' || viewMode === 'requests'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications, verify sports kit &amp; equipment returns, and approve or return clearance requests.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search student, registration number or programme..."
+              aria-label="Search requests"
+            />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="board-body board-table-body">
+        <!-- EMPTY STATE -->
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon">✓</div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Games Coach.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Games Coach.' : 'There are currently no student applications awaiting Games Coach approval.' }}</p>
+        </div>
+
+        <!-- REQUEST LIST TABLE -->
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'Games Coach'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+          ></app-parallel-office-request-table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            &larr; Previous
+          </button>
+          <span class="page-info">
+            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+          </span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
     </section>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+    <!-- STUDENT GAMES & SPORTS DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
+
+        <div class="student-modal-body">
+          <!-- GAMES COACH SPORTS & KIT SECTION -->
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <span class="section-icon"></span>
+              <h4>Games &amp; Athletics Department Verification</h4>
+            </div>
+
+            <div class="residence-status-pill hostel">
+              <strong>Sports Discipline:</strong> {{ getStudentSport(viewingRequest) }}
+            </div>
+
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Athletic Discipline</span>
+                <strong class="detail-value text-primary">{{ getStudentSport(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Equipment Status</span>
+                <strong class="detail-value text-accent">{{ getStudentKitStatus(viewingRequest) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACADEMIC & INSTITUTIONAL INFO -->
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT DETAILS -->
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAMES COACH CLEARANCE STATUS -->
+          <div class="detail-section">
+            <h4>Games Coach Clearance Status</h4>
+            <div class="office-status-row">
+              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'Games Coach') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'Games Coach') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'Games Coach') }}</strong></span>
+              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
+            Close
+          </button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'Games Coach') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              Reject / Return
+            </button>
+            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              Approve Games Clearance
+            </button>
+          </div>
+        </footer>
+      </div>
+    </section>
 
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest">
       <div class="modal-card">
         <div class="modal-icon">!</div>
         <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take before the clearance can proceed.</p>
+        <p>Write the reason and action the student must take regarding sports gear before clearance can proceed.</p>
 
         <label>Reason for Rejection</label>
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
+          placeholder="Enter reason e.g. unreturned sports kit, jerseys, or equipment..."
         ></textarea>
 
         <div class="modal-actions">
@@ -124,13 +856,119 @@
         </div>
       </div>
     </section>
-  </main>
 
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
-    </div>
-  </div>
+    <!-- FACILITY ADD/EDIT MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="showFacilityModal" (click)="closeFacilityModal()">
+      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div>
+            <h3>{{ editingFacilityId ? 'Edit Sports Facility' : 'Add New Sports Facility' }}</h3>
+            <p>{{ editingFacilityId ? 'Update venue and equipment details.' : 'Register a new sports ground or facility in the system.' }}</p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeFacilityModal()">✕</button>
+        </header>
+
+        <form (ngSubmit)="saveFacility()" class="hostel-modal-form">
+          <div class="form-row">
+            <label class="form-field">
+              <span>Facility / Venue Name *</span>
+              <input
+                type="text"
+                [(ngModel)]="facilityForm.name"
+                name="facilityName"
+                placeholder="e.g. University Sports Complex..."
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Category</span>
+              <input
+                type="text"
+                [(ngModel)]="facilityForm.category"
+                name="facilityCategory"
+                placeholder="e.g. Outdoor Stadium, Indoor Arena..."
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Athlete / Spectator Capacity</span>
+              <input
+                type="number"
+                min="0"
+                [(ngModel)]="facilityForm.capacity"
+                name="facilityCapacity"
+                placeholder="e.g. 500"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Assigned Coach Name</span>
+              <input
+                type="text"
+                [(ngModel)]="facilityForm.coachName"
+                name="facilityCoachName"
+                placeholder="e.g. Coach M. Kibona"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Coach Contact (Phone/Email)</span>
+              <input
+                type="text"
+                [(ngModel)]="facilityForm.coachContact"
+                name="facilityCoachContact"
+                placeholder="e.g. +255 22 241 0700"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Campus Location</span>
+              <input
+                type="text"
+                [(ngModel)]="facilityForm.location"
+                name="facilityLocation"
+                placeholder="e.g. Main Campus East Wing"
+              />
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span>Sports Supported (comma-separated)</span>
+            <input
+              type="text"
+              [(ngModel)]="facilityForm.sportsText"
+              name="sportsText"
+              placeholder="e.g. Football, Basketball, Track & Field"
+            />
+            <small class="field-help">Separate sport names with commas.</small>
+          </label>
+
+          <label class="form-field">
+            <span>Description / Remarks</span>
+            <textarea
+              [(ngModel)]="facilityForm.description"
+              name="facilityDescription"
+              rows="3"
+              placeholder="Additional information about equipment, court schedules, or requirements..."
+            ></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-button" (click)="closeFacilityModal()">
+              Cancel
+            </button>
+            <button type="submit" class="return-button save-btn" [disabled]="!facilityForm.name.trim()">
+              {{ editingFacilityId ? 'Save Changes' : 'Create Facility' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
 </section>

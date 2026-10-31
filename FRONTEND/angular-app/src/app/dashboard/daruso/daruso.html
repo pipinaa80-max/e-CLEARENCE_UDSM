@@ -1,258 +1,974 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
 
-  <div
-    class="sidebar-overlay"
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
   <!-- SIDEBAR -->
-
   <aside class="sidebar">
-
     <div class="brand">
       <a routerLink="/">
-        <img
-          src="/udsm-logo.png"
-          alt="Institutional Logo"
-        />
+        <img src="/udsm-logo.png" alt="Institutional Logo" />
       </a>
       <div>
         <strong>DARUSO</strong>
         <small>Clearance Workspace</small>
       </div>
-
     </div>
 
-
     <nav>
-
-      <a
-        routerLink="/dashboard/daruso"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
-        Pending Requests
-      </a>
-
       <button
         type="button"
-        (click)="logout()"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'all'"
+        (click)="setViewMode('all')"
       >
+        <span></span> Dashboard Overview
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
+      >
+        <span></span> Clearance Requests ({{ pendingRequestCount }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'guilds'"
+        (click)="setViewMode('guilds')"
+      >
+        <span></span> Student Guilds ({{ guilds.length }})
+      </button>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <span></span> Union Analytics
+      </button>
+      <button type="button" (click)="logout()">
         Log out
       </button>
-
     </nav>
-
   </aside>
 
-
   <!-- MAIN CONTENT -->
-
   <main class="content">
-
     <app-dashboard-header
       eyebrow="Clearance Office"
       title="DARUSO Approval"
-      subtitle="Review student clearance applications and approve or reject requests."
+      subtitle="Review student government dues, union asset return, and approve student clearance requests."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="count">
-        <strong>{{ pendingRequestCount }}</strong>
-        <small>Pending</small>
-      </div>
     </app-dashboard-header>
 
-
     <!-- MESSAGE -->
+    <p class="message" *ngIf="message">{{ message }}</p>
 
-    <p
-      class="message"
-      *ngIf="message"
-    >
-      {{ message }}
-    </p>
+    <!-- =========================================================================
+         DARUSO UNION STATISTICAL ANALYTICS BOARD
+         (Shown in 'all' or 'analytics')
+    ========================================================================== -->
+    <section class="dashboard-board analytics-board" id="analytics-section" *ngIf="viewMode === 'all' || viewMode === 'analytics'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge analytics-badge"></div>
+          <div>
+            <h2>DARUSO Union Dues &amp; Student Welfare Analytics</h2>
+            <p>Real-time statistics on student organization membership, annual dues clearance, collegiate guild participation, and student welfare.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <!-- COHORT FILTER -->
+          <select [(ngModel)]="selectedAnalyticsYear" class="board-select" aria-label="Filter cohort year" title="Filter by Academic Year">
+            <option value="all">All Cohorts (Years)</option>
+            <option value="2024">1st Year (2024)</option>
+            <option value="2023">2nd Year (2023)</option>
+            <option value="2022">3rd Year (2022)</option>
+            <option value="2021">4th Year (2021)</option>
+          </select>
 
+          <!-- GENDER FILTER -->
+          <select [(ngModel)]="selectedAnalyticsGender" class="board-select" aria-label="Filter gender" title="Filter by Gender">
+            <option value="all">All Genders</option>
+            <option value="Male">Male Members</option>
+            <option value="Female">Female Members</option>
+          </select>
 
-    <!-- FILTER BAR -->
-
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-
-      <div class="search-box">
-
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
-
+          <button type="button" class="action-btn secondary" (click)="printAnalytics()" title="Print DARUSO analytics report">
+            Print Report
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" title="Download CSV statistical summary">
+            Export CSV
+          </button>
+        </div>
       </div>
 
+      <div class="board-body analytics-body">
 
-      <select aria-label="Filter requests by status" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">
-          Pending
-        </option>
-        <option value="Approved">
-          Approved
-        </option>
-        <option value="Rejected">
-          Rejected
-        </option>
-      </select>
+        <!-- 1. EXECUTIVE KPIS -->
+        <div class="analytics-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap blue"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Total Union Students</span>
+              <strong class="kpi-value">{{ totalUnionStudents | number }}</strong>
+              <small class="kpi-sub">Across all colleges &amp; cohorts</small>
+            </div>
+          </div>
 
-    </section>
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap green">✓</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Dues Cleared &amp; Approved</span>
+              <strong class="kpi-value text-green">{{ duesClearedCount | number }}</strong>
+              <small class="kpi-sub text-green"><strong>{{ darusoClearanceRate }}%</strong> overall clearance rate</small>
+            </div>
+          </div>
 
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap amber"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Pending Dues Verification</span>
+              <strong class="kpi-value text-amber">{{ pendingDuesCount | number }}</strong>
+              <small class="kpi-sub text-amber">Applications awaiting review</small>
+            </div>
+          </div>
 
-    <!-- EMPTY STATE -->
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap purple"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Flagged Liabilities / Dues</span>
+              <strong class="kpi-value">{{ flaggedDuesCount | number }}</strong>
+              <small class="kpi-sub">Returned for member action</small>
+            </div>
+          </div>
 
-    <section
-      class="empty-state"
-      *ngIf="!filteredRequests.length"
-    >
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap primary"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">Campus Guilds &amp; Secretariats</span>
+              <strong class="kpi-value">{{ totalGuildCapacity | number }}</strong>
+              <small class="kpi-sub">{{ guilds.length }} collegiate guild chapters</small>
+            </div>
+          </div>
 
-      <div class="empty-icon">
-        —
-      </div>
-
-      <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}
-      </h2>
-
-      <p>
-        {{ searchTerm ? 'Try another registration number, student name or programme.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}
-      </p>
-
-    </section>
-
-
-    <!-- REQUEST LIST -->
-
-    <section class="request-table-wrap" *ngIf="filteredRequests.length">
-      <table class="request-table">
-        <thead>
-          <tr>
-            <th scope="col">Registration Number</th>
-            <th scope="col">Full Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Phone Number</th>
-            <th scope="col">Programme</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let request of paginatedRequests">
-            <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="student-name">{{ getStudentName(request) }}</td>
-            <td>{{ getStudentEmail(request) }}</td>
-            <td>{{ getStudentPhone(request) }}</td>
-            <td>{{ getStudentProgramme(request) }}</td>
-            <td>
-              <div class="actions">
-                <ng-container *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'; else reviewedStatus">
-                <button
-                  type="button"
-                  class="reject-button"
-                  (click)="openRejectForm(request)"
-                  [disabled]="processingRequests.has(request.id)"
-                >
-                  Reject
-                </button>
-                <button
-                  type="button"
-                  class="approve-button"
-                  (click)="approve(request)"
-                  [disabled]="processingRequests.has(request.id)"
-                >
-                  {{ processingRequests.has(request.id) ? 'Processing...' : 'Approve' }}
-                </button>
-                </ng-container>
-                <ng-template #reviewedStatus>
-                  <span class="reviewed-status">{{ getRequestOfficeStatus(request, 'DARUSO') }}</span>
-                </ng-template>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
-
-
-    <!-- REJECTION MODAL -->
-
-    <section
-      class="reject-modal"
-      *ngIf="selectedRequest"
-    >
-
-      <div class="modal-card">
-
-        <div class="modal-icon">
-          !
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap teal"></div>
+            <div class="kpi-info">
+              <span class="kpi-label">DARUSO Clearance Rate</span>
+              <strong class="kpi-value text-teal">{{ darusoClearanceRate }}%</strong>
+              <small class="kpi-sub">Approved union clearance</small>
+            </div>
+          </div>
         </div>
 
-        <h2>
-          Return Clearance Request
-        </h2>
+        <!-- 2. PICTORIAL FEATURE & GENDER CLASSIFICATION -->
+        <div class="pictorial-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Pictorial Gender &amp; Union Membership Classification</h3>
+              <p>Visual representation of male and female students across student union membership and dues clearance status.</p>
+            </div>
+            <div class="gender-pill-badge">
+              <span>Ratio: <strong>{{ genderStats.malePercent }}% M</strong> : <strong>{{ genderStats.femalePercent }}% F</strong></span>
+            </div>
+          </div>
 
-        <p>
-          Write the reason and action the student
-          must take before the clearance can proceed.
-        </p>
+          <div class="pictorial-cards-grid">
+            <!-- MALE CARD -->
+            <div class="pictorial-card male-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar male-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Male Union Members</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.maleTotal | number }}</strong>
+                    <span class="pct-pill male-pill">{{ genderStats.malePercent }}% of total</span>
+                  </div>
+                </div>
+              </div>
 
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.malePercent }}% representation">
+                <span class="silhouette-figure filled-male" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.malePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
 
-        <label>
-          Reason for Rejection
-        </label>
+              <!-- MALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Dues Cleared</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.maleTotal * (darusoClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ darusoClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Verification</span>
+                  <strong class="b-val text-amber">{{ genderStats.maleTotal - Math.round(genderStats.maleTotal * (darusoClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - darusoClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
 
+            <!-- FEMALE CARD -->
+            <div class="pictorial-card female-card">
+              <div class="pictorial-head">
+                <div class="pictorial-avatar female-avatar">
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Female Union Members</h4>
+                  <div class="pictorial-big-stat">
+                    <strong>{{ genderStats.femaleTotal | number }}</strong>
+                    <span class="pct-pill female-pill">{{ genderStats.femalePercent }}% of total</span>
+                  </div>
+                </div>
+              </div>
 
+              <!-- PICTORIAL SILHOUETTE FIGURES (10-figure pictorial chart) -->
+              <div class="silhouette-strip" title="{{ genderStats.femalePercent }}% representation">
+                <span class="silhouette-figure filled-female" *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]" [class.inactive]="i > (genderStats.femalePercent / 10)">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- FEMALE BREAKDOWN -->
+              <div class="pictorial-breakdown-row">
+                <div class="breakdown-box">
+                  <span class="b-label">Dues Cleared</span>
+                  <strong class="b-val text-primary">{{ Math.round(genderStats.femaleTotal * (darusoClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ darusoClearanceRate }}% clearance rate</span>
+                </div>
+                <div class="breakdown-divider"></div>
+                <div class="breakdown-box">
+                  <span class="b-label">Pending Verification</span>
+                  <strong class="b-val text-amber">{{ genderStats.femaleTotal - Math.round(genderStats.femaleTotal * (darusoClearanceRate / 100)) | number }}</strong>
+                  <span class="b-sub">{{ 100 - darusoClearanceRate }}% pending review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ADVANCED HISTOGRAMS (COLLEGIATE GUILDS & YEAR COHORT) -->
+        <div class="analytics-charts-grid">
+
+          <!-- HISTOGRAM 1: COLLEGIATE GUILD DUES CLEARANCE -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Collegiate Guild Dues Clearance (Histogram)</h3>
+                <span>Clearance progress and union dues settlement per college guild branch</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="collegeGuildHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div
+                      class="hist-column"
+                      *ngFor="let g of collegeGuildHistogram"
+                      [class.highlighted]="hoveredGuildName === g.label"
+                      (mouseenter)="setHoveredGuild(g.label)"
+                      (mouseleave)="setHoveredGuild(null)"
+                    >
+                      <div class="col-count-bubble">{{ g.count }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="g.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="g.clearedPercent" [title]="g.cleared + ' Cleared in ' + g.label"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="g.pendingPercent" [title]="(g.count - g.cleared) + ' Pending in ' + g.label"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name" [title]="g.label">{{ g.label }}</strong>
+                        <span class="col-cap-tag">{{ g.clearedPercent }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- HISTOGRAM 2: COHORT UNION DUES CLEARANCE -->
+          <article class="analytics-chart-card histogram-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Union Dues Clearance by Academic Year (Histogram)</h3>
+                <span>Clearance progress and dues checkout rate per cohort</span>
+              </div>
+              <div class="chart-legend-row">
+                <span class="legend-item"><i class="dot dot-cleared"></i> Cleared</span>
+                <span class="legend-item"><i class="dot dot-pending"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="yearResidencyHistogram.length">
+              <div class="histogram-container">
+                <div class="histogram-plot">
+                  <div class="hist-grid-line" style="top: 0%;"></div>
+                  <div class="hist-grid-line" style="top: 33%;"></div>
+                  <div class="hist-grid-line" style="top: 66%;"></div>
+                  <div class="hist-grid-line" style="bottom: 0%;"></div>
+
+                  <div class="histogram-bars">
+                    <div class="hist-column" *ngFor="let yr of yearResidencyHistogram">
+                      <div class="col-count-bubble">{{ yr.total }}</div>
+                      <div class="col-track">
+                        <div class="col-bar" [style.height.%]="yr.heightPercent">
+                          <span class="bar-slice bar-cleared" [style.height.%]="yr.clearanceRate" [title]="yr.cleared + ' Cleared in ' + yr.cohort"></span>
+                          <span class="bar-slice bar-pending" [style.height.%]="100 - yr.clearanceRate" [title]="(yr.total - yr.cleared) + ' Pending in ' + yr.cohort"></span>
+                        </div>
+                      </div>
+                      <div class="col-caption">
+                        <strong class="col-name">{{ yr.yearLabel }}</strong>
+                        <span class="col-rate-badge">{{ yr.clearanceRate }}% clr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 4. PIE / DONUT CHARTS (DUES STATUS & GUILD MEMBERSHIP SHARE) -->
+        <div class="analytics-charts-grid">
+
+          <!-- PIE CHART 1: UNION DUES STATUS SHARE -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Union Dues Status Share (Pie Chart)</h3>
+                <span>Settled dues, pending reviews, and flagged liabilities</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Union dues status donut chart">
+                  <defs>
+                    <filter id="darusoDonutShadow" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#darusoDonutShadow)">
+                    <path
+                      *ngFor="let slice of duesStatusPieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} members ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ totalUnionStudents }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Students</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-teal">{{ darusoClearanceRate }}% Cleared</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of duesStatusPieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                  <small class="legend-slice-count">{{ slice.count | number }} members</small>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- PIE CHART 2: CAMPUS GUILD MEMBERSHIP DISTRIBUTION -->
+          <article class="analytics-chart-card pie-card">
+            <div class="chart-header-row">
+              <div>
+                <h3>Campus Guild Membership Distribution (Pie Chart)</h3>
+                <span>Student population share across collegiate union branches</span>
+              </div>
+            </div>
+
+            <div class="donut-chart-layout">
+              <div class="donut-svg-wrap">
+                <svg viewBox="0 0 220 220" class="donut-svg" aria-label="Guild membership donut chart">
+                  <g filter="url(#darusoDonutShadow)">
+                    <path
+                      *ngFor="let slice of guildSharePieSlices"
+                      [attr.d]="slice.svgPath"
+                      [attr.fill]="slice.color"
+                      class="pie-slice"
+                      [class.active]="hoveredSliceLabel === slice.label"
+                      (mouseenter)="setHoveredSlice(slice.label)"
+                      (mouseleave)="setHoveredSlice(null)"
+                    >
+                      <title>{{ slice.label }}: {{ slice.count }} members ({{ slice.percentage }}%)</title>
+                    </path>
+                  </g>
+                  <!-- Central Info -->
+                  <circle cx="110" cy="110" r="44" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"></circle>
+                  <text x="110" y="103" text-anchor="middle" class="donut-center-num">{{ guilds.length }}</text>
+                  <text x="110" y="118" text-anchor="middle" class="donut-center-sub">Guilds</text>
+                  <text x="110" y="131" text-anchor="middle" class="donut-center-stat text-amber">Active Branches</text>
+                </svg>
+              </div>
+
+              <!-- PIE LEGEND -->
+              <div class="donut-legend-wrap">
+                <div
+                  class="donut-legend-item"
+                  *ngFor="let slice of guildSharePieSlices"
+                  [class.active]="hoveredSliceLabel === slice.label"
+                  (mouseenter)="setHoveredSlice(slice.label)"
+                  (mouseleave)="setHoveredSlice(null)"
+                >
+                  <div class="legend-top-row">
+                    <span class="legend-color-dot" [style.background-color]="slice.color"></span>
+                    <span class="legend-slice-label">{{ slice.label }}</span>
+                    <strong class="legend-slice-pct">{{ slice.percentage }}%</strong>
+                  </div>
+                  <div class="legend-bar-track">
+                    <span class="legend-bar-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 5. COLLEGIATE GUILD LEADERBOARD TABLE -->
+        <div class="mostly-booked-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Collegiate Student Guild Clearance Ranking</h3>
+              <p>Official collegiate student government ranking sorted by registered union members, dues clearance, and throughput.</p>
+            </div>
+          </div>
+
+          <div class="ranking-table-card">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">Rank</th>
+                  <th>Collegiate Guild Sub-Government</th>
+                  <th>Campus Location</th>
+                  <th class="text-right">Registered Members</th>
+                  <th class="text-right">Dues Cleared</th>
+                  <th>Clearance Progress</th>
+                  <th class="text-center">Clearance Rate</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let g of guildRankings" [class.top-ranked]="g.rank === 1">
+                  <td class="col-rank">
+                    <span class="rank-badge" [class.gold-badge]="g.rank === 1" [class.silver-badge]="g.rank === 2" [class.bronze-badge]="g.rank === 3">
+                      #{{ g.rank }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="hostel-table-name">{{ g.guildName }}</strong>
+                  </td>
+                  <td>
+                    <span class="location-text">📍 {{ g.location }}</span>
+                  </td>
+                  <td class="text-right">
+                    <strong>{{ g.memberCount | number }}</strong>
+                  </td>
+                  <td class="text-right">
+                    <strong class="booked-number">{{ g.clearedCount | number }}</strong>
+                  </td>
+                  <td>
+                    <div class="table-progress-wrap">
+                      <div class="table-progress-track">
+                        <span class="table-progress-bar" [style.width.%]="g.clearanceRate" [class.bar-high]="g.clearanceRate >= 75"></span>
+                      </div>
+                      <small class="table-progress-pct">{{ g.clearanceRate }}%</small>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <strong class="rate-tag">{{ g.clearanceRate }}%</strong>
+                  </td>
+                  <td class="text-center">
+                    <span class="demand-pill" [ngClass]="g.badgeClass">{{ g.statusBadge }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- GUILDS DIRECTORY BOARD (Shown in 'all' or 'guilds') -->
+    <section class="dashboard-board" id="guilds-section" *ngIf="viewMode === 'all' || viewMode === 'guilds'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Guilds &amp; Union Chapters Directory</h2>
+            <p>Manage collegiate guild sub-governments, campus secretariats, student welfare committees, and minister contacts.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="guildSearchTerm"
+              placeholder="Search guild chapter, minister, or college..."
+              aria-label="Search guilds"
+            />
+          </div>
+          <button type="button" class="action-btn secondary" (click)="resetGuilds()" title="Reset to standard university guilds">
+            Restore Defaults
+          </button>
+          <button type="button" class="action-btn primary" (click)="openAddGuildModal()">
+            + Add New Guild
+          </button>
+        </div>
+      </div>
+
+      <div class="board-body">
+        <!-- GUILDS GRID -->
+        <div class="hostels-grid" *ngIf="filteredGuilds.length">
+          <div class="hostel-card compact" *ngFor="let guild of filteredGuilds">
+            <div class="hostel-card-header">
+              <div class="header-main">
+                <h3>{{ guild.name }}</h3>
+                <span class="location-badge" *ngIf="guild.category"> {{ guild.category }}</span>
+              </div>
+              <div class="card-actions">
+                <button type="button" class="btn-icon edit" (click)="openEditGuildModal(guild)" title="Edit guild details">
+                  ✎ Edit
+                </button>
+                <button type="button" class="btn-icon delete" (click)="deleteGuild(guild)" title="Delete guild">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- COMPACT QUICK INFO -->
+            <div class="compact-info-row">
+              <span class="compact-item" *ngIf="guild.capacity">
+                <strong>{{ guild.capacity | number }}</strong> members
+              </span>
+              <span class="compact-dot" *ngIf="guild.capacity && guild.location">•</span>
+              <span class="compact-item" *ngIf="guild.location">
+                📍 {{ guild.location }}
+              </span>
+              <span class="compact-dot" *ngIf="guild.committees.length">•</span>
+              <span class="compact-item units-count" *ngIf="guild.committees.length">
+                {{ guild.committees.length }} {{ guild.committees.length === 1 ? 'Committee' : 'Committees' }}
+              </span>
+            </div>
+
+            <!-- EXPANDABLE DETAILS -->
+            <div class="hostel-expanded-details" *ngIf="isGuildExpanded(guild.id)">
+              <p class="hostel-desc" *ngIf="guild.description">{{ guild.description }}</p>
+
+              <div class="hostel-meta-grid">
+                <div class="meta-item" *ngIf="guild.capacity">
+                  <span class="meta-label">Member Population</span>
+                  <strong>{{ guild.capacity | number }} students</strong>
+                </div>
+                <div class="meta-item" *ngIf="guild.leaderName">
+                  <span class="meta-label">Minister / Leader</span>
+                  <strong>{{ guild.leaderName }}</strong>
+                </div>
+                <div class="meta-item" *ngIf="guild.leaderContact">
+                  <span class="meta-label">Contact</span>
+                  <span>{{ guild.leaderContact }}</span>
+                </div>
+                <div class="meta-item" *ngIf="guild.location">
+                  <span class="meta-label">Office Location</span>
+                  <span>{{ guild.location }}</span>
+                </div>
+              </div>
+
+              <!-- COMMITTEES TAGS -->
+              <div class="units-breakdown" *ngIf="guild.committees && guild.committees.length">
+                <span class="unit-title">Sub-Committees &amp; Desks:</span>
+                <div class="tags-container">
+                  <span class="tag block-tag" *ngFor="let c of guild.committees">{{ c }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW MORE / VIEW LESS TOGGLE -->
+            <div class="card-footer-toggle">
+              <button
+                type="button"
+                class="view-more-btn"
+                (click)="toggleGuildDetails(guild.id)"
+              >
+                {{ isGuildExpanded(guild.id) ? 'View Less ▲' : 'View More ▼' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-empty-state" *ngIf="!filteredGuilds.length">
+          <div class="empty-icon"></div>
+          <h2>No Student Guilds Found</h2>
+          <p>No guild matches your search criteria. Click "+ Add New Guild" to create one.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
+    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'all' || viewMode === 'requests'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications, verify DARUSO dues &amp; government property clearance, and approve or return requests.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search student, registration number or programme..."
+              aria-label="Search requests"
+            />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="board-body board-table-body">
+        <!-- EMPTY STATE -->
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon">✓</div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}</p>
+        </div>
+
+        <!-- REQUEST LIST TABLE -->
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'DARUSO'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+          ></app-parallel-office-request-table>
+        </div>
+
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            &larr; Previous
+          </button>
+          <span class="page-info">
+            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+          </span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT DARUSO DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
+
+        <div class="student-modal-body">
+          <!-- DARUSO UNION DUES DETAILS -->
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <span class="section-icon"></span>
+              <h4>DARUSO Student Union Verification</h4>
+            </div>
+
+            <div class="residence-status-pill hostel">
+              <strong>Guild Affiliation:</strong> {{ getStudentGuildBranch(viewingRequest) }}
+            </div>
+
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Collegiate Guild</span>
+                <strong class="detail-value text-primary">{{ getStudentGuildBranch(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Union Dues Status</span>
+                <strong class="detail-value text-accent">{{ getStudentDuesStatus(viewingRequest) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACADEMIC & INSTITUTIONAL INFO -->
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT DETAILS -->
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DARUSO CLEARANCE STATUS -->
+          <div class="detail-section">
+            <h4>DARUSO Clearance Status</h4>
+            <div class="office-status-row">
+              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'DARUSO') }}</strong></span>
+              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
+            Close
+          </button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              Reject / Return
+            </button>
+            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              Approve DARUSO Clearance
+            </button>
+          </div>
+        </footer>
+      </div>
+    </section>
+
+    <!-- REJECTION MODAL -->
+    <section class="reject-modal" *ngIf="selectedRequest">
+      <div class="modal-card">
+        <div class="modal-icon">!</div>
+        <h2>Return Clearance Request</h2>
+        <p>Write the reason and action the student must take regarding DARUSO union dues or liabilities before clearance can proceed.</p>
+
+        <label>Reason for Rejection</label>
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
+          placeholder="Enter reason e.g. unpaid union annual dues, unreturned guild property, or pending committee handover..."
         ></textarea>
 
-
         <div class="modal-actions">
-
           <button
             type="button"
             class="cancel-button"
             (click)="selectedRequest = null"
-            [disabled]="processingRequests.has(selectedRequest.id)"
           >
             Cancel
           </button>
-
 
           <button
             type="button"
             class="return-button"
             (click)="reject()"
-            [disabled]="!rejectionComment.trim() || processingRequests.has(selectedRequest.id)"
+            [disabled]="!rejectionComment.trim()"
           >
-            {{ processingRequests.has(selectedRequest.id) ? 'Processing...' : 'Send Reason to Student' }}
+            Send Reason to Student
           </button>
-
         </div>
-
       </div>
-
     </section>
-  </main>
 
+    <!-- GUILD ADD/EDIT MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="showGuildModal" (click)="closeGuildModal()">
+      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div>
+            <h3>{{ editingGuildId ? 'Edit Guild Chapter' : 'Add New Guild Chapter' }}</h3>
+            <p>{{ editingGuildId ? 'Update details for this student union chapter.' : 'Register a new collegiate guild chapter in the system.' }}</p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeGuildModal()">✕</button>
+        </header>
+
+        <form (ngSubmit)="saveGuild()" class="hostel-modal-form">
+          <div class="form-row">
+            <label class="form-field">
+              <span>Guild Chapter Name *</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.name"
+                name="guildName"
+                placeholder="e.g. DARUSO CoICT Guild..."
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Category</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.category"
+                name="guildCategory"
+                placeholder="e.g. Collegiate Guild, Cabinet, Secretariat..."
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Student Member Population</span>
+              <input
+                type="number"
+                min="0"
+                [(ngModel)]="guildForm.capacity"
+                name="guildCapacity"
+                placeholder="e.g. 3500"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Minister / Representative Name</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.leaderName"
+                name="guildLeaderName"
+                placeholder="e.g. Minister M. Kassim"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Contact (Phone/Email)</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.leaderContact"
+                name="guildLeaderContact"
+                placeholder="e.g. +255 22 241 0602"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Office Location</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.location"
+                name="guildLocation"
+                placeholder="e.g. Kijitonyama Campus Block B"
+              />
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span>Committees &amp; Desks (comma-separated)</span>
+            <input
+              type="text"
+              [(ngModel)]="guildForm.committeesText"
+              name="guildCommitteesText"
+              placeholder="e.g. Academic Committee, Projects, Student Welfare Desk"
+            />
+            <small class="field-help">Separate committee names with commas.</small>
+          </label>
+
+          <label class="form-field">
+            <span>Description / Remarks</span>
+            <textarea
+              [(ngModel)]="guildForm.description"
+              name="guildDescription"
+              rows="3"
+              placeholder="Additional information about guild activities, targeted college, or requirements..."
+            ></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-button" (click)="closeGuildModal()">
+              Cancel
+            </button>
+            <button type="submit" class="return-button save-btn" [disabled]="!guildForm.name.trim()">
+              {{ editingGuildId ? 'Save Changes' : 'Create Guild' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
 </section>

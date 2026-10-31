@@ -1,5 +1,6 @@
 package com.UDSM.BACKEND.Model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -17,8 +18,9 @@ public class DepartmentApproval {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "clearance_request_id")
+    @JsonIgnore
     private ClearanceRequest clearanceRequest;
 
     @Column(nullable = false)

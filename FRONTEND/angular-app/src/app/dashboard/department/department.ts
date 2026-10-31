@@ -89,7 +89,6 @@ export class DepartmentStatusComponent {
 
     if (!approved) {
       this.message = 'This request is no longer pending Department approval.';
-      this.loadRequests();
       return;
     }
 
@@ -126,7 +125,6 @@ export class DepartmentStatusComponent {
     if (!rejected) {
       this.message = 'This request is no longer pending Department approval.';
       this.selectedRequest = null;
-      this.loadRequests();
       return;
     }
 

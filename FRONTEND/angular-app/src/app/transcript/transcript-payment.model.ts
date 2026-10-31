@@ -2,7 +2,8 @@ export type TranscriptPaymentStatus =
   | 'Pending Control Number'
   | 'Awaiting Payment'
   | 'Receipt Submitted'
-  | 'Paid';
+  | 'Paid'
+  | 'Receipt Rejected';
 
 export interface TranscriptPaymentRequest {
   id: string;
@@ -19,6 +20,7 @@ export interface TranscriptPaymentRequest {
   controlNumber?: string;
   receiptFileName?: string;
   receiptData?: string;
+  rejectionReason?: string;
   requestedAt: string;
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;

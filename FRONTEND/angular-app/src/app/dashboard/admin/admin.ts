@@ -48,7 +48,27 @@ export class AdminDashboard implements OnInit {
 
   users: any[] = [];
   selectedUserIds: Set<string> = new Set();
-  roles: string[] = [];
+  roles: string[] = [
+    'Student',
+    'Academic Staff',
+    'Lecturer',
+    'Department',
+    'Principal',
+    'Library',
+    'Finance',
+    'ICT',
+    'Convocation',
+    'Games Coach',
+    'Hall Warden',
+    'USAB',
+    'DARUSO',
+    'Dean of Students',
+    'Smart Card',
+    'Workshop',
+    'Laboratory',
+    'Director of Undergraduate Studies',
+    'Administrator'
+  ];
   clearanceRequests: any[] = [];
 
   userSearchTerm: string = '';
@@ -114,7 +134,7 @@ export class AdminDashboard implements OnInit {
     email: '',
     registrationNumber: '',
     password: '',
-    role: 'STUDENT',
+    role: 'Student',
     college: '',
     department: '',
     programme: '',
@@ -394,6 +414,106 @@ export class AdminDashboard implements OnInit {
     this.newUser.programme = '';
   }
 
+  get normalizedSelectedRole(): string {
+    const raw = String(this.newUser.role || '').toUpperCase().trim();
+    return raw.replace(/_/g, ' ');
+  }
+
+  get isStudentRole(): boolean {
+    return this.normalizedSelectedRole === 'STUDENT';
+  }
+
+  get isPrincipalRole(): boolean {
+    return this.normalizedSelectedRole === 'PRINCIPAL';
+  }
+
+  get isDepartmentalStaffRole(): boolean {
+    const r = this.normalizedSelectedRole;
+    return (
+      r === 'ACADEMIC STAFF' ||
+      r === 'LECTURER' ||
+      r === 'DEPARTMENT' ||
+      r === 'DEPARTMENT OFFICER' ||
+      r === 'WORKSHOP' ||
+      r === 'WORKSHOP OFFICER' ||
+      r === 'LABORATORY' ||
+      r === 'LABORATORY OFFICER'
+    );
+  }
+
+  get showCollege(): boolean {
+    return this.isStudentRole || this.isDepartmentalStaffRole || this.isPrincipalRole;
+  }
+
+  get showDepartment(): boolean {
+    return this.isStudentRole || this.isDepartmentalStaffRole;
+  }
+
+  get showProgramme(): boolean {
+    return this.isStudentRole;
+  }
+
+  get isCentralOfficeRole(): boolean {
+    return !this.showCollege && !this.showDepartment && !this.showProgramme;
+  }
+
+  get idFieldLabel(): string {
+    return this.isStudentRole ? 'Registration Number' : 'Staff ID / PF Number';
+  }
+
+  get idFieldPlaceholder(): string {
+    return this.isStudentRole ? 'e.g. 2021-04-01234' : 'e.g. PF-10492 or STF-001 (Optional)';
+  }
+
+  get roleBadgeDescription(): string {
+    if (this.isStudentRole) {
+      return 'Student Account — Requires College, Department, and Programme selection.';
+    }
+    if (this.isPrincipalRole) {
+      return 'College Principal — Oversees the entire selected College (no individual department).';
+    }
+    if (this.isDepartmentalStaffRole) {
+      return 'Academic / Departmental Staff — Associated with College and Department. Programme not required.';
+    }
+    return 'Institutional / Central Unit — University-wide office (College, Department, and Programme not required).';
+  }
+
+  onRoleChange(): void {
+    if (this.isCentralOfficeRole) {
+      this.newUser.college = '';
+      this.newUser.department = this.getDefaultDepartmentForRole(this.newUser.role);
+      this.newUser.programme = '';
+    } else if (this.isPrincipalRole) {
+      this.newUser.department = '';
+      this.newUser.programme = '';
+    } else if (this.isDepartmentalStaffRole) {
+      this.newUser.programme = '';
+      if (this.newUser.department && !this.departments.includes(this.newUser.department)) {
+        this.newUser.department = '';
+      }
+    } else if (this.isStudentRole) {
+      if (this.newUser.department && !this.departments.includes(this.newUser.department)) {
+        this.newUser.department = '';
+      }
+    }
+  }
+
+  getDefaultDepartmentForRole(role: string): string {
+    const r = (role || '').toUpperCase().trim();
+    if (r.includes('LIBRARY')) return 'Library Services';
+    if (r.includes('FINANCE')) return 'Bursar & Treasury';
+    if (r.includes('ICT')) return 'Centre for Information and Communication Technology';
+    if (r.includes('CONVOCATION')) return 'Convocation Relations';
+    if (r.includes('GAMES') || r.includes('COACH')) return 'Sports and Games Department';
+    if (r.includes('HALL') || r.includes('WARDEN') || r.includes('USAB')) return 'Accommodation Bureau (USAB)';
+    if (r.includes('DARUSO')) return 'DARUSO Student Union';
+    if (r.includes('DEAN')) return 'Dean of Students Office';
+    if (r.includes('SMART')) return 'Smart Card Unit';
+    if (r.includes('UNDERGRADUATE') || r.includes('DUS')) return 'Directorate of Undergraduate Studies';
+    if (r.includes('ADMIN')) return 'University Administration';
+    return '';
+  }
+
   selectedFile: File | null = null;
   message: string = '';
   isError: boolean = false;
@@ -439,7 +559,13 @@ export class AdminDashboard implements OnInit {
       // Normalize roles for comparison
       const userRole = String(u.role ?? '').toUpperCase();
       const filterRole = String(this.userRoleFilter ?? '').toUpperCase();
-      const matchesRole = !filterRole || userRole === filterRole;
+
+      let matchesRole = true;
+      if (filterRole === 'STAFF') {
+        matchesRole = userRole !== 'STUDENT';
+      } else if (filterRole) {
+        matchesRole = userRole === filterRole || String(this.authService.mapRole(u.role)).toUpperCase() === filterRole;
+      }
 
       const matchesStatus = !this.userStatusFilter ||
         (this.userStatusFilter === 'active' ? u.isActive !== false : u.isActive === false);
@@ -506,7 +632,7 @@ export class AdminDashboard implements OnInit {
       next: (roles) => {
         // Map raw enum strings to user-friendly roles and ensure uniqueness
         const mappedRoles = roles.map(r => this.authService.mapRole(r));
-        this.roles = Array.from(new Set(mappedRoles)).sort();
+        this.roles = Array.from(new Set([...this.roles, ...mappedRoles])).sort();
         console.log('📦 Admin unique roles:', this.roles);
       },
       error: (err) => console.error('Error loading roles', err)
@@ -639,6 +765,32 @@ export class AdminDashboard implements OnInit {
   setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards'): void {
     this.activeTab = tab;
     this.message = '';
+  }
+
+  navigateToStudents(): void {
+    this.userSearchTerm = '';
+    this.userRoleFilter = 'Student';
+    this.userStatusFilter = '';
+    this.setTab('users');
+  }
+
+  navigateToStaff(): void {
+    this.userSearchTerm = '';
+    this.userRoleFilter = 'STAFF';
+    this.userStatusFilter = '';
+    this.setTab('users');
+  }
+
+  navigateToClearanceRequests(statusFilter?: string): void {
+    this.requestSearchTerm = statusFilter || '';
+    this.setTab('clearance');
+  }
+
+  navigateToPendingActivation(): void {
+    this.userSearchTerm = '';
+    this.userRoleFilter = '';
+    this.userStatusFilter = 'inactive';
+    this.setTab('users');
   }
 
   loadAwards(): void {
@@ -860,7 +1012,30 @@ export class AdminDashboard implements OnInit {
   }
 
   addUser(): void {
-    this.adminService.createUser(this.newUser).subscribe({
+    const payload = { ...this.newUser };
+
+    // For staff, if registrationNumber / staff ID is omitted, generate a clean unique staff ID
+    if (!this.isStudentRole && (!payload.registrationNumber || !payload.registrationNumber.trim())) {
+      const rolePrefix = (payload.role || 'STF').replace(/[^A-Za-z]/g, '').substring(0, 3).toUpperCase();
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      payload.registrationNumber = `STF-${rolePrefix}-${randomSuffix}`;
+    }
+
+    // Clean up fields based on role
+    if (this.isCentralOfficeRole) {
+      payload.college = '';
+      payload.programme = '';
+      if (!payload.department) {
+        payload.department = this.getDefaultDepartmentForRole(payload.role);
+      }
+    } else if (this.isPrincipalRole) {
+      payload.department = '';
+      payload.programme = '';
+    } else if (this.isDepartmentalStaffRole) {
+      payload.programme = '';
+    }
+
+    this.adminService.createUser(payload).subscribe({
       next: (res) => {
         // Check for success property in ApiResponse
         if (res && res.success !== false) {
@@ -888,7 +1063,7 @@ export class AdminDashboard implements OnInit {
       email: '',
       registrationNumber: '',
       password: '',
-      role: 'STUDENT',
+      role: 'Student',
       college: '',
       department: '',
       programme: '',
@@ -972,8 +1147,8 @@ export class AdminDashboard implements OnInit {
 
   downloadSampleCsv(): void {
     const link = document.createElement('a');
-    link.href = '/udsm_clearance_50_students_and_staff.csv';
-    link.download = 'udsm_clearance_50_students_and_staff.csv';
+    link.href = '/clearance_registration_template.csv';
+    link.download = 'clearance_registration_template.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -981,8 +1156,8 @@ export class AdminDashboard implements OnInit {
 
   downloadSampleExcel(): void {
     const link = document.createElement('a');
-    link.href = '/udsm_clearance_50_students_and_staff.xlsx';
-    link.download = 'udsm_clearance_50_students_and_staff.xlsx';
+    link.href = '/clearance_registration_template.xlsx';
+    link.download = 'clearance_registration_template.xlsx';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
