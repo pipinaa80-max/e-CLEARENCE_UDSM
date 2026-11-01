@@ -7,12 +7,21 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationItem } from '../../core/models/notification.model';
+import { ClearanceOffice } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { environment } from '../../environments/environment';
 
 type StudentSystemType = 'clearance' | 'transcript';
+
+interface ProcessStep {
+  number: number;
+  label: string;
+  office: ClearanceOffice | 'Clearance Offices';
+  detail: string;
+  status: string;
+}
 
 @Component({
   selector: 'app-student-dashboard',
@@ -277,6 +286,233 @@ export class StudentDashboard implements OnInit {
 
     const requests = this.clearanceService.getStudentRequests(user.id);
     return requests.length > 0 ? requests[requests.length - 1] : null;
+  }
+
+  // =====================================================
+  // SEVEN CLEARANCE OFFICES & PROCESS STEPS
+  // =====================================================
+
+  get officeList(): ClearanceOffice[] {
+    return this.clearanceService.getClearanceOffices(this.currentRequest?.college ?? '');
+  }
+
+  getApproval(office: ClearanceOffice) {
+    return this.currentRequest?.approvals.find(approval => approval.office === office) ?? null;
+  }
+
+  getOfficeStatus(office: ClearanceOffice): string {
+    return this.getApproval(office)?.status ?? 'Pending';
+  }
+
+  getRejectionReason(office: ClearanceOffice): string {
+    const approval = this.getApproval(office);
+    if (!approval || approval.status !== 'Rejected') {
+      return '';
+    }
+    return approval.comment ?? '';
+  }
+
+  getReviewerContact(office: ClearanceOffice): { name: string; email: string; phone: string } {
+    const approval = this.getApproval(office);
+    const name = approval?.reviewedBy || '';
+    let email = approval?.reviewerEmail || '';
+    let phone = approval?.reviewerPhone || '';
+
+    if (!email || !phone) {
+      try {
+        const usersJson = typeof localStorage !== 'undefined' ? localStorage.getItem('udsm-local-users') : null;
+        if (usersJson) {
+          const users = JSON.parse(usersJson);
+          const nameClean = name.trim().toLowerCase();
+          const officeClean = office.trim().toLowerCase();
+          const found = users.find((u: any) => {
+            const uName = (u.fullName || `${u.firstName || ''} ${u.lastName || ''}`).trim().toLowerCase();
+            const uRole = (u.role || '').trim().toLowerCase();
+            const uDept = (u.department || '').trim().toLowerCase();
+            return (nameClean && uName === nameClean) ||
+                   (uRole && (uRole === officeClean || uRole.includes(officeClean) || officeClean.includes(uRole))) ||
+                   (uDept && (uDept === officeClean || uDept.includes(officeClean)));
+          });
+          if (found) {
+            email = email || found.email || '';
+            phone = phone || found.phoneNumber || found.phone || '';
+          }
+        }
+      } catch (e) {
+        console.error('Error looking up staff contact:', e);
+      }
+    }
+
+    if (!email || !phone) {
+      const defaultContacts: Record<string, { email: string; phone: string }> = {
+        'Library': { email: 'library@udsm.ac.tz', phone: '+255 22 2410500' },
+        'DARUSO': { email: 'daruso@udsm.ac.tz', phone: '+255 22 2410515' },
+        'USAB': { email: 'usab@udsm.ac.tz', phone: '+255 22 2410520' },
+        'Games Coach': { email: 'sports@udsm.ac.tz', phone: '+255 22 2410530' },
+        'Hall Warden': { email: 'warden@udsm.ac.tz', phone: '+255 22 2410540' },
+        'Dean of Students': { email: 'dos@udsm.ac.tz', phone: '+255 22 2410510' },
+        'Department': { email: 'department@udsm.ac.tz', phone: '+255 22 2410550' },
+        'Principal': { email: 'principal@udsm.ac.tz', phone: '+255 22 2410560' },
+        'Finance': { email: 'finance@udsm.ac.tz', phone: '+255 22 2410570' },
+        'Smart Card': { email: 'smartcard@udsm.ac.tz', phone: '+255 22 2410580' },
+        'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
+        'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
+        'Convocation': { email: 'convocation@udsm.ac.tz', phone: '+255 22 2410505' },
+      };
+      const def = defaultContacts[office] || { email: 'clearance@udsm.ac.tz', phone: '+255 22 2410500' };
+      email = email || def.email;
+      phone = phone || def.phone;
+    }
+
+    return { name, email, phone };
+  }
+
+  getReviewedBy(office: ClearanceOffice): string {
+    return this.getApproval(office)?.reviewedBy ?? '';
+  }
+
+  get isConvocationApproved(): boolean {
+    const request = this.currentRequest;
+    if (!request) return false;
+    const convocationApproval = request.approvals.find(
+      approval => approval.office === 'Convocation'
+    );
+    return convocationApproval?.status === 'Approved';
+  }
+
+  get allClearanceOfficesApproved(): boolean {
+    const request = this.currentRequest;
+    if (!request) return false;
+    return this.officeList.every(office => {
+      const status = this.getOfficeStatus(office);
+      return status === 'Approved';
+    });
+  }
+
+  get currentStageLabel(): string {
+    const request = this.currentRequest;
+    if (!request) return 'No clearance request';
+    if (request.status === 'Completed') return 'Clearance completed';
+    if (request.status === 'Rejected') {
+      const rejectedOffice = this.officeList.find(
+        office => this.getOfficeStatus(office) === 'Rejected'
+      );
+      if (rejectedOffice) return `${rejectedOffice} — Action Required`;
+      const rejectedStage = request.approvals.find(
+        approval => approval.status === 'Rejected'
+      );
+      if (rejectedStage) return `${rejectedStage.office} — Action Required`;
+      return 'Clearance requires action';
+    }
+    switch (request.currentStage) {
+      case 'Convocation': return 'Convocation';
+      case 'Parallel': return 'Clearance Offices';
+      case 'Department': return 'Department';
+      case 'Principal': return 'Principal';
+      case 'Finance': return 'Finance';
+      case 'Completed': return 'Clearance completed';
+      default: return 'Clearance';
+    }
+  }
+
+  get processSteps(): ProcessStep[] {
+    const request = this.currentRequest;
+    if (!request) return [];
+
+    const steps: ProcessStep[] = [];
+
+    // STEP 1 — CONVOCATION
+    let convocationStatus = this.getApproval('Convocation')?.status ?? 'Pending';
+    if (
+      request.currentStage === 'Parallel' ||
+      request.currentStage === 'Department' ||
+      request.currentStage === 'Principal' ||
+      request.currentStage === 'Finance' ||
+      request.status === 'Completed'
+    ) {
+      convocationStatus = 'Approved';
+    }
+    steps.push({
+      number: 1,
+      label: 'Convocation',
+      office: 'Convocation',
+      detail: 'Submit your payment receipt for Convocation verification.',
+      status: convocationStatus
+    });
+
+    // STEP 2 — SEVEN CLEARANCE OFFICES
+    let officesStatus = this.allClearanceOfficesApproved ? 'Approved' : 'Pending';
+    if (
+      request.currentStage === 'Department' ||
+      request.currentStage === 'Principal' ||
+      request.currentStage === 'Finance' ||
+      request.status === 'Completed'
+    ) {
+      officesStatus = 'Approved';
+    }
+    steps.push({
+      number: 2,
+      label: 'Clearance Offices',
+      office: 'Clearance Offices',
+      detail: (this.officeList.join(', ') || 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students, Smart Card') + '.',
+      status: officesStatus
+    });
+
+    // STEP 3 — DEPARTMENT
+    let departmentStatus = this.getApproval('Department')?.status ?? 'Pending';
+    if (
+      request.currentStage === 'Principal' ||
+      request.currentStage === 'Finance' ||
+      request.status === 'Completed'
+    ) {
+      departmentStatus = 'Approved';
+    }
+    steps.push({
+      number: 3,
+      label: 'Department',
+      office: 'Department',
+      detail: 'Department clearance approval.',
+      status: departmentStatus
+    });
+
+    // STEP 4 — PRINCIPAL
+    let principalStatus = this.getApproval('Principal')?.status ?? 'Pending';
+    if (
+      request.currentStage === 'Finance' ||
+      request.status === 'Completed'
+    ) {
+      principalStatus = 'Approved';
+    }
+    steps.push({
+      number: 4,
+      label: 'Principal',
+      office: 'Principal',
+      detail: 'Principal clearance approval.',
+      status: principalStatus
+    });
+
+    // STEP 5 — FINANCE
+    let financeStatus = this.getApproval('Finance')?.status ?? 'Pending';
+    if (request.status === 'Completed') {
+      financeStatus = 'Approved';
+    }
+    steps.push({
+      number: 5,
+      label: 'Finance',
+      office: 'Finance',
+      detail: 'Final financial clearance approval.',
+      status: financeStatus
+    });
+
+    return steps;
+  }
+
+  getOfficeDetail(office: ClearanceOffice): string {
+    const approval = this.getApproval(office);
+    if (!approval) return 'Waiting for staff review';
+    if (approval.status === 'Approved') return 'Approved by responsible staff';
+    if (approval.status === 'Rejected') return 'Rejected — view the reason below';
+    return 'Waiting for staff review';
   }
 
   // =====================================================

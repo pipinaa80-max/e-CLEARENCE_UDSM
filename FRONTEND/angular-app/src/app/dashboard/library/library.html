@@ -698,7 +698,7 @@
           <app-parallel-office-request-table
             [requests]="paginatedRequests"
             [office]="'Library'"
-            (approve)="approve($event)"
+            (approve)="openApproveModal($event)"
             (reject)="openRejectForm($event)"
             (view)="openStudentDetailsModal($event)"
           ></app-parallel-office-request-table>

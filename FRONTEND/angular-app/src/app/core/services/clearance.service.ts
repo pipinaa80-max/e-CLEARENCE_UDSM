@@ -130,7 +130,30 @@ export class ClearanceService {
       if (foundKey) {
         const curr = map.get(foundKey)!;
         map.delete(foundKey);
-        map.set(inc.id, { ...curr, ...inc });
+
+        // Merge approvals intelligently: preserve local 'Approved' or 'Rejected' if incoming backend status is 'Pending'
+        const mergedApprovals = (inc.approvals || []).map(incApp => {
+          const currApp = (curr.approvals || []).find(a => a.office === incApp.office);
+          if (currApp && currApp.status !== 'Pending' && incApp.status === 'Pending') {
+            return {
+              ...incApp,
+              status: currApp.status,
+              comment: currApp.comment || incApp.comment,
+              reviewedBy: currApp.reviewedBy || incApp.reviewedBy,
+              reviewedAt: currApp.reviewedAt || incApp.reviewedAt
+            };
+          }
+          return incApp;
+        });
+
+        // Also check if curr has any offices not in inc
+        for (const currApp of (curr.approvals || [])) {
+          if (!mergedApprovals.some(a => a.office === currApp.office)) {
+            mergedApprovals.push(currApp);
+          }
+        }
+
+        map.set(inc.id, { ...curr, ...inc, approvals: mergedApprovals });
       } else {
         map.set(inc.id, inc);
       }
@@ -546,7 +569,7 @@ export class ClearanceService {
         return otherApprovals.length > 0 && otherApprovals.every(a => a.status === 'Approved');
       }
 
-      if (this.getClearanceOffices(request.college).includes(office)) {
+      if (request.approvals.some(a => a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
         return true;
       }
 
@@ -680,6 +703,35 @@ export class ClearanceService {
     this.save(request);
   }
 
+  private resolveBackendRequestId(request: ClearanceRequest | undefined, fallbackId: string): string {
+    const isInvalid = (val: string | undefined): boolean => {
+      if (!val) return true;
+      const v = val.trim().toLowerCase();
+      return !v || v === 'not available' || v === 'not selected' || v === 'n/a' || v === 'none' || v === 'null' || v === 'undefined';
+    };
+
+    const reg = request?.registrationNumber;
+    if (reg && !isInvalid(reg)) {
+      return reg.trim();
+    }
+
+    const reqId = request?.id;
+    if (reqId && !isInvalid(reqId)) {
+      return reqId.trim();
+    }
+
+    const studentId = request?.studentId;
+    if (studentId && !isInvalid(studentId)) {
+      return studentId.trim();
+    }
+
+    if (!isInvalid(fallbackId)) {
+      return fallbackId.trim();
+    }
+
+    return fallbackId || '';
+  }
+
   // =====================================================
   // APPROVE (UPDATES LOCAL STORAGE + BACKEND POSTGRESQL)
   // =====================================================
@@ -713,7 +765,8 @@ export class ClearanceService {
     }
 
     // Call backend API asynchronously
-    this.approveOfficeBackend(requestId, office, comment || 'Approved').subscribe({
+    const backendReqId = this.resolveBackendRequestId(request, requestId);
+    this.approveOfficeBackend(backendReqId, office, comment || 'Approved').subscribe({
       next: (res) => {
         console.log(`Backend approval succeeded for ${office} on request ${requestId}`);
         if (res && res.data) {
@@ -753,7 +806,8 @@ export class ClearanceService {
     }
 
     // Call backend API asynchronously
-    this.rejectOfficeBackend(requestId, office, comment.trim()).subscribe({
+    const backendReqId = this.resolveBackendRequestId(request, requestId);
+    this.rejectOfficeBackend(backendReqId, office, comment.trim()).subscribe({
       next: (res) => {
         console.log(`Backend rejection succeeded for ${office} on request ${requestId}`);
         if (res && res.data) {

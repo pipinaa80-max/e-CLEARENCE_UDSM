@@ -125,6 +125,7 @@ export class LibraryDashboard {
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
+  approveConfirmRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
 
@@ -483,22 +484,72 @@ export class LibraryDashboard {
     return 'Active Membership';
   }
 
-  approve(request: ClearanceRequest): void {
+  openApproveModal(request: ClearanceRequest): void {
+    this.approveConfirmRequest = request;
+    this.message = '';
+  }
+
+  confirmApprove(): void {
+    if (!this.approveConfirmRequest) return;
+    const request = this.approveConfirmRequest;
+    this.approveConfirmRequest = null;
+
     const staff = this.authService.getCurrentUser();
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
 
-    this.clearanceService.approveRequest(request.id, 'Library', staff.fullName);
-    this.notificationService.createNotification(
-      request.studentId,
-      'Library clearance approved',
-      'The Library has verified your book returns and approved your clearance.',
-      'success'
+    const studentName = this.getStudentName(request);
+    const approved = this.clearanceService.approveRequest(request.id, 'Library', staff.fullName);
+
+    if (approved) {
+      this.notificationService.createNotification(
+        request.studentId,
+        'Library clearance approved',
+        'The Library has verified your book returns and approved your clearance.',
+        'success'
+      );
+      this.message = `✅ Library clearance approved successfully for ${studentName}.`;
+      this.toastService.success('Approved', `Library clearance approved for ${studentName}.`);
+    } else {
+      this.message = '❌ Request could not be approved in its current state. Please try again.';
+      this.toastService.error('Approval Failed', 'Request could not be approved.');
+    }
+
+    setTimeout(() => { this.message = ''; }, 5000);
+  }
+
+  approve(request: ClearanceRequest): void {
+    const studentName = this.getStudentName(request);
+    const studentReg = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Library clearance for ${studentName} (${studentReg})?\n\nThis decision will verify book returns and grant Library clearance to the student.`
     );
-    this.message = 'Library clearance was approved successfully.';
-    setTimeout(() => { this.message = ''; }, 4000);
+    if (!confirmApprove) return;
+
+    const staff = this.authService.getCurrentUser();
+    if (!staff) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const approved = this.clearanceService.approveRequest(request.id, 'Library', staff.fullName);
+    if (approved) {
+      this.notificationService.createNotification(
+        request.studentId,
+        'Library clearance approved',
+        'The Library has verified your book returns and approved your clearance.',
+        'success'
+      );
+      this.message = `✅ Library clearance approved successfully for ${studentName}.`;
+      this.toastService.success('Approved', `Library clearance approved for ${studentName}.`);
+    } else {
+      this.message = '❌ Request could not be approved in its current state. Please try again.';
+      this.toastService.error('Approval Failed', 'Request could not be approved.');
+    }
+
+    setTimeout(() => { this.message = ''; }, 5000);
   }
 
   openRejectForm(request: ClearanceRequest): void {
@@ -511,6 +562,12 @@ export class LibraryDashboard {
     const staff = this.authService.getCurrentUser();
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
 
+    const studentName = this.getStudentName(this.selectedRequest);
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Library clearance for ${studentName}?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will send the reason to the student for correction or fine settlement.`
+    );
+    if (!confirmReject) return;
+
     this.clearanceService.rejectRequest(this.selectedRequest.id, 'Library', staff.fullName, this.rejectionComment);
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
@@ -519,10 +576,11 @@ export class LibraryDashboard {
       'warning'
     );
 
-    this.message = 'The student has been notified regarding unreturned library books or overdue fines.';
+    this.message = `✅ Student ${studentName} has been notified regarding: "${this.rejectionComment.trim()}".`;
+    this.toastService.warning('Returned', `Library request returned for ${studentName}.`);
     this.selectedRequest = null;
     this.rejectionComment = '';
-    setTimeout(() => { this.message = ''; }, 4000);
+    setTimeout(() => { this.message = ''; }, 5000);
   }
 
   // =========================================================================

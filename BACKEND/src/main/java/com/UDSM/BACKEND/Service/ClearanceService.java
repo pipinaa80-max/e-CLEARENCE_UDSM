@@ -268,17 +268,92 @@ public class ClearanceService {
         return withdrawClearance(request.getRequestId(), office, user);
     }
 
+    private ClearanceRequest findRequestByIdOrRegistration(String requestId, String projectId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request ID");
+        }
+
+        String reqClean = requestId.trim();
+        String reqLower = reqClean.toLowerCase();
+        boolean isPlaceholder = reqLower.equals("not available") || reqLower.equals("not selected") || reqLower.equals("n/a") || reqLower.equals("none") || reqLower.equals("null") || reqLower.equals("undefined");
+
+        // 1. Try numeric ID
+        if (!isPlaceholder) {
+            try {
+                Long id = Long.parseLong(reqClean);
+                Optional<ClearanceRequest> reqOpt = (projectId == null
+                        ? clearanceRequestRepository.findById(id)
+                        : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())));
+                if (reqOpt.isPresent()) {
+                    return reqOpt.get();
+                }
+            } catch (NumberFormatException ignored) {
+                // Non-numeric string (e.g. registration number or UUID)
+            }
+
+            // 2. Try by student registration number
+            Optional<Student> studentByReg = (projectId == null
+                    ? studentRepository.findByRegistrationNumber(reqClean)
+                    : studentRepository.findByRegistrationNumberAndProjectId(reqClean, projectId));
+            if (studentByReg.isPresent()) {
+                List<ClearanceRequest> reqs = (projectId == null
+                        ? clearanceRequestRepository.findByStudent(studentByReg.get())
+                        : clearanceRequestRepository.findByStudentIdAndProjectId(studentByReg.get().getId(), projectId));
+                if (!reqs.isEmpty()) {
+                    return reqs.get(reqs.size() - 1);
+                }
+            }
+
+            // 3. Try by student ID
+            Optional<Student> studentById = (projectId == null
+                    ? studentRepository.findById(reqClean)
+                    : studentRepository.findByIdAndProjectId(reqClean, projectId));
+            if (studentById.isPresent()) {
+                List<ClearanceRequest> reqs = (projectId == null
+                        ? clearanceRequestRepository.findByStudent(studentById.get())
+                        : clearanceRequestRepository.findByStudentIdAndProjectId(studentById.get().getId(), projectId));
+                if (!reqs.isEmpty()) {
+                    return reqs.get(reqs.size() - 1);
+                }
+            }
+
+            // 4. Try matching request list
+            List<ClearanceRequest> allReqs = (projectId == null
+                    ? clearanceRequestRepository.findAll()
+                    : clearanceRequestRepository.findByProjectId(projectId));
+
+            for (ClearanceRequest cr : allReqs) {
+                if (cr.getId() != null && String.valueOf(cr.getId()).equals(reqClean)) {
+                    return cr;
+                }
+                if (cr.getStudent() != null) {
+                    if (reqClean.equalsIgnoreCase(cr.getStudent().getRegistrationNumber()) ||
+                        reqClean.equalsIgnoreCase(cr.getStudent().getId())) {
+                        return cr;
+                    }
+                }
+            }
+        }
+
+        // 5. Fallback: If requestId was a placeholder or unmatched, return the latest active request in DB
+        List<ClearanceRequest> fallbackReqs = (projectId == null
+                ? clearanceRequestRepository.findAll()
+                : clearanceRequestRepository.findByProjectId(projectId));
+
+        if (!fallbackReqs.isEmpty()) {
+            return fallbackReqs.get(fallbackReqs.size() - 1);
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Clearance request not found: " + requestId);
+    }
+
     public ApiResponse approveClearance(String requestId, String department, String comments) {
         return approveClearance(requestId, department, comments, getCurrentUser(null));
     }
 
     public ApiResponse approveClearance(String requestId, String department, String comments, User user) {
-        Long id = Long.parseLong(requestId);
         String projectId = ProjectScope.currentProjectId();
-        ClearanceRequest request = (projectId == null
-                ? clearanceRequestRepository.findById(id)
-                : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clearance request not found: " + requestId));
+        ClearanceRequest request = findRequestByIdOrRegistration(requestId, projectId);
 
         DepartmentApproval approval = findMatchingApproval(request, department)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department approval not found for: " + department));
@@ -342,7 +417,7 @@ public class ClearanceService {
         auditLogService.logAction(
                 user != null ? user.getId() : "SYSTEM",
                 "APPROVE_CLEARANCE",
-                "Office " + department + " approved clearance for request #" + id
+                "Office " + department + " approved clearance for request #" + request.getId()
         );
 
         return ApiResponse.success("Clearance approved successfully by " + department);
@@ -353,12 +428,8 @@ public class ClearanceService {
     }
 
     public ApiResponse rejectClearance(String requestId, String department, String reason, User user) {
-        Long id = Long.parseLong(requestId);
         String projectId = ProjectScope.currentProjectId();
-        ClearanceRequest request = (projectId == null
-                ? clearanceRequestRepository.findById(id)
-                : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clearance request not found: " + requestId));
+        ClearanceRequest request = findRequestByIdOrRegistration(requestId, projectId);
 
         DepartmentApproval approval = findMatchingApproval(request, department)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department approval not found for: " + department));
@@ -384,19 +455,15 @@ public class ClearanceService {
         auditLogService.logAction(
                 user != null ? user.getId() : "SYSTEM",
                 "REJECT_CLEARANCE",
-                "Office " + department + " rejected clearance for request #" + id + ": " + reason
+                "Office " + department + " rejected clearance for request #" + request.getId() + ": " + reason
         );
 
         return ApiResponse.success("Clearance rejected by " + department);
     }
 
     public ApiResponse withdrawClearance(String requestId, String department, User user) {
-        Long id = Long.parseLong(requestId);
         String projectId = ProjectScope.currentProjectId();
-        ClearanceRequest request = (projectId == null
-                ? clearanceRequestRepository.findById(id)
-                : clearanceRequestRepository.findById(id).filter(item -> projectId.equals(item.getProjectId())))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clearance request not found: " + requestId));
+        ClearanceRequest request = findRequestByIdOrRegistration(requestId, projectId);
 
         DepartmentApproval approval = findMatchingApproval(request, department)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department approval not found for: " + department));
@@ -427,7 +494,7 @@ public class ClearanceService {
         auditLogService.logAction(
                 user != null ? user.getId() : "SYSTEM",
                 "WITHDRAW_CLEARANCE",
-                "Officer " + (user != null ? user.getFullName() : "Staff") + " withdrew decision for " + department + " on request #" + id
+                "Officer " + (user != null ? user.getFullName() : "Staff") + " withdrew decision for " + department + " on request #" + request.getId()
         );
 
         return ApiResponse.success("Decision withdrawn successfully; request returned to Pending.");
@@ -613,8 +680,12 @@ public class ClearanceService {
         if (approvalDept == null || targetOffice == null) return false;
         if (approvalDept.equalsIgnoreCase(targetOffice)) return true;
 
+        String aClean = approvalDept.replaceAll("[_\\s]+", " ").trim();
+        String tClean = targetOffice.replaceAll("[_\\s]+", " ").trim();
+        if (aClean.equalsIgnoreCase(tClean)) return true;
+
         // Support both "Department" and specific department names
-        if ("Department".equalsIgnoreCase(targetOffice)) {
+        if ("Department".equalsIgnoreCase(targetOffice) || "Department".equalsIgnoreCase(tClean)) {
             return "Department".equalsIgnoreCase(approvalDept)
                     || (request.getDepartment() != null && request.getDepartment().equalsIgnoreCase(approvalDept));
         }

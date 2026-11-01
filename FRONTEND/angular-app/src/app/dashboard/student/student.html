@@ -158,6 +158,139 @@
       </div>
     </section>
 
+    <!-- =================================================
+         CLEARANCE PROCESS STEPPER & STAGE PATH
+    ================================================== -->
+    <section class="dashboard-clearance-stepper-card" *ngIf="currentRequest && !isTranscriptSystem">
+
+      <!-- CURRENT STAGE -->
+      <section class="current-stage">
+        <span>
+          Current Stage
+        </span>
+        <strong>
+          {{ currentStageLabel }}
+        </strong>
+      </section>
+
+      <!-- FIVE MAIN STEPS -->
+      <section class="process-path">
+        <article *ngFor="let step of processSteps; let last = last; let index = index" class="process-step" [ngClass]="step.status.toLowerCase()">
+          <div class="step-line" *ngIf="!last"></div>
+          <span class="step-number">{{ index + 1 }}</span>
+          <div class="step-content">
+            <strong>{{ step.label }}</strong>
+            <small>{{ step.detail }}</small>
+            <span>{{ step.status }}</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- STEP DETAILS / CURRENT ACTION CARD -->
+      <section
+        *ngIf="currentRequest.status === 'Rejected' && currentRequest.revisionOffice"
+        class="waiting-card revision-card"
+      >
+        <h2>Changes Required</h2>
+        <p>{{ currentRequest.revisionOffice }} returned this request for correction.</p>
+        <p class="rejection-comment" *ngIf="currentRequest.revisionOffice">
+          <strong>Reason:</strong> {{ getRejectionReason(currentRequest.revisionOffice) }}
+        </p>
+        <a routerLink="/clearance/request" class="approval-button">
+          Correct and Resubmit
+        </a>
+      </section>
+
+      <section
+        *ngIf="currentRequest.currentStage === 'Convocation'"
+        class="waiting-card"
+      >
+        <h2>Step 1: Convocation</h2>
+        <p>Upload your Convocation payment receipt to complete Step 1 clearance.</p>
+        <div class="step-navigation">
+          <a routerLink="/convocation" class="approval-button">
+            Submit Convocation Receipt
+          </a>
+        </div>
+      </section>
+
+      <section
+        *ngIf="currentRequest.currentStage === 'Parallel'"
+        class="waiting-card"
+      >
+        <h2>Step 2: Clearance Offices</h2>
+        <p>Your clearance request is being reviewed independently by the following offices.</p>
+
+        <div class="approval-list">
+          <div class="approval-item" *ngFor="let office of officeList">
+            <div>
+              <strong>{{ office }}</strong>
+              <small>{{ getOfficeDetail(office) }}</small>
+              <p *ngIf="getOfficeStatus(office) === 'Rejected'" class="rejection-comment">
+                <strong>Staff Comment:</strong> {{ getRejectionReason(office) }}
+              </p>
+              <small *ngIf="getOfficeStatus(office) === 'Rejected' && getReviewerContact(office).name" class="reviewer-contact">
+                Reviewed by: {{ getReviewerContact(office).name }}
+                <span *ngIf="getReviewerContact(office).phone"> &middot; Phone: {{ getReviewerContact(office).phone }}</span>
+                <span *ngIf="getReviewerContact(office).email"> &middot; Email: {{ getReviewerContact(office).email }}</span>
+              </small>
+              <small *ngIf="getOfficeStatus(office) !== 'Rejected' && getReviewedBy(office)">
+                Reviewed by: {{ getReviewedBy(office) }}
+              </small>
+            </div>
+
+            <span class="final-status" [ngClass]="getOfficeStatus(office).toLowerCase()">
+              {{ getOfficeStatus(office) }}
+            </span>
+          </div>
+        </div>
+
+        <div *ngIf="allClearanceOfficesApproved" class="step-action">
+          <p>All clearance offices have approved your request.</p>
+          <span class="success-text">✓ Step 2 completed</span>
+        </div>
+        <div *ngIf="!allClearanceOfficesApproved" class="step-action">
+          <p>All offices must approve your request before the Department stage can begin.</p>
+        </div>
+      </section>
+
+      <section
+        *ngIf="currentRequest.currentStage === 'Department'"
+        class="waiting-card"
+      >
+        <h2>Step 3: Department</h2>
+        <p>Your clearance application is awaiting approval from your Department Officer.</p>
+      </section>
+
+      <section
+        *ngIf="currentRequest.currentStage === 'Principal'"
+        class="waiting-card"
+      >
+        <h2>Step 4: Principal</h2>
+        <p>Your clearance application is awaiting approval from the Principal / Dean.</p>
+      </section>
+
+      <section
+        *ngIf="currentRequest.currentStage === 'Finance'"
+        class="waiting-card"
+      >
+        <h2>Step 5: Finance</h2>
+        <p>Your clearance application is undergoing final financial verification with the Finance Office.</p>
+      </section>
+
+      <section
+        *ngIf="currentRequest.status === 'Completed'"
+        class="waiting-card completed-card"
+      >
+        <h2>Clearance Completed</h2>
+        <p>Congratulations! All clearance stages have been successfully approved.</p>
+        <a routerLink="/clearance/report" class="approval-button">
+          View Clearance Report
+        </a>
+      </section>
+
+    </section>
+
   </main>
 
 </section>
