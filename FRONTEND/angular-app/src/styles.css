@@ -764,7 +764,11 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
   font-family: 'Courier New', Courier, monospace;
 }
 
-/* Sidebar Nav Link & Button Icon Styling & Alignment */
+/* =========================================================
+   DISTINCT BRAND GOLD ACCENT FOR ALL SIDEBAR & NAV ICONS
+========================================================= */
+
+/* Sidebar Nav Link & Button Layout */
 .sidebar nav a,
 .sidebar nav button,
 .sidebar nav .nav-tab-btn,
@@ -773,19 +777,59 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
   display: flex !important;
   align-items: center !important;
   gap: 12px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 
+.sidebar nav a:hover,
+.sidebar nav a.active,
+.sidebar nav button:hover,
+.sidebar nav button.active,
+.sidebar nav .nav-tab-btn:hover,
+.sidebar nav .nav-tab-btn.active {
+  color: #ffffff !important;
+}
+
+/* Distinct Brand Gold Icon Styling (Differentiates Icon from Text) */
 .sidebar nav a svg,
 .sidebar nav a i,
 .sidebar nav button svg,
 .sidebar nav button i,
+.sidebar nav .nav-tab-btn svg,
+.sidebar nav .nav-tab-btn i,
 .sidebar .logout-link svg,
 .sidebar .logout-link i,
 .logout-link svg,
 .logout-link i {
   flex-shrink: 0 !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: 19px !important;
+  height: 19px !important;
   font-size: 1.15rem !important;
   vertical-align: middle !important;
+  color: var(--udsm-gold, #f59e0b) !important;
+  fill: var(--udsm-gold, #f59e0b) !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease, fill 0.2s ease, filter 0.2s ease !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)) !important;
+}
+
+/* Glowing Gold Highlight on Hover & Active State */
+.sidebar nav a:hover svg,
+.sidebar nav a:hover i,
+.sidebar nav a.active svg,
+.sidebar nav a.active i,
+.sidebar nav button:hover svg,
+.sidebar nav button:hover i,
+.sidebar nav button.active svg,
+.sidebar nav button.active i,
+.sidebar nav .nav-tab-btn:hover svg,
+.sidebar nav .nav-tab-btn:hover i,
+.sidebar nav .nav-tab-btn.active svg,
+.sidebar nav .nav-tab-btn.active i,
+.sidebar .logout-link:hover svg,
+.sidebar .logout-link:hover i,
+.logout-link:hover svg,
+.logout-link:hover i {
+  color: #ffca28 !important;
+  fill: #ffca28 !important;
+  transform: scale(1.12) !important;
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.55)) !important;
 }

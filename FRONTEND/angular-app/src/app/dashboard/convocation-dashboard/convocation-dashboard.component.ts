@@ -82,32 +82,45 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+    if (!request || !request.approvals || !Array.isArray(request.approvals)) {
+      return 'Pending';
+    }
+    return request.approvals.find(a => a && a.office === office)?.status ?? 'Pending';
   }
 
   get requests(): ClearanceRequest[] {
-    let allRequests = this.clearanceService.getRequestsForOffice('Convocation');
+    let allRequests: ClearanceRequest[] = [];
+    try {
+      allRequests = this.clearanceService.getRequestsForOffice('Convocation') || [];
+      if (!Array.isArray(allRequests)) allRequests = [];
+    } catch (e) {
+      console.error('Error fetching clearance requests for Convocation:', e);
+      allRequests = [];
+    }
+
     this.updateStats(allRequests);
 
-    const search = this.searchTerm.trim().toLowerCase();
+    const search = (this.searchTerm || '').trim().toLowerCase();
     if (search) {
       allRequests = allRequests.filter(request =>
-        [this.getStudentName(request), this.getStudentRegNumber(request), request.programme, request.department, request.college]
-          .some(value => (value || '').toLowerCase().includes(search))
+        request && [this.getStudentName(request), this.getStudentRegNumber(request), request.programme, request.department, request.college]
+          .some(value => (value || '').toString().toLowerCase().includes(search))
       );
     }
     if (this.dateFilter !== 'all') {
       const days = Number(this.dateFilter);
-      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-      allRequests = allRequests.filter(request => new Date(request.requestDate).getTime() >= cutoff);
+      if (!isNaN(days)) {
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+        allRequests = allRequests.filter(request => request && request.requestDate && new Date(request.requestDate).getTime() >= cutoff);
+      }
     }
 
     if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
-      allRequests = allRequests.filter(r => this.getRequestOfficeStatus(r, 'Convocation') === 'Pending');
+      allRequests = allRequests.filter(r => r && this.getRequestOfficeStatus(r, 'Convocation') === 'Pending');
     } else if (this.filterStatus === 'approved') {
-      allRequests = allRequests.filter(r => this.getRequestOfficeStatus(r, 'Convocation') === 'Approved');
+      allRequests = allRequests.filter(r => r && this.getRequestOfficeStatus(r, 'Convocation') === 'Approved');
     } else if (this.filterStatus === 'rejected') {
-      allRequests = allRequests.filter(r => this.getRequestOfficeStatus(r, 'Convocation') === 'Rejected');
+      allRequests = allRequests.filter(r => r && this.getRequestOfficeStatus(r, 'Convocation') === 'Rejected');
     }
 
     return allRequests;
@@ -123,7 +136,13 @@ export class ConvocationDashboardComponent implements OnInit {
     // 1. Load from Backend
     this.convocationService.getPendingReceipts().subscribe({
       next: (res) => {
-        this.backendReceipts = (res.receipts || []).filter((receipt: ConvocationReceipt) => receipt.status === 'PENDING');
+        if (res && Array.isArray(res.receipts)) {
+          this.backendReceipts = res.receipts.filter((receipt: ConvocationReceipt) => receipt && receipt.status === 'PENDING');
+        } else if (res && Array.isArray(res)) {
+          this.backendReceipts = res.filter((receipt: ConvocationReceipt) => receipt && receipt.status === 'PENDING');
+        } else {
+          this.backendReceipts = [];
+        }
         console.log('Backend pending receipts loaded:', this.backendReceipts.length);
         this.isLoading = false;
       },
@@ -134,25 +153,35 @@ export class ConvocationDashboardComponent implements OnInit {
     });
 
     // 2. Load from Local (for legacy/mock continuity)
-    const requests = this.clearanceService.getRequestsForOffice('Convocation');
-    this.updateStats(requests);
+    try {
+      const requests = this.clearanceService.getRequestsForOffice('Convocation');
+      this.updateStats(requests);
+    } catch (e) {
+      console.error('Error updating stats:', e);
+    }
     this.isLoading = false;
   }
 
   updateStats(requests: ClearanceRequest[]): void {
+    if (!requests || !Array.isArray(requests)) {
+      this.totalPending = 0;
+      this.totalIssued = 0;
+      this.totalCompleted = 0;
+      return;
+    }
     this.totalPending = requests.filter(r =>
-        r.status === 'Pending' &&
+        r && r.status === 'Pending' &&
         r.currentStage === 'Convocation' &&
         !r.convocation?.receiptSubmittedAt
     ).length;
 
     this.totalIssued = requests.filter(r =>
-        r.convocation?.receiptSubmittedAt &&
+        r && r.convocation?.receiptSubmittedAt &&
         this.getRequestOfficeStatus(r, 'Convocation') === 'Pending'
     ).length;
 
     this.totalCompleted = requests.filter(r =>
-        this.getRequestOfficeStatus(r, 'Convocation') === 'Approved'
+        r && this.getRequestOfficeStatus(r, 'Convocation') === 'Approved'
     ).length;
   }
 
@@ -165,6 +194,7 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   private getStudentData(studentId: string): any | null {
+    if (!studentId || typeof studentId !== 'string') return null;
     if (this.studentCache.has(studentId)) {
       return this.studentCache.get(studentId);
     }
@@ -173,10 +203,12 @@ export class ConvocationDashboardComponent implements OnInit {
       const usersJson = localStorage.getItem('udsm-local-users');
       if (usersJson) {
         const users = JSON.parse(usersJson);
-        const user = users.find((u: any) => u.id === studentId);
-        if (user) {
-          this.studentCache.set(studentId, user);
-          return user;
+        if (Array.isArray(users)) {
+          const user = users.find((u: any) => u && u.id === studentId);
+          if (user) {
+            this.studentCache.set(studentId, user);
+            return user;
+          }
         }
       }
     } catch (error) {
@@ -186,32 +218,39 @@ export class ConvocationDashboardComponent implements OnInit {
   }
 
   getStudentName(request: ClearanceRequest): string {
+    if (!request) return 'Student';
     if (request.studentName) return request.studentName;
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
+    if (request.studentId) {
+      const user = this.getStudentData(request.studentId);
+      if (user) {
+        return user.fullName || (user.firstName && user.lastName ? user.firstName + ' ' + user.lastName : '') || user.registrationNumber || 'Student';
+      }
     }
-    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
+    return request.registrationNumber || (request.studentId ? 'Student #' + request.studentId.substring(0, 8) : 'Student');
   }
 
   getStudentRegNumber(request: ClearanceRequest): string {
+    if (!request) return 'Not available';
     if (request.registrationNumber) return request.registrationNumber;
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.registrationNumber || user.studentId || 'Not available';
+    if (request.studentId) {
+      const user = this.getStudentData(request.studentId);
+      if (user) {
+        return user.registrationNumber || user.studentId || 'Not available';
+      }
     }
     return 'Not available';
   }
 
   getStudentPhoto(request: ClearanceRequest): string | null {
+    if (!request) return null;
     let photo = request.photo;
-    if (!photo) {
+    if (!photo && request.studentId) {
       const user = this.getStudentData(request.studentId);
       if (user) {
         photo = user.photo || user.profilePhoto || user.profileImageUrl;
       }
     }
-    if (!photo) return null;
+    if (!photo || typeof photo !== 'string') return null;
 
     if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
       return photo;

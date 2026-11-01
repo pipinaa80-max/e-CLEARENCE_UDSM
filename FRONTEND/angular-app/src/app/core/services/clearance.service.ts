@@ -560,16 +560,20 @@ export class ClearanceService {
     }
 
     return this.getAllRequests().filter(request => {
+      if (!request || !request.approvals || !Array.isArray(request.approvals)) {
+        return false;
+      }
+
       if (office === 'Convocation') {
-        return request.approvals.some(item => item.office === 'Convocation');
+        return request.approvals.some(item => item && item.office === 'Convocation');
       }
 
       if (office === 'Finance') {
-        const otherApprovals = request.approvals.filter(a => a.office !== 'Finance');
-        return otherApprovals.length > 0 && otherApprovals.every(a => a.status === 'Approved');
+        const otherApprovals = request.approvals.filter(a => a && a.office !== 'Finance');
+        return otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
       }
 
-      if (request.approvals.some(a => a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
+      if (request.approvals.some(a => a && a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
         return true;
       }
 
@@ -760,11 +764,11 @@ export class ClearanceService {
       comment?: string
   ): boolean {
     const request = this.getRequest(requestId);
-    const approval = request?.approvals.find(item => item.office === office);
+    const approval = request?.approvals?.find(item => item && item.office === office);
 
     if (office === 'Finance') {
-      const otherApprovals = request?.approvals.filter(a => a.office !== 'Finance') || [];
-      const allCleared = otherApprovals.length > 0 && otherApprovals.every(a => a.status === 'Approved');
+      const otherApprovals = request?.approvals?.filter(a => a && a.office !== 'Finance') || [];
+      const allCleared = otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
       if (!allCleared) {
         console.warn(`Request ${requestId} cannot reach or be approved by Finance until all other offices are cleared.`);
         return false;
@@ -817,7 +821,7 @@ export class ClearanceService {
       comment: string
   ): boolean {
     const request = this.getRequest(requestId);
-    const approval = request?.approvals.find(item => item.office === office);
+    const approval = request?.approvals?.find(item => item && item.office === office);
 
     if (request && approval) {
       approval.status = 'Rejected';
@@ -853,7 +857,7 @@ export class ClearanceService {
 
   withdrawOfficeDecision(requestId: string, office: ClearanceOffice): boolean {
     const request = this.getRequest(requestId);
-    const approval = request?.approvals.find(item => item.office === office);
+    const approval = request?.approvals?.find(item => item && item.office === office);
 
     if (request && approval) {
       approval.status = 'Pending';
@@ -884,13 +888,13 @@ export class ClearanceService {
   ): boolean {
     const request = this.getRequest(requestId);
 
-    if (!request || request.status !== 'Rejected' || !request.revisionOffice) {
+    if (!request || request.status !== 'Rejected' || !request.revisionOffice || !request.approvals) {
       return false;
     }
 
     Object.assign(request, requestData);
 
-    const approval = request.approvals.find(item => item.office === request.revisionOffice);
+    const approval = request.approvals.find(item => item && item.office === request.revisionOffice);
     if (!approval) return false;
 
     approval.status = 'Pending';
@@ -915,6 +919,7 @@ export class ClearanceService {
   // =====================================================
 
   private moveToNextStage(request: ClearanceRequest): void {
+    if (!request) return;
     if (request.currentStage === 'Convocation') {
       request.currentStage = 'Parallel';
       request.currentOffice = undefined;
@@ -922,8 +927,9 @@ export class ClearanceService {
     }
 
     if (request.currentStage === 'Parallel') {
+      const approvals = request.approvals || [];
       const allApproved = this.getClearanceOffices(request.college).every(office =>
-          request.approvals.find(approval => approval.office === office)?.status === 'Approved'
+          approvals.find(approval => approval && approval.office === office)?.status === 'Approved'
       );
 
       if (allApproved) {
