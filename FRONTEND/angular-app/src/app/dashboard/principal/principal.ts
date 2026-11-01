@@ -279,7 +279,15 @@ export class PrincipalComponent implements OnInit {
 
     approve(request: ClearanceRequest): void {
         const staff = this.currentUser;
-        if (!staff || !this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
+        if (!staff) return;
+
+        const studentName = this.getStudentName(request);
+        const confirmApprove = confirm(
+            `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Principal clearance for ${studentName}?`
+        );
+        if (!confirmApprove) return;
+
+        if (!this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
             this.toastService.error('Error', 'Failed to approve request. Please try again.');
             return;
         }

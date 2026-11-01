@@ -254,43 +254,6 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // LIVE DEMO HELPER: INSTANT CONTROL NUMBER
-  // =====================================================
-
-  issueDemoControlNumber(): void {
-    const req = this.studentRequest;
-    if (!req) {
-      this.toastService.warning('Not Found', 'No active clearance request.');
-      return;
-    }
-
-    const cn = '991' + Date.now().toString().slice(-9);
-    this.clearanceService.issueControlNumber(req.id, cn);
-    this.loadData();
-
-    this.toastService.success('Demo Control Number', `Issued: ${cn}`);
-    this.message = `Demo control number ${cn} issued! You can now upload your receipt.`;
-  }
-
-  // =====================================================
-  // LIVE DEMO HELPER: INSTANT APPROVAL
-  // =====================================================
-
-  approveDemoConvocation(): void {
-    const req = this.studentRequest;
-    if (!req) {
-      this.toastService.warning('Not Found', 'No active clearance request.');
-      return;
-    }
-
-    this.clearanceService.approveRequest(req.id, 'Convocation', 'Convocation Officer (Demo)');
-    this.loadData();
-
-    this.toastService.success('Convocation Approved', 'Convocation approved! You can now proceed to Step 2.');
-    this.message = '✅ Convocation clearance approved! Click Next to proceed to Step 2.';
-  }
-
-  // =====================================================
   // FILE SELECTED
   // =====================================================
 

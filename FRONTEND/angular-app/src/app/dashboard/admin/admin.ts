@@ -1089,15 +1089,26 @@ export class AdminDashboard implements OnInit {
   }
 
   updateRole(userId: string, newRole: string): void {
+    const user = this.users.find(u => u.id === userId);
+    const userName = user ? (user.fullName || user.username || user.email) : 'User #' + userId;
+    const confirmChange = confirm(
+      `⚠️ Role Change Attention\n\nAre you sure you want to change the role for ${userName} to "${newRole}"?`
+    );
+    if (!confirmChange) {
+      this.loadData();
+      return;
+    }
+
     this.adminService.updateUserRole(userId, newRole).subscribe({
       next: () => {
-        this.message = 'Role updated successfully';
+        this.message = `Role updated successfully to "${newRole}" for ${userName}`;
         this.isError = false;
         this.loadData();
       },
       error: (err) => {
         this.message = 'Failed to update role';
         this.isError = true;
+        this.loadData();
       }
     });
   }

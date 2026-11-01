@@ -1,8 +1,8 @@
-﻿// convocation-dashboard.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
@@ -26,6 +26,7 @@ export class ConvocationDashboardComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly sanitizer = inject(DomSanitizer);
 
   sidebarOpen = false;
   isLoading = false;
@@ -45,7 +46,7 @@ export class ConvocationDashboardComponent implements OnInit {
   searchTerm = '';
   dateFilter = 'all';
   currentPage = 1;
-  pageSize = 3;
+  pageSize = 10;
 
   get paginatedRequests(): ClearanceRequest[] {
     const start = (this.currentPage - 1) * this.pageSize;
@@ -273,16 +274,24 @@ export class ConvocationDashboardComponent implements OnInit {
     this.receiptToView = null;
   }
 
+  getSafeUrl(data: string | undefined): SafeResourceUrl | null {
+    if (!data) return null;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(data);
+  }
+
   isImageUrl(data: string | undefined): boolean {
     if (!data) return false;
     if (data.startsWith('data:image')) return true;
-    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-    return extensions.some(ext => data.toLowerCase().endsWith(ext)) || data.toLowerCase().includes('image');
+    const lower = data.toLowerCase();
+    const extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    return extensions.some(ext => lower.endsWith(ext) || lower.includes(ext));
   }
 
   isPdf(data: string | undefined): boolean {
     if (!data) return false;
-    return data.startsWith('data:application/pdf') || data.toLowerCase().endsWith('.pdf');
+    if (data.startsWith('data:application/pdf')) return true;
+    const lower = data.toLowerCase();
+    return lower.endsWith('.pdf') || lower.includes('.pdf') || lower.includes('/pdf');
   }
 
   getStudentInitials(request: ClearanceRequest): string {

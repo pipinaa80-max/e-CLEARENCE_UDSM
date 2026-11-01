@@ -97,37 +97,53 @@
         <span class="request-count">{{ backendReceipts.length }} pending verification</span>
       </div>
 
-      <div class="request-list">
-        <div class="request-card online-submission" *ngFor="let receipt of backendReceipts">
-          <div class="student-header">
-            <div class="student-avatar">
-              <span class="initials">{{ receipt.studentName.charAt(0) }}</span>
-            </div>
-            <div class="student-info">
-              <h3>{{ receipt.studentName }}</h3>
-              <div class="student-meta">
-                <span class="reg-number"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>{{ receipt.registrationNumber }}</span>
-                <span class="control-number" *ngIf="receipt.controlNumber && receipt.controlNumber !== 'DIRECT-PAYMENT'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Ref: {{ receipt.controlNumber }}</span>
-              </div>
-              <small class="submitted-date">Submitted: {{ receipt.submittedAt | date:'medium' }}</small>
-            </div>
-            <div class="request-status">
-              <span class="status-badge receipt-received"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Pending Verification</span>
-            </div>
-          </div>
-
-          <div class="action-buttons">
-            <button type="button" (click)="viewBackendReceipt(receipt)" class="view-btn">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View Receipt
-            </button>
-            <button (click)="approveBackendReceipt(receipt.id)" class="approve-btn">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
-            </button>
-            <button (click)="rejectBackendReceipt(receipt.id)" class="reject-btn">
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>Reject
-            </button>
-          </div>
-        </div>
+      <div class="table-wrap">
+        <table class="convocation-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Registration No.</th>
+              <th>Ref / Control No.</th>
+              <th>Submitted Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let receipt of backendReceipts">
+              <td>
+                <div class="student-cell-content">
+                  <div class="student-avatar-sm">
+                    <span class="initials">{{ receipt.studentName ? receipt.studentName.charAt(0) : 'S' }}</span>
+                  </div>
+                  <strong class="student-name">{{ receipt.studentName }}</strong>
+                </div>
+              </td>
+              <td><code class="reg-code">{{ receipt.registrationNumber }}</code></td>
+              <td>{{ receipt.controlNumber && receipt.controlNumber !== 'DIRECT-PAYMENT' ? receipt.controlNumber : 'Direct Payment' }}</td>
+              <td>{{ receipt.submittedAt | date:'medium' }}</td>
+              <td>
+                <span class="status-badge receipt-received">
+                  <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>
+                  Pending Verification
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons-cell">
+                  <button type="button" (click)="viewBackendReceipt(receipt)" class="view-btn">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View
+                  </button>
+                  <button type="button" (click)="approveBackendReceipt(receipt.id)" class="approve-btn">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
+                  </button>
+                  <button type="button" (click)="rejectBackendReceipt(receipt.id)" class="reject-btn">
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -148,78 +164,86 @@
         <p>{{ filterStatus === 'approved' ? 'There are currently no approved student applications for Convocation.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Convocation.' : 'There are currently no student applications awaiting Convocation approval.' }}</p>
       </div>
 
-      <div *ngIf="!isLoading && requests.length > 0" class="request-list">
-        <div class="request-card" *ngFor="let request of paginatedRequests">
-
-          <div class="student-header">
-            <div class="student-avatar">
-              <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(request))" title="Click to view enlarged photo" (error)="onImageError(request)" />
-              <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
-            </div>
-
-            <div class="student-info">
-              <h3>{{ getStudentName(request) }}</h3>
-              <div class="student-meta">
-                <span class="reg-number"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>{{ getStudentRegNumber(request) }}</span>
-                <span class="programme"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m2 9 10-5 10 5-10 5L2 9Z"/><path d="M6 11v5c4 3 8 3 12 0v-5M22 9v6"/></svg>{{ request.programme }}</span>
-              </div>
-              <p class="academic-info">{{ request.department }} · {{ request.college }}</p>
-              <small class="submitted-date">Requested: {{ request.requestDate | date:'mediumDate' }}</small>
-            </div>
-
-            <div class="request-status">
-              <span class="status-badge" [class.receipt-received]="request.convocation?.receiptSubmittedAt">
-                <span *ngIf="!request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Awaiting Receipt</span>
-                <span *ngIf="request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Receipt Received</span>
-              </span>
-            </div>
-          </div>
-
-          <div class="control-section">
-            <div *ngIf="!request.convocation?.receiptSubmittedAt" class="control-number-box">
-              <div class="requested-info">
-                <div>
-                  <strong>Awaiting Receipt Submission</strong>
-                  <small>Student will submit receipt obtained after making payment.</small>
+      <div *ngIf="!isLoading && requests.length > 0" class="table-wrap">
+        <table class="convocation-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Registration No.</th>
+              <th>Programme & Academic Unit</th>
+              <th>Requested Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let request of paginatedRequests">
+              <td>
+                <div class="student-cell-content">
+                  <div class="student-avatar-sm">
+                    <img *ngIf="hasPhoto(request)" [src]="getStudentPhoto(request)" [alt]="getStudentName(request)" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(request))" title="Click to view enlarged photo" (error)="onImageError(request)" />
+                    <span *ngIf="!hasPhoto(request)">{{ getStudentInitials(request) }}</span>
+                  </div>
+                  <strong class="student-name">{{ getStudentName(request) }}</strong>
                 </div>
-              </div>
-            </div>
+              </td>
+              <td><code class="reg-code">{{ getStudentRegNumber(request) }}</code></td>
+              <td>
+                <div class="programme-cell">
+                  <strong class="prog-title">{{ request.programme || 'N/A' }}</strong>
+                  <small class="dept-sub">{{ request.department }} · {{ request.college }}</small>
+                </div>
+              </td>
+              <td>{{ request.requestDate | date:'mediumDate' }}</td>
+              <td>
+                <span class="status-badge" [class.receipt-received]="request.convocation?.receiptSubmittedAt" [class.approved]="getRequestOfficeStatus(request, 'Convocation') === 'Approved'" [class.rejected]="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'">
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Approved'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Approved</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>Rejected</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && !request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Awaiting Receipt</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Receipt Received</span>
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons-cell">
+                  <button
+                    *ngIf="request.convocation?.receiptSubmittedAt"
+                    type="button"
+                    class="view-btn"
+                    (click)="viewReceipt(request)"
+                  >
+                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View
+                  </button>
 
-            <div *ngIf="request.convocation?.receiptSubmittedAt" class="receipt-received">
-              <span class="success-icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></span>
-              <div style="flex: 1;">
-                <strong>Receipt Received</strong>
-                <small>Awaiting final Convocation verification &amp; approval</small>
-              </div>
-              <button type="button" class="view-btn" (click)="viewReceipt(request)" style="margin-left: auto;">
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View Receipt
-              </button>
-            </div>
-          </div>
+                  <ng-container *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending'; else reviewedStatus">
+                    <button
+                      *ngIf="!request.convocation?.receiptSubmittedAt"
+                      type="button"
+                      class="approve-btn"
+                      (click)="markReceiptReceived(request)"
+                      [disabled]="isLoading"
+                    >
+                      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Mark Receipt Received
+                    </button>
 
-          <div class="action-buttons" *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending'">
-            <button
-              *ngIf="!request.convocation?.receiptSubmittedAt"
-              type="button"
-              class="approve-btn"
-              (click)="markReceiptReceived(request)"
-              [disabled]="isLoading"
-            >
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Mark Receipt Received
-            </button>
+                    <button
+                      *ngIf="request.convocation?.receiptSubmittedAt"
+                      type="button"
+                      class="final-approve-btn"
+                      (click)="approveRequest(request)"
+                      [disabled]="isLoading"
+                    >
+                      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
+                    </button>
+                  </ng-container>
 
-            <button
-              *ngIf="request.convocation?.receiptSubmittedAt"
-              type="button"
-              class="final-approve-btn"
-              (click)="approveRequest(request)"
-              [disabled]="isLoading"
-            >
-              <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
-            </button>
-          </div>
-
-        </div>
+                  <ng-template #reviewedStatus>
+                    <span class="status-reviewed">{{ getRequestOfficeStatus(request, 'Convocation') }}</span>
+                  </ng-template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="pagination" *ngIf="totalPages > 1">
@@ -251,25 +275,24 @@
       </header>
 
       <div class="receipt-body">
-        <!-- BASE64 IMAGE -->
-        <img *ngIf="receiptToView?.data?.startsWith('data:image')" [src]="receiptToView?.data" alt="Payment Receipt" />
+        <!-- IMAGE PREVIEW (BASE64 OR URL) -->
+        <img *ngIf="isImageUrl(receiptToView?.data)" [src]="receiptToView?.data" alt="Payment Receipt" class="receipt-image-preview" />
 
-        <!-- EXTERNAL URL IMAGE (BACKEND) -->
-        <img *ngIf="receiptToView?.data && !receiptToView?.data?.startsWith('data:image') && isImageUrl(receiptToView?.data)" [src]="receiptToView?.data" alt="Payment Receipt" />
-
-        <!-- PDF VIEWER (BASE64 or URL) -->
-        <div *ngIf="isPdf(receiptToView?.data)" class="pdf-viewer">
-          <p><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>PDF Receipt Uploaded</p>
-          <a [href]="receiptToView?.data" [attr.download]="'receipt-' + (receiptToView?.reg || 'doc') + '.pdf'" class="download-link">View / Download Document</a>
+        <!-- DIRECT INLINE PDF VIEWER (IFRAME) -->
+        <div *ngIf="isPdf(receiptToView?.data)" class="pdf-inline-viewer">
+          <iframe [src]="getSafeUrl(receiptToView?.data)" title="PDF Payment Receipt" class="receipt-iframe"></iframe>
         </div>
 
-        <!-- FALLBACK FOR TEXT -->
-        <div *ngIf="receiptToView?.data && !receiptToView?.data?.startsWith('data:image') && !isImageUrl(receiptToView?.data) && !isPdf(receiptToView?.data)" class="text-receipt">
+        <!-- FALLBACK FOR TEXT / MANUAL VERIFICATION -->
+        <div *ngIf="receiptToView?.data && !isImageUrl(receiptToView?.data) && !isPdf(receiptToView?.data)" class="text-receipt">
           <p>{{ receiptToView?.data }}</p>
         </div>
       </div>
 
       <footer>
+        <a *ngIf="receiptToView?.data && (isPdf(receiptToView?.data) || isImageUrl(receiptToView?.data))" [href]="getSafeUrl(receiptToView?.data)" target="_blank" rel="noopener noreferrer" class="view-tab-btn">
+          Open in New Tab ↗
+        </a>
         <button type="button" class="primary-button" (click)="closeReceiptModal()">Close Viewer</button>
       </footer>
     </div>

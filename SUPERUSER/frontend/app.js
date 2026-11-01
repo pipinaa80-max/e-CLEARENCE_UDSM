@@ -324,4 +324,12 @@ document.addEventListener('click', async event => {
     }
   } catch (error) { state.message = error.message; render(); }
 });
-if (state.token) refresh().catch(() => { state.token = null; localStorage.removeItem('superuser-token'); render(); }); else render();
+if (state.token) {
+  refresh().catch(() => { state.token = null; localStorage.removeItem('superuser-token'); render(); });
+  setInterval(() => {
+    if (state.token && state.systemStatus === 'connected') {
+      if (state.tab === 'audit' && state.data?.role === 'SUPERUSER' && !state.auditLoading) loadAuditPage(state.auditPage);
+      else if (state.tab === 'overview') refresh().catch(() => {});
+    }
+  }, 4000);
+} else render();

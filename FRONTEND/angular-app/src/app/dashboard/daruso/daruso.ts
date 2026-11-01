@@ -514,6 +514,12 @@ export class DarusoComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE DARUSO clearance for ${studentName}?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(request.id, 'DARUSO', staff.fullName);
     this.notificationService.createNotification(
       request.studentId,
@@ -534,6 +540,12 @@ export class DarusoComponent {
   reject(): void {
     const staff = this.authService.getCurrentUser();
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT DARUSO clearance for ${studentName}?`
+    );
+    if (!confirmReject) return;
 
     this.clearanceService.rejectRequest(this.selectedRequest.id, 'DARUSO', staff.fullName, this.rejectionComment);
     this.notificationService.createNotification(

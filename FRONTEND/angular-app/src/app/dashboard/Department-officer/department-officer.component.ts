@@ -281,6 +281,12 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
             return;
         }
 
+        const studentName = this.getStudentName(request);
+        const confirmApprove = confirm(
+            `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Department clearance for ${studentName}?`
+        );
+        if (!confirmApprove) return;
+
         this.processingRequests.add(request.id);
         try {
             const approved = this.clearanceService.approveRequest(
@@ -324,6 +330,12 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
             this.router.navigate(['/login']);
             return;
         }
+
+        const studentName = this.getStudentName(request);
+        const confirmReject = confirm(
+            `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Department clearance for ${studentName}?`
+        );
+        if (!confirmReject) return;
 
         this.processingRequests.add(request.id);
         try {

@@ -456,7 +456,7 @@ export class ClearanceService {
 
   getStudentRequests(studentId: string): ClearanceRequest[] {
     const now = Date.now();
-    if (!this.lastStudentFetchTime[studentId] || (now - this.lastStudentFetchTime[studentId] > 10000)) {
+    if (!this.lastStudentFetchTime[studentId] || (now - this.lastStudentFetchTime[studentId] > 2000)) {
       this.lastStudentFetchTime[studentId] = now;
       this.fetchMyRequest().subscribe({
         next: () => {},
@@ -528,7 +528,7 @@ export class ClearanceService {
   ): ClearanceRequest[] {
     const now = Date.now();
     const cacheKey = `${office}_${college || ''}_${department || ''}`;
-    if (!this.lastOfficeFetchTime[cacheKey] || (now - this.lastOfficeFetchTime[cacheKey] > 10000)) {
+    if (!this.lastOfficeFetchTime[cacheKey] || (now - this.lastOfficeFetchTime[cacheKey] > 2000)) {
       this.lastOfficeFetchTime[cacheKey] = now;
       this.fetchOfficeRequests(office).subscribe({
         next: () => {},

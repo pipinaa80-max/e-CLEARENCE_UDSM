@@ -431,6 +431,12 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   approve(request: ClearanceRequest): void {
+    const studentName = this.getStudentName(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Dean of Students clearance for ${studentName}?`
+    );
+    if (!confirmApprove) return;
+
     this.isLoading = true;
     const staff = this.authService.getCurrentUser();
 
@@ -491,10 +497,18 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   reject(): void {
+    if (!this.selectedRequest || !this.rejectionComment.trim()) return;
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Dean of Students clearance for ${studentName}?`
+    );
+    if (!confirmReject) return;
+
     this.isLoading = true;
     const staff = this.authService.getCurrentUser();
 
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
+    if (!staff) {
       this.isLoading = false;
       return;
     }

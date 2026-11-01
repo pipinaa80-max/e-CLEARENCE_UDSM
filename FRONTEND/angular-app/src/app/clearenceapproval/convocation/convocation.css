@@ -503,38 +503,6 @@
   display: inline-flex;
 }
 
-/* =====================================================
-   DEMO ACTIONS
-===================================================== */
-
-.demo-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 18px;
-}
-
-.secondary-button.demo-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius-control);
-  background: #f8fafc;
-  border: 1.5px dashed #cbd5e1;
-  color: #475569;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.secondary-button.demo-btn:hover {
-  background: #f1f5f9;
-  border-color: var(--udsm-blue);
-  color: var(--udsm-blue);
-  transform: translateY(-1px);
-}
 
 
 /* =====================================================

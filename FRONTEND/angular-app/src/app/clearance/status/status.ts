@@ -1,5 +1,5 @@
 // clearance-status.component.ts - Fixed for parallel offices
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -35,7 +35,7 @@ interface ProcessStep {
   templateUrl: './status.html',
   styleUrl: './status.css'
 })
-export class ClearanceStatusComponent {
+export class ClearanceStatusComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
@@ -299,6 +299,51 @@ export class ClearanceStatusComponent {
     }
 
     return false;
+  }
+
+  ngOnInit(): void {
+    this.loadData();
+    this.checkAndAutoAdvanceStage();
+  }
+
+  checkAndAutoAdvanceStage(): void {
+    const request = this.request;
+    if (!request || request.status === 'Completed' || request.status === 'Rejected') return;
+
+    if (this.canAdvanceFromCurrentStage()) {
+      console.log(`Auto-advancing request ${request.id} from stage ${request.currentStage}`);
+      this.continueToNextStageSilently();
+    }
+  }
+
+  continueToNextStageSilently(): void {
+    const request = this.request;
+    if (!request) return;
+
+    let nextStage: string = '';
+    let nextOffice: ClearanceOffice | undefined = undefined;
+
+    if (request.currentStage === 'Convocation' && this.isConvocationApproved) {
+      nextStage = 'Parallel';
+      nextOffice = undefined;
+    } else if (request.currentStage === 'Parallel' && this.allClearanceOfficesApproved) {
+      nextStage = 'Department';
+      nextOffice = 'Department';
+    } else if (request.currentStage === 'Department' && this.getOfficeStatus('Department') === 'Approved') {
+      nextStage = 'Principal';
+      nextOffice = 'Principal';
+    } else if (request.currentStage === 'Principal' && this.getOfficeStatus('Principal') === 'Approved') {
+      nextStage = 'Finance';
+      nextOffice = 'Finance';
+    } else if (request.currentStage === 'Finance' && this.getOfficeStatus('Finance') === 'Approved') {
+      nextStage = 'Completed';
+      nextOffice = undefined;
+    }
+
+    if (nextStage) {
+      this.clearanceService.advanceStage(request.id, nextStage as any, nextOffice);
+      this.loadData();
+    }
   }
 
   // =====================================================

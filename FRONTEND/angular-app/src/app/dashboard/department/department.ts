@@ -81,6 +81,12 @@ export class DepartmentStatusComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Department clearance for ${studentName}?`
+    );
+    if (!confirmApprove) return;
+
     const approved = this.clearanceService.approveRequest(
       request.id,
       'Department',
@@ -114,6 +120,12 @@ export class DepartmentStatusComponent {
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Department clearance for ${studentName}?`
+    );
+    if (!confirmReject) return;
 
     const rejected = this.clearanceService.rejectRequest(
       this.selectedRequest.id,

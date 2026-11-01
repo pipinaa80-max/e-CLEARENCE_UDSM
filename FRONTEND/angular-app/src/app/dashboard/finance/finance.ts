@@ -153,6 +153,12 @@ export class FinanceDashboard {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Finance clearance for ${studentName}?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(
       request.id,
       'Finance',
@@ -181,6 +187,12 @@ export class FinanceDashboard {
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Finance clearance for ${studentName}?`
+    );
+    if (!confirmReject) return;
 
     this.clearanceService.rejectRequest(
       this.selectedRequest.id,
