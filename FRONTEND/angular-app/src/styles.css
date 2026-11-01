@@ -345,10 +345,12 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 6px;
   margin-top: 25px;
-  flex: 1;
+  flex: none !important;
 }
 
-.sidebar nav a {
+.sidebar nav a,
+.sidebar nav button,
+.sidebar nav .nav-tab-btn {
   display: flex;
   align-items: center;
   width: 100%;
@@ -368,19 +370,24 @@ textarea:focus-visible {
 }
 
 .sidebar nav a:hover,
-.sidebar nav a.active {
+.sidebar nav a.active,
+.sidebar nav button:hover,
+.sidebar nav button.active,
+.sidebar nav .nav-tab-btn:hover,
+.sidebar nav .nav-tab-btn.active {
   background: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
   transform: translateX(5px);
 }
 
-.sidebar .logout-link {
+.sidebar .logout-link,
+.logout-link {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   min-height: 44px;
-  margin-top: auto;
+  margin-top: 14px !important;
   padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-control);
@@ -486,7 +493,7 @@ textarea:focus-visible {
 .office-page .sidebar nav,
 .dashboard-shell .sidebar nav {
   display: flex;
-  flex: 1;
+  flex: none !important;
   flex-direction: column;
   gap: 6px;
   margin-top: 0;
@@ -789,7 +796,7 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
   color: #ffffff !important;
 }
 
-/* Distinct Brand Gold Icon Styling (Differentiates Icon from Text) */
+/* Distinct Brand Icon Styling in Deep Navy/Petrol Blue (#003b5c) */
 .sidebar nav a svg,
 .sidebar nav a i,
 .sidebar nav button svg,
@@ -801,17 +808,21 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
 .logout-link svg,
 .logout-link i {
   flex-shrink: 0 !important;
-  width: 19px !important;
-  height: 19px !important;
+  width: 18px !important;
+  height: 18px !important;
   font-size: 1.15rem !important;
   vertical-align: middle !important;
-  color: var(--udsm-gold, #f59e0b) !important;
-  fill: var(--udsm-gold, #f59e0b) !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease, fill 0.2s ease, filter 0.2s ease !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)) !important;
+  color: #003b5c !important;
+  fill: #003b5c !important;
+  background: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  box-sizing: content-box !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, box-shadow 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Glowing Gold Highlight on Hover & Active State */
+/* Distinct Highlight on Hover & Active State */
 .sidebar nav a:hover svg,
 .sidebar nav a:hover i,
 .sidebar nav a.active svg,
@@ -828,8 +839,19 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
 .sidebar .logout-link:hover i,
 .logout-link:hover svg,
 .logout-link:hover i {
-  color: #ffca28 !important;
-  fill: #ffca28 !important;
-  transform: scale(1.12) !important;
-  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.55)) !important;
+  color: #003b5c !important;
+  fill: #003b5c !important;
+  background: #f0fdfa !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 3px 8px rgba(0, 59, 92, 0.4) !important;
+}
+
+/* General Action & Utility Icons in Brand Navy */
+.view-btn i,
+.view-btn svg,
+.action-buttons-cell .view-btn i,
+.action-buttons-cell .view-btn svg,
+.brand-icon-primary {
+  color: #003b5c !important;
+  fill: #003b5c !important;
 }

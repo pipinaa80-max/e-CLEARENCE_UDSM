@@ -107,7 +107,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   private readonly storage = new StorageService();
 
   sidebarOpen = false;
-  activeTab: 'overview' | 'offices' | 'colleges' | 'students' = 'overview';
+  activeTab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' = 'overview';
   isLoading = false;
   generatedAt = new Date();
 
@@ -124,6 +124,35 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
   get dispatchedCount(): number {
     return this.transcriptRequests.filter(r => r.dispatchStatus === 'Dispatched').length;
+  }
+
+  get pendingDispatchCount(): number {
+    return this.transcriptRequests.filter(r => r.dispatchStatus !== 'Dispatched').length;
+  }
+
+  transcriptSearchTerm = '';
+  transcriptStatusFilter: 'ALL' | 'Pending' | 'Dispatched' = 'ALL';
+
+  get filteredTranscriptRequests(): TranscriptPaymentRequest[] {
+    let requests = this.transcriptRequests;
+    const term = (this.transcriptSearchTerm || '').trim().toLowerCase();
+    if (term) {
+      requests = requests.filter(r =>
+        (r.studentName || '').toLowerCase().includes(term) ||
+        (r.registrationNumber || '').toLowerCase().includes(term) ||
+        (r.postingRegion || '').toLowerCase().includes(term) ||
+        (r.postingWard || '').toLowerCase().includes(term) ||
+        (r.postingPoBox || '').toLowerCase().includes(term) ||
+        (r.postingContactPhone || '').toLowerCase().includes(term) ||
+        (r.collectionMethod || '').toLowerCase().includes(term)
+      );
+    }
+    if (this.transcriptStatusFilter === 'Pending') {
+      requests = requests.filter(r => r.dispatchStatus !== 'Dispatched');
+    } else if (this.transcriptStatusFilter === 'Dispatched') {
+      requests = requests.filter(r => r.dispatchStatus === 'Dispatched');
+    }
+    return requests;
   }
 
   markDispatched(requestId: string): void {
@@ -175,7 +204,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     this.sidebarOpen = false;
   }
 
-  setTab(tab: 'overview' | 'offices' | 'colleges' | 'students'): void {
+  setTab(tab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts'): void {
     this.activeTab = tab;
     this.closeSidebar();
   }
@@ -1396,6 +1425,51 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
       </table>
     `;
     this.printReportAsPdf('Corresponding Offices Clearance Status Report', html);
+  }
+
+  downloadTranscriptLedgerPdf(): void {
+    const rows = this.transcriptRequests.map((r, i) => `
+      <tr>
+        <td class="num-col">${i + 1}</td>
+        <td><strong>${r.studentName}</strong></td>
+        <td><code>${r.registrationNumber}</code></td>
+        <td class="num-col">${r.transcriptCount} copy</td>
+        <td>${r.collectionMethod || 'Physical Collection'}</td>
+        <td>${r.postingRegion || 'Dar es Salaam'} ${r.postingWard ? '(' + r.postingWard + ')' : ''}</td>
+        <td>${r.postingPoBox && r.postingPoBox !== '—' ? 'P.O. Box ' + r.postingPoBox : '—'}</td>
+        <td>${r.postingContactPhone || '—'}</td>
+        <td><strong class="${r.dispatchStatus === 'Dispatched' ? 'badge-cleared' : 'badge-pending'}">${r.dispatchStatus || 'Pending Dispatch'}</strong></td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="num-col">#</th>
+            <th>Student Name</th>
+            <th>Registration No.</th>
+            <th class="num-col">Copies</th>
+            <th>Collection Method</th>
+            <th>Region / City</th>
+            <th>P.O. Box</th>
+            <th>Contact Phone</th>
+            <th>Dispatch Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows || '<tr><td colspan="9" style="text-align:center;">No transcript requests recorded yet.</td></tr>'}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">TOTAL REQUESTS: ${this.transcriptRequests.length}</td>
+            <td colspan="3">DISPATCHED: ${this.dispatchedCount}</td>
+            <td colspan="3">AWAITING DISPATCH: ${this.pendingDispatchCount}</td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+    this.printReportAsPdf('Transcript Collection & Delivery Ledger (DUS)', html);
   }
 
   downloadComprehensivePdf(): void {

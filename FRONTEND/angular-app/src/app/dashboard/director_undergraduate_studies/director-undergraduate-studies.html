@@ -16,34 +16,55 @@
     </div>
 
     <nav>
-      <a
-        routerLink="/dashboard/director-undergraduate-studies"
-        routerLinkActive="active"
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'overview'"
         (click)="setTab('overview')"
       >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg>
         <span>Analytics &amp; Overview</span>
-      </a>
+      </button>
 
-      <a href="#process-overview" (click)="sidebarOpen = false">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'process'"
+        (click)="setTab('process')"
+      >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
         <span>Clearance Process Flow</span>
-      </a>
+      </button>
 
-      <a href="#office-status" (click)="sidebarOpen = false">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'offices'"
+        (click)="setTab('offices')"
+      >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
         <span>Corresponding Offices</span>
-      </a>
+      </button>
 
-      <a href="#student-tracker" (click)="sidebarOpen = false">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'students'"
+        (click)="setTab('students')"
+      >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
         <span>Student Clearance Tracker</span>
-      </a>
+      </button>
 
-      <a href="#transcript-dispatch" (click)="sidebarOpen = false">
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'transcripts'"
+        (click)="setTab('transcripts')"
+      >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 1h6v7a.5.5 0 0 1-.757.429L9 7.083 6.757 8.43A.5.5 0 0 1 6 8V1z"/><path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3z"/></svg>
         <span>Transcript Dispatch Ledger</span>
-      </a>
+      </button>
 
       <button
         type="button"
@@ -71,7 +92,8 @@
     </app-dashboard-header>
 
     <!-- INSTITUTION-WIDE ANALYTICS SECTION (MATCHING DEAN OF STUDENTS LAYOUT) -->
-    <section class="analytics-section" id="analytics">
+    <ng-container *ngIf="activeTab === 'overview'">
+      <section class="analytics-section" id="analytics">
       <div class="analytics-heading">
         <div>
           <span class="analytics-eyebrow">Institution-wide overview</span>
@@ -360,8 +382,10 @@
         Analytics aggregate all undergraduate clearance requests across colleges, departments, and corresponding clearance offices.
       </p>
     </section>
+  </ng-container>
 
-    <!-- GENERAL OVERVIEW WITH REFERENCE TO THE CLEARANCE PROCESS -->
+  <!-- GENERAL OVERVIEW WITH REFERENCE TO THE CLEARANCE PROCESS -->
+  <ng-container *ngIf="activeTab === 'process'">
     <section class="analytics-section" id="process-overview">
       <div class="analytics-heading">
         <div>
@@ -388,8 +412,10 @@
         </article>
       </div>
     </section>
+  </ng-container>
 
-    <!-- CORRESPONDING OFFICES STATUS BREAKDOWN -->
+  <!-- CORRESPONDING OFFICES STATUS BREAKDOWN -->
+  <ng-container *ngIf="activeTab === 'offices'">
     <section class="analytics-section" id="office-status">
       <div class="analytics-heading">
         <div>
@@ -449,7 +475,10 @@
         </table>
       </div>
     </section>
+  </ng-container>
 
+  <!-- STUDENT CLEARANCE TRACKER -->
+  <ng-container *ngIf="activeTab === 'students'">
     <!-- FILTER BAR (MATCHING DEAN OF STUDENTS TOOLBAR) -->
     <section class="toolbar" id="student-tracker">
       <div class="search-box">
@@ -520,9 +549,10 @@
         </tbody>
       </table>
     </section>
+  </ng-container>
 
-    <!-- STUDENT DETAILS OVERLAY (MATCHING DEAN OF STUDENTS COMPACT DETAILS MODAL) -->
-    <section class="compact-details-overlay" *ngIf="selectedRequestForModal" (click)="closeStudentModal()">
+  <!-- STUDENT DETAILS OVERLAY (MATCHING DEAN OF STUDENTS COMPACT DETAILS MODAL) -->
+  <section class="compact-details-overlay" *ngIf="selectedRequestForModal" (click)="closeStudentModal()">
       <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student clearance details" (click)="$event.stopPropagation()">
         <button type="button" class="compact-close" aria-label="Close" (click)="closeStudentModal()">×</button>
         <div class="compact-details-heading">
@@ -558,101 +588,261 @@
     </section>
 
     <!-- TRANSCRIPT DISPATCH & COLLECTION LEDGER (DIRECTOR OF UNDERGRADUATE STUDIES) -->
-    <section class="analytics-card" id="transcript-dispatch" style="margin-top: 35px; width: min(100%, 1500px); margin-left: auto; margin-right: auto;">
-      <div class="card-heading" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-        <div>
-          <h3>Transcript Collection &amp; Delivery Ledger</h3>
-          <p>Official dispatch and posting registry for student academic transcripts (Direct to Directorate of Undergraduate Studies).</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <span class="badge-success" style="padding: 6px 14px; font-size: 13px; font-weight: 700;">
-            {{ dispatchedCount }} Dispatched / {{ transcriptRequests.length }} Total Requests
+    <ng-container *ngIf="activeTab === 'transcripts'">
+      <section class="transcript-ledger-section" id="transcript-dispatch">
+      <!-- Section Header -->
+      <div class="ledger-header">
+        <div class="ledger-header-info">
+          <span class="analytics-eyebrow">
+            <i class="bi bi-journal-bookmark-fill"></i> Direct Directorate Registry
           </span>
+          <h2 class="ledger-title">Transcript Collection &amp; Delivery Ledger</h2>
+          <p class="ledger-subtitle">
+            Official dispatch and posting registry for student academic transcripts processed through the Directorate of Undergraduate Studies.
+          </p>
+        </div>
+
+        <div class="ledger-header-stats">
+          <div class="ledger-stat-chip total" title="Total Transcript Requests">
+            <i class="bi bi-stack"></i>
+            <div>
+              <strong>{{ transcriptRequests.length }}</strong>
+              <small>Total Requests</small>
+            </div>
+          </div>
+          <div class="ledger-stat-chip dispatched" title="Dispatched Transcripts">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+              <strong>{{ dispatchedCount }}</strong>
+              <small>Dispatched</small>
+            </div>
+          </div>
+          <div class="ledger-stat-chip pending" title="Awaiting Dispatch">
+            <i class="bi bi-clock-history"></i>
+            <div>
+              <strong>{{ pendingDispatchCount }}</strong>
+              <small>Awaiting Dispatch</small>
+            </div>
+          </div>
+          <button type="button" class="btn-ledger-pdf" (click)="downloadTranscriptLedgerPdf()" title="Export Transcript Ledger Report as PDF">
+            <i class="bi bi-file-earmark-pdf-fill"></i>
+            <span>Export PDF</span>
+          </button>
         </div>
       </div>
 
-      <div class="compact-table-wrap" *ngIf="transcriptRequests.length; else noTranscripts">
-        <table class="compact-request-table">
-          <thead>
-            <tr>
-              <th>Student Name</th>
-              <th>Registration Number</th>
-              <th>Copies</th>
-              <th>Collection Method</th>
-              <th>Region / City</th>
-              <th>Ward / District</th>
-              <th>P.O. Box</th>
-              <th>Contact Phone</th>
-              <th>Dispatch Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let tReq of transcriptRequests">
-              <td class="compact-name">{{ tReq.studentName }}</td>
-              <td>{{ tReq.registrationNumber }}</td>
-              <td><strong>{{ tReq.transcriptCount }}</strong> copy</td>
-              <td>
-                <span class="demand-pill" [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'badge-info' : 'badge-success'">
-                  {{ tReq.collectionMethod || 'Physical Collection' }}
-                </span>
-              </td>
-              <td>{{ tReq.postingRegion || 'Dar es Salaam' }}</td>
-              <td>{{ tReq.postingWard || 'University Campus' }}</td>
-              <td>{{ tReq.postingPoBox || '—' }}</td>
-              <td>{{ tReq.postingContactPhone || '—' }}</td>
-              <td>
-                <span class="demand-pill" [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'badge-success' : 'badge-warning'">
-                  {{ tReq.dispatchStatus || 'Pending Dispatch' }}
-                </span>
-              </td>
-              <td>
-                <div class="compact-actions">
-                  <button type="button" class="compact-view" (click)="selectedTranscriptForModal = tReq">View Details</button>
-                  <button *ngIf="tReq.dispatchStatus !== 'Dispatched'" type="button" class="analytics-primary" style="padding: 4px 10px; font-size: 11px; cursor: pointer;" (click)="markDispatched(tReq.id)">
-                    Mark Dispatched
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Toolbar: Search & Status Filter Tabs -->
+      <div class="ledger-toolbar">
+        <div class="ledger-search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            [(ngModel)]="transcriptSearchTerm"
+            placeholder="Search by student name, reg number, phone, region..."
+          />
+          <button *ngIf="transcriptSearchTerm" type="button" class="clear-search-btn" (click)="transcriptSearchTerm = ''" title="Clear search">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="ledger-filter-tabs">
+          <button
+            type="button"
+            class="filter-tab-btn"
+            [ngClass]="{'active': transcriptStatusFilter === 'ALL'}"
+            (click)="transcriptStatusFilter = 'ALL'"
+          >
+            All ({{ transcriptRequests.length }})
+          </button>
+          <button
+            type="button"
+            class="filter-tab-btn warning-tab"
+            [ngClass]="{'active': transcriptStatusFilter === 'Pending'}"
+            (click)="transcriptStatusFilter = 'Pending'"
+          >
+            <i class="bi bi-hourglass-split"></i> Pending ({{ pendingDispatchCount }})
+          </button>
+          <button
+            type="button"
+            class="filter-tab-btn success-tab"
+            [ngClass]="{'active': transcriptStatusFilter === 'Dispatched'}"
+            (click)="transcriptStatusFilter = 'Dispatched'"
+          >
+            <i class="bi bi-check2-circle"></i> Dispatched ({{ dispatchedCount }})
+          </button>
+        </div>
       </div>
 
-      <ng-template #noTranscripts>
-        <div class="empty-state" style="padding: 30px; margin-top: 15px;">
-          <div class="empty-icon">✓</div>
-          <h2>No transcript collection requests recorded yet</h2>
-          <p>Student transcript collection preferences and posting addresses will appear here in tabular format upon submission.</p>
+      <!-- Ledger Table -->
+      <div class="ledger-table-card" *ngIf="filteredTranscriptRequests.length; else noTranscriptsFound">
+        <div class="ledger-table-wrap">
+          <table class="ledger-table">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Student &amp; Registration No.</th>
+                <th style="min-width: 140px;">Order &amp; Copies</th>
+                <th style="min-width: 170px;">Collection Method</th>
+                <th style="min-width: 260px;">Delivery Destination &amp; Contact</th>
+                <th style="min-width: 160px;">Dispatch Status</th>
+                <th style="min-width: 170px; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let tReq of filteredTranscriptRequests">
+                <!-- Student & Reg No -->
+                <td>
+                  <div class="student-meta-cell">
+                    <span class="student-name-text">{{ tReq.studentName }}</span>
+                    <span class="student-reg-tag">
+                      <i class="bi bi-person-badge"></i> {{ tReq.registrationNumber }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Copies & Degree -->
+                <td>
+                  <div class="copies-cell">
+                    <span class="copy-count-badge">
+                      <i class="bi bi-files"></i> {{ tReq.transcriptCount }} {{ tReq.transcriptCount === 1 ? 'Copy' : 'Copies' }}
+                    </span>
+                    <small class="degree-note" *ngIf="tReq.award || tReq.graduationYear">
+                      {{ tReq.award || 'Undergraduate Degree' }}
+                      <span *ngIf="tReq.graduationYear">({{ tReq.graduationYear }})</span>
+                    </small>
+                  </div>
+                </td>
+
+                <!-- Collection Method -->
+                <td>
+                  <span class="method-tag" [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'method-dhl' : 'method-physical'">
+                    <i [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'bi bi-truck' : 'bi bi-building'"></i>
+                    {{ tReq.collectionMethod || 'Physical Collection' }}
+                  </span>
+                </td>
+
+                <!-- Destination & Contact -->
+                <td>
+                  <div class="dest-info-cell">
+                    <div class="dest-primary" *ngIf="tReq.collectionMethod === 'Post by DHL'; else physicalLocation">
+                      <i class="bi bi-geo-alt-fill dest-icon"></i>
+                      <span>
+                        <strong>{{ tReq.postingRegion || 'Dar es Salaam' }}</strong><span *ngIf="tReq.postingWard">, {{ tReq.postingWard }}</span>
+                        <small class="pobox-text" *ngIf="tReq.postingPoBox && tReq.postingPoBox !== '—'"> (P.O. Box {{ tReq.postingPoBox }})</small>
+                      </span>
+                    </div>
+                    <ng-template #physicalLocation>
+                      <div class="dest-primary physical-dest">
+                        <i class="bi bi-geo-alt-fill dest-icon"></i>
+                        <span><strong>DUS Directorate Office</strong> <small>(Main Campus)</small></span>
+                      </div>
+                    </ng-template>
+
+                    <div class="dest-phone" *ngIf="tReq.postingContactPhone && tReq.postingContactPhone !== '—'">
+                      <i class="bi bi-telephone-fill"></i>
+                      <span>{{ tReq.postingContactPhone }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Dispatch Status -->
+                <td>
+                  <div class="status-cell">
+                    <span class="dispatch-pill" [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'pill-dispatched' : 'pill-pending'">
+                      <i [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'"></i>
+                      {{ tReq.dispatchStatus || 'Pending Dispatch' }}
+                    </span>
+                    <small class="dispatch-date-note" *ngIf="tReq.dispatchedAt">
+                      {{ tReq.dispatchedAt | date:'mediumDate' }}
+                    </small>
+                  </div>
+                </td>
+
+                <!-- Actions -->
+                <td style="text-align: right;">
+                  <div class="ledger-actions-row">
+                    <button
+                      type="button"
+                      class="btn-ledger-view"
+                      (click)="selectedTranscriptForModal = tReq"
+                      title="View complete delivery address and student request details"
+                    >
+                      <i class="bi bi-eye-fill"></i> Details
+                    </button>
+                    <button
+                      *ngIf="tReq.dispatchStatus !== 'Dispatched'"
+                      type="button"
+                      class="btn-ledger-dispatch"
+                      (click)="markDispatched(tReq.id)"
+                      title="Confirm this transcript has been dispatched or handed over"
+                    >
+                      <i class="bi bi-send-check-fill"></i> Dispatch
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <ng-template #noTranscriptsFound>
+        <div class="ledger-empty-card">
+          <div class="empty-icon-wrap">
+            <i class="bi bi-inbox-fill"></i>
+          </div>
+          <h3>{{ transcriptRequests.length === 0 ? 'No transcript collection requests recorded yet' : 'No matching transcript requests found' }}</h3>
+          <p *ngIf="transcriptRequests.length === 0">
+            Student transcript collection preferences, DHL delivery addresses, and pickup details will automatically appear in this ledger once submitted.
+          </p>
+          <p *ngIf="transcriptRequests.length > 0">
+            No records matched your search filter "{{ transcriptSearchTerm }}". Try resetting the filter to see all requests.
+          </p>
+          <button *ngIf="transcriptSearchTerm || transcriptStatusFilter !== 'ALL'" type="button" class="btn-clear-filters" (click)="transcriptSearchTerm = ''; transcriptStatusFilter = 'ALL'">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+          </button>
         </div>
       </ng-template>
     </section>
+  </ng-container>
 
     <!-- TRANSCRIPT DISPATCH DETAILS OVERLAY MODAL -->
     <section class="compact-details-overlay" *ngIf="selectedTranscriptForModal" (click)="selectedTranscriptForModal = null">
-      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Transcript delivery details" (click)="$event.stopPropagation()">
+      <div class="compact-details-card transcript-modal-card" role="dialog" aria-modal="true" aria-label="Transcript delivery details" (click)="$event.stopPropagation()">
         <button type="button" class="compact-close" aria-label="Close" (click)="selectedTranscriptForModal = null">×</button>
         <div class="compact-details-heading">
           <div>
-            <span class="request-label">Transcript Dispatch Details (DUS)</span>
-            <h2>{{ selectedTranscriptForModal.studentName }} ({{ selectedTranscriptForModal.registrationNumber }})</h2>
+            <span class="request-label"><i class="bi bi-patch-check-fill"></i> Transcript Dispatch Registry (DUS)</span>
+            <h2>{{ selectedTranscriptForModal.studentName }}</h2>
+            <span class="modal-sub-reg"><i class="bi bi-person-badge"></i> {{ selectedTranscriptForModal.registrationNumber }}</span>
           </div>
         </div>
 
         <dl class="compact-details-grid">
-          <div><dt>Registration Number</dt><dd>{{ selectedTranscriptForModal.registrationNumber }}</dd></div>
-          <div><dt>Degree Award</dt><dd>{{ selectedTranscriptForModal.award }}</dd></div>
-          <div><dt>Graduation Year</dt><dd>{{ selectedTranscriptForModal.graduationYear }}</dd></div>
-          <div><dt>Copies Requested</dt><dd>{{ selectedTranscriptForModal.transcriptCount }} copy (TSh {{ selectedTranscriptForModal.amount | number }})</dd></div>
+          <div><dt>Registration Number</dt><dd><code>{{ selectedTranscriptForModal.registrationNumber }}</code></dd></div>
+          <div><dt>Degree Award</dt><dd>{{ selectedTranscriptForModal.award || 'Undergraduate Degree' }}</dd></div>
+          <div><dt>Graduation Year</dt><dd>{{ selectedTranscriptForModal.graduationYear || '—' }}</dd></div>
+          <div><dt>Copies Requested</dt><dd><strong>{{ selectedTranscriptForModal.transcriptCount }} copy</strong> (TSh {{ selectedTranscriptForModal.amount | number }})</dd></div>
           <div><dt>Collection Method</dt><dd><strong>{{ selectedTranscriptForModal.collectionMethod }}</strong></dd></div>
-          <div><dt>Dispatch Status</dt><dd><span class="demand-pill" [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'badge-success' : 'badge-warning'">{{ selectedTranscriptForModal.dispatchStatus || 'Pending Dispatch' }}</span></dd></div>
+          <div><dt>Dispatch Status</dt><dd>
+            <span class="dispatch-pill" [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'pill-dispatched' : 'pill-pending'">
+              <i [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'"></i>
+              {{ selectedTranscriptForModal.dispatchStatus || 'Pending Dispatch' }}
+            </span>
+          </dd></div>
           <div><dt>Region / City</dt><dd>{{ selectedTranscriptForModal.postingRegion || 'Dar es Salaam' }}</dd></div>
           <div><dt>Ward / District</dt><dd>{{ selectedTranscriptForModal.postingWard || 'University Campus' }}</dd></div>
           <div><dt>P.O. Box</dt><dd>{{ selectedTranscriptForModal.postingPoBox || '—' }}</dd></div>
-          <div><dt>Contact Phone</dt><dd>{{ selectedTranscriptForModal.postingContactPhone || '—' }}</dd></div>
-          <div><dt>Contact Email</dt><dd>{{ selectedTranscriptForModal.postingContactEmail || '—' }}</dd></div>
-          <div><dt>Full Address / Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Directorate Office' }}</dd></div>
+          <div><dt>Contact Phone</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactPhone" href="tel:{{ selectedTranscriptForModal.postingContactPhone }}">{{ selectedTranscriptForModal.postingContactPhone }}</a><span *ngIf="!selectedTranscriptForModal.postingContactPhone">—</span></dd></div>
+          <div><dt>Contact Email</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactEmail" href="mailto:{{ selectedTranscriptForModal.postingContactEmail }}">{{ selectedTranscriptForModal.postingContactEmail }}</a><span *ngIf="!selectedTranscriptForModal.postingContactEmail">—</span></dd></div>
+          <div><dt>Full Address / Delivery Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Directorate Office' }}</dd></div>
         </dl>
+
+        <div class="modal-actions-footer" *ngIf="selectedTranscriptForModal.dispatchStatus !== 'Dispatched'">
+          <button type="button" class="btn-modal-dispatch" (click)="markDispatched(selectedTranscriptForModal.id); selectedTranscriptForModal.dispatchStatus = 'Dispatched'">
+            <i class="bi bi-send-check-fill"></i> Mark this Transcript as Dispatched
+          </button>
+        </div>
       </div>
     </section>
 

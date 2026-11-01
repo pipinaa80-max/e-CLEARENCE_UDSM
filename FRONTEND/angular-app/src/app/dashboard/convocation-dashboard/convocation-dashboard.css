@@ -184,7 +184,7 @@
 }
 
 .logout-link {
-  margin-top: auto;
+  margin-top: 14px;
 }
 
 
@@ -1509,7 +1509,7 @@
 
 .logout-link {
   justify-content: center;
-  margin-top: auto;
+  margin-top: 14px;
   border: 1px solid rgba(255, 255, 255, 0.27);
 }
 

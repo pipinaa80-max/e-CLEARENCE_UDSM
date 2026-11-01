@@ -30,6 +30,7 @@ export class DeanOfStudentsComponent implements OnInit {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
+  viewMode: 'requests' | 'analytics' = 'requests';
   selectedRequest: ClearanceRequest | null = null;
   detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
@@ -76,6 +77,11 @@ export class DeanOfStudentsComponent implements OnInit {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  setViewMode(mode: 'requests' | 'analytics'): void {
+    this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   // Cache for student data to avoid repeated lookups
