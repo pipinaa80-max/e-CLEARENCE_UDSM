@@ -575,17 +575,34 @@ export class ClearanceService {
 
       if (office === 'Department') {
         return (
-            (!college || request.college === college) &&
-            (!department || request.department === department)
+            (!college || this.matchCollegeName(request.college, college)) &&
+            (!department || !request.department || request.department.trim().toLowerCase() === department.trim().toLowerCase() || request.department.toLowerCase().includes(department.toLowerCase()) || department.toLowerCase().includes(request.department.toLowerCase()))
         );
       }
 
       if (office === 'Principal') {
-        return !college || request.college === college;
+        return !college || this.matchCollegeName(request.college, college);
       }
 
       return true;
     });
+  }
+
+  matchCollegeName(c1?: string, c2?: string): boolean {
+    if (!c1 || !c2 || !c1.trim() || !c2.trim()) return true;
+    const s1 = c1.trim().toLowerCase();
+    const s2 = c2.trim().toLowerCase();
+    if (s1 === s2 || s1.includes(s2) || s2.includes(s1)) return true;
+    const getAcronym = (s: string) => {
+      const match = s.match(/\(([^)]+)\)/);
+      return match ? match[1].trim().toLowerCase() : '';
+    };
+    const a1 = getAcronym(s1);
+    const a2 = getAcronym(s2);
+    if (a1 && (a1 === s2 || s2.includes(a1))) return true;
+    if (a2 && (a2 === s1 || s1.includes(a2))) return true;
+    if (a1 && a2 && a1 === a2) return true;
+    return false;
   }
 
   // =====================================================
@@ -760,7 +777,12 @@ export class ClearanceService {
       approval.reviewedBy = staffName;
       approval.reviewedAt = new Date().toISOString();
 
-      this.moveToNextStage(request);
+      if (office === 'Department') {
+        request.currentStage = 'Principal';
+        request.currentOffice = 'Principal';
+      } else {
+        this.moveToNextStage(request);
+      }
       this.save(request);
     }
 

@@ -6,6 +6,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
@@ -21,6 +22,7 @@ export class WorkshopComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
@@ -190,6 +192,13 @@ export class WorkshopComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const regNumber = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Workshop clearance for ${studentName} (${regNumber})?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(
       request.id,
       'Workshop',
@@ -203,7 +212,9 @@ export class WorkshopComponent {
       'success'
     );
 
+    this.toastService.success('Approved', `Workshop clearance approved for ${studentName}.`);
     this.message = 'Student clearance was approved successfully.';
+    setTimeout(() => { this.message = ''; }, 4000);
   }
 
   openRejectForm(request: ClearanceRequest): void {
@@ -215,13 +226,20 @@ export class WorkshopComponent {
   reject(): void {
     const staff = this.currentUser;
 
-    if (
-      !staff ||
-      !this.selectedRequest ||
-      !this.rejectionComment.trim()
-    ) {
+    if (!staff || !this.selectedRequest) return;
+
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
       return;
     }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const regNumber = this.getStudentRegNumber(this.selectedRequest);
+
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Workshop clearance for ${studentName} (${regNumber})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will notify the student regarding workshop tools surrender or safety equipment return.`
+    );
+    if (!confirmReject) return;
 
     this.clearanceService.rejectRequest(
       this.selectedRequest.id,
@@ -237,10 +255,12 @@ export class WorkshopComponent {
       'warning'
     );
 
+    this.toastService.warning('Returned', `Workshop clearance request returned for ${studentName}.`);
     this.message = 'The student has been notified about the required action.';
 
     this.selectedRequest = null;
     this.rejectionComment = '';
+    setTimeout(() => { this.message = ''; }, 4000);
   }
 
   logout(): void {

@@ -409,6 +409,13 @@ export class UsabComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const regNumber = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Accommodation Bureau (USAB) clearance for ${studentName} (${regNumber})?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(
       request.id,
       'USAB',
@@ -422,7 +429,9 @@ export class UsabComponent {
       'success'
     );
 
+    this.toastService.success('Approved', `USAB clearance approved for ${studentName}.`);
     this.message = 'Student clearance was approved successfully.';
+    setTimeout(() => { this.message = ''; }, 4000);
   }
 
   openRejectForm(request: ClearanceRequest): void {
@@ -434,27 +443,40 @@ export class UsabComponent {
   reject(): void {
     const staff = this.authService.getCurrentUser();
 
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
+    if (!staff || !this.selectedRequest) return;
+
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
       return;
     }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const regNumber = this.getStudentRegNumber(this.selectedRequest);
+
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Accommodation Bureau (USAB) clearance for ${studentName} (${regNumber})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will notify the student regarding hostel fee or clearance inspection.`
+    );
+    if (!confirmReject) return;
 
     this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'USAB',
       staff.fullName,
-      this.rejectionComment
+      this.rejectionComment.trim()
     );
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'USAB action required',
-      this.rejectionComment,
+      this.rejectionComment.trim(),
       'warning'
     );
 
+    this.toastService.warning('Returned', `USAB clearance request returned for ${studentName}.`);
     this.message = 'The student has been notified about the required action.';
     this.selectedRequest = null;
     this.rejectionComment = '';
+    setTimeout(() => { this.message = ''; }, 4000);
   }
 
   // =====================================================

@@ -495,6 +495,13 @@ export class GamesCoachComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const regNumber = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Games Coach clearance for ${studentName} (${regNumber})?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(request.id, 'Games Coach', staff.fullName);
     this.notificationService.createNotification(
       request.studentId,
@@ -502,6 +509,7 @@ export class GamesCoachComponent {
       'The Games Coach has verified sports equipment returns and approved your clearance.',
       'success'
     );
+    this.toastService.success('Approved', `Games Coach clearance approved for ${studentName}.`);
     this.message = 'Games Coach clearance approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -514,16 +522,30 @@ export class GamesCoachComponent {
 
   reject(): void {
     const staff = this.authService.getCurrentUser();
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
+    if (!staff || !this.selectedRequest) return;
 
-    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Games Coach', staff.fullName, this.rejectionComment);
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+      return;
+    }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const regNumber = this.getStudentRegNumber(this.selectedRequest);
+
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Games Coach clearance for ${studentName} (${regNumber})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will notify the student regarding unreturned sports gear or action required.`
+    );
+    if (!confirmReject) return;
+
+    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Games Coach', staff.fullName, this.rejectionComment.trim());
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Games Coach action required',
-      this.rejectionComment,
+      this.rejectionComment.trim(),
       'warning'
     );
 
+    this.toastService.warning('Returned', `Games Coach clearance request returned for ${studentName}.`);
     this.message = 'The student has been notified regarding unreturned sports gear or action required.';
     this.selectedRequest = null;
     this.rejectionComment = '';

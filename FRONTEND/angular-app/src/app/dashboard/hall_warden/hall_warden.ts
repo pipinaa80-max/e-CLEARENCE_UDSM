@@ -519,6 +519,13 @@ export class HallWardenComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const registrationNumber = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Hall Warden clearance for ${studentName} (${registrationNumber})?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(request.id, 'Hall Warden', staff.fullName);
     this.notificationService.createNotification(
       request.studentId,
@@ -526,6 +533,7 @@ export class HallWardenComponent {
       'The Hall Warden has verified your room inspection and approved your clearance.',
       'success'
     );
+    this.toastService.success('Approved', `Hall Warden clearance approved for ${studentName}.`);
     this.message = 'Hall Warden clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -538,16 +546,30 @@ export class HallWardenComponent {
 
   reject(): void {
     const staff = this.authService.getCurrentUser();
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
+    if (!staff || !this.selectedRequest) return;
 
-    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Hall Warden', staff.fullName, this.rejectionComment);
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+      return;
+    }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const registrationNumber = this.getStudentRegNumber(this.selectedRequest);
+
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Hall Warden clearance for ${studentName} (${registrationNumber})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will notify the student regarding room key surrender or room inspection.`
+    );
+    if (!confirmReject) return;
+
+    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Hall Warden', staff.fullName, this.rejectionComment.trim());
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Hall Warden action required',
-      this.rejectionComment,
+      this.rejectionComment.trim(),
       'warning'
     );
 
+    this.toastService.warning('Returned', `Hall Warden clearance request returned for ${studentName}.`);
     this.message = 'The student has been notified regarding room inspection or key surrender.';
     this.selectedRequest = null;
     this.rejectionComment = '';

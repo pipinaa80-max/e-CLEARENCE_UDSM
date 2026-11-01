@@ -491,6 +491,13 @@ export class SmartCardComponent {
       return;
     }
 
+    const studentName = this.getStudentName(request);
+    const regNumber = this.getStudentRegNumber(request);
+    const confirmApprove = confirm(
+      `⚠️ Attention: Approve Clearance\n\nAre you sure you want to APPROVE Smart Card clearance for ${studentName} (${regNumber})?`
+    );
+    if (!confirmApprove) return;
+
     this.clearanceService.approveRequest(request.id, 'Smart Card', staff.fullName);
     this.notificationService.createNotification(
       request.studentId,
@@ -498,6 +505,7 @@ export class SmartCardComponent {
       'The Smart Card office has received your student ID card and approved clearance.',
       'success'
     );
+    this.toastService.success('Approved', `Smart Card clearance approved for ${studentName}.`);
     this.message = 'Smart Card clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -510,16 +518,30 @@ export class SmartCardComponent {
 
   reject(): void {
     const staff = this.authService.getCurrentUser();
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
+    if (!staff || !this.selectedRequest) return;
 
-    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Smart Card', staff.fullName, this.rejectionComment);
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+      return;
+    }
+
+    const studentName = this.getStudentName(this.selectedRequest);
+    const regNumber = this.getStudentRegNumber(this.selectedRequest);
+
+    const confirmReject = confirm(
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Smart Card clearance for ${studentName} (${regNumber})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will notify the student regarding physical ID surrender or loss fee payment.`
+    );
+    if (!confirmReject) return;
+
+    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Smart Card', staff.fullName, this.rejectionComment.trim());
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Smart Card action required',
-      this.rejectionComment,
+      this.rejectionComment.trim(),
       'warning'
     );
 
+    this.toastService.warning('Returned', `Smart Card clearance request returned for ${studentName}.`);
     this.message = 'The student has been notified regarding physical ID surrender or loss fee payment.';
     this.selectedRequest = null;
     this.rejectionComment = '';

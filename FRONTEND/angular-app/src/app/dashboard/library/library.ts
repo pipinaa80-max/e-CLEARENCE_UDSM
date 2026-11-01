@@ -485,39 +485,14 @@ export class LibraryDashboard {
   }
 
   openApproveModal(request: ClearanceRequest): void {
-    this.approveConfirmRequest = request;
-    this.message = '';
+    this.approve(request);
   }
 
   confirmApprove(): void {
     if (!this.approveConfirmRequest) return;
     const request = this.approveConfirmRequest;
     this.approveConfirmRequest = null;
-
-    const staff = this.authService.getCurrentUser();
-    if (!staff) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const studentName = this.getStudentName(request);
-    const approved = this.clearanceService.approveRequest(request.id, 'Library', staff.fullName);
-
-    if (approved) {
-      this.notificationService.createNotification(
-        request.studentId,
-        'Library clearance approved',
-        'The Library has verified your book returns and approved your clearance.',
-        'success'
-      );
-      this.message = `✅ Library clearance approved successfully for ${studentName}.`;
-      this.toastService.success('Approved', `Library clearance approved for ${studentName}.`);
-    } else {
-      this.message = '❌ Request could not be approved in its current state. Please try again.';
-      this.toastService.error('Approval Failed', 'Request could not be approved.');
-    }
-
-    setTimeout(() => { this.message = ''; }, 5000);
+    this.approve(request);
   }
 
   approve(request: ClearanceRequest): void {
@@ -560,19 +535,25 @@ export class LibraryDashboard {
 
   reject(): void {
     const staff = this.authService.getCurrentUser();
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) return;
+    if (!staff || !this.selectedRequest) return;
+
+    if (!this.rejectionComment.trim()) {
+      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+      return;
+    }
 
     const studentName = this.getStudentName(this.selectedRequest);
+    const studentReg = this.getStudentRegNumber(this.selectedRequest);
     const confirmReject = confirm(
-      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Library clearance for ${studentName}?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will send the reason to the student for correction or fine settlement.`
+      `⚠️ Attention: Reject Clearance\n\nAre you sure you want to REJECT Library clearance for ${studentName} (${studentReg})?\n\nReason: "${this.rejectionComment.trim()}"\n\nThis will send the reason to the student for correction or fine settlement.`
     );
     if (!confirmReject) return;
 
-    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Library', staff.fullName, this.rejectionComment);
+    this.clearanceService.rejectRequest(this.selectedRequest.id, 'Library', staff.fullName, this.rejectionComment.trim());
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Library action required',
-      this.rejectionComment,
+      this.rejectionComment.trim(),
       'warning'
     );
 

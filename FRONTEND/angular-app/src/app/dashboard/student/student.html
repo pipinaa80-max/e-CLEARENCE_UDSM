@@ -148,7 +148,6 @@
         <div class="student-summary-action">
           <ng-container *ngIf="!isTranscriptSystem">
             <a *ngIf="!currentRequest && clearanceStatus !== 'Completed'" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
-            <a *ngIf="currentRequest && clearanceStatus !== 'Completed'" routerLink="/clearance/status" class="secondary-button">View Clearance Process</a>
             <a *ngIf="clearanceStatus === 'Completed'" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">

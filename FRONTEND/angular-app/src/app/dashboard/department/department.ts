@@ -73,6 +73,25 @@ export class DepartmentStatusComponent {
     return approval?.comment ?? '';
   }
 
+  getStudentName(request: ClearanceRequest): string {
+    if (request.studentName) return request.studentName;
+    try {
+      const usersJson = localStorage.getItem('udsm-local-users');
+      if (usersJson) {
+        const users = JSON.parse(usersJson);
+        const user = users.find((u: any) => u.id === request.studentId);
+        if (user) {
+          return user.fullName || (user.firstName ? user.firstName + ' ' + user.lastName : '') || user.registrationNumber || 'Student';
+        }
+      }
+    } catch {}
+    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
+  }
+
+  getStudentRegNumber(request: ClearanceRequest): string {
+    return request.registrationNumber || request.studentId;
+  }
+
   approve(request: ClearanceRequest): void {
     const staff = this.currentUser;
 

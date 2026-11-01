@@ -698,7 +698,7 @@
           <app-parallel-office-request-table
             [requests]="paginatedRequests"
             [office]="'Library'"
-            (approve)="openApproveModal($event)"
+            (approve)="approve($event)"
             (reject)="openRejectForm($event)"
             (view)="openStudentDetailsModal($event)"
           ></app-parallel-office-request-table>
@@ -824,8 +824,8 @@
     </section>
 
     <!-- REJECTION MODAL -->
-    <section class="reject-modal" *ngIf="selectedRequest">
-      <div class="modal-card">
+    <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
+      <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-icon">!</div>
         <h2>Return Clearance Request</h2>
         <p>Write the reason and action the student must take regarding library books or overdue fines before clearance can proceed.</p>

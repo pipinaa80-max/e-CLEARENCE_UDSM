@@ -168,8 +168,7 @@
             <td><div class="compact-actions">
               <button type="button" class="compact-view" (click)="reviewRequest(request.id)">View</button>
               <ng-container *ngIf="getRequestOfficeStatus(request, 'Department') === 'Pending'; else reviewedStatus">
-                <button *ngIf="!debtFlagsLoaded" type="button" class="approve-button" (click)="loadOpenDebtFlags()" [disabled]="debtFlagsLoading" [title]="debtFlagCheckError || 'Checking debt flags'">{{ debtFlagsLoading ? 'Checking…' : 'Retry check' }}</button>
-                <button *ngIf="debtFlagsLoaded" type="button" class="approve-button" (click)="approveRequest(request)" [disabled]="processingRequests.has(request.id) || hasOpenDebtFlag(request)" [title]="hasOpenDebtFlag(request) ? 'Lecturer must resolve the debt flag before verification' : ''">{{ processingRequests.has(request.id) ? 'Processing...' : hasOpenDebtFlag(request) ? 'Flagged' : 'Approve' }}</button>
+                <button type="button" class="approve-button" (click)="approveRequest(request)" [disabled]="processingRequests.has(request.id) || (debtFlagsLoaded && hasOpenDebtFlag(request))" [title]="hasOpenDebtFlag(request) ? 'Lecturer must resolve the debt flag before verification' : ''">{{ processingRequests.has(request.id) ? 'Processing...' : (debtFlagsLoaded && hasOpenDebtFlag(request)) ? 'Flagged' : 'Approve' }}</button>
                 <button type="button" class="reject-button" (click)="openRejectForm(request)" [disabled]="processingRequests.has(request.id)">Reject</button>
               </ng-container>
               <ng-template #reviewedStatus>

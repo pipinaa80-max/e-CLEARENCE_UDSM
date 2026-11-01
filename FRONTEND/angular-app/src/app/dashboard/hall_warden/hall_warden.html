@@ -832,8 +832,8 @@
     </section>
 
     <!-- REJECTION MODAL -->
-    <section class="reject-modal" *ngIf="selectedRequest">
-      <div class="modal-card">
+    <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
+      <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-icon">!</div>
         <h2>Return Clearance Request</h2>
         <p>Write the reason and action the student must take regarding room key handover or room inspection before clearance can proceed.</p>
