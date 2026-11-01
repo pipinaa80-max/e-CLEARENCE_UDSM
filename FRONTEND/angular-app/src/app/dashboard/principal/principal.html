@@ -1,65 +1,38 @@
 <section class="principal-page office-page" [class.sidebar-open]="sidebarOpen">
 
   <!-- MOBILE OVERLAY -->
-
-  <div
-    class="sidebar-overlay"
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-
-  <aside
-    class="sidebar"
-    [class.open]="sidebarOpen"
-  >
-
+  <aside class="sidebar" [class.open]="sidebarOpen">
     <div class="brand">
       <a routerLink="/">
-        <img
-          src="/udsm-logo.png"
-          alt="Institutional Logo"
-        />
+        <img src="/udsm-logo.png" alt="Institutional Logo" />
       </a>
       <div>
         <strong>PRINCIPAL</strong>
-
-        <small>
-          Clearance Workspace
-        </small>
+        <small>Clearance Workspace</small>
       </div>
-
     </div>
 
-
     <nav>
-
-      <a
-        routerLink="/principal/dashboard"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
-        Pending Requests
-      </a>
-
-      <button
-        type="button"
-        (click)="logout()"
-      >
-        Log out
+      <button type="button" [class.active]="viewMode === 'requests'" (click)="viewMode = 'requests'; closeSidebar()">
+        Clearance Requests
+        <span class="nav-badge" *ngIf="pendingRequestCount">{{ pendingRequestCount }}</span>
       </button>
 
-    </nav>
+      <button type="button" [class.active]="viewMode === 'analytics'" (click)="viewMode = 'analytics'; closeSidebar()">
+        College Analytics
+      </button>
 
+      <button type="button" (click)="logout()">
+        Log out
+      </button>
+    </nav>
   </aside>
 
-
-  <!-- MAIN -->
-
+  <!-- MAIN CONTENT -->
   <main class="content">
-
     <app-dashboard-header
       eyebrow="Clearance Office"
       [title]="collegeName + ' Principal'"
@@ -70,114 +43,240 @@
     >
     </app-dashboard-header>
 
+    <!-- VIEW SWITCHER TABS -->
+    <div class="view-tabs-bar">
+      <button type="button" class="tab-btn" [class.active]="viewMode === 'requests'" (click)="viewMode = 'requests'">
+        Clearance Requests
+        <span class="badge" *ngIf="pendingRequestCount">{{ pendingRequestCount }}</span>
+      </button>
+
+      <button type="button" class="tab-btn" [class.active]="viewMode === 'analytics'" (click)="viewMode = 'analytics'">
+        College Analytics Board
+      </button>
+    </div>
 
     <!-- MESSAGE -->
-
-    <div
-      class="message"
-      *ngIf="message"
-    >
+    <div class="message" *ngIf="message">
       {{ message }}
     </div>
 
+    <!-- REQUESTS VIEW MODE -->
+    <ng-container *ngIf="viewMode === 'requests'">
+      <!-- FILTER BAR -->
+      <section class="toolbar">
+        <div class="search-box">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search student, registration number or programme..."
+          />
+        </div>
 
-    <!-- FILTER BAR -->
+        <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </section>
 
-    <section class="toolbar">
+      <!-- LOADING -->
+      <section class="loading-state" *ngIf="isLoading">
+        <p>Loading clearance requests...</p>
+      </section>
 
-      <div class="search-box">
+      <!-- EMPTY -->
+      <section class="empty-state" *ngIf="!isLoading && !filteredRequests.length">
+        <div class="empty-icon">✓</div>
+        <h2>
+          {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
+        </h2>
+        <p>
+          {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Principal.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Principal.' : 'There are currently no student applications awaiting Principal approval.' }}
+        </p>
+      </section>
 
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
+      <!-- COMPACT REQUEST TABLE -->
+      <section class="compact-table-wrap" *ngIf="!isLoading && filteredRequests.length">
+        <table class="compact-request-table">
+          <thead>
+            <tr>
+              <th>Registration Number</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Phone Number</th>
+              <th>Programme</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let request of paginatedRequests">
+              <td>{{ getStudentRegNumber(request) }}</td>
+              <td class="compact-name">{{ getStudentListName(request) }}</td>
+              <td>{{ getStudentEmail(request) }}</td>
+              <td>{{ getStudentPhone(request) }}</td>
+              <td>{{ getStudentProgramme(request) }}</td>
+              <td>
+                <div class="compact-actions">
+                  <button type="button" class="compact-view" (click)="openDetails(request)">View</button>
+                  <ng-container *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'; else reviewedStatus">
+                    <button type="button" class="review-button approve-btn" (click)="approve(request)">Approve</button>
+                    <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
+                  </ng-container>
+                  <ng-template #reviewedStatus>
+                    <span class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span>
+                  </ng-template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
+      <!-- PAGINATION -->
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+          &larr; Previous
+        </button>
+        <span class="page-info">
+          Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+        </span>
+        <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+          Next &rarr;
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- COLLEGE ANALYTICS VIEW MODE -->
+    <section class="analytics-board" *ngIf="viewMode === 'analytics'">
+      <div class="analytics-header">
+        <div>
+          <h2>{{ collegeName }} Analytics Board</h2>
+          <p>Real-time clearance analytics, departmental breakdown, and cohort statistics for {{ collegeName }}.</p>
+        </div>
+        <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()">
+          📥 Export College CSV Report
+        </button>
       </div>
 
+      <!-- EXECUTIVE KPI GRID -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Applications</span>
+          <strong class="kpi-val">{{ totalCollegeStudents }}</strong>
+          <small class="kpi-sub">Total students in {{ collegeName }}</small>
+        </div>
 
-      <select
-        [(ngModel)]="filterStatus"
-        (ngModelChange)="onFilterChange()"
-      >
+        <div class="kpi-card success">
+          <span class="kpi-label">Cleared / Approved</span>
+          <strong class="kpi-val text-success">{{ clearedCollegeCount }}</strong>
+          <small class="kpi-sub">Principal approved applications</small>
+        </div>
 
-        <option value="pending">
-          Pending
-        </option>
+        <div class="kpi-card warning">
+          <span class="kpi-label">Pending Approval</span>
+          <strong class="kpi-val text-warning">{{ pendingCollegeCount }}</strong>
+          <small class="kpi-sub">Awaiting Principal review</small>
+        </div>
 
-        <option value="approved">
-          Approved
-        </option>
+        <div class="kpi-card danger">
+          <span class="kpi-label">Rejected / Returned</span>
+          <strong class="kpi-val text-danger">{{ rejectedCollegeCount }}</strong>
+          <small class="kpi-sub">Flagged for student action</small>
+        </div>
 
-        <option value="rejected">
-          Rejected
-        </option>
-
-      </select>
-
-    </section>
-
-
-    <!-- LOADING -->
-
-    <section
-      class="loading-state"
-      *ngIf="isLoading"
-    >
-
-      <p>
-        Loading clearance requests...
-      </p>
-
-    </section>
-
-
-    <!-- EMPTY -->
-
-    <section
-      class="empty-state"
-      *ngIf="!isLoading && !filteredRequests.length"
-    >
-
-      <div class="empty-icon">
-        ✓
+        <div class="kpi-card accent">
+          <span class="kpi-label">College Clearance Rate</span>
+          <strong class="kpi-val text-accent">{{ collegeClearanceRate }}%</strong>
+          <small class="kpi-sub">Overall completion rate</small>
+        </div>
       </div>
 
-      <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
-      </h2>
+      <!-- DEPARTMENTAL BREAKDOWN -->
+      <div class="analytics-card">
+        <div class="card-heading">
+          <h3>Departmental Clearance Breakdown</h3>
+          <p>Clearance progress across all academic departments under {{ collegeName }}.</p>
+        </div>
 
-      <p>
-        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Principal.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Principal.' : 'There are currently no student applications awaiting Principal approval.' }}
-      </p>
+        <div class="table-wrap">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Department Name</th>
+                <th>Total Applications</th>
+                <th>Cleared</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let dept of departmentBreakdown">
+                <td><strong>{{ dept.name }}</strong></td>
+                <td>{{ dept.total }}</td>
+                <td><span class="badge-success">{{ dept.cleared }}</span></td>
+                <td><span class="badge-warning">{{ dept.pending }}</span></td>
+                <td><span class="badge-danger">{{ dept.rejected }}</span></td>
+                <td>
+                  <div class="progress-wrap">
+                    <div class="progress-bar" [style.width.%]="dept.clearanceRate"></div>
+                    <span>{{ dept.clearanceRate }}%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
+      <!-- COHORT & GENDER BREAKDOWN GRID -->
+      <div class="analytics-grid-2">
+        <!-- ACADEMIC COHORTS -->
+        <div class="analytics-card">
+          <div class="card-heading">
+            <h3>Academic Cohort Progress</h3>
+            <p>Clearance rate grouped by study year cohort.</p>
+          </div>
+
+          <div class="cohort-list">
+            <div class="cohort-item" *ngFor="let cohort of yearResidencyHistogram">
+              <div class="cohort-info">
+                <span>{{ cohort.yearLabel }}</span>
+                <strong>{{ cohort.cleared }} / {{ cohort.total }} ({{ cohort.clearanceRate }}%)</strong>
+              </div>
+              <div class="cohort-bar-bg">
+                <div class="cohort-bar-fill" [style.width.%]="cohort.clearanceRate"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GENDER ANALYSIS -->
+        <div class="analytics-card">
+          <div class="card-heading">
+            <h3>Gender Proportions</h3>
+            <p>Clearance statistics by student gender.</p>
+          </div>
+
+          <div class="gender-grid">
+            <div class="gender-box male">
+              <span class="gender-title">Male Scholars</span>
+              <strong class="gender-num">{{ genderStats.maleCleared }} / {{ genderStats.maleTotal }}</strong>
+              <div class="gender-rate">{{ genderStats.malePercent }}% Cleared</div>
+            </div>
+
+            <div class="gender-box female">
+              <span class="gender-title">Female Scholars</span>
+              <strong class="gender-num">{{ genderStats.femaleCleared }} / {{ genderStats.femaleTotal }}</strong>
+              <div class="gender-rate">{{ genderStats.femalePercent }}% Cleared</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
-
-    <!-- COMPACT REQUEST TABLE -->
-    <section class="compact-table-wrap" *ngIf="!isLoading && filteredRequests.length">
-      <table class="compact-request-table">
-        <thead><tr>
-          <th>Registration Number</th><th>Full Name</th><th>Email</th><th>Phone Number</th><th>Programme</th><th>Actions</th>
-        </tr></thead>
-        <tbody>
-          <tr *ngFor="let request of paginatedRequests">
-            <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="compact-name">{{ getStudentListName(request) }}</td>
-            <td>{{ getStudentEmail(request) }}</td>
-            <td>{{ getStudentPhone(request) }}</td>
-            <td>{{ getStudentProgramme(request) }}</td>
-            <td><div class="compact-actions">
-              <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
-              <button *ngIf="getRequestOfficeStatus(request, 'Principal') === 'Pending'" type="button" class="review-button" (click)="approve(request)">Approve</button>
-              <span *ngIf="getRequestOfficeStatus(request, 'Principal') !== 'Pending'" class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span>
-            </div></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
+    <!-- COMPACT STUDENT DETAILS OVERLAY -->
     <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
       <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
         <button type="button" class="compact-close" aria-label="Close" (click)="detailsRequest = null">×</button>
@@ -186,8 +285,12 @@
             <img *ngIf="hasPhoto(detailsRequest)" [src]="getStudentPhoto(detailsRequest)" alt="Student photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(detailsRequest))" />
             <span *ngIf="!hasPhoto(detailsRequest)">{{ getStudentInitials(detailsRequest) }}</span>
           </div>
-          <div><span class="request-label">Student Information</span><h2>{{ getStudentName(detailsRequest) }}</h2></div>
+          <div>
+            <span class="request-label">Student Information</span>
+            <h2>{{ getStudentName(detailsRequest) }}</h2>
+          </div>
         </div>
+
         <dl class="compact-details-grid">
           <div><dt>Registration Number</dt><dd>{{ getStudentRegNumber(detailsRequest) }}</dd></div>
           <div><dt>Gender</dt><dd>{{ getStudentGender(detailsRequest) }}</dd></div>
@@ -199,19 +302,41 @@
           <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
           <div><dt>Documents Uploaded</dt><dd>{{ getDocumentStatus(detailsRequest).uploaded }} / {{ getDocumentStatus(detailsRequest).total }}</dd></div>
         </dl>
+
+        <footer class="compact-details-footer" *ngIf="getRequestOfficeStatus(detailsRequest, 'Principal') === 'Pending'">
+          <button type="button" class="return-button reject-btn" (click)="openRejectForm(detailsRequest); detailsRequest = null">
+            Reject / Return
+          </button>
+          <button type="button" class="review-button approve-btn" (click)="approve(detailsRequest); detailsRequest = null">
+            Approve Principal Clearance
+          </button>
+        </footer>
       </div>
     </section>
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+
+    <!-- REJECTION MODAL -->
+    <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-icon">!</div>
+        <h2>Return Clearance Request</h2>
+        <p>Write the reason and required action for the student regarding college endorsement or clearance requirements.</p>
+
+        <label>Reason for Rejection</label>
+        <textarea
+          [(ngModel)]="rejectionComment"
+          placeholder="Enter reason e.g. unfulfilled college requirements, unverified academic records..."
+        ></textarea>
+
+        <div class="modal-actions">
+          <button type="button" class="cancel-button" (click)="selectedRequest = null">
+            Cancel
+          </button>
+          <button type="button" class="return-button" (click)="reject()" [disabled]="!rejectionComment.trim()">
+            Send Reason to Student
+          </button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- ENLARGED PHOTO MODAL -->
@@ -221,5 +346,4 @@
       <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
     </div>
   </div>
-
 </section>

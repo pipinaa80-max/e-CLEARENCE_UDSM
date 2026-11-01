@@ -57,14 +57,14 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
       align-items: center;
       width: 100%;
       box-sizing: border-box;
-      padding: 24px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-left: 6px solid var(--udsm-gold);
-      border-radius: 12px;
+      padding: 22px 28px;
+      background: linear-gradient(135deg, #001f34 0%, #003b5c 100%);
+      box-shadow: 0 10px 25px rgba(0, 31, 52, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 6px solid var(--udsm-gold, #e5b83c);
+      border-radius: 14px;
       margin-bottom: 24px;
-      color: #fff;
+      color: #ffffff;
     }
     .header-left {
       display: flex;
@@ -74,10 +74,10 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     .sidebar-toggle-btn {
       position: relative;
       z-index: 1200;
-      background: var(--udsm-blue-dark);
-      border: 2px solid var(--udsm-gold);
-      width: 46px;
-      height: 46px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1.5px solid var(--udsm-gold, #e5b83c);
+      width: 44px;
+      height: 44px;
       border-radius: 10px;
       display: flex;
       flex-direction: column;
@@ -98,7 +98,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
       }
     }
     .sidebar-toggle-btn:hover {
-      background: var(--udsm-blue);
+      background: rgba(255, 255, 255, 0.22);
       transform: scale(1.05);
       box-shadow: 0 6px 15px rgba(0,0,0,0.2);
     }
@@ -108,7 +108,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     .bar {
       width: 20px;
       height: 2px;
-      background: #fff;
+      background: #ffffff;
       border-radius: 2px;
     }
     .header-titles {
@@ -117,22 +117,26 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     }
     .eyebrow {
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--udsm-gold);
+      letter-spacing: 0.06em;
+      color: #f59e0b !important;
       margin-bottom: 4px;
+      display: block;
     }
     .header-titles h2 {
       margin: 0;
-      font-size: 16px !important;
-      font-weight: 400;
-      line-height: 1.2;
+      font-size: 1.35rem !important;
+      font-weight: 800 !important;
+      line-height: 1.25;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
     .header-titles p {
-      margin: 4px 0 0;
-      font-size: 13px;
-      opacity: 0.9;
+      margin: 5px 0 0;
+      font-size: 0.85rem !important;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.92) !important;
     }
     .header-right {
       display: flex;
@@ -149,7 +153,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
       align-items: center;
       gap: 12px;
       padding-left: 20px;
-      border-left: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-left: 1.5px solid rgba(255, 255, 255, 0.2);
     }
     .profile-info {
       display: none;
@@ -158,26 +162,26 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     }
     .user-name {
       display: block;
-      font-weight: 700;
-      font-size: 0.9rem;
-      color: #fff;
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #ffffff !important;
     }
     .user-role {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--udsm-gold);
-      opacity: 0.9;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #f59e0b !important;
     }
     .avatar-circle {
-      width: 42px;
-      height: 42px;
-      background: var(--udsm-blue-dark);
-      border: 2px solid var(--udsm-gold);
+      width: 44px;
+      height: 44px;
+      background: #001f34;
+      border: 2px solid #f59e0b;
       border-radius: 50%;
       display: grid;
       place-items: center;
       font-weight: 800;
+      color: #ffffff;
       overflow: hidden;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
@@ -189,6 +193,18 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
     @media (min-width: 992px) {
       .profile-info {
         display: flex;
+      }
+    }
+    @media (max-width: 680px) {
+      .dashboard-header {
+        padding: 16px 18px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .header-right {
+        width: 100%;
+        justify-content: space-between;
       }
     }
   `]

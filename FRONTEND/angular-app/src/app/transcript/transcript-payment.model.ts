@@ -27,4 +27,11 @@ export interface TranscriptPaymentRequest {
   receiptSubmittedAt?: string;
   collectionMethod?: 'Physical Collection' | 'Post by DHL';
   postingAddress?: string;
+  postingRegion?: string;
+  postingWard?: string;
+  postingPoBox?: string;
+  postingContactPhone?: string;
+  postingContactEmail?: string;
+  dispatchStatus?: 'Pending Dispatch' | 'Dispatched' | 'Collected';
+  dispatchedAt?: string;
 }

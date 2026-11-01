@@ -36,6 +36,10 @@
         Student Clearance Tracker
       </a>
 
+      <a href="#transcript-dispatch" (click)="sidebarOpen = false">
+        Transcript Dispatch Ledger
+      </a>
+
       <button
         type="button"
         (click)="logout()"
@@ -555,6 +559,105 @@
             </div>
           </dl>
         </div>
+      </div>
+    </section>
+
+    <!-- TRANSCRIPT DISPATCH & COLLECTION LEDGER (DIRECTOR OF UNDERGRADUATE STUDIES) -->
+    <section class="analytics-card" id="transcript-dispatch" style="margin-top: 35px; width: min(100%, 1500px); margin-left: auto; margin-right: auto;">
+      <div class="card-heading" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <div>
+          <h3>Transcript Collection &amp; Delivery Ledger</h3>
+          <p>Official dispatch and posting registry for student academic transcripts (Direct to Directorate of Undergraduate Studies).</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span class="badge-success" style="padding: 6px 14px; font-size: 13px; font-weight: 700;">
+            {{ dispatchedCount }} Dispatched / {{ transcriptRequests.length }} Total Requests
+          </span>
+        </div>
+      </div>
+
+      <div class="compact-table-wrap" *ngIf="transcriptRequests.length; else noTranscripts">
+        <table class="compact-request-table">
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Registration Number</th>
+              <th>Copies</th>
+              <th>Collection Method</th>
+              <th>Region / City</th>
+              <th>Ward / District</th>
+              <th>P.O. Box</th>
+              <th>Contact Phone</th>
+              <th>Dispatch Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let tReq of transcriptRequests">
+              <td class="compact-name">{{ tReq.studentName }}</td>
+              <td>{{ tReq.registrationNumber }}</td>
+              <td><strong>{{ tReq.transcriptCount }}</strong> copy</td>
+              <td>
+                <span class="demand-pill" [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'badge-info' : 'badge-success'">
+                  {{ tReq.collectionMethod || 'Physical Collection' }}
+                </span>
+              </td>
+              <td>{{ tReq.postingRegion || 'Dar es Salaam' }}</td>
+              <td>{{ tReq.postingWard || 'University Campus' }}</td>
+              <td>{{ tReq.postingPoBox || '—' }}</td>
+              <td>{{ tReq.postingContactPhone || '—' }}</td>
+              <td>
+                <span class="demand-pill" [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'badge-success' : 'badge-warning'">
+                  {{ tReq.dispatchStatus || 'Pending Dispatch' }}
+                </span>
+              </td>
+              <td>
+                <div class="compact-actions">
+                  <button type="button" class="compact-view" (click)="selectedTranscriptForModal = tReq">View Details</button>
+                  <button *ngIf="tReq.dispatchStatus !== 'Dispatched'" type="button" class="analytics-primary" style="padding: 4px 10px; font-size: 11px; cursor: pointer;" (click)="markDispatched(tReq.id)">
+                    Mark Dispatched
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noTranscripts>
+        <div class="empty-state" style="padding: 30px; margin-top: 15px;">
+          <div class="empty-icon">✓</div>
+          <h2>No transcript collection requests recorded yet</h2>
+          <p>Student transcript collection preferences and posting addresses will appear here in tabular format upon submission.</p>
+        </div>
+      </ng-template>
+    </section>
+
+    <!-- TRANSCRIPT DISPATCH DETAILS OVERLAY MODAL -->
+    <section class="compact-details-overlay" *ngIf="selectedTranscriptForModal" (click)="selectedTranscriptForModal = null">
+      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Transcript delivery details" (click)="$event.stopPropagation()">
+        <button type="button" class="compact-close" aria-label="Close" (click)="selectedTranscriptForModal = null">×</button>
+        <div class="compact-details-heading">
+          <div>
+            <span class="request-label">Transcript Dispatch Details (DUS)</span>
+            <h2>{{ selectedTranscriptForModal.studentName }} ({{ selectedTranscriptForModal.registrationNumber }})</h2>
+          </div>
+        </div>
+
+        <dl class="compact-details-grid">
+          <div><dt>Registration Number</dt><dd>{{ selectedTranscriptForModal.registrationNumber }}</dd></div>
+          <div><dt>Degree Award</dt><dd>{{ selectedTranscriptForModal.award }}</dd></div>
+          <div><dt>Graduation Year</dt><dd>{{ selectedTranscriptForModal.graduationYear }}</dd></div>
+          <div><dt>Copies Requested</dt><dd>{{ selectedTranscriptForModal.transcriptCount }} copy (TSh {{ selectedTranscriptForModal.amount | number }})</dd></div>
+          <div><dt>Collection Method</dt><dd><strong>{{ selectedTranscriptForModal.collectionMethod }}</strong></dd></div>
+          <div><dt>Dispatch Status</dt><dd><span class="demand-pill" [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'badge-success' : 'badge-warning'">{{ selectedTranscriptForModal.dispatchStatus || 'Pending Dispatch' }}</span></dd></div>
+          <div><dt>Region / City</dt><dd>{{ selectedTranscriptForModal.postingRegion || 'Dar es Salaam' }}</dd></div>
+          <div><dt>Ward / District</dt><dd>{{ selectedTranscriptForModal.postingWard || 'University Campus' }}</dd></div>
+          <div><dt>P.O. Box</dt><dd>{{ selectedTranscriptForModal.postingPoBox || '—' }}</dd></div>
+          <div><dt>Contact Phone</dt><dd>{{ selectedTranscriptForModal.postingContactPhone || '—' }}</dd></div>
+          <div><dt>Contact Email</dt><dd>{{ selectedTranscriptForModal.postingContactEmail || '—' }}</dd></div>
+          <div><dt>Full Address / Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Directorate Office' }}</dd></div>
+        </dl>
       </div>
     </section>
 

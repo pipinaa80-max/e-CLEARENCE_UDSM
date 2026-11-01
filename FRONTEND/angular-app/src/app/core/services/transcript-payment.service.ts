@@ -128,6 +128,39 @@ export class TranscriptPaymentService {
     return true;
   }
 
+  updateCollectionDetails(
+    requestId: string,
+    collectionMethod: 'Physical Collection' | 'Post by DHL',
+    postingAddress: string,
+    postingRegion?: string,
+    postingWard?: string,
+    postingPoBox?: string,
+    postingContactPhone?: string,
+    postingContactEmail?: string
+  ): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.collectionMethod = collectionMethod;
+    request.postingAddress = postingAddress;
+    request.postingRegion = postingRegion;
+    request.postingWard = postingWard;
+    request.postingPoBox = postingPoBox;
+    request.postingContactPhone = postingContactPhone;
+    request.postingContactEmail = postingContactEmail;
+    request.dispatchStatus = request.dispatchStatus || 'Pending Dispatch';
+    this.save(request);
+    return true;
+  }
+
+  markDispatched(requestId: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.dispatchStatus = 'Dispatched';
+    request.dispatchedAt = new Date().toISOString();
+    this.save(request);
+    return true;
+  }
+
   private save(request: TranscriptPaymentRequest): void {
     const requests = this.getAllRequests();
     const index = requests.findIndex(item => item.id === request.id);

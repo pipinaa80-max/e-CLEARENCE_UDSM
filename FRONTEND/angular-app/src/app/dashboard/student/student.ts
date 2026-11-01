@@ -392,7 +392,18 @@ export class StudentDashboard implements OnInit {
   get currentStageLabel(): string {
     const request = this.currentRequest;
     if (!request) return 'No clearance request';
-    if (request.status === 'Completed') return 'Clearance completed';
+    if (
+      request.status === 'Completed' ||
+      request.currentStage === 'Completed' ||
+      this.getOfficeStatus('Finance') === 'Approved'
+    ) {
+      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
+        request.status = 'Completed';
+        request.currentStage = 'Completed';
+        this.clearanceService.save(request);
+      }
+      return 'Clearance completed';
+    }
     if (request.status === 'Rejected') {
       const rejectedOffice = this.officeList.find(
         office => this.getOfficeStatus(office) === 'Rejected'
@@ -410,8 +421,7 @@ export class StudentDashboard implements OnInit {
       case 'Department': return 'Department';
       case 'Principal': return 'Principal';
       case 'Finance': return 'Finance';
-      case 'Completed': return 'Clearance completed';
-      default: return 'Clearance';
+      default: return 'Clearance completed';
     }
   }
 

@@ -9,6 +9,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { ConfigService } from '../../core/services/config.service';
 import { StorageService } from '../../core/services/storage.service';
+import { ToastService } from '../../core/services/toast.service';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 export interface OfficeStatusSummary {
@@ -96,6 +99,8 @@ export interface RegisteredYearBarItem {
 export class DirectorUndergraduateStudiesDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly toastService = inject(ToastService);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
   private readonly router = inject(Router);
@@ -110,6 +115,24 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   studentYearMap = new Map<string, string>();
   backendRegisteredStudentsByYear: Record<string, number> = {};
   totalRegisteredStudents = 0;
+
+  selectedTranscriptForModal: TranscriptPaymentRequest | null = null;
+
+  get transcriptRequests(): TranscriptPaymentRequest[] {
+    return this.transcriptService.getAllRequests().filter(r => !!r.collectionMethod);
+  }
+
+  get dispatchedCount(): number {
+    return this.transcriptRequests.filter(r => r.dispatchStatus === 'Dispatched').length;
+  }
+
+  markDispatched(requestId: string): void {
+    if (this.transcriptService.markDispatched(requestId)) {
+      this.toastService.success('Dispatched', 'Transcript dispatch status updated to Dispatched.');
+    } else {
+      this.toastService.error('Action Failed', 'Could not update dispatch status.');
+    }
+  }
 
   // Filters
   searchTerm = '';

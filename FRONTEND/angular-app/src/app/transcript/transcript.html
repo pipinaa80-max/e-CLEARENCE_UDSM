@@ -35,7 +35,7 @@
       <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
       </a>
-      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
         Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
@@ -69,22 +69,50 @@
     </app-dashboard-header>
 
     <div class="transcript-wrapper">
-      <!-- 1. TRANSCRIPT REQUEST HISTORY (When student has completed first transcript) -->
-      <div class="transcript-card history-dashboard" *ngIf="hasCompletedFirstRequest">
-        <div class="dashboard-header">
+    <div class="transcript-wrapper">
+      <!-- 1. ACTIVE TRANSCRIPT STAGE OVERVIEW -->
+      <div class="transcript-card" style="margin-bottom: 24px;">
+        <div class="transcript-state-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+          <div>
+            <span class="section-kicker">Transcript Service Active Status</span>
+            <h2>{{ activeStageLabel }}</h2>
+            <p>{{ request?.programme || 'Official Academic Transcript Application & Verification' }}</p>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <a *ngIf="activeStageLabel !== 'Transcript Process Completed'" [routerLink]="activeStageRoute" class="primary-button" style="text-decoration: none; padding: 10px 20px;">
+              Continue Active Step &rarr;
+            </a>
+            <a *ngIf="hasCompletedFirstRequest && !hasUnverifiedActiveRequest" routerLink="/transcript/payment" class="primary-button" style="text-decoration: none; padding: 10px 20px; background: #166534; border-color: #166534;">
+              Acquire Additional Copies
+            </a>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 20px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;">
+          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Applicant Name</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.fullName }}</strong></div>
+          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Registration Number</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.registrationNumber }}</strong></div>
+          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Programme</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.programme || request?.programme || '—' }}</strong></div>
+          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Clearance Status</span><strong style="display: block; color: #166534; font-size: 14px; margin-top: 2px;">✔ Cleared &amp; Completed</strong></div>
+        </div>
+      </div>
+
+      <!-- 2. TRANSCRIPT REQUEST HISTORY TABLE -->
+      <div class="transcript-card history-dashboard">
+        <div class="history-card-header">
           <div>
             <h2>Request History</h2>
             <p>View the status of your official transcript applications.</p>
           </div>
           <a *ngIf="!hasUnverifiedActiveRequest" routerLink="/transcript/payment" class="primary-button">
-            Request More Copies
+            Acquire Additional Copies
           </a>
           <button *ngIf="hasUnverifiedActiveRequest" type="button" class="primary-button" (click)="notifyPendingRequest()" style="opacity: 0.7; cursor: not-allowed; background: #64748b; border: none;">
-            Request More Copies
+            Acquire Additional Copies
           </button>
         </div>
 
-        <div class="history-list">
+        <div class="history-list" *ngIf="allTranscriptRequests.length; else noHistory">
           <div
             class="history-item"
             *ngFor="let req of allTranscriptRequests"
@@ -108,17 +136,24 @@
               </a>
               <div *ngIf="req.status === 'Paid'" style="display: flex; align-items: center; gap: 8px;">
                 <span class="success-note">Completed</span>
-                <button *ngIf="!isPrinted(req.id)" type="button" (click)="printTranscript(req)" style="padding: 6px 12px; background: #00679b; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                <button type="button" (click)="printTranscript(req)" style="padding: 6px 14px; background: #00679b; color: #ffffff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
                   🖨️ Print Transcript
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        <ng-template #noHistory>
+          <div style="text-align: center; padding: 30px; color: #64748b;">
+            <p style="margin-bottom: 15px;">You have not submitted a transcript payment request yet.</p>
+            <a routerLink="/transcript/payment" class="primary-button" style="text-decoration: none;">Start Transcript Payment</a>
+          </div>
+        </ng-template>
       </div>
 
-      <!-- 2. TRANSCRIPT APPLICATION FORM (When first transcript is not completed yet) -->
-      <div class="transcript-card" *ngIf="!hasCompletedFirstRequest">
+      <!-- 3. TRANSCRIPT APPLICATION FORM (When first transcript is not completed yet) -->
+      <div class="transcript-card" *ngIf="!hasCompletedFirstRequest" style="margin-top: 24px;">
         <section class="transcript-state-header">
           <div class="state-icon">3</div>
           <div>
@@ -129,9 +164,28 @@
         </section>
 
         <form [formGroup]="transcriptForm" (ngSubmit)="approve()">
-        <section class="form-section">
+        <section class="terms-section">
           <div class="section-heading">
             <span>Step 01</span>
+            <h2>Charges, Payment and Required Documentation</h2>
+            <p>Review these instructions before providing your application details.</p>
+          </div>
+
+          <div class="terms-copy">
+            <h3>Charges and mode of payment</h3>
+            <p>The first transcript request costs TSh 15,000. Each additional transcript request costs TSh 5,000.</p>
+            <p>For non-Tanzanian nationals, the transcript charge is US$20 for the first copy and US$10 for each additional copy.</p>
+            <p>Payment is made through the University payment control number. Keep the payment receipt for submission during the next step.</p>
+
+            <h3>Required documentation</h3>
+            <p>Attach the required identification and supporting documents requested by the University, including a valid passport-size photograph and proof of payment where applicable.</p>
+            <p>Make sure all information is accurate. Incomplete or incorrect requests may be returned for correction.</p>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <span>Step 02</span>
             <h2>Applicant Information</h2>
             <p>Confirm the details that will appear on your transcript request.</p>
           </div>
@@ -147,24 +201,7 @@
           </div>
         </section>
 
-        <section class="terms-section">
-          <div class="section-heading">
-            <span>Step 02</span>
-            <h2>Charges, Payment and Required Documentation</h2>
-            <p>Review these instructions before choosing Approve.</p>
-          </div>
-
-          <div class="terms-copy">
-            <h3>Charges and mode of payment</h3>
-            <p>The first transcript request costs TSh 15,000. Each additional transcript request costs TSh 5,000.</p>
-            <p>For non-Tanzanian nationals, the transcript charge is US$20 for the first copy and US$10 for each additional copy.</p>
-            <p>Payment is made through the University payment control number. Keep the payment receipt for submission during the next step.</p>
-
-            <h3>Required documentation</h3>
-            <p>Attach the required identification and supporting documents requested by the University, including a valid passport-size photograph and proof of payment where applicable.</p>
-            <p>Make sure all information is accurate. Incomplete or incorrect requests may be returned for correction.</p>
-          </div>
-
+        <section class="terms-check-section" style="padding-top: 20px;">
           <label class="terms-check">
             <input type="checkbox" formControlName="termsAccepted" />
             <span>I have read and agree to the charges, payment instructions and required documentation.</span>

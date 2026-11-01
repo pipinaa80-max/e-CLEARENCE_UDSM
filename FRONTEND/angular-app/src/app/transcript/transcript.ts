@@ -146,8 +146,79 @@ export class TranscriptComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get activeStageLabel(): string {
+    const user = this.authService.getCurrentUser();
+    if (!user) return 'Transcript Payment';
+
+    const isAcquired = localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+    const docsSubmitted = localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+
+    const req = this.currentActiveRequest || this.allTranscriptRequests[0];
+    if (!req) return 'Step 1: Transcript Payment';
+
+    if (isAcquired || !!req.collectionMethod) return 'Transcript Process Completed';
+    if (docsSubmitted) return 'Step 3: Transcript Collection';
+    if (req.status === 'Paid') return 'Step 2: Upload Documentation';
+    if (req.status === 'Receipt Submitted') return 'Step 1: Waiting for Payment Verification';
+    return 'Step 1: Transcript Payment';
+  }
+
+  get activeStageRoute(): string {
+    const label = this.activeStageLabel;
+    if (label.includes('Collection')) return '/transcript/collection';
+    if (label.includes('Documentation')) return '/documents/transcript';
+    if (label.includes('Payment')) return '/transcript/payment';
+    return '/transcript/process';
+  }
+
   get isClearanceComplete(): boolean {
-    return this.request?.status === 'Completed';
+    if (!this.request) {
+      const user = this.authService.getCurrentUser();
+      if (!user) return false;
+      const studentRequests = this.clearanceService.getStudentRequests(user.id);
+      this.request = studentRequests.at(-1) ?? null;
+      if (!this.request) return false;
+    }
+
+    const req = this.request;
+
+    // Check 1: Request overall status or stage
+    const status = (req.status || '').trim().toUpperCase();
+    const stage = (req.currentStage || '').trim().toUpperCase();
+
+    if (
+      status === 'COMPLETED' ||
+      status === 'APPROVED' ||
+      status === 'CLEARED' ||
+      stage === 'COMPLETED'
+    ) {
+      return true;
+    }
+
+    // Check 2: Finance approval is granted (Finance is the final clearance office!)
+    const financeApproval = req.approvals?.find(a => a.office === 'Finance');
+    if (financeApproval && financeApproval.status === 'Approved') {
+      req.status = 'Completed';
+      req.currentStage = 'Completed';
+      return true;
+    }
+
+    // Check 3: Every required approval office is Approved
+    if (req.approvals && req.approvals.length > 0) {
+      const requiredOffices = ['Convocation', 'Department', 'Principal', 'Finance'];
+      const allRequiredCleared = requiredOffices.every(off => {
+        const app = req.approvals.find(a => a.office === off);
+        return app && app.status === 'Approved';
+      });
+
+      if (allRequiredCleared) {
+        req.status = 'Completed';
+        req.currentStage = 'Completed';
+        return true;
+      }
+    }
+
+    return false;
   }
 
   toggleSidebar(): void {

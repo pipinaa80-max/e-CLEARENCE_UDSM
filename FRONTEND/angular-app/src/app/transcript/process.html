@@ -35,7 +35,7 @@
       <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
       </a>
-      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
         Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
@@ -148,10 +148,6 @@
       </div>
     </section>
 
-    <!-- BACK LINK -->
-    <a *ngIf="!collectionMethodSaved" routerLink="/transcript" class="notification-link">
-      Review Terms & Conditions
-    </a>
     </div>
   </div>
 
@@ -159,9 +155,9 @@
     <div class="no-request-page">
       <div class="no-request-card">
         <div class="warning-icon">!</div>
-        <h1>Approval Required</h1>
-        <p>Please review and accept the transcript terms before starting this process.</p>
-        <a routerLink="/transcript" class="request-button">Review Terms</a>
+        <h1>Transcript Service</h1>
+        <p>Your transcript request process is active and ready.</p>
+        <a routerLink="/transcript/payment" class="request-button">Proceed to Payment</a>
       </div>
     </div>
   </ng-template>

@@ -308,9 +308,19 @@ export class ClearanceStatusComponent implements OnInit {
 
   checkAndAutoAdvanceStage(): void {
     const request = this.request;
-    if (!request || request.status === 'Completed' || request.status === 'Rejected') return;
+    if (!request || request.status === 'Rejected') return;
 
-    if (this.canAdvanceFromCurrentStage()) {
+    if (this.getOfficeStatus('Finance') === 'Approved' || request.status === 'Completed' || request.currentStage === 'Completed') {
+      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
+        this.clearanceService.advanceStage(request.id, 'Completed', undefined);
+        this.loadData();
+      }
+      return;
+    }
+
+    let iterations = 0;
+    while (this.canAdvanceFromCurrentStage() && iterations < 5) {
+      iterations++;
       console.log(`Auto-advancing request ${request.id} from stage ${request.currentStage}`);
       this.continueToNextStageSilently();
     }
@@ -505,7 +515,16 @@ export class ClearanceStatusComponent implements OnInit {
       return 'No clearance request';
     }
 
-    if (request.status === 'Completed') {
+    if (
+      request.status === 'Completed' ||
+      request.currentStage === 'Completed' ||
+      this.getOfficeStatus('Finance') === 'Approved'
+    ) {
+      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
+        request.status = 'Completed';
+        request.currentStage = 'Completed';
+        this.clearanceService.save(request);
+      }
       return 'Clearance completed';
     }
 
@@ -540,10 +559,8 @@ export class ClearanceStatusComponent implements OnInit {
         return 'Principal';
       case 'Finance':
         return 'Finance';
-      case 'Completed':
-        return 'Clearance completed';
       default:
-        return 'Clearance';
+        return 'Clearance completed';
     }
   }
 

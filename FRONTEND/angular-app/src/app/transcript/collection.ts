@@ -43,6 +43,11 @@ export class TranscriptCollectionComponent {
   }
   form = this.fb.nonNullable.group({
     collectionMethod: ['' as 'Physical Collection' | 'Post by DHL' | '', Validators.required],
+    postingRegion: [''],
+    postingWard: [''],
+    postingPoBox: [''],
+    postingContactPhone: [''],
+    postingContactEmail: [''],
     postingAddress: ['']
   });
 
@@ -69,29 +74,53 @@ export class TranscriptCollectionComponent {
 
     this.form.patchValue({
       collectionMethod: (this.request.collectionMethod as any === 'Post' ? 'Post by DHL' : this.request.collectionMethod) ?? '',
+      postingRegion: this.request.postingRegion ?? '',
+      postingWard: this.request.postingWard ?? '',
+      postingPoBox: this.request.postingPoBox ?? '',
+      postingContactPhone: this.request.postingContactPhone ?? (user.phoneNumber || user.phone || ''),
+      postingContactEmail: this.request.postingContactEmail ?? (user.email || ''),
       postingAddress: this.request.postingAddress ?? ''
     });
   }
 
   save(): void {
     this.message = '';
-    const method = this.form.controls.collectionMethod.value;
-    const address = this.form.controls.postingAddress.value.trim();
+    const val = this.form.getRawValue();
+    const method = val.collectionMethod;
 
-    if (!method || (method === 'Post by DHL' && !address)) {
+    if (!method) {
       this.form.markAllAsTouched();
-      this.message = method === 'Post by DHL'
-        ? 'Enter the address where the transcript should be posted.'
-        : 'Select a transcript collection method.';
+      this.message = 'Please select a transcript collection method.';
       return;
     }
 
-    if (!this.request || !this.paymentService.updateCollection(this.request.id, method, address)) {
+    if (method === 'Post by DHL') {
+      if (!val.postingRegion.trim() || !val.postingWard.trim() || !val.postingPoBox.trim() || !val.postingContactPhone.trim()) {
+        this.form.markAllAsTouched();
+        this.message = 'Please fill out your Region, Ward/District, P.O. Box and Contact Phone Number for DHL delivery.';
+        return;
+      }
+    }
+
+    const fullSummaryAddress = method === 'Post by DHL'
+      ? `P.O. Box: ${val.postingPoBox.trim()}, Ward/District: ${val.postingWard.trim()}, Region/City: ${val.postingRegion.trim()}. Contact Phone: ${val.postingContactPhone.trim()}, Email: ${val.postingContactEmail.trim()}. Notes: ${val.postingAddress.trim()}`
+      : 'Physical Collection at University Directorate of Undergraduate Studies Office';
+
+    if (!this.request || !this.paymentService.updateCollectionDetails(
+      this.request.id,
+      method,
+      fullSummaryAddress,
+      val.postingRegion.trim(),
+      val.postingWard.trim(),
+      val.postingPoBox.trim(),
+      val.postingContactPhone.trim(),
+      val.postingContactEmail.trim()
+    )) {
       this.message = 'Unable to save your collection preference.';
       return;
     }
 
-    this.message = 'Transcript collection preference saved successfully.';
+    this.message = 'Transcript collection preference saved successfully and forwarded to the Director of Undergraduate Studies.';
     setTimeout(() => this.router.navigate(['/transcript/process']), 2000);
   }
 }

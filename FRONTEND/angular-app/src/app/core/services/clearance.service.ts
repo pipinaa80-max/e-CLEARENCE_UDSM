@@ -780,6 +780,10 @@ export class ClearanceService {
       if (office === 'Department') {
         request.currentStage = 'Principal';
         request.currentOffice = 'Principal';
+      } else if (office === 'Finance') {
+        request.currentStage = 'Completed';
+        request.currentOffice = undefined;
+        request.status = 'Completed';
       } else {
         this.moveToNextStage(request);
       }

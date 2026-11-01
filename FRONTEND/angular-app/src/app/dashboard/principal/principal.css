@@ -756,3 +756,310 @@
   gap: 14px;
 }
 
+/* VIEW TABS BAR */
+.view-tabs-bar {
+  width: min(100%, 1500px);
+  margin: 0 auto 20px;
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.view-tabs-bar .tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+}
+
+.view-tabs-bar .tab-btn:hover {
+  color: #0f172a;
+}
+
+.view-tabs-bar .tab-btn.active {
+  color: #0284c7;
+  border-bottom-color: #0284c7;
+}
+
+.view-tabs-bar .badge,
+.sidebar .nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+/* ACTION BUTTONS & REJECT BUTTON */
+.approve-btn {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.approve-btn:hover:not(:disabled) {
+  background: #0369a1 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
+}
+
+.reject-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dc2626;
+  border-radius: 7px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reject-button:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.compact-details-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.compact-details-footer button {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* COLLEGE ANALYTICS BOARD */
+.analytics-board {
+  width: min(100%, 1500px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.analytics-header h2 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.analytics-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.action-btn.primary {
+  min-height: 42px;
+  padding: 0 20px;
+  border: 1px solid #0284c7;
+  border-radius: 9px;
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn.primary:hover {
+  background: #0369a1;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+}
+
+/* KPI GRID */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  padding: 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpi-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpi-val {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.kpi-sub {
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.text-success { color: #16a34a !important; }
+.text-warning { color: #d97706 !important; }
+.text-danger { color: #dc2626 !important; }
+.text-accent { color: #0284c7 !important; }
+
+/* ANALYTICS CARD */
+.analytics-card {
+  padding: 22px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.card-heading h3 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.card-heading p {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.analytics-table th,
+.analytics-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.analytics-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badge-success { background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+.badge-warning { background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+.badge-danger { background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 6px; font-weight: 700; }
+
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 140px;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #0284c7;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.analytics-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.cohort-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cohort-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  margin-bottom: 5px;
+}
+
+.cohort-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cohort-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.gender-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.gender-box {
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gender-box.male { background: #f0f9ff; border: 1px solid #e0f2fe; }
+.gender-box.female { background: #fdf2f8; border: 1px solid #fce7f3; }
+
+.gender-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #475569; }
+.gender-num { font-size: 1.25rem; font-weight: 800; color: #0f172a; }
+.gender-rate { font-size: 0.78rem; font-weight: 700; color: #0284c7; }
+
