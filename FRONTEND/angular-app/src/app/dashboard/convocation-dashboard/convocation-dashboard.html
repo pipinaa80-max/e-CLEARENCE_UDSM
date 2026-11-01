@@ -19,16 +19,18 @@
         routerLink="/convocation/dashboard"
         routerLinkActive="active"
       >
-        Dashboard
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+        <span>Dashboard</span>
       </a>
       <a routerLink="/convocation/requests" routerLinkActive="active" (click)="closeSidebar()">
-         All Requests
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+        <span>All Requests</span>
       </a>
-
     </nav>
 
     <button type="button" class="logout-link" (click)="logout()">
-      Log out
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 1h-8A1.5 1.5 0 0 0 0 2.5v9A1.5 1.5 0 0 0 1.5 13h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
+      <span>Log out</span>
     </button>
   </aside>
 
@@ -124,20 +126,20 @@
               <td>{{ receipt.submittedAt | date:'medium' }}</td>
               <td>
                 <span class="status-badge receipt-received">
-                  <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>
+                  <i class="bi bi-file-earmark-text"></i>
                   Pending Verification
                 </span>
               </td>
               <td>
                 <div class="action-buttons-cell">
                   <button type="button" (click)="viewBackendReceipt(receipt)" class="view-btn">
-                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View
+                    <i class="bi bi-eye"></i> View
                   </button>
                   <button type="button" (click)="approveBackendReceipt(receipt.id)" class="approve-btn">
-                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
+                    <i class="bi bi-check-lg"></i> Verify &amp; Approve
                   </button>
                   <button type="button" (click)="rejectBackendReceipt(receipt.id)" class="reject-btn">
-                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>Reject
+                    <i class="bi bi-x-lg"></i> Reject
                   </button>
                 </div>
               </td>
@@ -197,10 +199,10 @@
               <td>{{ request.requestDate | date:'mediumDate' }}</td>
               <td>
                 <span class="status-badge" [class.receipt-received]="request.convocation?.receiptSubmittedAt" [class.approved]="getRequestOfficeStatus(request, 'Convocation') === 'Approved'" [class.rejected]="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'">
-                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Approved'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Approved</span>
-                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>Rejected</span>
-                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && !request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8M16 7l2 2M13 10l2 2"/></svg>Awaiting Receipt</span>
-                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && request.convocation?.receiptSubmittedAt"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Receipt Received</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Approved'"><i class="bi bi-check-lg"></i> Approved</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Rejected'"><i class="bi bi-x-lg"></i> Rejected</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && !request.convocation?.receiptSubmittedAt"><i class="bi bi-clock-history"></i> Awaiting Receipt</span>
+                  <span *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending' && request.convocation?.receiptSubmittedAt"><i class="bi bi-file-earmark-text"></i> Receipt Received</span>
                 </span>
               </td>
               <td>
@@ -211,7 +213,7 @@
                     class="view-btn"
                     (click)="viewReceipt(request)"
                   >
-                    <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>View
+                    <i class="bi bi-eye"></i> View
                   </button>
 
                   <ng-container *ngIf="getRequestOfficeStatus(request, 'Convocation') === 'Pending'; else reviewedStatus">
@@ -222,7 +224,7 @@
                       (click)="markReceiptReceived(request)"
                       [disabled]="isLoading"
                     >
-                      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M15 3v5h5M9 13h6M9 17h6"/></svg>Mark Receipt Received
+                      <i class="bi bi-file-earmark-check"></i> Mark Receipt Received
                     </button>
 
                     <button
@@ -232,7 +234,7 @@
                       (click)="approveRequest(request)"
                       [disabled]="isLoading"
                     >
-                      <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Verify &amp; Approve
+                      <i class="bi bi-check-lg"></i> Verify &amp; Approve
                     </button>
                   </ng-container>
 

@@ -1,3 +1,5 @@
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css");
+
 :root {
   /* Typography */
   --font-body: "Roboto", Arial, sans-serif;
@@ -760,4 +762,30 @@ code, pre, kbd, samp, .registration-number, .student-id, .reg-number,
 .identifier, .code-value, .student-meta strong, .profile-details strong,
 [class*="registration-number"], [class*="student-id"] {
   font-family: 'Courier New', Courier, monospace;
+}
+
+/* Sidebar Nav Link & Button Icon Styling & Alignment */
+.sidebar nav a,
+.sidebar nav button,
+.sidebar nav .nav-tab-btn,
+.sidebar .logout-link,
+.logout-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.sidebar nav a svg,
+.sidebar nav a i,
+.sidebar nav button svg,
+.sidebar nav button i,
+.sidebar .logout-link svg,
+.sidebar .logout-link i,
+.logout-link svg,
+.logout-link i {
+  flex-shrink: 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 1.15rem !important;
+  vertical-align: middle !important;
 }

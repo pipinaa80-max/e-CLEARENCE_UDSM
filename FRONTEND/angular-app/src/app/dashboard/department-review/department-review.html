@@ -10,7 +10,8 @@
     >
       <div header-actions>
         <button type="button" class="back-btn" (click)="goBack()">
-          ← Back to Dashboard
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="margin-right: 6px;"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
+          <span>Back to Dashboard</span>
         </button>
       </div>
     </app-dashboard-header>
@@ -47,10 +48,12 @@
         <!-- Tab Navigation -->
         <div class="tab-navigation">
             <button class="tab-btn" [class.active]="selectedTab === 'profile'" (click)="selectTab('profile')">
-                👤 Profile
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="margin-right: 6px;"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
+                <span>Profile</span>
             </button>
             <button class="tab-btn" [class.active]="selectedTab === 'approvals'" (click)="selectTab('approvals')">
-                ✅ Approvals
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="margin-right: 6px;"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L7.001 11a.75.75 0 0 0 1.042-.018l4.004-4.5a.75.75 0 0 0-.017-1.042z"/></svg>
+                <span>Approvals</span>
             </button>
         </div>
 

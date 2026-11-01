@@ -18,17 +18,14 @@
         <td>{{ getPhoneNumber(request) }}</td>
         <td>
           <button type="button" class="view-details-btn" (click)="view.emit(request)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
+            <i class="bi bi-eye-fill" style="margin-right: 4px;"></i>
             View Details
           </button>
         </td>
         <td>
           <div class="actions" *ngIf="getOfficeStatus(request) === 'Pending'; else reviewedStatus">
-            <button type="button" class="reject-button" (click)="reject.emit(request)">Reject</button>
-            <button type="button" class="approve-button" (click)="approve.emit(request)">Approve</button>
+            <button type="button" class="reject-button" (click)="reject.emit(request)"><i class="bi bi-x-lg"></i> Reject</button>
+            <button type="button" class="approve-button" (click)="approve.emit(request)"><i class="bi bi-check-lg"></i> Approve</button>
           </div>
           <ng-template #reviewedStatus>
             <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>

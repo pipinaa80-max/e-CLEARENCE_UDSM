@@ -14,10 +14,10 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
          role="alert"
          [attr.aria-label]="toast.title + ': ' + toast.message">
         <div class="toast-icon">
-          <span *ngIf="toast.type === 'success'">✓</span>
-          <span *ngIf="toast.type === 'error'">✕</span>
-          <span *ngIf="toast.type === 'warning'">!</span>
-          <span *ngIf="toast.type === 'info'">ℹ</span>
+          <i *ngIf="toast.type === 'success'" class="bi bi-check-circle-fill"></i>
+          <i *ngIf="toast.type === 'error'" class="bi bi-x-circle-fill"></i>
+          <i *ngIf="toast.type === 'warning'" class="bi bi-exclamation-triangle-fill"></i>
+          <i *ngIf="toast.type === 'info'" class="bi bi-info-circle-fill"></i>
         </div>
         <div class="toast-content">
           <div class="toast-title">{{ toast.title }}</div>

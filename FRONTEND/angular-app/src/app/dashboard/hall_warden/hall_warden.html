@@ -19,7 +19,8 @@
         [class.active]="viewMode === 'all'"
         (click)="setViewMode('all')"
       >
-        <span></span> Dashboard Overview
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+        <span>Dashboard Overview</span>
       </button>
       <button
         type="button"
@@ -27,7 +28,8 @@
         [class.active]="viewMode === 'requests'"
         (click)="setViewMode('requests')"
       >
-        <span></span> Clearance Requests ({{ pendingRequestCount }})
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+        <span>Clearance Requests ({{ pendingRequestCount }})</span>
       </button>
       <button
         type="button"
@@ -35,7 +37,8 @@
         [class.active]="viewMode === 'halls'"
         (click)="setViewMode('halls')"
       >
-        <span></span> Halls &amp; Blocks ({{ halls.length }})
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L8.707 1.5zM13 7.207V13.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V7.207l5-5 5 5z"/></svg>
+        <span>Halls &amp; Blocks ({{ halls.length }})</span>
       </button>
       <button
         type="button"
@@ -43,10 +46,12 @@
         [class.active]="viewMode === 'analytics'"
         (click)="setViewMode('analytics')"
       >
-        <span></span> Hall Analytics
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg>
+        <span>Hall Analytics</span>
       </button>
-      <button type="button" (click)="logout()">
-        Log out
+      <button type="button" class="logout-link" (click)="logout()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 1h-8A1.5 1.5 0 0 0 0 2.5v9A1.5 1.5 0 0 0 1.5 13h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
+        <span>Log out</span>
       </button>
     </nav>
   </aside>
@@ -119,7 +124,7 @@
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon-wrap green">✓</div>
+            <div class="kpi-icon-wrap green"><i class="bi bi-check-lg"></i></div>
             <div class="kpi-info">
               <span class="kpi-label">Room Keys Cleared</span>
               <strong class="kpi-value text-green">{{ keysReturnedCount | number }}</strong>
@@ -581,10 +586,10 @@
               </div>
               <div class="card-actions">
                 <button type="button" class="btn-icon edit" (click)="openEditHallModal(hall)" title="Edit hall details">
-                  ✎ Edit
+                  <i class="bi bi-pencil-square"></i> Edit
                 </button>
                 <button type="button" class="btn-icon delete" (click)="deleteHall(hall)" title="Delete hall">
-                  ✕
+                  <i class="bi bi-trash3-fill"></i>
                 </button>
               </div>
             </div>
@@ -688,7 +693,7 @@
       <div class="board-body board-table-body">
         <!-- EMPTY STATE -->
         <div class="board-empty-state" *ngIf="!filteredRequests.length">
-          <div class="empty-icon">✓</div>
+          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
           <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
           <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Hall Warden.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Hall Warden.' : 'There are currently no student applications awaiting Hall Warden approval.' }}</p>
         </div>
@@ -834,7 +839,7 @@
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
       <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-icon">!</div>
+        <div class="modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <h2>Return Clearance Request</h2>
         <p>Write the reason and action the student must take regarding room key handover or room inspection before clearance can proceed.</p>
 

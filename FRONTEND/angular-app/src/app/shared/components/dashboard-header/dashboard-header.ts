@@ -16,9 +16,7 @@ import { ProjectAdminService } from '../../../core/services/project-admin.servic
           (click)="onToggleSidebar($event)"
           title="Toggle Navigation Menu"
         >
-          <span class="bar"></span>
-          <span class="bar"></span>
-          <span class="bar"></span>
+          <i class="bi bi-list" style="font-size: 1.6rem; color: #ffffff;"></i>
         </button>
 
         <div class="header-titles">
