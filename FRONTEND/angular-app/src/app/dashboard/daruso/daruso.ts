@@ -144,7 +144,7 @@ export class DarusoComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'guilds' | 'analytics' = 'all';
+  viewMode: 'all' | 'requests' | 'guilds' | 'analytics' = 'requests';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;

@@ -18,7 +18,7 @@ type StudentSystemType = 'clearance' | 'transcript';
 interface ProcessStep {
   number: number;
   label: string;
-  office: ClearanceOffice | 'Clearance Offices';
+  office: ClearanceOffice | 'Parallel Offices' | 'Clearance Offices';
   detail: string;
   status: string;
 }
@@ -417,7 +417,7 @@ export class StudentDashboard implements OnInit {
     }
     switch (request.currentStage) {
       case 'Convocation': return 'Convocation';
-      case 'Parallel': return 'Clearance Offices';
+      case 'Parallel': return 'Parallel Offices';
       case 'Department': return 'Department';
       case 'Principal': return 'Principal';
       case 'Finance': return 'Finance';
@@ -462,8 +462,8 @@ export class StudentDashboard implements OnInit {
     }
     steps.push({
       number: 2,
-      label: 'Clearance Offices',
-      office: 'Clearance Offices',
+      label: 'Parallel Offices',
+      office: 'Parallel Offices',
       detail: (this.officeList.join(', ') || 'Games Coach, Hall Warden, USAB, DARUSO, Library, Dean of Students, Smart Card') + '.',
       status: officesStatus
     });

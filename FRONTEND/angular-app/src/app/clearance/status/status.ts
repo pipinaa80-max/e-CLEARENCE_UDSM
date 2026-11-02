@@ -18,7 +18,7 @@ import {
 interface ProcessStep {
   number: number;
   label: string;
-  office: ClearanceOffice | 'Clearance Offices';
+  office: ClearanceOffice | 'Parallel Offices' | 'Clearance Offices';
   detail: string;
   status: string;
 }
@@ -264,7 +264,7 @@ export class ClearanceStatusComponent implements OnInit {
 
     switch (request.currentStage) {
       case 'Convocation':
-        return 'Step 2: Clearance Offices';
+        return 'Step 2: Parallel Offices';
       case 'Parallel':
         return 'Step 3: Department';
       case 'Department':
@@ -392,7 +392,7 @@ export class ClearanceStatusComponent implements OnInit {
       } else if (request.currentStage === 'Parallel') {
         // Check if all offices are approved before proceeding
         if (!this.allClearanceOfficesApproved) {
-          this.toastService.warning('Action Required', 'All clearance offices must approve first.');
+          this.toastService.warning('Action Required', 'All parallel offices must approve first.');
           this.isLoading = false;
           return;
         }
@@ -552,7 +552,7 @@ export class ClearanceStatusComponent implements OnInit {
       case 'Convocation':
         return 'Convocation';
       case 'Parallel':
-        return 'Clearance Offices';
+        return 'Parallel Offices';
       case 'Department':
         return 'Department';
       case 'Principal':
@@ -612,8 +612,8 @@ export class ClearanceStatusComponent implements OnInit {
 
     steps.push({
       number: 2,
-      label: 'Clearance Offices',
-      office: 'Clearance Offices',
+      label: 'Parallel Offices',
+      office: 'Parallel Offices',
       detail: this.officeList.join(', ') + '.',
       status: officesStatus
     });
@@ -722,7 +722,7 @@ export class ClearanceStatusComponent implements OnInit {
   // TYPE CHECK
   // =====================================================
 
-  isClearanceOffice(office: ClearanceOffice | 'Clearance Offices'): office is ClearanceOffice {
+  isClearanceOffice(office: ClearanceOffice | 'Parallel Offices' | 'Clearance Offices'): office is ClearanceOffice {
     return this.officeList.includes(office as ClearanceOffice);
   }
 }

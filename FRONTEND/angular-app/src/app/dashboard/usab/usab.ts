@@ -77,7 +77,7 @@ export class UsabComponent {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'hostels' | 'analytics' = 'analytics';
+  viewMode: 'overview' | 'requests' | 'hostels' | 'analytics' = 'requests';
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';

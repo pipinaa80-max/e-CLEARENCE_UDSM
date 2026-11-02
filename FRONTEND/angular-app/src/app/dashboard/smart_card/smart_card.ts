@@ -121,7 +121,7 @@ export class SmartCardComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'stations' | 'analytics' = 'analytics';
+  viewMode: 'overview' | 'requests' | 'stations' | 'analytics' = 'requests';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;

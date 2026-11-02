@@ -226,7 +226,7 @@
         *ngIf="currentRequest.currentStage === 'Parallel'"
         class="waiting-card"
       >
-        <h2>Step 2: Clearance Offices</h2>
+        <h2>Step 2: Parallel Offices</h2>
         <p>Your clearance request is being reviewed independently by the following offices.</p>
 
         <div class="approval-list">
@@ -254,7 +254,7 @@
         </div>
 
         <div *ngIf="allClearanceOfficesApproved" class="step-action">
-          <p>All clearance offices have approved your request.</p>
+          <p>All parallel offices have approved your request.</p>
           <span class="success-text">✓ Step 2 completed</span>
         </div>
         <div *ngIf="!allClearanceOfficesApproved" class="step-action">

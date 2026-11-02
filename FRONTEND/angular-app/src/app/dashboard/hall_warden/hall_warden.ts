@@ -143,7 +143,7 @@ export class HallWardenComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'halls' | 'analytics' = 'analytics';
+  viewMode: 'overview' | 'requests' | 'halls' | 'analytics' = 'requests';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;

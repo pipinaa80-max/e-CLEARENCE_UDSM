@@ -121,7 +121,7 @@ export class LibraryDashboard {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'sections' | 'analytics' = 'analytics';
+  viewMode: 'overview' | 'requests' | 'sections' | 'analytics' = 'requests';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;

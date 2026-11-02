@@ -122,7 +122,7 @@ export class GamesCoachComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'facilities' | 'analytics' = 'analytics';
+  viewMode: 'overview' | 'requests' | 'facilities' | 'analytics' = 'requests';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
