@@ -143,7 +143,7 @@ export class HallWardenComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'halls' | 'analytics' = 'all';
+  viewMode: 'overview' | 'requests' | 'halls' | 'analytics' = 'analytics';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
@@ -183,8 +183,9 @@ export class HallWardenComponent {
     this.loadHalls();
   }
 
-  setViewMode(mode: 'all' | 'requests' | 'halls' | 'analytics'): void {
+  setViewMode(mode: 'overview' | 'requests' | 'halls' | 'analytics'): void {
     this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   loadHalls(): void {

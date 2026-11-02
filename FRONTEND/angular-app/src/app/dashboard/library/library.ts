@@ -121,7 +121,7 @@ export class LibraryDashboard {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'sections' | 'analytics' = 'all';
+  viewMode: 'overview' | 'requests' | 'sections' | 'analytics' = 'analytics';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
@@ -162,8 +162,9 @@ export class LibraryDashboard {
     this.loadSections();
   }
 
-  setViewMode(mode: 'all' | 'requests' | 'sections' | 'analytics'): void {
+  setViewMode(mode: 'overview' | 'requests' | 'sections' | 'analytics'): void {
     this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   loadSections(): void {

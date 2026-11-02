@@ -157,6 +157,7 @@
           <ng-container *ngIf="!isTranscriptSystem">
             <a *ngIf="!currentRequest && clearanceStatus !== 'Completed'" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
             <a *ngIf="clearanceStatus === 'Completed'" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
+            <a *ngIf="clearanceStatus === 'Completed'" routerLink="/transcript/process" class="primary-button">Start Transcript Process</a>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">
             <a routerLink="/transcript" class="secondary-button">{{ currentTranscriptRequest ? 'Manage Transcript' : 'Start Transcript Request' }}</a>
@@ -291,9 +292,14 @@
       >
         <h2>Clearance Completed</h2>
         <p>Congratulations! All clearance stages have been successfully approved.</p>
-        <a routerLink="/clearance/report" class="approval-button">
-          View Clearance Report
-        </a>
+        <div class="completed-actions" style="display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap;">
+          <a routerLink="/clearance/report" class="secondary-button">
+            View Clearance Report
+          </a>
+          <a routerLink="/transcript/process" class="approval-button" style="margin-top: 0;">
+            Start Transcript Process
+          </a>
+        </div>
       </section>
 
     </section>

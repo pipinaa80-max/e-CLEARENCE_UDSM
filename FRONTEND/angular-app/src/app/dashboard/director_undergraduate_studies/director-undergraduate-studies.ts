@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { ClearanceOffice, ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { AuthService } from '../../core/services/auth.service';
@@ -92,7 +92,7 @@ export interface RegisteredYearBarItem {
 @Component({
   selector: 'app-director-undergraduate-studies',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './director-undergraduate-studies.html',
   styleUrl: './director-undergraduate-studies.css'
 })

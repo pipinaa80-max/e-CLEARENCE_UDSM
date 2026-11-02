@@ -122,7 +122,7 @@ export class GamesCoachComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'facilities' | 'analytics' = 'all';
+  viewMode: 'overview' | 'requests' | 'facilities' | 'analytics' = 'analytics';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
@@ -161,8 +161,9 @@ export class GamesCoachComponent {
     this.loadFacilities();
   }
 
-  setViewMode(mode: 'all' | 'requests' | 'facilities' | 'analytics'): void {
+  setViewMode(mode: 'overview' | 'requests' | 'facilities' | 'analytics'): void {
     this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   loadFacilities(): void {

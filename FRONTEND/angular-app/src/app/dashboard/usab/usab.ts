@@ -77,7 +77,7 @@ export class UsabComponent {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'hostels' | 'analytics' = 'all';
+  viewMode: 'overview' | 'requests' | 'hostels' | 'analytics' = 'analytics';
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
@@ -89,8 +89,9 @@ export class UsabComponent {
   hoveredHostelName: string | null = null;
   hoveredSliceLabel: string | null = null;
 
-  setViewMode(mode: 'all' | 'requests' | 'hostels' | 'analytics'): void {
+  setViewMode(mode: 'overview' | 'requests' | 'hostels' | 'analytics'): void {
     this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   searchTerm = '';

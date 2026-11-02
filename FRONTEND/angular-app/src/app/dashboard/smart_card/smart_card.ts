@@ -121,7 +121,7 @@ export class SmartCardComponent {
 
   readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'stations' | 'analytics' = 'all';
+  viewMode: 'overview' | 'requests' | 'stations' | 'analytics' = 'analytics';
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
@@ -161,8 +161,9 @@ export class SmartCardComponent {
     this.loadStations();
   }
 
-  setViewMode(mode: 'all' | 'requests' | 'stations' | 'analytics'): void {
+  setViewMode(mode: 'overview' | 'requests' | 'stations' | 'analytics'): void {
     this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   loadStations(): void {
