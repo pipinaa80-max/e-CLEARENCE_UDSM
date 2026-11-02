@@ -10,15 +10,37 @@
       </div>
     </div>
     <nav>
-      <a (click)="setTab('overview')" [class.active]="activeTab === 'overview'">Overview</a>
-      <a (click)="setTab('users')" [class.active]="activeTab === 'users'">User Management</a>
-      <a (click)="setTab('clearance')" [class.active]="activeTab === 'clearance'">Clearance Requests</a>
-      <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">Data Upload</a>
-      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">Institutional Dashboards</a>
-      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">Institutional Theme</a>
-      <a (click)="setTab('awards')" [class.active]="activeTab === 'awards'">Academic Awards</a>
+      <a (click)="setTab('overview')" [class.active]="activeTab === 'overview'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+        <span>Overview</span>
+      </a>
+      <a (click)="setTab('users')" [class.active]="activeTab === 'users'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8zm-7.978-1A4.001 4.001 0 0 1 11 11c2.686 0 4.34 1.282 4.933 2H7.022zM10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-5.783 6a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-2.036 8a5.205 5.205 0 0 1 3.52-1.802A3.018 3.018 0 0 0 5 12c-2.022 0-3.473.818-4.062 1.621A.498.498 0 0 0 .408 14h3.809a5.16 5.16 0 0 1-.034-1z"/></svg>
+        <span>User Management</span>
+      </a>
+      <a (click)="setTab('clearance')" [class.active]="activeTab === 'clearance'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+        <span>Clearance Requests</span>
+      </a>
+      <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+        <span>Data Upload</span>
+      </a>
+      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v4h4V8zm0 5h-4v1h3a1 1 0 0 0 1-1v-1zm-5 1v-4H1v4a1 1 0 0 0 1 1h8zM1 8v4h9V8H1zm0-1h9V4H1v3z"/></svg>
+        <span>Institutional Dashboards</span>
+      </a>
+      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm4 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM5.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm.5 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM8 2C4.135 2 1 4.691 1 8c0 1.483.632 2.83 1.69 3.821a.5.5 0 0 1 .132.392c-.104 1.028-.415 2.1-.8 2.91 1.733-.314 2.875-.783 3.456-1.077a.5.5 0 0 1 .425-.027c.683.27 1.428.42 2.097.42 3.865 0 7-2.691 7-6s-3.135-6-7-6z"/></svg>
+        <span>Institutional Theme</span>
+      </a>
+      <a (click)="setTab('awards')" [class.active]="activeTab === 'awards'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.669.864 8 0 6.331.864l-1.858.282-.842 1.68-1.337 1.32L2.6 6l-.306 1.854 1.337 1.32.842 1.68 1.858.282L8 12l1.669-.864 1.858-.282.842-1.68 1.337-1.32L13.4 6l.306-1.854-1.337-1.32-.842-1.68L9.669.864zm-3.81 12.35.282 1.858L8 16l1.858-.864.282-1.858-2.28 1.072-2.001-1.136z"/></svg>
+        <span>Academic Awards</span>
+      </a>
       <button type="button" class="logout-link" (click)="logout()">
-        Log out
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 1h-8A1.5 1.5 0 0 0 0 2.5v9A1.5 1.5 0 0 0 1.5 13h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
+        <span>Log out</span>
       </button>
     </nav>
   </aside>
@@ -39,26 +61,95 @@
     <!-- Overview Tab -->
     <div *ngIf="activeTab === 'overview'">
       <div class="stats-grid">
-        <article class="stat-card">
-          <span>Total Students</span><strong>{{ stats.totalStudents }}</strong>
+        <article class="stat-card students clickable" (click)="navigateToStudents()" title="Click to view and filter Students">
+          <div class="stat-header">
+            <span>Total Students</span>
+            <div class="stat-icon">
+              <i class="bi bi-people-fill"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.totalStudents }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card">
-          <span>Clearance Requests</span><strong>{{ stats.totalRequests }}</strong>
+
+        <article class="stat-card staff clickable" (click)="navigateToStaff()" title="Click to view and filter Staff members">
+          <div class="stat-header">
+            <span>Total Staff</span>
+            <div class="stat-icon">
+              <i class="bi bi-person-badge-fill"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.totalStaff }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card success">
-          <span>Completed</span><strong>{{ stats.completed }}</strong>
+
+        <article class="stat-card requests clickable" (click)="navigateToClearanceRequests()" title="Click to view Clearance Requests">
+          <div class="stat-header">
+            <span>Clearance Requests</span>
+            <div class="stat-icon">
+              <i class="bi bi-file-earmark-text-fill"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.totalRequests }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card warning">
-          <span>Pending</span><strong>{{ stats.pending }}</strong>
+
+        <article class="stat-card success clickable" (click)="navigateToClearanceRequests('APPROVED')" title="Click to view Completed / Approved Requests">
+          <div class="stat-header">
+            <span>Completed</span>
+            <div class="stat-icon">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.completed }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card danger">
-          <span>Rejected</span><strong>{{ stats.rejected }}</strong>
+
+        <article class="stat-card warning clickable" (click)="navigateToClearanceRequests('PENDING')" title="Click to view Pending Requests">
+          <div class="stat-header">
+            <span>Pending</span>
+            <div class="stat-icon">
+              <i class="bi bi-clock-history"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.pending }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card warning">
-          <span>Pending Activation</span><strong>{{ stats.pendingUsers }}</strong>
+
+        <article class="stat-card danger clickable" (click)="navigateToClearanceRequests('REJECTED')" title="Click to view Rejected Requests">
+          <div class="stat-header">
+            <span>Rejected</span>
+            <div class="stat-icon">
+              <i class="bi bi-x-circle-fill"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.rejected }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
-        <article class="stat-card">
-          <span>Total Staff</span><strong>{{ stats.totalStaff }}</strong>
+
+        <article class="stat-card activation clickable" (click)="navigateToPendingActivation()" title="Click to view Inactive / Pending Activation Users">
+          <div class="stat-header">
+            <span>Pending Activation</span>
+            <div class="stat-icon">
+              <i class="bi bi-person-exclamation"></i>
+            </div>
+          </div>
+          <div class="stat-body">
+            <strong>{{ stats.pendingUsers }}</strong>
+            <span class="stat-arrow"><i class="bi bi-arrow-right"></i></span>
+          </div>
         </article>
       </div>
     </div>
@@ -71,6 +162,7 @@
           <input type="text" [(ngModel)]="userSearchTerm" placeholder="Search users..." class="search-input">
           <select [(ngModel)]="userRoleFilter" name="userRoleFilter" title="Filter users by role" class="filter-select">
             <option value="">All roles</option>
+            <option value="STAFF">All Staff</option>
             <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
           </select>
           <select [(ngModel)]="userStatusFilter" name="userStatusFilter" title="Filter users by status" class="filter-select">
@@ -111,34 +203,34 @@
               <input type="email" [(ngModel)]="newUser.email" name="email" required>
             </div>
             <div class="form-group">
-              <label>Reg Number</label>
-              <input type="text" [(ngModel)]="newUser.registrationNumber" name="regNo">
+              <label>Role</label>
+              <select [(ngModel)]="newUser.role" name="role" (change)="onRoleChange()">
+                <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>{{ idFieldLabel }}</label>
+              <input type="text" [(ngModel)]="newUser.registrationNumber" name="regNo" placeholder="{{ idFieldPlaceholder }}">
             </div>
             <div class="form-group">
               <label>Password</label>
               <input type="password" [(ngModel)]="newUser.password" name="password" required>
             </div>
-            <div class="form-group">
-              <label>Role</label>
-              <select [(ngModel)]="newUser.role" name="role">
-                <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
-              </select>
-            </div>
-            <div class="form-group">
+            <div class="form-group" *ngIf="showCollege">
               <label>College</label>
               <select [(ngModel)]="newUser.college" name="college" (change)="onCollegeChange()">
                 <option value="">Select College</option>
                 <option *ngFor="let college of collegeList" [value]="college">{{ college }}</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" *ngIf="showDepartment">
               <label>Department</label>
               <select [(ngModel)]="newUser.department" name="department" (change)="onDepartmentChange()">
                 <option value="">Select Department</option>
                 <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" *ngIf="showProgramme">
               <label>Programme</label>
               <select [(ngModel)]="newUser.programme" name="programme">
                 <option value="">Select Programme</option>
@@ -146,6 +238,13 @@
               </select>
             </div>
           </div>
+
+          <!-- Dynamic Role Guidance Banner -->
+          <div class="role-hint-banner {{ isStudentRole ? 'student-hint' : 'staff-hint' }}">
+            <i class="bi {{ isStudentRole ? 'bi-mortarboard-fill' : 'bi-person-badge-fill' }}"></i>
+            <span>{{ roleBadgeDescription }}</span>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="btn-success" [disabled]="!userForm.form.valid">Save User</button>
           </div>
@@ -235,20 +334,35 @@
 
     <!-- Data Upload Tab -->
     <div *ngIf="activeTab === 'upload'" class="tab-content">
-      <h3>Bulk Data Population</h3>
-      <div class="upload-container">
-        <p>Upload a CSV or Excel (.xlsx) file to register multiple students at once.</p>
-        <div class="file-input-group">
-          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls">
-          <button class="btn-primary" [disabled]="!selectedFile" (click)="uploadFile()">Upload & Process</button>
+      <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="margin: 0;">Bulk Data Upload &amp; Clearance Registration</h3>
+          <p style="margin: 4px 0 0; color: #4b5563; font-size: 0.85rem;">Download the registration template or upload your Excel/CSV file to register users.</p>
         </div>
-        <div class="file-input-group">
-          <button class="btn-primary" (click)="importBrowserData()">Import existing browser data</button>
-          <span>Copies this project’s localStorage records into clearance_db.</span>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-primary" (click)="downloadSampleExcel()">
+            ⬇ Download Excel Template (.xlsx)
+          </button>
+          <button type="button" class="btn-secondary" (click)="downloadSampleCsv()">
+            ⬇ Download CSV Template (.csv)
+          </button>
         </div>
-        <div class="format-info">
-          <h5>Expected File Columns:</h5>
-          <code>FirstName, MiddleName, LastName, Email, RegistrationNumber, Password, Role, Department, Programme, College, YearOfStudy</code>
+      </div>
+
+      <div class="upload-container" style="margin-top: 18px;">
+        <p style="color: #374151; font-size: 0.9rem; line-height: 1.5;">
+          Upload any CSV or Excel (<code>.xlsx</code>) file to register students and clearance staff into the system. The upload processor automatically detects and trims columns to match the manual registration fields, safely filtering out any unnecessary extra columns.
+        </p>
+
+        <div class="file-input-group" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 18px 0; padding: 16px; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px;">
+          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.88rem;">
+          <button class="btn-primary" [disabled]="!selectedFile || isUploading" (click)="uploadFile()" style="padding: 9px 20px; font-weight: 600;">
+            <span *ngIf="!isUploading">⬆ Upload &amp; Process</span>
+            <span *ngIf="isUploading">Processing Upload...</span>
+          </button>
+          <span *ngIf="selectedFile" style="font-size: 0.85rem; color: #0284c7; font-weight: 600;">
+            ✓ Selected: {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
+          </span>
         </div>
       </div>
     </div>

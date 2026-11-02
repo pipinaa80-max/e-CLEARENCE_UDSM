@@ -30,6 +30,7 @@ export class DeanOfStudentsComponent implements OnInit {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
+  viewMode: 'requests' | 'analytics' = 'requests';
   selectedRequest: ClearanceRequest | null = null;
   detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
@@ -76,6 +77,11 @@ export class DeanOfStudentsComponent implements OnInit {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  setViewMode(mode: 'requests' | 'analytics'): void {
+    this.viewMode = mode;
+    this.sidebarOpen = false;
   }
 
   // Cache for student data to avoid repeated lookups
@@ -491,17 +497,20 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   async reject(): Promise<void> {
+    const request = this.selectedRequest;
+    if (!request || !this.rejectionComment.trim()) return;
+
     this.isLoading = true;
     const staff = this.authService.getCurrentUser();
 
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
+    if (!staff) {
       this.isLoading = false;
       return;
     }
 
     try {
       if (!await this.clearanceService.rejectRequest(
-          this.selectedRequest.id,
+          request.id,
           'Dean of Students',
           staff.fullName || 'Dean of Students',
           this.rejectionComment
@@ -511,13 +520,13 @@ export class DeanOfStudentsComponent implements OnInit {
       this.loadData();
 
       this.notificationService.createNotification(
-          this.selectedRequest.studentId,
+          request.studentId,
           'Dean of Students requires action',
           this.rejectionComment,
           'warning'
       );
 
-      this.message = `✅ Student ${this.getStudentName(this.selectedRequest)} has been notified about the required action.`;
+      this.message = `✅ Student ${this.getStudentName(request)} has been notified about the required action.`;
 
       this.selectedRequest = null;
       this.rejectionComment = '';

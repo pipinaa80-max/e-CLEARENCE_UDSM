@@ -50,39 +50,86 @@
 .actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
-.reject-button,
-.approve-button {
+.view-details-btn,
+.compact-view {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 34px;
-  padding: 0 11px;
+  padding: 0 13px;
+  border: 1.5px solid #0284c7;
   border-radius: 7px;
-  font-size: 12px;
+  background: #f0f9ff;
+  color: #0284c7;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-details-btn:hover,
+.compact-view:hover {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+  transform: translateY(-1px);
+}
+
+.view-details-btn svg {
+  flex-shrink: 0;
 }
 
 .reject-button {
-  border: 1px solid #c73535;
-  background: #ffffff;
-  color: #c73535;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1.5px solid #dc2626;
+  border-radius: 7px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .reject-button:hover {
-  background: #c73535;
+  background: #dc2626;
   color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
 }
 
 .approve-button {
-  border: 1px solid #176b37;
-  background: #176b37;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1.5px solid #16a34a;
+  border-radius: 7px;
+  background: #16a34a;
   color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .approve-button:hover {
-  background: #1a6b2e;
-  color: #ffffff;
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+  transform: translateY(-1px);
 }
 
 .reviewed-status {

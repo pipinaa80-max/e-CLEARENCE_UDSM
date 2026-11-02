@@ -39,6 +39,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             return new UsernameNotFoundException("User not found with identifier: " + identifier);
         });
 
+        // Auto-heal superuser role if it was altered
+        if ("superuser@admin.local".equalsIgnoreCase(user.getEmail()) && user.getRole() != com.UDSM.BACKEND.Model.ERole.SUPERUSER) {
+            log.warn("⚠️ Superuser account had incorrect role {}. Auto-healing role to SUPERUSER.", user.getRole());
+            user.setRole(com.UDSM.BACKEND.Model.ERole.SUPERUSER);
+            user.setActive(true);
+            user = userRepository.save(user);
+        }
+
         if (!user.isActive() || com.UDSM.BACKEND.config.InstitutionalSuspensionChecker.isInstitutionalAdminSuspended(user, userRepository)) {
             log.warn("⛔ User or institutional admin is suspended for: {}", user.getEmail());
             throw new org.springframework.security.authentication.DisabledException("Institutional Access Suspended: Access to all institutional staff and dashboards has been suspended.");

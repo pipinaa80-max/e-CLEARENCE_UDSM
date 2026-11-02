@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { normalizeUdsmBrandColor } from '../config/udsm-brand-colors';
+import { ConfigService } from './config.service';
 
 /** Converts local asset paths and workspace paths into URLs served by Angular. */
 export function normalizeBrandAssetUrl(value: string | null | undefined, fallback = ''): string {
@@ -47,7 +48,10 @@ export interface ProjectConfig {
 @Injectable({ providedIn: 'root' })
 export class ProjectAdminService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8090/api';
+  private readonly configService = inject(ConfigService);
+  private get apiUrl(): string {
+    return `${this.configService.apiUrl}/control-plane`;
+  }
 
   private headers(): HttpHeaders {
     const token = localStorage.getItem('udsm-auth-token')?.replace(/^"|"$/g, '');

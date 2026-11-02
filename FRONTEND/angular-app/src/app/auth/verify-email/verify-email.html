@@ -1,6 +1,10 @@
 <main class="verification-page">
   <section class="verification-card" aria-live="polite">
-    <div class="icon" [class.error]="error">{{ error ? '!' : (isLoading ? '...' : '✓') }}</div>
+    <div class="icon" [class.error]="error">
+      <i *ngIf="error" class="bi bi-exclamation-lg"></i>
+      <i *ngIf="!error && isLoading" class="bi bi-hourglass-split"></i>
+      <i *ngIf="!error && !isLoading" class="bi bi-check-lg"></i>
+    </div>
     <h1>{{ isLoading ? 'Verifying email' : (error ? 'Verification failed' : 'Email verified') }}</h1>
     <p>{{ message }}</p>
     <button *ngIf="!isLoading" type="button" (click)="goToLogin()">Go to login</button>

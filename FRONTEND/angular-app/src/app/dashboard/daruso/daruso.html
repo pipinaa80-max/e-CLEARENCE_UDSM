@@ -1,258 +1,485 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
 
-  <div
-    class="sidebar-overlay"
-    *ngIf="sidebarOpen"
-    (click)="closeSidebar()"
-  ></div>
-
   <!-- SIDEBAR -->
-
   <aside class="sidebar">
-
     <div class="brand">
       <a routerLink="/">
-        <img
-          src="/udsm-logo.png"
-          alt="Institutional Logo"
-        />
+        <img src="/udsm-logo.png" alt="Institutional Logo" />
       </a>
       <div>
         <strong>DARUSO</strong>
         <small>Clearance Workspace</small>
       </div>
-
     </div>
 
-
     <nav>
-
-      <a
-        routerLink="/dashboard/daruso"
-        routerLinkActive="active"
-        (click)="closeSidebar()"
-      >
-        Pending Requests
-      </a>
-
       <button
         type="button"
-        (click)="logout()"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
       >
-        Log out
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+        <span>Clearance Requests ({{ pendingRequestCount }})</span>
       </button>
-
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'guilds'"
+        (click)="setViewMode('guilds')"
+      >
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.669.864 8 0 6.331.864l-1.858.282-.842 1.68-1.337 1.32L2.6 6l-.306 1.854 1.337 1.32.842 1.68 1.858.282L8 12l1.669-.864 1.858-.282.842-1.68 1.337-1.32L13.4 6l.306-1.854-1.337-1.32-.842-1.68L9.669.864zm-3.81 12.35.282 1.858L8 16l1.858-.864.282-1.858-2.28 1.072-2.001-1.136z"/></svg>
+        <span>Student Guilds ({{ guilds.length }})</span>
+      </button>
+      <button type="button" class="logout-link" (click)="logout()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 1h-8A1.5 1.5 0 0 0 0 2.5v9A1.5 1.5 0 0 0 1.5 13h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
+        <span>Log out</span>
+      </button>
     </nav>
-
   </aside>
 
-
   <!-- MAIN CONTENT -->
-
   <main class="content">
-
     <app-dashboard-header
-      eyebrow="Clearance Office"
+      eyebrow="Parallel Office"
       title="DARUSO Approval"
-      subtitle="Review student clearance applications and approve or reject requests."
+      subtitle="Review student government dues, union asset return, and approve student clearance requests."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="count">
-        <strong>{{ pendingRequestCount }}</strong>
-        <small>Pending</small>
-      </div>
     </app-dashboard-header>
 
-
     <!-- MESSAGE -->
+    <p class="message" *ngIf="message">{{ message }}</p>
 
-    <p
-      class="message"
-      *ngIf="message"
-    >
-      {{ message }}
-    </p>
-
-
-    <!-- FILTER BAR -->
-
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-
-      <div class="search-box">
-
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
-
+    <!-- GUILDS DIRECTORY BOARD (Shown in 'all' or 'guilds') -->
+    <section class="dashboard-board" id="guilds-section" *ngIf="viewMode === 'guilds'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Guilds &amp; Union Chapters Directory</h2>
+            <p>Manage collegiate guild sub-governments, campus secretariats, student welfare committees, and minister contacts.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="guildSearchTerm"
+              placeholder="Search guild chapter, minister, or college..."
+              aria-label="Search guilds"
+            />
+          </div>
+          <button type="button" class="action-btn secondary" (click)="resetGuilds()" title="Reset to standard university guilds">
+            Restore Defaults
+          </button>
+          <button type="button" class="action-btn primary" (click)="openAddGuildModal()">
+            + Add New Guild
+          </button>
+        </div>
       </div>
 
-
-      <select aria-label="Filter requests by status" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">
-          Pending
-        </option>
-        <option value="Approved">
-          Approved
-        </option>
-        <option value="Rejected">
-          Rejected
-        </option>
-      </select>
-
-    </section>
-
-
-    <!-- EMPTY STATE -->
-
-    <section
-      class="empty-state"
-      *ngIf="!filteredRequests.length"
-    >
-
-      <div class="empty-icon">
-        —
-      </div>
-
-      <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}
-      </h2>
-
-      <p>
-        {{ searchTerm ? 'Try another registration number, student name or programme.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}
-      </p>
-
-    </section>
-
-
-    <!-- REQUEST LIST -->
-
-    <section class="request-table-wrap" *ngIf="filteredRequests.length">
-      <table class="request-table">
-        <thead>
-          <tr>
-            <th scope="col">Registration Number</th>
-            <th scope="col">Full Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Phone Number</th>
-            <th scope="col">Programme</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let request of paginatedRequests">
-            <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="student-name">{{ getStudentName(request) }}</td>
-            <td>{{ getStudentEmail(request) }}</td>
-            <td>{{ getStudentPhone(request) }}</td>
-            <td>{{ getStudentProgramme(request) }}</td>
-            <td>
-              <div class="actions">
-                <ng-container *ngIf="getRequestOfficeStatus(request, 'DARUSO') === 'Pending'; else reviewedStatus">
-                <button
-                  type="button"
-                  class="reject-button"
-                  (click)="openRejectForm(request)"
-                  [disabled]="processingRequests.has(request.id)"
-                >
-                  Reject
-                </button>
-                <button
-                  type="button"
-                  class="approve-button"
-                  (click)="approve(request)"
-                  [disabled]="processingRequests.has(request.id)"
-                >
-                  {{ processingRequests.has(request.id) ? 'Processing...' : 'Approve' }}
-                </button>
-                </ng-container>
-                <ng-template #reviewedStatus>
-                  <span class="reviewed-status">{{ getRequestOfficeStatus(request, 'DARUSO') }}</span>
-                </ng-template>
+      <div class="board-body">
+        <!-- GUILDS GRID -->
+        <div class="hostels-grid" *ngIf="filteredGuilds.length">
+          <div class="hostel-card compact" *ngFor="let guild of filteredGuilds">
+            <div class="hostel-card-header">
+              <div class="header-main">
+                <h3>{{ guild.name }}</h3>
+                <span class="location-badge" *ngIf="guild.category"> {{ guild.category }}</span>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+              <div class="card-actions">
+                <button type="button" class="btn-icon edit" (click)="openEditGuildModal(guild)" title="Edit guild details">
+                  <i class="bi bi-pencil-square"></i> Edit
+                </button>
+                <button type="button" class="btn-icon delete" (click)="deleteGuild(guild)" title="Delete guild">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </div>
+            </div>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+            <!-- COMPACT QUICK INFO -->
+            <div class="compact-info-row">
+              <span class="compact-item" *ngIf="guild.capacity">
+                <strong>{{ guild.capacity | number }}</strong> members
+              </span>
+              <span class="compact-dot" *ngIf="guild.capacity && guild.location">•</span>
+              <span class="compact-item" *ngIf="guild.location">
+                📍 {{ guild.location }}
+              </span>
+              <span class="compact-dot" *ngIf="guild.committees.length">•</span>
+              <span class="compact-item units-count" *ngIf="guild.committees.length">
+                {{ guild.committees.length }} {{ guild.committees.length === 1 ? 'Committee' : 'Committees' }}
+              </span>
+            </div>
 
+            <!-- EXPANDABLE DETAILS -->
+            <div class="hostel-expanded-details" *ngIf="isGuildExpanded(guild.id)">
+              <p class="hostel-desc" *ngIf="guild.description">{{ guild.description }}</p>
 
-    <!-- REJECTION MODAL -->
+              <div class="hostel-meta-grid">
+                <div class="meta-item" *ngIf="guild.capacity">
+                  <span class="meta-label">Member Population</span>
+                  <strong>{{ guild.capacity | number }} students</strong>
+                </div>
+                <div class="meta-item" *ngIf="guild.leaderName">
+                  <span class="meta-label">Minister / Leader</span>
+                  <strong>{{ guild.leaderName }}</strong>
+                </div>
+                <div class="meta-item" *ngIf="guild.leaderContact">
+                  <span class="meta-label">Contact</span>
+                  <span>{{ guild.leaderContact }}</span>
+                </div>
+                <div class="meta-item" *ngIf="guild.location">
+                  <span class="meta-label">Office Location</span>
+                  <span>{{ guild.location }}</span>
+                </div>
+              </div>
 
-    <section
-      class="reject-modal"
-      *ngIf="selectedRequest"
-    >
+              <!-- COMMITTEES TAGS -->
+              <div class="units-breakdown" *ngIf="guild.committees && guild.committees.length">
+                <span class="unit-title">Sub-Committees &amp; Desks:</span>
+                <div class="tags-container">
+                  <span class="tag block-tag" *ngFor="let c of guild.committees">{{ c }}</span>
+                </div>
+              </div>
+            </div>
 
-      <div class="modal-card">
-
-        <div class="modal-icon">
-          !
+            <!-- VIEW MORE / VIEW LESS TOGGLE -->
+            <div class="card-footer-toggle">
+              <button
+                type="button"
+                class="view-more-btn"
+                (click)="toggleGuildDetails(guild.id)"
+              >
+                {{ isGuildExpanded(guild.id) ? 'View Less ▲' : 'View More ▼' }}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <h2>
-          Return Clearance Request
-        </h2>
+        <div class="board-empty-state" *ngIf="!filteredGuilds.length">
+          <div class="empty-icon"></div>
+          <h2>No Student Guilds Found</h2>
+          <p>No guild matches your search criteria. Click "+ Add New Guild" to create one.</p>
+        </div>
+      </div>
+    </section>
 
-        <p>
-          Write the reason and action the student
-          must take before the clearance can proceed.
-        </p>
+    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
+    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'requests'">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications, verify DARUSO dues &amp; government property clearance, and approve or return requests.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search student, registration number or programme..."
+              aria-label="Search requests"
+            />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
 
+      <div class="board-body board-table-body">
+        <!-- EMPTY STATE -->
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}</p>
+        </div>
 
-        <label>
-          Reason for Rejection
-        </label>
+        <!-- REQUEST LIST TABLE -->
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'DARUSO'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+          ></app-parallel-office-request-table>
+        </div>
 
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+            &larr; Previous
+          </button>
+          <span class="page-info">
+            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
+          </span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+            Next &rarr;
+          </button>
+        </div>
+      </div>
+    </section>
 
+    <!-- STUDENT DARUSO DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
+
+        <div class="student-modal-body">
+          <!-- DARUSO UNION DUES DETAILS -->
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <span class="section-icon"></span>
+              <h4>DARUSO Student Union Verification</h4>
+            </div>
+
+            <div class="residence-status-pill hostel">
+              <strong>Guild Affiliation:</strong> {{ getStudentGuildBranch(viewingRequest) }}
+            </div>
+
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Collegiate Guild</span>
+                <strong class="detail-value text-primary">{{ getStudentGuildBranch(viewingRequest) }}</strong>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Union Dues Status</span>
+                <strong class="detail-value text-accent">{{ getStudentDuesStatus(viewingRequest) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACADEMIC & INSTITUTIONAL INFO -->
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONTACT DETAILS -->
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DARUSO CLEARANCE STATUS -->
+          <div class="detail-section">
+            <h4>DARUSO Clearance Status</h4>
+            <div class="office-status-row">
+              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'DARUSO') }}</strong></span>
+              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
+            Close
+          </button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              Reject / Return
+            </button>
+            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              Approve DARUSO Clearance
+            </button>
+          </div>
+        </footer>
+      </div>
+    </section>
+
+    <!-- REJECTION MODAL -->
+    <section class="reject-modal" *ngIf="selectedRequest">
+      <div class="modal-card">
+        <div class="modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <h2>Return Clearance Request</h2>
+        <p>Write the reason and action the student must take regarding DARUSO union dues or liabilities before clearance can proceed.</p>
+
+        <label>Reason for Rejection</label>
         <textarea
           [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
+          placeholder="Enter reason e.g. unpaid union annual dues, unreturned guild property, or pending committee handover..."
         ></textarea>
 
-
         <div class="modal-actions">
-
           <button
             type="button"
             class="cancel-button"
             (click)="selectedRequest = null"
-            [disabled]="processingRequests.has(selectedRequest.id)"
           >
             Cancel
           </button>
-
 
           <button
             type="button"
             class="return-button"
             (click)="reject()"
-            [disabled]="!rejectionComment.trim() || processingRequests.has(selectedRequest.id)"
+            [disabled]="!rejectionComment.trim()"
           >
-            {{ processingRequests.has(selectedRequest.id) ? 'Processing...' : 'Send Reason to Student' }}
+            Send Reason to Student
           </button>
-
         </div>
-
       </div>
-
     </section>
-  </main>
 
+    <!-- GUILD ADD/EDIT MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="showGuildModal" (click)="closeGuildModal()">
+      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div>
+            <h3>{{ editingGuildId ? 'Edit Guild Chapter' : 'Add New Guild Chapter' }}</h3>
+            <p>{{ editingGuildId ? 'Update details for this student union chapter.' : 'Register a new collegiate guild chapter in the system.' }}</p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeGuildModal()">✕</button>
+        </header>
+
+        <form (ngSubmit)="saveGuild()" class="hostel-modal-form">
+          <div class="form-row">
+            <label class="form-field">
+              <span>Guild Chapter Name *</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.name"
+                name="guildName"
+                placeholder="e.g. DARUSO CoICT Guild..."
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Category</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.category"
+                name="guildCategory"
+                placeholder="e.g. Collegiate Guild, Cabinet, Secretariat..."
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Student Member Population</span>
+              <input
+                type="number"
+                min="0"
+                [(ngModel)]="guildForm.capacity"
+                name="guildCapacity"
+                placeholder="e.g. 3500"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Minister / Representative Name</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.leaderName"
+                name="guildLeaderName"
+                placeholder="e.g. Minister M. Kassim"
+              />
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="form-field">
+              <span>Contact (Phone/Email)</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.leaderContact"
+                name="guildLeaderContact"
+                placeholder="e.g. +255 22 241 0602"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>Office Location</span>
+              <input
+                type="text"
+                [(ngModel)]="guildForm.location"
+                name="guildLocation"
+                placeholder="e.g. Kijitonyama Campus Block B"
+              />
+            </label>
+          </div>
+
+          <label class="form-field">
+            <span>Committees &amp; Desks (comma-separated)</span>
+            <input
+              type="text"
+              [(ngModel)]="guildForm.committeesText"
+              name="guildCommitteesText"
+              placeholder="e.g. Academic Committee, Projects, Student Welfare Desk"
+            />
+            <small class="field-help">Separate committee names with commas.</small>
+          </label>
+
+          <label class="form-field">
+            <span>Description / Remarks</span>
+            <textarea
+              [(ngModel)]="guildForm.description"
+              name="guildDescription"
+              rows="3"
+              placeholder="Additional information about guild activities, targeted college, or requirements..."
+            ></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="cancel-button" (click)="closeGuildModal()">
+              Cancel
+            </button>
+            <button type="submit" class="return-button save-btn" [disabled]="!guildForm.name.trim()">
+              {{ editingGuildId ? 'Save Changes' : 'Create Guild' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
 </section>

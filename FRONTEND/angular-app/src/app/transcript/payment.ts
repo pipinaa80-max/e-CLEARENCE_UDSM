@@ -99,38 +99,13 @@ export class TranscriptPaymentComponent {
     }
   }
 
-  requestControlNumber(): void {
-    const user = this.authService.getCurrentUser();
-    if (!user) return;
-
-    if (!this.request) {
-      const savedDetails = JSON.parse(
-          localStorage.getItem(`udsm-transcript-request-${user.id}`) || '{}'
-      );
-
-      this.request = this.paymentService.createRequest({
-        studentId: user.id,
-        studentName: `${savedDetails.surname || ''} ${savedDetails.otherNames || ''}`.trim() || user.fullName,
-        registrationNumber: savedDetails.registrationNumber || user.registrationNumber,
-        award: savedDetails.award || 'Transcript Request',
-        graduationYear: savedDetails.graduationYear || new Date().getFullYear().toString(),
-        transcriptCount: this.transcriptCount
-      });
-      this.message = 'Your control number request has been sent to Finance.';
-      return;
-    }
-
-    if (this.request.status !== 'Pending Control Number') return;
-    this.message = 'Your control number request has already been sent to Finance.';
-  }
-
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] || null;
     this.message = '';
 
-    if (file && file.size > 1.5 * 1024 * 1024) {
-      this.toastService.warning('File Too Large', 'This photo is too large for the system to process. Please upload a smaller file or a compressed JPG (Max 1.5MB).');
+    if (file && file.size > 2 * 1024 * 1024) {
+      this.toastService.warning('File Too Large', 'This file is too large for the system to process. Please upload a smaller photo or compressed document (Max 2MB).');
       this.selectedFile = null;
       input.value = '';
       return;
@@ -140,7 +115,8 @@ export class TranscriptPaymentComponent {
   }
 
   submitReceipt(): void {
-    if (!this.selectedFile || !this.request) return;
+    const user = this.authService.getCurrentUser();
+    if (!user || !this.selectedFile) return;
 
     this.isSubmitting = true;
     this.message = '';
@@ -152,24 +128,36 @@ export class TranscriptPaymentComponent {
         const rawBase64 = reader.result as string;
         const compressedBase64 = await this.compressImage(rawBase64);
 
+        if (!this.request) {
+          const savedDetails = JSON.parse(
+            localStorage.getItem(`udsm-transcript-request-${user.id}`) || '{}'
+          );
+
+          this.request = this.paymentService.createRequest({
+            studentId: user.id,
+            studentName: `${savedDetails.surname || ''} ${savedDetails.otherNames || ''}`.trim() || user.fullName,
+            registrationNumber: savedDetails.registrationNumber || user.registrationNumber,
+            award: savedDetails.award || 'Transcript Request',
+            graduationYear: savedDetails.graduationYear || new Date().getFullYear().toString(),
+            transcriptCount: this.transcriptCount
+          });
+        }
+
         const submitted = this.paymentService.submitReceipt(
-            this.request!.id,
-            this.selectedFile!.name,
-            compressedBase64
+          this.request.id,
+          this.selectedFile!.name,
+          compressedBase64
         );
 
         if (submitted) {
-          this.toastService.success('Success', 'Payment receipt submitted successfully to Finance.');
-          const user = this.authService.getCurrentUser();
-          if (user) {
-            this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
-          }
+          this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully to Finance for verification.');
+          this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
         } else {
-          this.toastService.error('Error', 'Finance could not receive the receipt. Please try again.');
+          this.toastService.error('Submission Failed', 'Could not submit payment receipt. Please try again.');
         }
       } catch (error) {
         console.error('Submission failed:', error);
-        this.toastService.error('Submission Failed', 'The photo data is too heavy. Please use a smaller photo or screenshot.');
+        this.toastService.error('Submission Failed', 'The receipt file is too large. Please use a smaller photo or screenshot.');
       } finally {
         this.selectedFile = null;
         this.isSubmitting = false;
@@ -177,47 +165,12 @@ export class TranscriptPaymentComponent {
     };
 
     reader.onerror = () => {
-      this.toastService.error('Read Error', 'Unable to read the receipt photo.');
+      this.toastService.error('Read Error', 'Unable to read the receipt file.');
       this.selectedFile = null;
       this.isSubmitting = false;
     };
 
     reader.readAsDataURL(this.selectedFile);
-  }
-
-  onReceiptSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !this.request) return;
-
-    if (!file.type.startsWith('image/')) {
-      this.toastService.warning('Invalid Format', 'Please upload a photo of the payment receipt.');
-      input.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const rawBase64 = reader.result as string;
-      const compressedBase64 = await this.compressImage(rawBase64);
-
-      const submitted = this.paymentService.submitReceipt(
-          this.request!.id,
-          file.name,
-          compressedBase64
-      );
-      if (!submitted) {
-        this.toastService.warning('Action Required', 'Receipt cannot be submitted until Finance issues your control number.');
-        return;
-      }
-      this.request = this.paymentService.getStudentRequests(this.request!.studentId).at(-1) ?? null;
-      this.toastService.success('Success', 'Payment receipt submitted successfully.');
-    };
-    reader.onerror = () => {
-      this.toastService.error('Read Error', 'Unable to read the receipt photo.');
-      input.value = '';
-    };
-    reader.readAsDataURL(file);
   }
 
   private compressImage(base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.65): Promise<string> {

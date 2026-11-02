@@ -66,6 +66,7 @@ function thisRoleRedirect(role: UserRole): string {
     ICT: '/dashboard/ict',
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
+    'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
     Administrator: '/dashboard/admin'
   };
 

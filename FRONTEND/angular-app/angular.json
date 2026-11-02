@@ -16,26 +16,43 @@
             "outputPath": "dist/angular-app",
             "index": "src/index.html",
             "browser": "src/main.ts",
-
             "polyfills": [
               "zone.js"
             ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              "public"
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "."
+              },
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "assets"
+              }
             ],
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [],
+            "optimization": {
+              "fonts": false
+            }
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
             "buildTarget": "angular-app:build",
-
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.json",
+            "hmr": true,
+            "liveReload": true
           }
         }
       }

@@ -6,7 +6,7 @@
         <th scope="col">Full Name</th>
         <th scope="col">Email</th>
         <th scope="col">Phone Number</th>
-        <th scope="col">Programme</th>
+        <th scope="col">{{ getViewColumnHeader() }}</th>
         <th scope="col">Actions</th>
       </tr>
     </thead>
@@ -16,13 +16,18 @@
         <td class="student-name">{{ getStudentName(request) }}</td>
         <td>{{ getEmail(request) }}</td>
         <td>{{ getPhoneNumber(request) }}</td>
-        <td>{{ getProgramme(request) }}</td>
+        <td>
+          <button type="button" class="view-details-btn" (click)="view.emit(request)">
+            <i class="bi bi-eye-fill" style="margin-right: 4px;"></i>
+            View Details
+          </button>
+        </td>
         <td>
           <div class="actions">
             <button type="button" class="view-button" (click)="detailsRequest = request">View</button>
             <ng-container *ngIf="getOfficeStatus(request) === 'Pending'; else reviewedStatus">
-            <button type="button" class="reject-button" (click)="reject.emit(request)">Reject</button>
-            <button type="button" class="approve-button" (click)="approve.emit(request)">Approve</button>
+            <button type="button" class="reject-button" (click)="reject.emit(request)"><i class="bi bi-x-lg"></i> Reject</button>
+            <button type="button" class="approve-button" (click)="approve.emit(request)"><i class="bi bi-check-lg"></i> Approve</button>
             </ng-container>
             <ng-template #reviewedStatus>
               <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>

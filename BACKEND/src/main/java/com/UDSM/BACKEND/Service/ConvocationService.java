@@ -62,7 +62,7 @@ public class ConvocationService {
         // Create receipt record
         ConvocationReceipt receipt = ConvocationReceipt.builder()
                 .studentId(request.getStudentId())
-                .controlNumber(request.getControlNumber())
+                .controlNumber(request.getControlNumber() != null && !request.getControlNumber().isBlank() ? request.getControlNumber() : "DIRECT-PAYMENT")
                 .receiptNumber(request.getReceiptNumber())
                 .paymentDate(request.getPaymentDate())
                 .fileName(file.getOriginalFilename())
@@ -119,9 +119,6 @@ public class ConvocationService {
     private void validateReceiptUpload(ConvocationReceiptRequest request, MultipartFile file) {
         if (request == null || request.getStudentId() == null || request.getStudentId().isBlank()) {
             throw new IllegalArgumentException("Student ID is required");
-        }
-        if (request.getControlNumber() == null || request.getControlNumber().isBlank()) {
-            throw new IllegalArgumentException("Control number is required");
         }
         if (request.getReceiptNumber() == null || request.getReceiptNumber().isBlank()) {
             throw new IllegalArgumentException("Receipt number is required");

@@ -7,7 +7,7 @@ import { StorageService } from './storage.service';
 
 export interface ConvocationReceiptRequest {
   studentId: string;
-  controlNumber: string;
+  controlNumber?: string;
   receiptNumber?: string;
   paymentDate?: string;
 }

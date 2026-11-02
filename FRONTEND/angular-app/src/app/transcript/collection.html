@@ -35,7 +35,7 @@
       <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
         Transcript Dashboard
       </a>
-      <a *ngIf="isTranscriptPaid" routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+      <a routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
         Acquire More Transcript
       </a>
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
@@ -96,10 +96,37 @@
         <span><strong>Post by DHL</strong><small>Have the transcript posted to your preferred address.</small></span>
       </label>
 
-      <label class="address-field" *ngIf="isPost">
-        <span>Posting address</span>
-        <textarea formControlName="postingAddress" rows="4" placeholder="Explain where the transcript should be posted"></textarea>
-      </label>
+      <div class="address-fields-grid" *ngIf="isPost" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 18px 0; padding: 18px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+        <label class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Region / City *</span>
+          <input type="text" formControlName="postingRegion" placeholder="e.g. Dar es Salaam, Arusha, Mwanza" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+        </label>
+
+        <label class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Ward / District *</span>
+          <input type="text" formControlName="postingWard" placeholder="e.g. Kinondoni / Ubungo / Ilala" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+        </label>
+
+        <label class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">P.O. Box (Postal Address) *</span>
+          <input type="text" formControlName="postingPoBox" placeholder="e.g. P.O. Box 35091, Dar es Salaam" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+        </label>
+
+        <label class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Contact Phone Number *</span>
+          <input type="tel" formControlName="postingContactPhone" placeholder="e.g. +255 712 345 678" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+        </label>
+
+        <label class="field" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Contact Email *</span>
+          <input type="email" formControlName="postingContactEmail" placeholder="e.g. student@udsm.ac.tz" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+        </label>
+
+        <label class="field" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 13px; font-weight: 700; color: #0f172a;">Additional Delivery Notes / Street Landmark</span>
+          <textarea formControlName="postingAddress" rows="3" placeholder="Explain any additional delivery landmarks or instructions" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+        </label>
+      </div>
 
       <div class="step-navigation">
         <a routerLink="/transcript/process" class="secondary-button">Back</a>

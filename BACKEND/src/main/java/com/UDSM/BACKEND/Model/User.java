@@ -30,6 +30,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "full_name")
@@ -187,6 +188,7 @@ public class User implements UserDetails {
     // =========================================================
 
     @Override
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) return List.of();
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));

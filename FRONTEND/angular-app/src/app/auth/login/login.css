@@ -13,10 +13,10 @@
   align-items: center;
   justify-content: flex-start;
   gap: 24px;
-  padding: 18px 28px;
+  padding: 14px 28px;
   background: var(--udsm-blue);
-  border-bottom: 1px solid var(--border-soft);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 6%, transparent);
+  border-bottom: 2px solid var(--udsm-gold);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 16%, transparent);
 }
 
 .header-content {

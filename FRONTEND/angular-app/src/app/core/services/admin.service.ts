@@ -65,6 +65,10 @@ export class AdminService {
     return this.http.post<any>(`${this.apiUrl}/users/bulk-upload`, formData, { headers: this.getAuthHeaders() });
   }
 
+  seedSampleData(): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/users/seed-sample-data`, {}, { headers: this.getAuthHeaders() });
+  }
+
   importLocalStorage(exportData: { users?: any[]; clearanceRequests?: any[]; documents?: any[] }): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/import/local-storage`, exportData, {
       headers: this.getAuthHeaders()

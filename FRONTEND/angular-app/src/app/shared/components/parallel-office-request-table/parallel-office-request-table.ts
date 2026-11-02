@@ -31,6 +31,7 @@ export class ParallelOfficeRequestTableComponent {
   @Input({ required: true }) office!: ClearanceOffice;
   @Output() approve = new EventEmitter<ClearanceRequest>();
   @Output() reject = new EventEmitter<ClearanceRequest>();
+  @Output() view = new EventEmitter<ClearanceRequest>();
 
   private readonly studentCache = new Map<string, StudentProfile | null>();
   detailsRequest: ClearanceRequest | null = null;
@@ -46,6 +47,25 @@ export class ParallelOfficeRequestTableComponent {
         : this.office === 'Finance' ? 'Finance'
         : this.office === 'Convocation' ? 'Convocation' : 'Parallel';
       request.currentOffice = this.office;
+    }
+  }
+
+  getViewColumnHeader(): string {
+    switch (this.office) {
+      case 'USAB':
+        return 'Hostel Details';
+      case 'Games Coach':
+        return 'Sports Details';
+      case 'Hall Warden':
+        return 'Hall Details';
+      case 'DARUSO':
+        return 'Union Details';
+      case 'Library':
+        return 'Library Details';
+      case 'Smart Card':
+        return 'Card Details';
+      default:
+        return 'Details';
     }
   }
 

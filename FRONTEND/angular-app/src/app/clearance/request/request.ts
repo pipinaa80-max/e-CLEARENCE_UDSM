@@ -14,6 +14,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { HostelService } from '../../core/services/hostel.service';
 import { firstValueFrom } from 'rxjs';
 
 interface DepartmentData {
@@ -43,6 +44,7 @@ export class ClearanceRequestComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly hostelService = inject(HostelService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -363,27 +365,19 @@ export class ClearanceRequestComponent implements OnInit {
     'Non-Hostel Dwellers'
   ];
 
-  readonly hallOptions = [
-    'CoICT Hostels',
-    'Kunduchi Hostels',
-    'Mabibo Hostels',
-    'Magufuli Hostels',
-    'Mikocheni Hostels'
-  ];
+  get hallOptions(): string[] {
+    return this.hostelService.getHostelNames();
+  }
 
-  readonly coictWings = [
-    'Wing A',
-    'Wing B'
-  ];
+  get coictWings(): string[] {
+    const hall = this.requestForm.controls.hostelHall.value;
+    return this.hostelService.getWingsForHostel(hall);
+  }
 
-  readonly blockOptions = [
-    'Block A',
-    'Block B',
-    'Block C',
-    'Block D',
-    'Block E',
-    'Block F'
-  ];
+  get blockOptions(): string[] {
+    const hall = this.requestForm.controls.hostelHall.value;
+    return this.hostelService.getBlocksForHostel(hall);
+  }
 
   readonly sponsorOptions = [
     'HELBS',
@@ -397,12 +391,15 @@ export class ClearanceRequestComponent implements OnInit {
   }
 
   get isCoictHostel(): boolean {
-    return this.isHostelDweller && this.requestForm.controls.hostelHall.value === 'CoICT Hostels';
+    const hall = this.requestForm.controls.hostelHall.value;
+    const wings = this.hostelService.getWingsForHostel(hall);
+    return this.isHostelDweller && wings.length > 0;
   }
 
   get isBlockHostel(): boolean {
     const hall = this.requestForm.controls.hostelHall.value;
-    return this.isHostelDweller && (hall === 'Mabibo Hostels' || hall === 'Magufuli Hostels');
+    const blocks = this.hostelService.getBlocksForHostel(hall);
+    return this.isHostelDweller && blocks.length > 0;
   }
 
   get currentUser() {
@@ -469,6 +466,43 @@ export class ClearanceRequestComponent implements OnInit {
     return request.approvals.find(approval => approval.office === request.revisionOffice)?.comment || '';
   }
 
+  findMatchingCollege(cName: string): string {
+    if (!cName) return '';
+    const trimmed = cName.trim();
+    const direct = this.collegeList.find(c => c.toLowerCase() === trimmed.toLowerCase());
+    if (direct) return direct;
+    const abbr = this.collegeList.find(c => {
+      const lower = c.toLowerCase();
+      const target = trimmed.toLowerCase();
+      return lower.includes(`(${target})`) || target.includes(`(${lower})`) || lower.includes(target) || target.includes(lower);
+    });
+    if (abbr) return abbr;
+    return trimmed;
+  }
+
+  findMatchingDepartment(collegeKey: string, dName: string): string {
+    if (!dName) return '';
+    if (!collegeKey) return dName.trim();
+    const depts = Object.keys(this.academicUnits[collegeKey] || {});
+    const trimmed = dName.trim().toLowerCase();
+    const direct = depts.find(d => d.toLowerCase() === trimmed);
+    if (direct) return direct;
+    const partial = depts.find(d => d.toLowerCase().includes(trimmed) || trimmed.includes(d.toLowerCase()));
+    if (partial) return partial;
+    return dName.trim();
+  }
+
+  findMatchingProgramme(collegeKey: string, deptKey: string, pName: string): string {
+    if (!pName) return '';
+    const progs = this.academicUnits[collegeKey]?.[deptKey] || [];
+    const trimmed = pName.trim().toLowerCase();
+    const direct = progs.find(p => p.toLowerCase() === trimmed);
+    if (direct) return direct;
+    const partial = progs.find(p => p.toLowerCase().includes(trimmed) || trimmed.includes(p.toLowerCase()));
+    if (partial) return partial;
+    return pName.trim();
+  }
+
   loadStudentData(): void {
     const user = this.authService.getCurrentUser();
 
@@ -477,6 +511,23 @@ export class ClearanceRequestComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
+
+    this.applyUserDataToForm(user);
+
+    // Also fetch fresh profile from server in case user data was updated via Excel upload
+    this.authService.getProfile().subscribe({
+      next: (profile) => {
+        if (profile) {
+          this.authService.updateCurrentUser(profile);
+          this.applyUserDataToForm(this.authService.getCurrentUser());
+        }
+      },
+      error: (err) => console.warn('Could not refresh profile from server:', err)
+    });
+  }
+
+  private applyUserDataToForm(user: any): void {
+    if (!user) return;
 
     // Build full name
     const fullName = [
@@ -504,6 +555,15 @@ export class ClearanceRequestComponent implements OnInit {
 
     const sponsorValue = this.sponsorOptions.includes(user.sponsor) ? user.sponsor : '';
 
+    const rawCollege = user.college && user.college !== 'Not selected' ? user.college : (user.faculty || '');
+    const matchedCollege = this.findMatchingCollege(rawCollege);
+
+    const rawDept = user.department && user.department !== 'Not selected' ? user.department : '';
+    const matchedDept = this.findMatchingDepartment(matchedCollege, rawDept);
+
+    const rawProg = user.programme && user.programme !== 'Not selected' ? user.programme : '';
+    const matchedProg = this.findMatchingProgramme(matchedCollege, matchedDept, rawProg);
+
     // Patch form with user data
     this.requestForm.patchValue({
       studentName: fullName || user.fullName || 'Student Name',
@@ -511,9 +571,9 @@ export class ClearanceRequestComponent implements OnInit {
       email: user.email || '',
       phoneNumber: user.phoneNumber || user.phone || '',
       physicalAddress: user.physicalAddress || user.address || '',
-      college: user.college && user.college !== 'Not selected' ? user.college : '',
-      department: user.department && user.department !== 'Not selected' ? user.department : '',
-      programme: user.programme && user.programme !== 'Not selected' ? user.programme : '',
+      college: matchedCollege || '',
+      department: matchedDept || '',
+      programme: matchedProg || '',
       residenceType: residenceType,
       hostelHall: hostelHall,
       wing: wing,

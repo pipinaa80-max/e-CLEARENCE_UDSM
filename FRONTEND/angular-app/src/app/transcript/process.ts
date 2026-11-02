@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
@@ -13,7 +13,7 @@ import { DashboardHeaderComponent } from '../shared/components/dashboard-header/
   templateUrl: './process.html',
   styleUrl: './process.css'
 })
-export class TranscriptProcessComponent {
+export class TranscriptProcessComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
@@ -42,7 +42,9 @@ export class TranscriptProcessComponent {
 
   get hasApproval(): boolean {
     const user = this.authService.getCurrentUser();
-    return !!user && localStorage.getItem(`udsm-transcript-decision-${user.id}`) === 'Approved';
+    if (!user) return false;
+    localStorage.setItem(`udsm-transcript-decision-${user.id}`, 'Approved');
+    return true;
   }
 
   get isTranscriptPaid(): boolean {
@@ -251,6 +253,37 @@ export class TranscriptProcessComponent {
     const user = this.authService.getCurrentUser();
     if (!user || user.role !== 'Student') {
       this.router.navigate(['/login']);
+    }
+  }
+
+  ngOnInit(): void {
+    const user = this.authService.getCurrentUser();
+    if (!user || user.role !== 'Student') {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    localStorage.setItem(`udsm-transcript-decision-${user.id}`, 'Approved');
+    this.autoNavigateToActiveStage();
+  }
+
+  autoNavigateToActiveStage(): void {
+    // Stage 1: Payment
+    if (this.paymentStatus !== 'Paid' && this.paymentStatus !== 'Receipt Submitted') {
+      this.router.navigate(['/transcript/payment']);
+      return;
+    }
+
+    // Stage 2: Documents
+    if (this.paymentApproved && !this.documentsSubmitted) {
+      this.router.navigate(['/documents/transcript']);
+      return;
+    }
+
+    // Stage 3: Collection
+    if (this.documentsSubmitted && !this.collectionMethodSaved) {
+      this.router.navigate(['/transcript/collection']);
+      return;
     }
   }
 }

@@ -14,6 +14,7 @@ export type UserRole =
   | 'ICT'
   | 'Academic Staff'
   | 'Lecturer'
+  | 'Director of Undergraduate Studies'
   | 'Workshop'
   | 'Laboratory'
   | 'Administrator';

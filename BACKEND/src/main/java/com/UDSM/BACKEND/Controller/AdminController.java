@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -43,7 +44,9 @@ public class AdminController {
     @PostMapping("/users")
     public ResponseEntity<ApiResponse> createUser(@RequestBody RegisterRequest request) {
         log.info("Admin: Manually creating user: {}", request.getEmail());
-        return ResponseEntity.ok(authService.register(request));
+        ApiResponse response = authService.register(request);
+        adminService.activateUserByEmail(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("User registered and activated successfully"));
     }
 
     @DeleteMapping("/users/{userId}")
@@ -67,7 +70,7 @@ public class AdminController {
     }
 
     @GetMapping("/clearance-requests")
-    public ResponseEntity<List<ClearanceRequest>> getAllClearanceRequests() {
+    public ResponseEntity<List<Map<String, Object>>> getAllClearanceRequests() {
         log.info("Admin: Fetching all clearance requests");
         return ResponseEntity.ok(adminService.getAllClearanceRequests());
     }
@@ -83,6 +86,13 @@ public class AdminController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Bulk upload failed: " + e.getMessage()));
         }
 
+    }
+
+    @PostMapping("/users/seed-sample-data")
+    public ResponseEntity<ApiResponse> seedSampleData() {
+        log.info("Admin: Seeding UDSM sample table data (20 students and clearance staff)");
+        int count = adminService.seedUdsmSampleData();
+        return ResponseEntity.ok(ApiResponse.success("Successfully seeded " + count + " users matching UDSM table format."));
     }
 
     @PostMapping("/import/local-storage")

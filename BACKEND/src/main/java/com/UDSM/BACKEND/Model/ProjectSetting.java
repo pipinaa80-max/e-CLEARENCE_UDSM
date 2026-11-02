@@ -45,6 +45,9 @@ public class ProjectSetting {
     @Column(name = "footer_links_json", columnDefinition = "TEXT")
     private String footerLinksJson = "[]";
 
+    @Column(name = "blocked_ips_json", columnDefinition = "TEXT")
+    private String blockedIpsJson = "[]";
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

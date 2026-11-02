@@ -64,6 +64,13 @@ export class PrincipalComponent implements OnInit {
     pendingRequests: ClearanceRequest[] = [];
     filteredRequests: ClearanceRequest[] = [];
     detailsRequest: ClearanceRequest | null = null;
+    selectedRequest: ClearanceRequest | null = null;
+    rejectionComment = '';
+
+    viewMode: 'requests' | 'analytics' = 'requests';
+    selectedAnalyticsYear = 'all';
+    selectedAnalyticsGender = 'all';
+    hoveredDeptName: string | null = null;
 
     private studentCache: Map<string, any> = new Map();
 
@@ -101,12 +108,18 @@ export class PrincipalComponent implements OnInit {
 
         // Principal reviews requests for their college
         this.pendingRequests = allRequests.filter(request => {
-            if (request.college !== user.college) return false;
+            const studentCollege = this.getStudentCollege(request);
+            const isCollegeMatch = !user.college || this.matchCollege(studentCollege, user.college);
 
-            // Principal sees requests that are at Principal stage or further along
+            if (!isCollegeMatch) return false;
+
+            const deptStatus = this.getRequestOfficeStatus(request, 'Department');
+
+            // Principal sees requests that are at Principal stage or further along, or where Department is approved
             return request.currentStage === 'Principal' ||
                 request.currentStage === 'Finance' ||
-                request.status === 'Completed';
+                request.status === 'Completed' ||
+                deptStatus === 'Approved';
         });
 
         this.applyFilters();
@@ -212,6 +225,36 @@ export class PrincipalComponent implements OnInit {
         return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
     }
 
+    getStudentCollege(request: ClearanceRequest): string {
+        if (request.college && request.college.trim()) return request.college.trim();
+        const user = this.getStudentData(request.studentId);
+        return user?.college?.trim() || user?.faculty?.trim() || '';
+    }
+
+    matchCollege(studentCollege: string, userCollege: string): boolean {
+        if (!userCollege || !userCollege.trim()) return true;
+        if (!studentCollege || !studentCollege.trim()) return true;
+
+        const c1 = studentCollege.trim().toLowerCase();
+        const c2 = userCollege.trim().toLowerCase();
+
+        if (c1 === c2 || c1.includes(c2) || c2.includes(c1)) return true;
+
+        const getAcronym = (s: string) => {
+            const match = s.match(/\(([^)]+)\)/);
+            return match ? match[1].trim().toLowerCase() : '';
+        };
+
+        const a1 = getAcronym(c1);
+        const a2 = getAcronym(c2);
+
+        if (a1 && (a1 === c2 || c2.includes(a1))) return true;
+        if (a2 && (a2 === c1 || c1.includes(a2))) return true;
+        if (a1 && a2 && a1 === a2) return true;
+
+        return false;
+    }
+
     openDetails(request: ClearanceRequest): void {
         this.detailsRequest = request;
     }
@@ -293,7 +336,10 @@ export class PrincipalComponent implements OnInit {
 
     async approve(request: ClearanceRequest): Promise<void> {
         const staff = this.currentUser;
-        if (!staff || !await this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
+        if (!staff) return;
+
+        const studentName = this.getStudentName(request);
+        if (!await this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
             this.toastService.error('Error', 'Failed to approve request. Please try again.');
             return;
         }
@@ -305,7 +351,201 @@ export class PrincipalComponent implements OnInit {
             'The Principal has approved your clearance request.',
             'success'
         );
+        this.toastService.success('Approved', `Principal clearance approved for ${studentName}.`);
         this.message = `Student ${this.getStudentName(request)} was approved successfully.`;
+    }
+
+    openRejectForm(request: ClearanceRequest): void {
+        this.selectedRequest = request;
+        this.rejectionComment = '';
+        this.message = '';
+    }
+
+    async reject(): Promise<void> {
+        const staff = this.currentUser;
+        if (!staff || !this.selectedRequest) return;
+
+        if (!this.rejectionComment.trim()) {
+            this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+            return;
+        }
+
+        const studentName = this.getStudentName(this.selectedRequest);
+        const rejected = await this.clearanceService.rejectRequest(
+            this.selectedRequest.id,
+            'Principal',
+            staff.fullName || staff.firstName + ' ' + staff.lastName,
+            this.rejectionComment.trim()
+        );
+
+        if (!rejected) {
+            this.toastService.error('Reject Failed', 'Failed to reject clearance request.');
+            return;
+        }
+
+        this.notificationService.createNotification(
+            this.selectedRequest.studentId,
+            'Principal Clearance Action Required',
+            this.rejectionComment.trim(),
+            'warning'
+        );
+
+        this.toastService.warning('Returned', `Principal clearance request returned for ${studentName}.`);
+        this.message = `Student ${studentName} has been notified regarding: "${this.rejectionComment.trim()}".`;
+
+        this.selectedRequest = null;
+        this.rejectionComment = '';
+        this.loadData();
+    }
+
+    // =========================================================================
+    // COLLEGE STATISTICAL ANALYTICS ENGINE
+    // =========================================================================
+
+    get collegeRequests(): ClearanceRequest[] {
+        const user = this.currentUser;
+        const allRequests = this.clearanceService.getAllRequests();
+        return allRequests.filter(r => {
+            const studentCollege = this.getStudentCollege(r);
+            return !user?.college || this.matchCollege(studentCollege, user.college);
+        });
+    }
+
+    get totalCollegeStudents(): number {
+        return this.collegeRequests.length;
+    }
+
+    get clearedCollegeCount(): number {
+        return this.collegeRequests.filter(r =>
+            this.getRequestOfficeStatus(r, 'Principal') === 'Approved' || r.status === 'Completed'
+        ).length;
+    }
+
+    get pendingCollegeCount(): number {
+        return this.collegeRequests.filter(r =>
+            this.getRequestOfficeStatus(r, 'Principal') === 'Pending' && r.status !== 'Completed'
+        ).length;
+    }
+
+    get rejectedCollegeCount(): number {
+        return this.collegeRequests.filter(r =>
+            this.getRequestOfficeStatus(r, 'Principal') === 'Rejected' || r.status === 'Rejected'
+        ).length;
+    }
+
+    get collegeClearanceRate(): number {
+        return Math.round((this.clearedCollegeCount / (this.totalCollegeStudents || 1)) * 100) || 0;
+    }
+
+    get departmentBreakdown(): { name: string; total: number; cleared: number; pending: number; rejected: number; clearanceRate: number }[] {
+        const groups = new Map<string, { total: number; cleared: number; pending: number; rejected: number }>();
+
+        for (const req of this.collegeRequests) {
+            const dept = (req.department || 'General Department').trim();
+            const current = groups.get(dept) || { total: 0, cleared: 0, pending: 0, rejected: 0 };
+            current.total++;
+
+            const status = this.getRequestOfficeStatus(req, 'Principal');
+            if (status === 'Approved' || req.status === 'Completed') {
+                current.cleared++;
+            } else if (status === 'Rejected' || req.status === 'Rejected') {
+                current.rejected++;
+            } else {
+                current.pending++;
+            }
+            groups.set(dept, current);
+        }
+
+        return Array.from(groups.entries()).map(([name, stats]) => ({
+            name,
+            total: stats.total,
+            cleared: stats.cleared,
+            pending: stats.pending,
+            rejected: stats.rejected,
+            clearanceRate: Math.round((stats.cleared / (stats.total || 1)) * 100) || 0
+        })).sort((a, b) => b.total - a.total);
+    }
+
+    get yearResidencyHistogram(): { yearLabel: string; total: number; cleared: number; clearanceRate: number }[] {
+        const cohorts = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
+        return cohorts.map(cohort => {
+            const matchRequests = this.collegeRequests.filter(r => {
+                const prog = (r.programme || '').toLowerCase();
+                const reg = (this.getStudentRegNumber(r) || '').toLowerCase();
+                if (cohort === 'Postgraduate') return prog.includes('master') || prog.includes('phd') || prog.includes('postgraduate');
+                if (cohort === 'Year 1') return reg.includes('2024') || reg.includes('2023');
+                if (cohort === 'Year 2') return reg.includes('2022');
+                if (cohort === 'Year 3') return reg.includes('2021');
+                if (cohort === 'Year 4') return reg.includes('2020') || reg.includes('2019');
+                return true;
+            });
+            const total = matchRequests.length;
+            const cleared = matchRequests.filter(r => this.getRequestOfficeStatus(r, 'Principal') === 'Approved' || r.status === 'Completed').length;
+            const clearanceRate = Math.round((cleared / (total || 1)) * 100) || 0;
+            return { yearLabel: cohort, total, cleared, clearanceRate };
+        });
+    }
+
+    get genderStats(): { maleTotal: number; maleCleared: number; malePercent: number; femaleTotal: number; femaleCleared: number; femalePercent: number } {
+        let maleTotal = 0, maleCleared = 0, femaleTotal = 0, femaleCleared = 0;
+
+        for (const req of this.collegeRequests) {
+            const gender = this.getStudentGender(req).toLowerCase();
+            const isCleared = this.getRequestOfficeStatus(req, 'Principal') === 'Approved' || req.status === 'Completed';
+
+            if (gender.startsWith('f')) {
+                femaleTotal++;
+                if (isCleared) femaleCleared++;
+            } else {
+                maleTotal++;
+                if (isCleared) maleCleared++;
+            }
+        }
+
+        return {
+            maleTotal,
+            maleCleared,
+            malePercent: Math.round((maleCleared / (maleTotal || 1)) * 100) || 0,
+            femaleTotal,
+            femaleCleared,
+            femalePercent: Math.round((femaleCleared / (femaleTotal || 1)) * 100) || 0
+        };
+    }
+
+    downloadAnalyticsCsv(): void {
+        const rows = [
+            ['UDSM COLLEGE PRINCIPAL CLEARANCE ANALYTICS REPORT'],
+            ['College / School:', this.collegeName],
+            ['Report Date:', new Date().toLocaleString()],
+            [''],
+            ['1. EXECUTIVE SUMMARY METRICS'],
+            ['Metric', 'Value'],
+            ['Total Applications Received', String(this.totalCollegeStudents)],
+            ['Cleared / Approved Applications', String(this.clearedCollegeCount)],
+            ['Pending Applications', String(this.pendingCollegeCount)],
+            ['Rejected / Returned Applications', String(this.rejectedCollegeCount)],
+            ['Overall College Clearance Rate (%)', `${this.collegeClearanceRate}%`],
+            [''],
+            ['2. DEPARTMENTAL CLEARANCE BREAKDOWN'],
+            ['Department Name', 'Total Applications', 'Cleared', 'Pending', 'Rejected', 'Clearance Rate (%)'],
+            ...this.departmentBreakdown.map(d => [
+                d.name, String(d.total), String(d.cleared), String(d.pending), String(d.rejected), `${d.clearanceRate}%`
+            ]),
+            [''],
+            ['3. ACADEMIC COHORT BREAKDOWN'],
+            ['Cohort', 'Total Applications', 'Cleared', 'Clearance Rate (%)'],
+            ...this.yearResidencyHistogram.map(y => [
+                y.yearLabel, String(y.total), String(y.cleared), `${y.clearanceRate}%`
+            ])
+        ];
+
+        const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `principal-${this.collegeName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        this.toastService.success('Export Successful', 'College analytics report exported as CSV.');
     }
 
     toggleSidebar(): void {

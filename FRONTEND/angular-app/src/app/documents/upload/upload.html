@@ -5,7 +5,10 @@
         </header>
     <div class="checklist">
         <div *ngFor="let category of categories" [class.complete]="!missingCategories.includes(category)">
-            <span>{{ !missingCategories.includes(category) ? '✓' : '○' }}</span>
+            <span>
+              <i *ngIf="!missingCategories.includes(category)" class="bi bi-check-circle-fill"></i>
+              <i *ngIf="missingCategories.includes(category)" class="bi bi-circle"></i>
+            </span>
             <div>
                 <strong>{{ category }}</strong>
                 <small *ngIf="category === 'Identity Document'">{{ identityHelp }}</small>

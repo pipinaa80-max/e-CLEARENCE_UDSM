@@ -1,5 +1,5 @@
 // clearance-status.component.ts - Fixed for parallel offices
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
@@ -18,7 +18,7 @@ import {
 interface ProcessStep {
   number: number;
   label: string;
-  office: ClearanceOffice | 'Clearance Offices';
+  office: ClearanceOffice | 'Parallel Offices' | 'Clearance Offices';
   detail: string;
   status: string;
 }
@@ -35,7 +35,7 @@ interface ProcessStep {
   templateUrl: './status.html',
   styleUrl: './status.css'
 })
-export class ClearanceStatusComponent {
+export class ClearanceStatusComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
@@ -135,6 +135,63 @@ export class ClearanceStatusComponent {
   // REVIEWED BY
   // =====================================================
 
+  getReviewerContact(office: ClearanceOffice): { name: string; email: string; phone: string } {
+    const approval = this.getApproval(office);
+    const name = approval?.reviewedBy || '';
+    let email = approval?.reviewerEmail || '';
+    let phone = approval?.reviewerPhone || '';
+
+    // If not recorded directly on approval, search local users
+    if (!email || !phone) {
+      try {
+        const usersJson = localStorage.getItem('udsm-local-users');
+        if (usersJson) {
+          const users = JSON.parse(usersJson);
+          const nameClean = name.trim().toLowerCase();
+          const officeClean = office.trim().toLowerCase();
+          const found = users.find((u: any) => {
+            const uName = (u.fullName || `${u.firstName || ''} ${u.lastName || ''}`).trim().toLowerCase();
+            const uRole = (u.role || '').trim().toLowerCase();
+            const uDept = (u.department || '').trim().toLowerCase();
+            return (nameClean && uName === nameClean) ||
+                   (uRole && (uRole === officeClean || uRole.includes(officeClean) || officeClean.includes(uRole))) ||
+                   (uDept && (uDept === officeClean || uDept.includes(officeClean)));
+          });
+          if (found) {
+            email = email || found.email || '';
+            phone = phone || found.phoneNumber || found.phone || '';
+          }
+        }
+      } catch (e) {
+        console.error('Error looking up staff contact:', e);
+      }
+    }
+
+    // Institutional contacts fallback for offices
+    if (!email || !phone) {
+      const defaultContacts: Record<string, { email: string; phone: string }> = {
+        'Library': { email: 'library@udsm.ac.tz', phone: '+255 22 2410500' },
+        'DARUSO': { email: 'daruso@udsm.ac.tz', phone: '+255 22 2410515' },
+        'USAB': { email: 'usab@udsm.ac.tz', phone: '+255 22 2410520' },
+        'Games Coach': { email: 'sports@udsm.ac.tz', phone: '+255 22 2410530' },
+        'Hall Warden': { email: 'warden@udsm.ac.tz', phone: '+255 22 2410540' },
+        'Dean of Students': { email: 'dos@udsm.ac.tz', phone: '+255 22 2410510' },
+        'Department': { email: 'department@udsm.ac.tz', phone: '+255 22 2410550' },
+        'Principal': { email: 'principal@udsm.ac.tz', phone: '+255 22 2410560' },
+        'Finance': { email: 'finance@udsm.ac.tz', phone: '+255 22 2410570' },
+        'Smart Card': { email: 'smartcard@udsm.ac.tz', phone: '+255 22 2410580' },
+        'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
+        'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
+        'Convocation': { email: 'convocation@udsm.ac.tz', phone: '+255 22 2410505' },
+      };
+      const def = defaultContacts[office] || { email: 'clearance@udsm.ac.tz', phone: '+255 22 2410500' };
+      email = email || def.email;
+      phone = phone || def.phone;
+    }
+
+    return { name, email, phone };
+  }
+
   getReviewedBy(office: ClearanceOffice): string {
     return this.getApproval(office)?.reviewedBy ?? '';
   }
@@ -207,7 +264,7 @@ export class ClearanceStatusComponent {
 
     switch (request.currentStage) {
       case 'Convocation':
-        return 'Step 2: Clearance Offices';
+        return 'Step 2: Parallel Offices';
       case 'Parallel':
         return 'Step 3: Department';
       case 'Department':
@@ -242,6 +299,61 @@ export class ClearanceStatusComponent {
     }
 
     return false;
+  }
+
+  ngOnInit(): void {
+    this.loadData();
+    this.checkAndAutoAdvanceStage();
+  }
+
+  checkAndAutoAdvanceStage(): void {
+    const request = this.request;
+    if (!request || request.status === 'Rejected') return;
+
+    if (this.getOfficeStatus('Finance') === 'Approved' || request.status === 'Completed' || request.currentStage === 'Completed') {
+      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
+        this.clearanceService.advanceStage(request.id, 'Completed', undefined);
+        this.loadData();
+      }
+      return;
+    }
+
+    let iterations = 0;
+    while (this.canAdvanceFromCurrentStage() && iterations < 5) {
+      iterations++;
+      console.log(`Auto-advancing request ${request.id} from stage ${request.currentStage}`);
+      this.continueToNextStageSilently();
+    }
+  }
+
+  continueToNextStageSilently(): void {
+    const request = this.request;
+    if (!request) return;
+
+    let nextStage: string = '';
+    let nextOffice: ClearanceOffice | undefined = undefined;
+
+    if (request.currentStage === 'Convocation' && this.isConvocationApproved) {
+      nextStage = 'Parallel';
+      nextOffice = undefined;
+    } else if (request.currentStage === 'Parallel' && this.allClearanceOfficesApproved) {
+      nextStage = 'Department';
+      nextOffice = 'Department';
+    } else if (request.currentStage === 'Department' && this.getOfficeStatus('Department') === 'Approved') {
+      nextStage = 'Principal';
+      nextOffice = 'Principal';
+    } else if (request.currentStage === 'Principal' && this.getOfficeStatus('Principal') === 'Approved') {
+      nextStage = 'Finance';
+      nextOffice = 'Finance';
+    } else if (request.currentStage === 'Finance' && this.getOfficeStatus('Finance') === 'Approved') {
+      nextStage = 'Completed';
+      nextOffice = undefined;
+    }
+
+    if (nextStage) {
+      this.clearanceService.advanceStage(request.id, nextStage as any, nextOffice);
+      this.loadData();
+    }
   }
 
   // =====================================================
@@ -280,7 +392,7 @@ export class ClearanceStatusComponent {
       } else if (request.currentStage === 'Parallel') {
         // Check if all offices are approved before proceeding
         if (!this.allClearanceOfficesApproved) {
-          this.toastService.warning('Action Required', 'All clearance offices must approve first.');
+          this.toastService.warning('Action Required', 'All parallel offices must approve first.');
           this.isLoading = false;
           return;
         }
@@ -318,12 +430,7 @@ export class ClearanceStatusComponent {
       }
 
       // Update the request
-      allRequests[requestIndex].currentStage = nextStage as any;
-      allRequests[requestIndex].currentOffice = nextOffice;
-
-      // Save back to storage
-      const storage = new (this.clearanceService as any).storage.constructor();
-      storage.save('udsm-clearance-requests', allRequests);
+      this.clearanceService.advanceStage(request.id, nextStage as any, nextOffice);
 
       // Reload data
       this.loadData();
@@ -408,7 +515,16 @@ export class ClearanceStatusComponent {
       return 'No clearance request';
     }
 
-    if (request.status === 'Completed') {
+    if (
+      request.status === 'Completed' ||
+      request.currentStage === 'Completed' ||
+      this.getOfficeStatus('Finance') === 'Approved'
+    ) {
+      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
+        request.status = 'Completed';
+        request.currentStage = 'Completed';
+        this.clearanceService.save(request);
+      }
       return 'Clearance completed';
     }
 
@@ -436,17 +552,15 @@ export class ClearanceStatusComponent {
       case 'Convocation':
         return 'Convocation';
       case 'Parallel':
-        return 'Clearance Offices';
+        return 'Parallel Offices';
       case 'Department':
         return 'Department';
       case 'Principal':
         return 'Principal';
       case 'Finance':
         return 'Finance';
-      case 'Completed':
-        return 'Clearance completed';
       default:
-        return 'Clearance';
+        return 'Clearance completed';
     }
   }
 
@@ -480,7 +594,7 @@ export class ClearanceStatusComponent {
       number: 1,
       label: 'Convocation',
       office: 'Convocation',
-      detail: 'Request your control number, make payment and submit your receipt.',
+      detail: 'Submit your payment receipt for Convocation verification.',
       status: convocationStatus
     });
 
@@ -498,8 +612,8 @@ export class ClearanceStatusComponent {
 
     steps.push({
       number: 2,
-      label: 'Clearance Offices',
-      office: 'Clearance Offices',
+      label: 'Parallel Offices',
+      office: 'Parallel Offices',
       detail: this.officeList.join(', ') + '.',
       status: officesStatus
     });
@@ -608,7 +722,7 @@ export class ClearanceStatusComponent {
   // TYPE CHECK
   // =====================================================
 
-  isClearanceOffice(office: ClearanceOffice | 'Clearance Offices'): office is ClearanceOffice {
+  isClearanceOffice(office: ClearanceOffice | 'Parallel Offices' | 'Clearance Offices'): office is ClearanceOffice {
     return this.officeList.includes(office as ClearanceOffice);
   }
 }

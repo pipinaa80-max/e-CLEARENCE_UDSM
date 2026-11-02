@@ -34,6 +34,11 @@ public class ClearanceRequest {
     @Column(name = "current_office")
     private String currentOffice;
 
+    @OneToMany(mappedBy = "clearanceRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<DepartmentApproval> departmentApprovals = new java.util.ArrayList<>();
+
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 

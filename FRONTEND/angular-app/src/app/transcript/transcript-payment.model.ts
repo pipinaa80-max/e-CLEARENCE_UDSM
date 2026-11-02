@@ -2,7 +2,8 @@ export type TranscriptPaymentStatus =
   | 'Pending Control Number'
   | 'Awaiting Payment'
   | 'Receipt Submitted'
-  | 'Paid';
+  | 'Paid'
+  | 'Receipt Rejected';
 
 export interface TranscriptPaymentRequest {
   id: string;
@@ -19,10 +20,18 @@ export interface TranscriptPaymentRequest {
   controlNumber?: string;
   receiptFileName?: string;
   receiptData?: string;
+  rejectionReason?: string;
   requestedAt: string;
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;
   receiptSubmittedAt?: string;
   collectionMethod?: 'Physical Collection' | 'Post by DHL';
   postingAddress?: string;
+  postingRegion?: string;
+  postingWard?: string;
+  postingPoBox?: string;
+  postingContactPhone?: string;
+  postingContactEmail?: string;
+  dispatchStatus?: 'Pending Dispatch' | 'Dispatched' | 'Collected';
+  dispatchedAt?: string;
 }

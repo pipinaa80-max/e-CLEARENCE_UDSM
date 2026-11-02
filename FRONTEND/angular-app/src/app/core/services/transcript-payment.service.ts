@@ -11,7 +11,20 @@ export class TranscriptPaymentService {
   private readonly requestKey = 'udsm-transcript-payment-requests';
 
   getAllRequests(): TranscriptPaymentRequest[] {
-    return this.storage.get<TranscriptPaymentRequest[]>(this.requestKey) ?? [];
+    const requests = this.storage.get<TranscriptPaymentRequest[]>(this.requestKey) ?? [];
+    let updated = false;
+    for (const r of requests) {
+      if (r.status === 'Pending Control Number') {
+        r.controlNumber = r.controlNumber || ('99' + Math.floor(1000000000 + Math.random() * 9000000000).toString());
+        r.controlNumberIssuedAt = r.controlNumberIssuedAt || new Date().toISOString();
+        r.status = 'Awaiting Payment';
+        updated = true;
+      }
+    }
+    if (updated) {
+      this.storage.save(this.requestKey, requests);
+    }
+    return requests;
   }
 
   getStudentRequests(studentId: string): TranscriptPaymentRequest[] {
@@ -26,6 +39,7 @@ export class TranscriptPaymentService {
     // Subsequent requests are 5,000 per copy.
     const isFirstRequest = studentRequests.length === 0;
     const transcriptCount = isFirstRequest ? 1 : Math.max(1, Math.floor(data.transcriptCount));
+    const autoControlNumber = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
 
     const request: TranscriptPaymentRequest = {
       ...data,
@@ -34,7 +48,9 @@ export class TranscriptPaymentService {
       amount: isFirstRequest ? 15000 : transcriptCount * 5000,
       currency: 'TZS',
       attemptNumber: studentRequests.length + 1,
-      status: 'Pending Control Number',
+      controlNumber: autoControlNumber,
+      controlNumberIssuedAt: new Date().toISOString(),
+      status: 'Awaiting Payment',
       requestedAt: new Date().toISOString(),
       controlNumberRequestedAt: new Date().toISOString()
     };
@@ -46,13 +62,25 @@ export class TranscriptPaymentService {
 
   issueControlNumber(requestId: string, controlNumber: string): boolean {
     const request = this.getAllRequests().find(item => item.id === requestId);
-    if (!request || request.status !== 'Pending Control Number' || !controlNumber.trim()) {
+    if (!request || !controlNumber.trim()) {
       return false;
     }
 
     request.controlNumber = controlNumber.trim();
     request.controlNumberIssuedAt = new Date().toISOString();
     request.status = 'Awaiting Payment';
+    this.save(request);
+    return true;
+  }
+
+  rejectReceipt(requestId: string, reason: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request || request.status !== 'Receipt Submitted') {
+      return false;
+    }
+
+    request.status = 'Receipt Rejected';
+    request.rejectionReason = reason;
     this.save(request);
     return true;
   }
@@ -96,6 +124,39 @@ export class TranscriptPaymentService {
     if (!request) return false;
     request.collectionMethod = collectionMethod;
     request.postingAddress = collectionMethod === 'Post by DHL' ? postingAddress?.trim() : undefined;
+    this.save(request);
+    return true;
+  }
+
+  updateCollectionDetails(
+    requestId: string,
+    collectionMethod: 'Physical Collection' | 'Post by DHL',
+    postingAddress: string,
+    postingRegion?: string,
+    postingWard?: string,
+    postingPoBox?: string,
+    postingContactPhone?: string,
+    postingContactEmail?: string
+  ): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.collectionMethod = collectionMethod;
+    request.postingAddress = postingAddress;
+    request.postingRegion = postingRegion;
+    request.postingWard = postingWard;
+    request.postingPoBox = postingPoBox;
+    request.postingContactPhone = postingContactPhone;
+    request.postingContactEmail = postingContactEmail;
+    request.dispatchStatus = request.dispatchStatus || 'Pending Dispatch';
+    this.save(request);
+    return true;
+  }
+
+  markDispatched(requestId: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.dispatchStatus = 'Dispatched';
+    request.dispatchedAt = new Date().toISOString();
     this.save(request);
     return true;
   }

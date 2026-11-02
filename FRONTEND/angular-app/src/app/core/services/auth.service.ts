@@ -65,7 +65,7 @@ export class AuthService {
   }
 
   private loginWithSuperuserBackend(email: string, password: string): Observable<any> {
-    return this.http.post<any>('http://localhost:8090/api/login', { email, password }).pipe(
+    return this.http.post<any>('http://localhost:8080/api/v1/control-plane/login', { email, password }).pipe(
       map(response => {
         const admin = response.user ?? {};
         const user = {
@@ -125,6 +125,10 @@ export class AuthService {
       ACADEMIC_STAFF: 'Academic Staff',
       'ACADEMIC STAFF': 'Academic Staff',
       LECTURER: 'Lecturer',
+      DIRECTOR_OF_UNDERGRADUATE_STUDIES: 'Director of Undergraduate Studies',
+      'DIRECTOR OF UNDERGRADUATE STUDIES': 'Director of Undergraduate Studies',
+      'DIRECTOR OF UNDEGRADUATE STUDIES': 'Director of Undergraduate Studies',
+      DUS: 'Director of Undergraduate Studies',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
       SUPERUSER: 'Administrator'

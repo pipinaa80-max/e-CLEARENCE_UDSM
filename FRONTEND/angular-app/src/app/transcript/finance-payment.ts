@@ -26,9 +26,12 @@ export class TranscriptFinancePaymentComponent {
   controlNumbers: Record<string, string> = {};
   private queuedRequests: TranscriptPaymentRequest[] = [];
   message = '';
-  selectedQueue: 'queue1' | 'queue2' | 'history' = 'queue1';
+  selectedQueue: 'receipts' | 'history' = 'receipts';
 
-  setQueueFilter(queue: 'queue1' | 'queue2' | 'history'): void {
+  selectedRejectRequest: TranscriptPaymentRequest | null = null;
+  rejectionReason = '';
+
+  setQueueFilter(queue: 'receipts' | 'history'): void {
     this.selectedQueue = queue;
   }
 
@@ -45,10 +48,6 @@ export class TranscriptFinancePaymentComponent {
     return this.queuedRequests;
   }
 
-  get controlNumberRequests(): TranscriptPaymentRequest[] {
-    return this.requests.filter(request => request.status === 'Pending Control Number');
-  }
-
   get receiptRequests(): TranscriptPaymentRequest[] {
     return this.requests.filter(request => request.status === 'Receipt Submitted');
   }
@@ -57,28 +56,38 @@ export class TranscriptFinancePaymentComponent {
     return this.requests.filter(request => request.status === 'Paid');
   }
 
-  issueControlNumber(request: TranscriptPaymentRequest): void {
-    this.message = '';
-    const value = this.controlNumbers[request.id]?.trim();
-    if (!value) {
-      this.toastService.warning('Input Required', 'Enter a control number before issuing it.');
+  openRejectModal(request: TranscriptPaymentRequest): void {
+    this.selectedRejectRequest = request;
+    this.rejectionReason = '';
+  }
+
+  closeRejectModal(): void {
+    this.selectedRejectRequest = null;
+    this.rejectionReason = '';
+  }
+
+  confirmReject(): void {
+    if (!this.selectedRejectRequest || !this.rejectionReason.trim()) {
+      this.toastService.warning('Reason Required', 'Please provide a reason for returning the receipt.');
       return;
     }
 
-    if (!this.paymentService.issueControlNumber(request.id, value)) {
-      this.toastService.error('Action Failed', 'This request is no longer waiting for a control number.');
-      return;
-    }
+    const req = this.selectedRejectRequest;
+    const reason = this.rejectionReason.trim();
 
-    this.notificationService.createNotification(
-        request.studentId,
-        'Transcript control number issued',
-        `Finance issued control number ${value} for your TSh ${request.amount.toLocaleString()} transcript payment.`,
-        'success'
-    );
-    this.controlNumbers[request.id] = '';
-    this.toastService.success('Success', `Control number issued to ${request.studentName}.`);
-    this.refreshRequests();
+    if (this.paymentService.rejectReceipt(req.id, reason)) {
+      this.notificationService.createNotification(
+        req.studentId,
+        'Payment receipt returned by Finance',
+        `Finance returned your payment receipt for Request #${req.attemptNumber}: ${reason}. Please upload a valid receipt.`,
+        'warning'
+      );
+      this.toastService.info('Receipt Returned', `Payment receipt for ${req.studentName} returned for correction.`);
+      this.closeRejectModal();
+      this.refreshRequests();
+    } else {
+      this.toastService.error('Error', 'Could not reject this receipt.');
+    }
   }
 
   markPaid(request: TranscriptPaymentRequest): void {
@@ -86,6 +95,12 @@ export class TranscriptFinancePaymentComponent {
       this.toastService.error('Action Failed', 'Unable to verify this receipt.');
       return;
     }
+    this.notificationService.createNotification(
+      request.studentId,
+      'Payment verified by Finance',
+      `Finance has verified and confirmed your transcript payment receipt for Request #${request.attemptNumber}.`,
+      'success'
+    );
     this.toastService.success('Success', `Payment verified for ${request.studentName}.`);
     this.refreshRequests();
   }
