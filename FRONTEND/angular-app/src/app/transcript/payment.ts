@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { ToastService } from '../core/services/toast.service';
@@ -15,16 +15,19 @@ import { DashboardHeaderComponent } from '../shared/components/dashboard-header/
   templateUrl: './payment.html',
   styleUrl: './payment.css'
 })
-export class TranscriptPaymentComponent {
+export class TranscriptPaymentComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly paymentService = inject(TranscriptPaymentService);
   private readonly toastService = inject(ToastService);
+  private statusRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   sidebarOpen = false;
   request: TranscriptPaymentRequest | null = null;
   message = '';
   isSubmitting = false;
+  isPreparingAdditionalCopy = false;
   transcriptCount = 1;
   selectedFile: File | null = null;
 
@@ -66,7 +69,7 @@ export class TranscriptPaymentComponent {
   }
 
   get isStandaloneMode(): boolean {
-    return !this.isFirstRequest;
+    return this.isPreparingAdditionalCopy || !this.isFirstRequest;
   }
 
   get nextRequestAmount(): number {
@@ -84,13 +87,16 @@ export class TranscriptPaymentComponent {
     }
 
     const lastRequest = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
+    const startAdditionalCopy = this.route.snapshot.queryParamMap.get('additional') === 'true';
 
-    // A student can ONLY start a new request if there are no requests OR the last request is already Paid/Verified!
-    if (!lastRequest || lastRequest.status === 'Paid') {
+    if (startAdditionalCopy && lastRequest?.status === 'Paid') {
       this.request = null;
+      this.isPreparingAdditionalCopy = true;
     } else {
       this.request = lastRequest;
     }
+
+    this.refreshStatusWhilePending();
   }
 
   constructor() {
@@ -112,6 +118,35 @@ export class TranscriptPaymentComponent {
     }
 
     this.selectedFile = file;
+  }
+
+  private refreshStatusWhilePending(): void {
+    if (this.request?.status !== 'Receipt Submitted' || this.statusRefreshTimer) return;
+
+    this.statusRefreshTimer = setInterval(() => {
+      const user = this.authService.getCurrentUser();
+      if (!user || !this.request) return;
+
+      const latestRequest = this.paymentService.getStudentRequests(user.id)
+        .find(item => item.id === this.request?.id);
+      if (latestRequest) {
+        this.request = latestRequest;
+      }
+
+      if (this.request?.status !== 'Receipt Submitted') {
+        this.clearStatusRefreshTimer();
+      }
+    }, 5000);
+  }
+
+  private clearStatusRefreshTimer(): void {
+    if (!this.statusRefreshTimer) return;
+    clearInterval(this.statusRefreshTimer);
+    this.statusRefreshTimer = null;
+  }
+
+  ngOnDestroy(): void {
+    this.clearStatusRefreshTimer();
   }
 
   submitReceipt(): void {
@@ -152,6 +187,7 @@ export class TranscriptPaymentComponent {
         if (submitted) {
           this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully to Finance for verification.');
           this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
+          this.refreshStatusWhilePending();
         } else {
           this.toastService.error('Submission Failed', 'Could not submit payment receipt. Please try again.');
         }
@@ -220,8 +256,6 @@ export class TranscriptPaymentComponent {
     if (!request) return;
     const user = this.authService.getCurrentUser();
     if (!user) return;
-
-    localStorage.setItem(`udsm-transcript-printed-${request.id}`, 'true');
 
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const regNo = request?.registrationNumber || user.registrationNumber || 'N/A';
@@ -309,7 +343,7 @@ export class TranscriptPaymentComponent {
   </div>
 
   <div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨️ Print Transcript</button>
+    <button class="btn-print" onclick="window.print()">Save Transcript as PDF</button>
   </div>
 </body>
 </html>`;
@@ -320,6 +354,8 @@ export class TranscriptPaymentComponent {
       const win = window.open(blobUrl, '_blank');
       if (!win) {
         this.toastService.warning('Popup Blocked', 'Please allow popups to print your transcript.');
+      } else {
+        localStorage.setItem(`udsm-transcript-printed-${request.id}`, 'true');
       }
     } catch (e) {
       console.error('Error printing transcript:', e);

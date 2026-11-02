@@ -23,6 +23,13 @@ interface ProcessStep {
   status: string;
 }
 
+interface TranscriptDashboardStep {
+  number: number;
+  label: string;
+  detail: string;
+  status: 'Approved' | 'Pending' | 'Locked' | 'Waiting for Approval' | 'Rejected';
+}
+
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
@@ -222,27 +229,6 @@ export class StudentDashboard implements OnInit {
     return this.currentUser?.award || 'Bachelor Degree';
   }
 
-  get awardType(): 'degree' | 'diploma' | 'certificate' | 'postgraduate' | 'masters' | 'phd' {
-    const award = this.studentAward.toLowerCase();
-    if (award.includes('phd') || award.includes('doctor')) return 'phd';
-    if (award.includes('master')) return 'masters';
-    if (award.includes('postgraduate')) return 'postgraduate';
-    if (award.includes('diploma')) return 'diploma';
-    if (award.includes('certificate')) return 'certificate';
-    return 'degree';
-  }
-
-  get dashboardEyebrow(): string {
-    switch (this.awardType) {
-      case 'diploma': return 'Diploma Student Dashboard';
-      case 'certificate': return 'Certificate Student Dashboard';
-      case 'postgraduate': return 'Postgraduate Diploma Student Dashboard';
-      case 'masters': return 'Master Degree Student Dashboard';
-      case 'phd': return 'PhD Doctoral Student Dashboard';
-      default: return 'Degree Student Dashboard';
-    }
-  }
-
   get dashboardSubtitle(): string {
     const process = this.isTranscriptSystem ? 'transcript request and payment process' : 'clearance process';
     return `Manage your ${this.studentAward} student information and ${process}.`;
@@ -274,6 +260,37 @@ export class StudentDashboard implements OnInit {
     }
 
     return this.clearanceService.getClearanceStatus(this.currentUser.id);
+  }
+
+  get isClearanceCompleted(): boolean {
+    const request = this.currentRequest;
+    return !!request && (
+      request.status === 'Completed' ||
+      request.currentStage === 'Completed' ||
+      this.getOfficeStatus('Finance') === 'Approved'
+    );
+  }
+
+  get hasStartedTranscriptProcess(): boolean {
+    const user = this.currentUser;
+    return !!user && typeof localStorage !== 'undefined' &&
+      localStorage.getItem(`udsm-transcript-process-started-${user.id}`) === 'true';
+  }
+
+  get isTranscriptProcessCompleted(): boolean {
+    const user = this.currentUser;
+    if (!user || typeof localStorage === 'undefined') return false;
+
+    const firstRequest = this.transcriptService.getStudentRequests(user.id)
+      .find(request => request.attemptNumber === 1);
+    return localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true' ||
+      !!firstRequest?.collectionMethod;
+  }
+
+  startTranscriptProcess(): void {
+    const user = this.currentUser;
+    if (!user || typeof localStorage === 'undefined') return;
+    localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
   }
 
   // =====================================================
@@ -589,6 +606,65 @@ export class StudentDashboard implements OnInit {
     if (!user) return null;
     const requests = this.transcriptService.getStudentRequests(user.id);
     return requests.length > 0 ? requests[requests.length - 1] : null;
+  }
+
+  get clearanceTranscriptRequest(): TranscriptPaymentRequest | null {
+    const user = this.currentUser;
+    if (!user) return null;
+    return this.transcriptService.getStudentRequests(user.id)
+      .find(request => request.attemptNumber === 1) ?? null;
+  }
+
+  get transcriptProcessStageLabel(): string {
+    const request = this.clearanceTranscriptRequest;
+    const user = this.currentUser;
+    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+    const documentsSubmitted = !!user &&
+      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+
+    if (isAcquired || request?.collectionMethod) return 'Transcript process completed';
+    if (documentsSubmitted) return 'Step 3: Transcript Collection';
+    if (request?.status === 'Paid') return 'Step 2: Upload Documentation';
+    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for Payment Approval';
+    return 'Step 1: Transcript Payment';
+  }
+
+  get transcriptProcessSteps(): TranscriptDashboardStep[] {
+    const request = this.clearanceTranscriptRequest;
+    const user = this.currentUser;
+    const documentsSubmitted = !!user &&
+      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+    const paymentStatus = request?.status;
+    const paymentStepStatus: TranscriptDashboardStep['status'] =
+      paymentStatus === 'Paid' ? 'Approved'
+        : paymentStatus === 'Receipt Submitted' ? 'Waiting for Approval'
+          : paymentStatus === 'Receipt Rejected' ? 'Rejected' : 'Pending';
+
+    return [
+      {
+        number: 1,
+        label: 'Transcript Payment',
+        detail: request?.controlNumber
+          ? 'Pay the transcript fee using your issued control number.'
+          : 'Start your transcript request and obtain a payment control number.',
+        status: paymentStepStatus
+      },
+      {
+        number: 2,
+        label: 'Upload Documentation',
+        detail: 'Upload and submit the required transcript documents.',
+        status: documentsSubmitted ? 'Approved' : paymentStatus === 'Paid' ? 'Pending' : 'Locked'
+      },
+      {
+        number: 3,
+        label: 'Transcript Collection',
+        detail: 'Choose physical collection or delivery by DHL.',
+        status: request?.collectionMethod || isAcquired
+          ? 'Approved'
+          : documentsSubmitted ? 'Pending' : 'Locked'
+      }
+    ];
   }
 
   get transcriptStatus(): string {

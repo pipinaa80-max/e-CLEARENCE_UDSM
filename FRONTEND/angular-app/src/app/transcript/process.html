@@ -142,8 +142,8 @@
       <p>Your transcript request has been successfully submitted and finalized.</p>
       <div class="step-navigation">
         <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-        <a routerLink="/transcript" class="approval-button" (click)="finishProcess(); $event.preventDefault();">
-          Request History
+        <a *ngIf="!isAcquired" routerLink="/transcript" class="approval-button" (click)="finishProcess(); $event.preventDefault();">
+          Acquire Transcript
         </a>
       </div>
     </section>

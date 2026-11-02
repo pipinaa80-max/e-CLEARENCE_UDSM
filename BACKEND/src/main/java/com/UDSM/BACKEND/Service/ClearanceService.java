@@ -204,6 +204,12 @@ public class ClearanceService {
                     }
                     DepartmentApproval approval = approvalOpt.get();
 
+                    if ("Department".equalsIgnoreCase(targetOffice)
+                            && !"Department".equalsIgnoreCase(cr.getCurrentStage())
+                            && approval.getStatus() == ClearanceStatus.PENDING) {
+                        return false;
+                    }
+
                     if (statusFilter != null && !statusFilter.isBlank() && !"ALL".equalsIgnoreCase(statusFilter)) {
                         if (!approval.getStatus().name().equalsIgnoreCase(statusFilter)) {
                             return false;

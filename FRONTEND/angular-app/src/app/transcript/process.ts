@@ -137,23 +137,22 @@ export class TranscriptProcessComponent implements OnInit {
 
   finishProcess(): void {
     const user = this.authService.getCurrentUser();
-    if (!user) return;
+    if (!user || this.isAcquired) return;
 
-    if (!this.isAcquired) {
-      this.generateTranscript();
-      localStorage.setItem(`udsm-transcript-acquired-${user.id}`, 'true');
-    }
+    if (!this.generateTranscript()) return;
+
+    localStorage.setItem(`udsm-transcript-acquired-${user.id}`, 'true');
     this.router.navigate(['/transcript']);
   }
 
-  generateTranscript(): void {
+  generateTranscript(): boolean {
     const user = this.authService.getCurrentUser();
-    if (!user) return;
+    if (!user) return false;
 
     const transcriptWindow = window.open('', '_blank');
     if (!transcriptWindow) {
       alert('Please allow popups to acquire your transcript.');
-      return;
+      return false;
     }
 
     const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -247,6 +246,7 @@ export class TranscriptProcessComponent implements OnInit {
       </html>
     `);
     transcriptWindow.document.close();
+    return true;
   }
 
   constructor() {
@@ -263,6 +263,7 @@ export class TranscriptProcessComponent implements OnInit {
       return;
     }
 
+    localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
     localStorage.setItem(`udsm-transcript-decision-${user.id}`, 'Approved');
     this.autoNavigateToActiveStage();
   }

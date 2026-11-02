@@ -573,6 +573,14 @@ export class ClearanceService {
         return otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
       }
 
+      if (office === 'Department') {
+        const departmentApproval = request.approvals.find(approval => approval.office === 'Department');
+        const departmentStageReached = request.currentStage === 'Department' ||
+          departmentApproval?.status === 'Approved' ||
+          departmentApproval?.status === 'Rejected';
+        if (!departmentStageReached) return false;
+      }
+
       if (request.approvals.some(a => a && a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
         return true;
       }

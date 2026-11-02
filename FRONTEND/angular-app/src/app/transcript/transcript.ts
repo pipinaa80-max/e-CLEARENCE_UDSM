@@ -93,12 +93,10 @@ export class TranscriptComponent implements OnInit {
     return !!last && last.status !== 'Paid';
   }
 
-  notifyPendingRequest(): void {
-    const user = this.authService.getCurrentUser();
-    const requests = user ? this.transcriptService.getStudentRequests(user.id) : [];
-    const last = requests.at(-1);
-    const reqNum = last ? `#${last.attemptNumber}` : '';
-    this.message = `Pending Request Active: Request ${reqNum} is currently awaiting Finance verification. You cannot order additional copies until Finance verifies it.`;
+  get canAcquireAdditionalCopies(): boolean {
+    return this.hasCompletedFirstRequest &&
+      this.activeStageLabel === 'Transcript Process Completed' &&
+      !this.hasUnverifiedActiveRequest;
   }
 
   get currentActiveRequest(): TranscriptPaymentRequest | null {

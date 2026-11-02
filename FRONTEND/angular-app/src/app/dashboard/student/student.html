@@ -69,7 +69,6 @@
   <main class="content-panel">
 
     <app-dashboard-header
-      [eyebrow]="dashboardEyebrow"
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
       [subtitle]="dashboardSubtitle"
       [user]="null"
@@ -78,15 +77,21 @@
     >
       <a
         header-actions
-        class="notification-button"
+        class="notification-profile-button"
         routerLink="/notifications"
         title="View notifications"
-        aria-label="View notifications"
+        [attr.aria-label]="unreadNotifications ? 'View notifications, ' + unreadNotifications + ' unread' : 'View notifications'"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-        </svg>
-        <span class="header-notification-badge" *ngIf="unreadNotifications">{{ unreadNotifications }}</span>
+        <img
+          *ngIf="hasPhoto(); else profileInitial"
+          [src]="getPhotoSource()"
+          [alt]="currentUser?.fullName || 'Student profile photo'"
+          (error)="onImageError()"
+        />
+        <ng-template #profileInitial>
+          <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
+        </ng-template>
+        <span class="profile-notification-dot" *ngIf="unreadNotifications" aria-hidden="true"></span>
       </a>
     </app-dashboard-header>
 
@@ -96,31 +101,10 @@
 
     <section class="student-summary" *ngIf="currentUser">
       <div class="student-summary-header">
-      <div class="student-photo">
-        <!-- Loading state -->
-        <div *ngIf="isLoading" class="photo-loading">
-          <span class="spinner"></span>
+        <div class="student-details">
+          <span class="section-label">Student Information</span>
+          <h2>{{ currentUser.fullName }}</h2>
         </div>
-
-        <!-- Photo -->
-        <img
-                *ngIf="!isLoading && hasPhoto()"
-                [src]="getPhotoSource()"
-                [alt]="currentUser.fullName"
-                [title]="currentUser.fullName"
-                (error)="onImageError()"
-        />
-
-        <!-- Initials -->
-        <span *ngIf="!isLoading && !hasPhoto()">
-          {{ currentUser.fullName?.charAt(0) || 'S' }}
-        </span>
-      </div>
-
-      <div class="student-details">
-        <span class="section-label">Student Information</span>
-        <h2>{{ currentUser.fullName }}</h2>
-      </div>
       </div>
 
       <div class="student-clearance">
@@ -155,9 +139,17 @@
 
         <div class="student-summary-action">
           <ng-container *ngIf="!isTranscriptSystem">
-            <a *ngIf="!currentRequest && clearanceStatus !== 'Completed'" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
-            <a *ngIf="clearanceStatus === 'Completed'" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
-            <a *ngIf="clearanceStatus === 'Completed'" routerLink="/transcript/process" class="primary-button">Start Transcript Process</a>
+            <a *ngIf="!currentRequest && !isClearanceCompleted" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
+            <a *ngIf="isClearanceCompleted" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
+            <a
+              *ngIf="isClearanceCompleted"
+              [routerLink]="isTranscriptProcessCompleted ? '/transcript/payment' : '/transcript'"
+              [queryParams]="isTranscriptProcessCompleted ? { additional: true } : null"
+              class="primary-button"
+              (click)="startTranscriptProcess()"
+            >
+              {{ isTranscriptProcessCompleted ? 'Acquire Additional Copies' : (hasStartedTranscriptProcess ? 'Continue with Transcript Process' : 'Start Transcript Process') }}
+            </a>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">
             <a routerLink="/transcript" class="secondary-button">{{ currentTranscriptRequest ? 'Manage Transcript' : 'Start Transcript Request' }}</a>
@@ -169,7 +161,11 @@
     <!-- =================================================
          CLEARANCE PROCESS STEPPER & STAGE PATH
     ================================================== -->
-    <section class="dashboard-clearance-stepper-card" *ngIf="currentRequest && !isTranscriptSystem">
+    <section
+      class="dashboard-clearance-stepper-card"
+      *ngIf="currentRequest && !isTranscriptSystem && (!isClearanceCompleted || hasStartedTranscriptProcess)"
+    >
+      <ng-container *ngIf="!isClearanceCompleted; else transcriptProcessStepper">
 
       <!-- CURRENT STAGE -->
       <section class="current-stage">
@@ -286,22 +282,30 @@
         <p>Your clearance application is undergoing final financial verification with the Finance Office.</p>
       </section>
 
-      <section
-        *ngIf="currentRequest.status === 'Completed'"
-        class="waiting-card completed-card"
-      >
-        <h2>Clearance Completed</h2>
-        <p>Congratulations! All clearance stages have been successfully approved.</p>
-        <div class="completed-actions" style="display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap;">
-          <a routerLink="/clearance/report" class="secondary-button">
-            View Clearance Report
-          </a>
-          <a routerLink="/transcript/process" class="approval-button" style="margin-top: 0;">
-            Start Transcript Process
-          </a>
-        </div>
-      </section>
+      </ng-container>
 
+      <ng-template #transcriptProcessStepper>
+        <section class="current-stage">
+          <span>Current Stage</span>
+          <strong>{{ transcriptProcessStageLabel }}</strong>
+        </section>
+
+        <section class="process-path transcript-process-path">
+          <article
+            *ngFor="let step of transcriptProcessSteps; let last = last"
+            class="process-step"
+            [ngClass]="step.status.toLowerCase().replace(' ', '-')"
+          >
+            <div class="step-line" *ngIf="!last"></div>
+            <span class="step-number">{{ step.number }}</span>
+            <div class="step-content">
+              <strong>{{ step.label }}</strong>
+              <small>{{ step.detail }}</small>
+              <span>{{ step.status }}</span>
+            </div>
+          </article>
+        </section>
+      </ng-template>
     </section>
 
   </main>

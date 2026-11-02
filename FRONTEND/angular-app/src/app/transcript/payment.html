@@ -67,11 +67,6 @@
           <section class="payment-step">
             <h2>Payment &amp; Receipt Submission</h2>
 
-            <label class="copy-count-field" *ngIf="isStandaloneMode && !request">
-              <span>Number of additional copies</span>
-              <input type="number" min="1" step="1" [(ngModel)]="transcriptCount" aria-label="Total number of transcripts" />
-            </label>
-
             <p *ngIf="!isStandaloneMode">
               This is your first transcript request. The amount is fixed at <strong>TSh 15,000</strong>.
             </p>
@@ -84,7 +79,12 @@
             </div>
 
             <p style="margin-top: 12px; color: #475569; font-size: 0.9rem; line-height: 1.5;">
-              Pay <strong>TSh {{ (request?.amount || nextRequestAmount) | number }}</strong> to the University Bank Account / M-Pesa / TigoPesa / AirtelMoney, then upload a clear photo or PDF of your payment receipt (risiti) below for <strong>Finance</strong> verification.
+              <ng-container *ngIf="isStandaloneMode; else firstRequestPaymentInstructions">
+                Pay <strong>TSh 5,000</strong> in ARIS.3, then upload a clear photo or PDF of your payment receipt (risiti) below for <strong>Finance</strong> verification.
+              </ng-container>
+              <ng-template #firstRequestPaymentInstructions>
+                Pay <strong>TSh {{ (request?.amount || nextRequestAmount) | number }}</strong> to the University Bank Account / M-Pesa / TigoPesa / AirtelMoney, then upload a clear photo or PDF of your payment receipt (risiti) below for <strong>Finance</strong> verification.
+              </ng-template>
             </p>
 
             <label class="receipt-upload" style="margin-top: 16px; display: block;">
@@ -121,7 +121,6 @@
 
             <div class="step-navigation" style="margin-top: 20px; gap: 12px; display: flex;">
               <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-              <a routerLink="/transcript" class="approval-button">View Request History</a>
             </div>
           </section>
         </ng-container>
@@ -142,7 +141,10 @@
 
             <div class="step-navigation" style="margin-top: 20px; gap: 10px; display: flex; flex-wrap: wrap;">
               <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-              <button *ngIf="!isPrinted(request.id)" type="button" class="approval-button" (click)="printTranscript(request)" style="background: #218739; color: #ffffff; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+              <button *ngIf="isStandaloneMode && !isPrinted(request.id)" type="button" class="approval-button" (click)="printTranscript(request)" style="background: #218739; color: #ffffff; border: none; cursor: pointer;">
+                Acquire Transcript PDF
+              </button>
+              <button *ngIf="!isStandaloneMode && !isPrinted(request.id)" type="button" class="approval-button" (click)="printTranscript(request)" style="background: #218739; color: #ffffff; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                 <i class="bi bi-printer-fill"></i> Print Official Transcript
               </button>
               <a *ngIf="!isStandaloneMode" routerLink="/transcript/process" class="approval-button">Next Step</a>
