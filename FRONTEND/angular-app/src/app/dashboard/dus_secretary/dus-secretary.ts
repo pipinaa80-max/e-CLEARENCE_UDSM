@@ -69,7 +69,67 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   loadRequests(): void {
-    this.requests = this.transcriptService.getAllRequests();
+    const url = `${this.config.apiUrl}/dus-secretary/students`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
+      next: (students) => {
+        if (students && students.length > 0) {
+          this.requests = students.map(s => this.mapStudentToRequest(s));
+        } else {
+          this.requests = [];
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load students from backend:', err);
+        this.requests = [];
+      }
+    });
+  }
+
+  private mapStudentToRequest(s: any): TranscriptPaymentRequest {
+    return {
+      id: s.id,
+      studentId: s.id,
+      studentName: s.fullName,
+      registrationNumber: s.registrationNumber,
+      award: s.programme || 'Degree Certificate & Transcript',
+      graduationYear: s.graduationYear || '2024',
+      transcriptCount: 1,
+      amount: 15000,
+      currency: 'TZS',
+      attemptNumber: 1,
+      status: 'Paid',
+      controlNumber: '99' + Math.abs(this.hashCode(s.registrationNumber || s.id)).toString().padStart(10, '0').slice(0, 10),
+      requestedAt: s.createdAt || new Date().toISOString(),
+      collectionMethod: s.stationName ? 'Physical Collection' : 'Physical Collection',
+      postingRegion: s.college || 'Dar es Salaam',
+      postingAddress: s.stationName || s.department || 'DUS Directorate Office',
+      postingContactPhone: s.phoneNumber || '',
+      postingContactEmail: s.email || '',
+      dispatchStatus: s.dispatchStatus || 'Pending Dispatch',
+      dispatchedAt: s.dispatchedAt,
+      certificateVerified: Boolean(s.certificateVerified),
+      certificateVerifiedAt: s.certificateVerifiedAt,
+      digitalSignatureHash: s.digitalSignatureHash,
+      signedBy: s.signedBy,
+      signedAt: s.signedAt,
+      stationCode: s.stationCode,
+      stationName: s.stationName,
+      intakeStatus: s.intakeStatus,
+      vaultLockerNumber: s.vaultLockerNumber,
+      handoverReceiptToken: s.handoverReceiptToken
+    };
+  }
+
+  private hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
   }
 
   // Summary Metrics

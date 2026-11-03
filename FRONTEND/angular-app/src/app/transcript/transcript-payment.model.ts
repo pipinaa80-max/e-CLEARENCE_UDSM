@@ -40,4 +40,23 @@ export interface TranscriptPaymentRequest {
   digitalSignatureHash?: string;
   signedBy?: string;
   signedAt?: string;
+
+  // Station Secretary Intake & Handover fields
+  stationCode?: string;
+  stationName?: string;
+  intakeStatus?: 'Awaiting Intake' | 'Received at Station' | 'In Vault' | 'Collected by Student';
+  stationReceivedAt?: string;
+  stationReceivedBy?: string;
+  vaultLockerNumber?: string;
+  packageCondition?: string;
+  handoverApproved?: boolean;
+  handoverApprovedAt?: string;
+  handoverSecretary?: string;
+  handoverCollectorType?: 'Student in Person' | 'Authorized Legal Representative';
+  handoverCollectorName?: string;
+  handoverCollectorId?: string;
+  handoverCollectorPhone?: string;
+  handoverReceiptToken?: string;
+  handoverNotes?: string;
+  transitIssueNotes?: string;
 }

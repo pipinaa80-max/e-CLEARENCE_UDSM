@@ -39,6 +39,7 @@ import { DepartmentOfficerComponent } from "./dashboard/Department-officer/depar
 import { LecturerDashboard } from './dashboard/lecturer/lecturer';
 import { DirectorUndergraduateStudiesDashboard } from './dashboard/director_undergraduate_studies/director-undergraduate-studies';
 import { DusSecretaryDashboardComponent } from './dashboard/dus_secretary/dus-secretary';
+import { StationSecretaryDashboardComponent } from './dashboard/station-secretary/station-secretary';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -150,6 +151,16 @@ export const routes: Routes = [
   {
     path: 'dashboard/dus-secretary',
     component: DusSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/station-secretary',
+    component: StationSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/campus-dus-secretary',
+    component: StationSecretaryDashboardComponent,
     canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
 

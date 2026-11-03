@@ -62,6 +62,7 @@ public class AdminService {
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ProjectLocalStorageRepository projectLocalStorageRepository;
+    private final com.UDSM.BACKEND.util.ExcelDataGenerator excelDataGenerator;
     private final DataFormatter dataFormatter = new DataFormatter();
 
     @Transactional(readOnly = true)
@@ -847,10 +848,15 @@ public class AdminService {
     @Transactional
     public int seedUdsmSampleData() {
         int count = 0;
-        java.io.File csvFile = new java.io.File("udsm_20_students_and_staff_data.csv");
+        java.io.File projectRoot = com.UDSM.BACKEND.util.ExcelDataGenerator.resolveProjectRoot();
+        java.io.File csvFile = new java.io.File(projectRoot, "udsm_20_students_and_staff_data.csv");
         if (!csvFile.exists()) {
-            csvFile = new java.io.File("/home/mulimila/e-CLEARENCE_UDSM/udsm_20_students_and_staff_data.csv");
+            csvFile = new java.io.File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.csv");
         }
+        if (!csvFile.exists()) {
+            csvFile = new java.io.File("udsm_20_students_and_staff_data.csv");
+        }
+
         if (csvFile.exists()) {
             try (BufferedReader br = new BufferedReader(new java.io.FileReader(csvFile))) {
                 String header = br.readLine();
@@ -878,6 +884,18 @@ public class AdminService {
             }
         }
         return count;
+    }
+
+    public byte[] exportUsersToExcel() throws Exception {
+        return excelDataGenerator.exportDatabaseToExcelBytes();
+    }
+
+    public byte[] exportUsersToCsv() {
+        return excelDataGenerator.exportDatabaseToCsvBytes();
+    }
+
+    public void regenerateSampleFiles() {
+        excelDataGenerator.exportDatabaseToSpreadsheets();
     }
 
     private String getCellValue(Cell cell) {

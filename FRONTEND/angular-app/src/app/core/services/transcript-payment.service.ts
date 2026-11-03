@@ -186,6 +186,62 @@ export class TranscriptPaymentService {
     return true;
   }
 
+  stationIntake(
+    requestId: string,
+    stationCode: string,
+    stationName: string,
+    vaultLocker: string,
+    receivedBy: string,
+    condition?: string
+  ): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.stationCode = stationCode;
+    request.stationName = stationName;
+    request.vaultLockerNumber = vaultLocker;
+    request.stationReceivedBy = receivedBy;
+    request.packageCondition = condition || 'Intact & Sealed';
+    request.intakeStatus = 'Received at Station';
+    request.stationReceivedAt = new Date().toISOString();
+    this.save(request);
+    return true;
+  }
+
+  stationHandover(
+    requestId: string,
+    collectorType: 'Student in Person' | 'Authorized Legal Representative',
+    collectorName: string,
+    collectorId: string,
+    collectorPhone: string,
+    secretary: string,
+    token: string,
+    notes?: string
+  ): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.dispatchStatus = 'Collected';
+    request.intakeStatus = 'Collected by Student';
+    request.handoverApproved = true;
+    request.handoverApprovedAt = new Date().toISOString();
+    request.handoverSecretary = secretary;
+    request.handoverCollectorType = collectorType;
+    request.handoverCollectorName = collectorName;
+    request.handoverCollectorId = collectorId;
+    request.handoverCollectorPhone = collectorPhone;
+    request.handoverReceiptToken = token;
+    request.handoverNotes = notes;
+    this.save(request);
+    return true;
+  }
+
+  reportDiscrepancy(requestId: string, note: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.transitIssueNotes = note;
+    this.save(request);
+    return true;
+  }
+
   private save(request: TranscriptPaymentRequest): void {
     const requests = this.getAllRequests();
     const index = requests.findIndex(item => item.id === request.id);

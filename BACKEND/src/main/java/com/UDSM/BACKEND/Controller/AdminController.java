@@ -95,6 +95,40 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Successfully seeded " + count + " users matching UDSM table format."));
     }
 
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportUsersToExcel() {
+        try {
+            byte[] bytes = adminService.exportUsersToExcel();
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=udsm_clearance_users.xlsx")
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .body(bytes);
+        } catch (Exception e) {
+            log.error("Failed to export Excel: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<byte[]> exportUsersToCsv() {
+        try {
+            byte[] bytes = adminService.exportUsersToCsv();
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=udsm_clearance_users.csv")
+                    .header("Content-Type", "text/csv; charset=UTF-8")
+                    .body(bytes);
+        } catch (Exception e) {
+            log.error("Failed to export CSV: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/generate-sample-files")
+    public ResponseEntity<ApiResponse> generateSampleFiles() {
+        adminService.regenerateSampleFiles();
+        return ResponseEntity.ok(ApiResponse.success("Successfully exported live database records to spreadsheets."));
+    }
+
     @PostMapping("/import/local-storage")
     public ResponseEntity<?> importLocalStorage(@RequestBody JsonNode export) {
         return ResponseEntity.ok(adminService.importLocalStorage(export));

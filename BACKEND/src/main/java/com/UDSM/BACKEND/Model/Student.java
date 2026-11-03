@@ -131,8 +131,50 @@ public class Student {
     @Column(name = "dispatched_at")
     private LocalDateTime dispatchedAt;
 
+    @Column(name = "station_code", length = 50)
+    private String stationCode;
+
+    @Column(name = "station_name", length = 255)
+    private String stationName;
+
+    @Column(name = "intake_status", length = 50)
+    @Builder.Default
+    private String intakeStatus = "Awaiting Intake";
+
+    @Column(name = "station_received_at")
+    private LocalDateTime stationReceivedAt;
+
+    @Column(name = "station_received_by", length = 255)
+    private String stationReceivedBy;
+
+    @Column(name = "vault_locker_number", length = 100)
+    private String vaultLockerNumber;
+
+    @Column(name = "handover_collector_type", length = 100)
+    private String handoverCollectorType;
+
+    @Column(name = "handover_collector_name", length = 255)
+    private String handoverCollectorName;
+
+    @Column(name = "handover_collector_id", length = 100)
+    private String handoverCollectorId;
+
+    @Column(name = "handover_collector_phone", length = 50)
+    private String handoverCollectorPhone;
+
+    @Column(name = "handover_approved_at")
+    private LocalDateTime handoverApprovedAt;
+
+    @Column(name = "handover_secretary", length = 255)
+    private String handoverSecretary;
+
+    @Column(name = "handover_receipt_token", length = 255)
+    private String handoverReceiptToken;
+
+    @Column(name = "transit_issue_notes", columnDefinition = "TEXT")
+    private String transitIssueNotes;
+
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
