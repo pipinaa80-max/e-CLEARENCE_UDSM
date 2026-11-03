@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:4200", "http://127.0.0.1:4200"}, allowCredentials = "true")
 @RequiredArgsConstructor
 @Slf4j
 @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")

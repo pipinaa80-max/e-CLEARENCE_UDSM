@@ -67,6 +67,7 @@
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
       [subtitle]="dashboardSubtitle"
       [user]="currentUser"
+      [showProfile]="false"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >

@@ -110,26 +110,28 @@
   font-weight: 900;
 }
 
-/* The profile photo is also the notification entry point. */
+/* The profile photo as the dedicated notification entry point in the header */
 .notification-profile-button {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  flex: 0 0 48px;
+  flex: 0 0 40px;
   overflow: visible;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid #f59e0b;
   border-radius: 50%;
-  background: #e7eff6;
+  background: #001f34;
   color: #ffffff;
   text-decoration: none;
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .notification-profile-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  transform: scale(1.08);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
 }
 
 .notification-profile-button img {
@@ -140,17 +142,17 @@
 }
 
 .profile-initial {
-  color: #0b5b94;
-  font-size: 1.2rem;
+  color: #ffffff;
+  font-size: 0.95rem;
   font-weight: 800;
 }
 
 .profile-notification-dot {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 12px;
-  height: 12px;
+  top: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
   border: 2px solid #ffffff;
   border-radius: 50%;
   background: #e11d48;

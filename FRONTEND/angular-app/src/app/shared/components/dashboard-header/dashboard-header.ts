@@ -34,7 +34,7 @@ import { AuthService } from '../../../core/services/auth.service';
           <ng-content select="[header-actions]"></ng-content>
         </div>
 
-        <div class="user-profile clickable" *ngIf="user && user.id" (click)="toggleProfileCard($event)" title="Click to view complete profile details">
+        <div class="user-profile clickable" *ngIf="showProfile && user && user.id" (click)="toggleProfileCard($event)" title="Click to view complete profile details">
           <div class="profile-info">
             <span class="user-name">{{ user.fullName || 'User' }}</span>
             <span class="user-role">{{ user.role || 'Role' }}</span>
@@ -444,6 +444,7 @@ export class DashboardHeaderComponent {
   @Input() subtitle?: string;
   @Input() eyebrow?: string;
   @Input() user?: any;
+  @Input() showProfile = true;
   @Input() showToggle = true;
 
   @Output() toggleSidebar = new EventEmitter<void>();

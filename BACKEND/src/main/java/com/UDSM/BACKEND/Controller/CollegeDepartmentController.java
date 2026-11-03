@@ -13,7 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/colleges")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = {"http://localhost:4200", "http://127.0.0.1:4200"}, allowCredentials = "true")
 public class CollegeDepartmentController {
 
     private final CollegeRepository collegeRepository;

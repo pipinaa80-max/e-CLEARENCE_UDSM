@@ -14,7 +14,7 @@ import java.util.List;
 @RequestMapping("/collection-stations")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = {"http://localhost:4200", "http://127.0.0.1:4200"}, allowCredentials = "true")
 public class CollectionStationController {
 
     private final CollectionStationRepository stationRepository;

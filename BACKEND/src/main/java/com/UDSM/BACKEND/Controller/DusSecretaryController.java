@@ -25,7 +25,7 @@ import java.util.Map;
 @RequestMapping("/dus-secretary")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:4200", "http://127.0.0.1:4200"}, allowCredentials = "true")
 public class DusSecretaryController {
 
     private final StudentRepository studentRepository;
