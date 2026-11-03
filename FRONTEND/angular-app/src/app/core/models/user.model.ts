@@ -15,6 +15,7 @@ export type UserRole =
   | 'Academic Staff'
   | 'Lecturer'
   | 'Director of Undergraduate Studies'
+  | 'DUS Secretary'
   | 'Workshop'
   | 'Laboratory'
   | 'Administrator';

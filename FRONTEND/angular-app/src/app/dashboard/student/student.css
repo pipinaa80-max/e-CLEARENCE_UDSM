@@ -75,15 +75,18 @@
   box-sizing: border-box;
 }
 
-/* Hide sidebar by shrinking it when not open (Desktop) */
 @media (min-width: 769px) {
+  .sidebar,
+  .dashboard-shell .sidebar,
   .dashboard-shell:not(.sidebar-open) .sidebar {
-    width: 0;
-    flex: 0 0 0;
-    padding: 0;
-    overflow: hidden;
-    opacity: 0;
-    visibility: hidden;
+    width: 270px !important;
+    flex: 0 0 270px !important;
+    padding: 24px 18px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    position: relative !important;
+    transform: none !important;
   }
 }
 

@@ -1,5 +1,3 @@
-
-
 package com.UDSM.BACKEND.Model;
 
 public enum NotificationType {

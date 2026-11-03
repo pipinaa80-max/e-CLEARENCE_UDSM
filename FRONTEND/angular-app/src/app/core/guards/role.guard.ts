@@ -67,6 +67,7 @@ function thisRoleRedirect(role: UserRole): string {
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
     'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+    'DUS Secretary': '/dashboard/dus-secretary',
     Administrator: '/dashboard/admin'
   };
 

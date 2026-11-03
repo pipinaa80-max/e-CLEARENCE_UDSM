@@ -34,4 +34,10 @@ export interface TranscriptPaymentRequest {
   postingContactEmail?: string;
   dispatchStatus?: 'Pending Dispatch' | 'Dispatched' | 'Collected';
   dispatchedAt?: string;
+  certificateVerified?: boolean;
+  certificateVerifiedAt?: string;
+  digitalSignature?: string;
+  digitalSignatureHash?: string;
+  signedBy?: string;
+  signedAt?: string;
 }

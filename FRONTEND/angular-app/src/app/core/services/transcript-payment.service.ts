@@ -119,6 +119,31 @@ export class TranscriptPaymentService {
     return true;
   }
 
+  updateVerificationStatus(requestId: string, verified: boolean): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.certificateVerified = verified;
+    request.certificateVerifiedAt = verified ? new Date().toISOString() : undefined;
+    if (verified && !request.digitalSignatureHash) {
+      request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
+      request.signedBy = 'DUS Directorate Secretary';
+      request.signedAt = new Date().toISOString();
+    }
+    this.save(request);
+    return true;
+  }
+
+  applyDigitalSignature(requestId: string, signatureData: string, signatureHash: string, signedBy: string): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.digitalSignature = signatureData;
+    request.digitalSignatureHash = signatureHash;
+    request.signedBy = signedBy;
+    request.signedAt = new Date().toISOString();
+    this.save(request);
+    return true;
+  }
+
   updateCollection(requestId: string, collectionMethod: 'Physical Collection' | 'Post by DHL', postingAddress?: string): boolean {
     const request = this.getAllRequests().find(item => item.id === requestId);
     if (!request) return false;

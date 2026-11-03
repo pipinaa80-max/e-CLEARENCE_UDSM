@@ -64,6 +64,7 @@ public class AdminService {
     private final ProjectLocalStorageRepository projectLocalStorageRepository;
     private final DataFormatter dataFormatter = new DataFormatter();
 
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         String projectId = ProjectScope.currentProjectId();
         log.info("Admin: Fetching users for project scope: {}", projectId);
@@ -281,6 +282,10 @@ public class AdminService {
                 case "DUS":
                     role = ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
                     break;
+                case "DUS SECRETARY":
+                case "DUS_SECRETARY":
+                    role = ERole.DUS_SECRETARY;
+                    break;
                 case "PRINCIPAL":
                     role = ERole.PRINCIPAL;
                     break;
@@ -472,14 +477,19 @@ public class AdminService {
 
             while (rows.hasNext()) {
                 org.apache.poi.ss.usermodel.Row row = rows.next();
+                if (row == null) continue;
+
+                int lastCellNum = row.getLastCellNum();
+                if (lastCellNum <= 0) continue;
+
                 List<String> rowList = new java.util.ArrayList<>();
-                for (int i = 0; i < Math.max(row.getLastCellNum(), 20); i++) {
+                for (int i = 0; i < Math.min(lastCellNum, 30); i++) {
                     rowList.add(getCellValue(row.getCell(i)));
                 }
                 String[] data = rowList.toArray(new String[0]);
 
                 RegisterRequest request = buildRequestFromMap(data, headerMap);
-                if (request.getFirstName() == null || request.getFirstName().isEmpty()) continue;
+                if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) continue;
 
                 try {
                     saveOrUpdateUserAndStudent(request);

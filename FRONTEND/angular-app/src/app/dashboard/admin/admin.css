@@ -70,13 +70,18 @@
 }
 
 @media (min-width: 769px) {
+  .sidebar,
+  .dashboard-shell .sidebar,
   .dashboard-shell:not(.sidebar-open) .sidebar {
-    width: 0;
-    flex: 0 0 0;
-    padding: 0;
-    border-right: none;
-    visibility: hidden;
-    opacity: 0;
+    width: 270px !important;
+    flex: 0 0 270px !important;
+    padding: 24px 18px !important;
+    border-right: 1px solid rgba(255,255,255,0.1) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: flex !important;
+    position: relative !important;
+    transform: none !important;
   }
 }
 
@@ -208,8 +213,15 @@
 .content-panel {
   width: 100%;
   max-width: 100%;
-  padding: 32px;
+  padding: 20px 24px;
+  box-sizing: border-box;
   overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .content-panel {
+    padding: 14px 16px;
+  }
 }
 
 .topbar {

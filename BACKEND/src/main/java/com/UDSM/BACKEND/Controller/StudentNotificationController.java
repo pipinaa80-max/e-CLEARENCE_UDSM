@@ -26,14 +26,14 @@ public class StudentNotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("isAuthenticated()")
     public List<Map<String, Object>> list(@AuthenticationPrincipal UserDetails principal) {
         User user = requireUser(principal);
         return notificationRepository.findByUserOrderByCreatedAtDesc(user).stream().map(this::toResponse).toList();
     }
 
     @PatchMapping("/{id}/read")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("isAuthenticated()")
     public Map<String, Object> markRead(@AuthenticationPrincipal UserDetails principal, @PathVariable String id) {
         User user = requireUser(principal);
         Notification notice = notificationRepository.findById(id)
@@ -45,7 +45,7 @@ public class StudentNotificationController {
     }
 
     @PostMapping("/read-all")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void markAllRead(@AuthenticationPrincipal UserDetails principal) {
         notificationService.markAllAsRead(requireUser(principal));

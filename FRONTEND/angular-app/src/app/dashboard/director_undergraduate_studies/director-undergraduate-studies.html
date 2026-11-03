@@ -68,23 +68,24 @@
 
       <button
         type="button"
-        class="logout-link"
-        (click)="logout()"
+        class="nav-tab-btn"
+        [class.active]="activeTab === 'stations'"
+        (click)="setTab('stations')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 1h-8A1.5 1.5 0 0 0 0 2.5v9A1.5 1.5 0 0 0 1.5 13h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
-        <span>Log out</span>
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+        <span>Collection Stations</span>
       </button>
-    </nav>
 
+    </nav>
   </aside>
 
 
   <main class="content">
 
     <app-dashboard-header
-      eyebrow="Directorate of Undergraduate Studies"
-      title="Director of Undergraduate Studies Analytics"
-      subtitle="Track clearance analytics across colleges, students, academic years, and corresponding clearance offices."
+      eyebrow="Directorate Office"
+      title="Director of Undergraduate Studies"
+      subtitle="Clearance analytics, colleges, and collection stations"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
@@ -845,6 +846,188 @@
         </div>
       </div>
     </section>
+
+    <!-- COLLECTION STATIONS MANAGEMENT TAB -->
+    <ng-container *ngIf="activeTab === 'stations'">
+      <section class="transcript-ledger-section" id="collection-stations">
+        <div class="ledger-header-box" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <span class="ledger-eyebrow">Directorate Management</span>
+            <h2>UDSM Collection Stations & Regional Pickup Hubs</h2>
+            <p>Manage physical pickup centers and regional dispatch stations for student certificates & transcripts.</p>
+          </div>
+          <div>
+            <button type="button" class="btn-primary-action" (click)="openCreateStationModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 8px; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+              <i class="bi bi-plus-circle-fill"></i>
+              <span>Add Collection Station</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STATS OVERVIEW CARDS -->
+        <div class="analytics-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0;">
+          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
+            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Total Pickup Hubs</span>
+            <strong style="display: block; font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">{{ stations.length }}</strong>
+          </article>
+          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; border-left: 4px solid #16a34a;">
+            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Active Pickup Hubs</span>
+            <strong style="display: block; font-size: 24px; font-weight: 800; color: #16a34a; margin-top: 4px;">{{ activeStationsCount }}</strong>
+          </article>
+          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; border-left: 4px solid #0284c7;">
+            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Regions Covered</span>
+            <strong style="display: block; font-size: 24px; font-weight: 800; color: #0284c7; margin-top: 4px;">{{ stationRegionsCount }}</strong>
+          </article>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div style="margin-bottom: 20px;">
+          <input
+            type="text"
+            placeholder="Search stations by name, code, region, district or address..."
+            [(ngModel)]="stationSearchTerm"
+            style="width: 100%; max-width: 480px; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;"
+          />
+        </div>
+
+        <!-- STATIONS TABLE -->
+        <div class="ledger-table-card">
+          <div class="ledger-table-wrap">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Code / ID</th>
+                  <th>Station Name</th>
+                  <th>Region & District</th>
+                  <th>Address & Hours</th>
+                  <th>Contact Info</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let st of filteredStations">
+                  <td><code style="font-weight: 800; color: #0284c7;">{{ st.code }}</code></td>
+                  <td><strong style="color: #0f172a;">{{ st.name }}</strong></td>
+                  <td>
+                    <span style="padding: 3px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 800;">
+                      {{ st.region }}
+                    </span>
+                    <small *ngIf="st.district" style="display: block; margin-top: 2px; color: #64748b;">{{ st.district }}</small>
+                  </td>
+                  <td>
+                    <span style="display: block; font-size: 12px; color: #334155; font-weight: 600;">{{ st.address }}</span>
+                    <small style="color: #64748b;">⏰ {{ st.operatingHours }}</small>
+                  </td>
+                  <td>
+                    <small style="display: block; color: #334155;" *ngIf="st.contactPhone">📞 {{ st.contactPhone }}</small>
+                    <small style="display: block; color: #334155;" *ngIf="st.contactEmail">✉️ {{ st.contactEmail }}</small>
+                  </td>
+                  <td>
+                    <span
+                      style="padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800;"
+                      [ngClass]="st.isActive ? 'status-active' : 'status-inactive'"
+                    >
+                      {{ st.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                      <button type="button" (click)="openEditStationModal(st)" style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0284c7; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        Edit
+                      </button>
+                      <button type="button" (click)="toggleStationActive(st)" style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        {{ st.isActive ? 'Deactivate' : 'Activate' }}
+                      </button>
+                      <button type="button" (click)="deleteStation(st)" style="padding: 5px 12px; border: none; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredStations.length === 0">
+                  <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                    No collection stations found matching your search term.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- CREATE / EDIT COLLECTION STATION MODAL -->
+    <div class="compact-details-overlay" *ngIf="showStationModal" (click)="closeStationModal()">
+      <div class="modal-dialog-card" (click)="$event.stopPropagation()" style="max-width: 580px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); margin: auto;">
+        <header style="padding: 16px 20px; background: linear-gradient(135deg, #001f34 0%, #003b5c 100%); color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800;">
+            {{ editingStation ? 'Edit Collection Station' : 'Add New Collection Station' }}
+          </h3>
+          <button type="button" (click)="closeStationModal()" style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;">&times;</button>
+        </header>
+
+        <form (ngSubmit)="saveStation()" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">Station Code *</label>
+              <input type="text" [(ngModel)]="stationForm.code" name="code" required style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">Region / City *</label>
+              <input type="text" [(ngModel)]="stationForm.region" name="region" required placeholder="e.g. Dar es Salaam, Arusha, Mwanza" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 12px; font-weight: 700; color: #334155;">Station / Hub Name *</label>
+            <input type="text" [(ngModel)]="stationForm.name" name="name" required placeholder="e.g. UDSM Arusha Regional Collection Station" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">District / Area</label>
+              <input type="text" [(ngModel)]="stationForm.district" name="district" placeholder="e.g. Arusha Urban, Kinondoni" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">Operating Hours</label>
+              <input type="text" [(ngModel)]="stationForm.operatingHours" name="operatingHours" placeholder="Mon - Fri: 08:00 - 16:00" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 12px; font-weight: 700; color: #334155;">Physical Address / Location *</label>
+            <textarea [(ngModel)]="stationForm.address" name="address" rows="2" required placeholder="Full address details or room number..." style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">Contact Phone</label>
+              <input type="tel" [(ngModel)]="stationForm.contactPhone" name="contactPhone" placeholder="+255 22 2410500" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 12px; font-weight: 700; color: #334155;">Contact Email</label>
+              <input type="email" [(ngModel)]="stationForm.contactEmail" name="contactEmail" placeholder="station@udsm.ac.tz" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <input type="checkbox" [(ngModel)]="stationForm.isActive" name="isActive" id="stationActive" style="width: 16px; height: 16px; cursor: pointer;" />
+            <label for="stationActive" style="font-size: 13px; font-weight: 700; color: #334155; cursor: pointer;">Station is Active for Student Pickup</label>
+          </div>
+
+          <footer style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+            <button type="button" (click)="closeStationModal()" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-weight: 700; font-size: 13px; cursor: pointer;">Cancel</button>
+            <button type="submit" style="padding: 8px 20px; border: none; border-radius: 6px; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer;">
+              {{ editingStation ? 'Save Changes' : 'Create Station' }}
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
 
   </main>
 

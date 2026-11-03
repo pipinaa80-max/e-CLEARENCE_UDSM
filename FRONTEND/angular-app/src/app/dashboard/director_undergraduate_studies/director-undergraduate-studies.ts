@@ -12,6 +12,7 @@ import { StorageService } from '../../core/services/storage.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
+import { CollectionStationService, CollectionStation } from '../../core/services/collection-station.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 export interface OfficeStatusSummary {
@@ -100,6 +101,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly stationService = inject(CollectionStationService);
   private readonly toastService = inject(ToastService);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
@@ -107,9 +109,26 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   private readonly storage = new StorageService();
 
   sidebarOpen = false;
-  activeTab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' = 'overview';
+  activeTab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations' = 'overview';
   isLoading = false;
   generatedAt = new Date();
+
+  // Collection Stations Management State
+  stations: CollectionStation[] = [];
+  editingStation: CollectionStation | null = null;
+  showStationModal = false;
+  stationSearchTerm = '';
+  stationForm = {
+    code: '',
+    name: '',
+    region: 'Dar es Salaam',
+    district: '',
+    address: '',
+    operatingHours: 'Mon - Fri: 08:00 - 16:00',
+    contactPhone: '',
+    contactEmail: '',
+    isActive: true
+  };
 
   allRequests: ClearanceRequest[] = [];
   studentYearMap = new Map<string, string>();
@@ -163,6 +182,120 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     }
   }
 
+  // Collection Stations Computed Helpers & Actions
+  get filteredStations(): CollectionStation[] {
+    const q = (this.stationSearchTerm || '').trim().toLowerCase();
+    if (!q) return this.stations;
+    return this.stations.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.code.toLowerCase().includes(q) ||
+      s.region.toLowerCase().includes(q) ||
+      (s.district && s.district.toLowerCase().includes(q)) ||
+      s.address.toLowerCase().includes(q)
+    );
+  }
+
+  get activeStationsCount(): number {
+    return this.stations.filter(s => s.isActive).length;
+  }
+
+  get stationRegionsCount(): number {
+    return new Set(this.stations.map(s => s.region)).size;
+  }
+
+  loadStations(): void {
+    this.stationService.getAllStations().subscribe({
+      next: list => { this.stations = list; },
+      error: err => console.error('Error loading collection stations:', err)
+    });
+  }
+
+  openCreateStationModal(): void {
+    this.editingStation = null;
+    this.stationForm = {
+      code: 'HUB-' + Math.floor(100 + Math.random() * 900),
+      name: '',
+      region: 'Dar es Salaam',
+      district: '',
+      address: '',
+      operatingHours: 'Mon - Fri: 08:00 - 16:00',
+      contactPhone: '',
+      contactEmail: '',
+      isActive: true
+    };
+    this.showStationModal = true;
+  }
+
+  openEditStationModal(st: CollectionStation): void {
+    this.editingStation = st;
+    this.stationForm = {
+      code: st.code,
+      name: st.name,
+      region: st.region,
+      district: st.district || '',
+      address: st.address,
+      operatingHours: st.operatingHours || 'Mon - Fri: 08:00 - 16:00',
+      contactPhone: st.contactPhone || '',
+      contactEmail: st.contactEmail || '',
+      isActive: st.isActive
+    };
+    this.showStationModal = true;
+  }
+
+  closeStationModal(): void {
+    this.showStationModal = false;
+    this.editingStation = null;
+  }
+
+  saveStation(): void {
+    if (!this.stationForm.name.trim() || !this.stationForm.code.trim() || !this.stationForm.address.trim()) {
+      this.toastService.error('Missing Fields', 'Station name, code, and physical address are required.');
+      return;
+    }
+
+    if (this.editingStation) {
+      this.stationService.updateStation(this.editingStation.id, this.stationForm).subscribe({
+        next: updated => {
+          this.toastService.success('Station Updated', `Updated collection station "${updated.name}".`);
+          this.closeStationModal();
+          this.loadStations();
+        },
+        error: err => this.toastService.error('Update Failed', err.error?.message || 'Failed to update station.')
+      });
+    } else {
+      this.stationService.createStation(this.stationForm).subscribe({
+        next: created => {
+          this.toastService.success('Station Created', `Created new collection hub "${created.name}".`);
+          this.closeStationModal();
+          this.loadStations();
+        },
+        error: err => this.toastService.error('Creation Failed', err.error?.message || 'Failed to create station.')
+      });
+    }
+  }
+
+  toggleStationActive(st: CollectionStation): void {
+    const newStatus = !st.isActive;
+    this.stationService.updateStation(st.id, { isActive: newStatus }).subscribe({
+      next: () => {
+        st.isActive = newStatus;
+        this.toastService.success('Status Changed', `Station "${st.name}" is now ${newStatus ? 'Active' : 'Inactive'}.`);
+      },
+      error: () => this.toastService.error('Action Failed', 'Could not toggle station status.')
+    });
+  }
+
+  deleteStation(st: CollectionStation): void {
+    if (!confirm(`Are you sure you want to deactivate station "${st.name}"?`)) return;
+    this.stationService.deleteStation(st.id).subscribe({
+      next: () => {
+        this.toastService.success('Station Deactivated', `Station "${st.name}" has been deactivated.`);
+        this.loadStations();
+      },
+      error: () => this.toastService.error('Delete Failed', 'Could not deactivate station.')
+    });
+  }
+
   // Filters
   searchTerm = '';
   selectedCollege = 'ALL';
@@ -194,6 +327,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
   ngOnInit(): void {
     this.loadAnalyticsData();
+    this.loadStations();
   }
 
   toggleSidebar(): void {
@@ -204,7 +338,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     this.sidebarOpen = false;
   }
 
-  setTab(tab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts'): void {
+  setTab(tab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations'): void {
     this.activeTab = tab;
     this.closeSidebar();
   }

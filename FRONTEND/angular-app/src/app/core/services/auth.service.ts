@@ -129,6 +129,9 @@ export class AuthService {
       'DIRECTOR OF UNDERGRADUATE STUDIES': 'Director of Undergraduate Studies',
       'DIRECTOR OF UNDEGRADUATE STUDIES': 'Director of Undergraduate Studies',
       DUS: 'Director of Undergraduate Studies',
+      DUS_SECRETARY: 'DUS Secretary',
+      'DUS SECRETARY': 'DUS Secretary',
+      'DUS Secretary': 'DUS Secretary',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
       SUPERUSER: 'Administrator'

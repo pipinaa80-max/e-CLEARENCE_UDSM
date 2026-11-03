@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -24,7 +24,7 @@ interface AcademicUnitData {
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
-export class AdminDashboard implements OnInit {
+export class AdminDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly adminService = inject(AdminService);
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -32,11 +32,12 @@ export class AdminDashboard implements OnInit {
   private readonly projectAdminService = inject(ProjectAdminService);
   private readonly awardService = inject(AwardService);
 
+  Math = Math;
   sidebarOpen = false;
   showAddForm = false;
   readonly themeColors = UDSM_BRAND_COLORS;
   themeColorDropdownOpen = false;
-  activeTab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'overview';
+  activeTab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'users';
   newAwardName: string = '';
   awardsList: string[] = [];
   editingAwardName: string | null = null;
@@ -67,6 +68,7 @@ export class AdminDashboard implements OnInit {
     'Workshop',
     'Laboratory',
     'Director of Undergraduate Studies',
+    'DUS Secretary',
     'Administrator'
   ];
   clearanceRequests: any[] = [];
@@ -574,10 +576,47 @@ export class AdminDashboard implements OnInit {
     });
   }
 
+  // Pagination State for User Management Table
+  currentPage: number = 1;
+  pageSize: number = 25;
+  readonly maxFileUploadSizeBytes: number = 10 * 1024 * 1024; // 10MB file limit
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredUsers.length / this.pageSize) || 1;
+  }
+
+  get paginatedUsers(): any[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredUsers.slice(start, start + this.pageSize);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+    }
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) {
+      this.currentPage = p;
+    }
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+  }
+
   clearUserFilters(): void {
     this.userSearchTerm = '';
     this.userRoleFilter = '';
     this.userStatusFilter = '';
+    this.currentPage = 1;
   }
 
   get filteredRequests(): any[] {
@@ -593,6 +632,8 @@ export class AdminDashboard implements OnInit {
     });
   }
 
+  private pollingTimer?: any;
+
   ngOnInit(): void {
     const token = this.authService.getToken();
     if (!token) {
@@ -604,6 +645,70 @@ export class AdminDashboard implements OnInit {
     this.loadData();
     this.loadProjectConfig();
     this.loadAwards();
+    this.startPolling(5000);
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
+  }
+
+  startPolling(intervalMs: number = 5000): void {
+    this.stopPolling();
+    this.pollingTimer = setInterval(() => {
+      this.refreshDataSilent();
+    }, intervalMs);
+  }
+
+  stopPolling(): void {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = undefined;
+    }
+  }
+
+  refreshDataSilent(): void {
+    this.adminService.getAllUsers().subscribe({
+      next: (users) => {
+        if (Array.isArray(users)) {
+          this.users = users.map(u => this.authService.mapUserResponse(u));
+          this.calculateStats();
+        }
+      },
+      error: () => {}
+    });
+
+    this.adminService.getAllClearanceRequests().subscribe({
+      next: (requests) => {
+        if (Array.isArray(requests) && requests.length > 0) {
+          this.clearanceRequests = requests;
+          this.calculateStats();
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  isLoadingUsers: boolean = false;
+
+  reloadUsersFast(): void {
+    this.isLoadingUsers = true;
+    this.adminService.getAllUsers().subscribe({
+      next: (users) => {
+        this.isLoadingUsers = false;
+        if (Array.isArray(users)) {
+          this.users = users.map(u => this.authService.mapUserResponse(u));
+        } else {
+          this.users = [];
+        }
+        this.calculateStats();
+        this.changeDetector.detectChanges();
+      },
+      error: (err) => {
+        this.isLoadingUsers = false;
+        console.error('Error reloading users fast:', err);
+        this.changeDetector.detectChanges();
+      }
+    });
   }
 
   loadData(): void {
@@ -618,6 +723,7 @@ export class AdminDashboard implements OnInit {
           this.users = [];
         }
         this.calculateStats();
+        this.changeDetector.detectChanges();
       },
       error: (err) => {
         console.error('Error loading users', err);
@@ -762,7 +868,7 @@ export class AdminDashboard implements OnInit {
     localStorage.setItem('udsm-project-dashboards', JSON.stringify(dashboards));
   }
 
-  setTab(tab: 'overview' | 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards'): void {
+  setTab(tab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards'): void {
     this.activeTab = tab;
     this.message = '';
   }
@@ -1128,7 +1234,23 @@ export class AdminDashboard implements OnInit {
   }
 
   onFileSelected(event: any): void {
-    this.selectedFile = event.target.files[0];
+    const file = event.target.files[0];
+    if (!file) {
+      this.selectedFile = null;
+      return;
+    }
+
+    if (file.size > this.maxFileUploadSizeBytes) {
+      this.message = `Selected file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB) exceeds the maximum 10MB size limit. Please upload a smaller file.`;
+      this.isError = true;
+      this.selectedFile = null;
+      event.target.value = '';
+      return;
+    }
+
+    this.selectedFile = file;
+    this.message = `Selected file "${file.name}" (${(file.size / 1024).toFixed(1)} KB). Ready for processing.`;
+    this.isError = false;
   }
 
   isUploading: boolean = false;
@@ -1136,17 +1258,29 @@ export class AdminDashboard implements OnInit {
   uploadFile(): void {
     if (!this.selectedFile) return;
 
+    if (this.selectedFile.size > this.maxFileUploadSizeBytes) {
+      this.message = 'Selected file exceeds the maximum 10MB size limit.';
+      this.isError = true;
+      return;
+    }
+
     this.isUploading = true;
-    this.message = 'Uploading and processing records...';
+    this.message = 'Uploading and processing Excel records...';
     this.isError = false;
 
     this.adminService.bulkUploadUsers(this.selectedFile).subscribe({
       next: (res) => {
         this.isUploading = false;
-        this.message = res.message || 'Users uploaded and processed successfully!';
+        this.message = res.message || 'Excel file successfully uploaded and processed!';
         this.isError = false;
         this.selectedFile = null;
+
+        // Immediate reload & auto-switch to User Management view
         this.loadData();
+        this.setTab('users');
+
+        // Fast 2s polling burst for live hot-reload data updates
+        this.startPolling(3000);
       },
       error: (err) => {
         this.isUploading = false;

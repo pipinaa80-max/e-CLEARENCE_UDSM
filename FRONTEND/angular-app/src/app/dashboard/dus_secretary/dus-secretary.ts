@@ -1,0 +1,330 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../../core/services/auth.service';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { ConfigService } from '../../core/services/config.service';
+
+@Component({
+  selector: 'app-dus-secretary-dashboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
+  templateUrl: './dus-secretary.html',
+  styleUrl: './dus-secretary.css'
+})
+export class DusSecretaryDashboardComponent implements OnInit {
+  private readonly authService = inject(AuthService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
+  private readonly config = inject(ConfigService);
+
+  sidebarOpen = false;
+  requests: TranscriptPaymentRequest[] = [];
+  searchTerm = '';
+  filterTab: 'ALL' | 'PHYSICAL' | 'DHL' | 'PENDING' | 'DISPATCHED' = 'ALL';
+
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
+
+  // Digital Signature Modal State
+  showSignatureModal = false;
+  selectedSigRequest: TranscriptPaymentRequest | null = null;
+  signatureForm = {
+    secretaryName: 'Directorate Secretary',
+    title: 'Directorate of Undergraduate Studies (DUS)',
+    stampNote: 'Official Certificate & Transcript Release Verification'
+  };
+
+  // Caution & Confirmation Modal State
+  showCautionModal = false;
+  cautionTitle = '⚠️ Caution & Action Confirmation';
+  cautionMessage = '';
+  pendingActionType: 'VERIFY_CERTIFICATE' | 'UPDATE_DISPATCH' | 'APPLY_SIGNATURE' | null = null;
+  pendingActionData: { request: TranscriptPaymentRequest; verified?: boolean; status?: 'Pending Dispatch' | 'Dispatched' | 'Collected' } | null = null;
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  ngOnInit(): void {
+    this.loadRequests();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  loadRequests(): void {
+    this.requests = this.transcriptService.getAllRequests();
+  }
+
+  // Summary Metrics
+  get totalRequests(): number {
+    return this.requests.length;
+  }
+
+  get physicalPending(): number {
+    return this.requests.filter(r => r.collectionMethod === 'Physical Collection' && r.dispatchStatus !== 'Collected').length;
+  }
+
+  get dhlPending(): number {
+    return this.requests.filter(r => r.collectionMethod === 'Post by DHL' && r.dispatchStatus !== 'Dispatched').length;
+  }
+
+  get dispatchedCount(): number {
+    return this.requests.filter(r => r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected').length;
+  }
+
+  // Filtered List
+  get filteredRequests(): TranscriptPaymentRequest[] {
+    return this.requests.filter(r => {
+      if (this.filterTab === 'PHYSICAL' && r.collectionMethod !== 'Physical Collection') return false;
+      if (this.filterTab === 'DHL' && r.collectionMethod !== 'Post by DHL') return false;
+      if (this.filterTab === 'PENDING' && (r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected')) return false;
+      if (this.filterTab === 'DISPATCHED' && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected') return false;
+
+      if (this.searchTerm.trim()) {
+        const q = this.searchTerm.trim().toLowerCase();
+        const matchName = r.studentName?.toLowerCase().includes(q);
+        const matchReg = r.registrationNumber?.toLowerCase().includes(q);
+        const matchControl = r.controlNumber?.toLowerCase().includes(q);
+        const matchRegion = r.postingRegion?.toLowerCase().includes(q);
+        const matchPhone = r.postingContactPhone?.toLowerCase().includes(q);
+        const matchSig = r.digitalSignatureHash?.toLowerCase().includes(q);
+        return matchName || matchReg || matchControl || matchRegion || matchPhone || matchSig;
+      }
+      return true;
+    });
+  }
+
+  // CAUTION & CONFIRMATION TRIGGERS
+  onCertificateCheckboxChange(request: TranscriptPaymentRequest, verified: boolean): void {
+    this.pendingActionType = 'VERIFY_CERTIFICATE';
+    this.pendingActionData = { request, verified };
+    this.cautionTitle = verified ? '⚠️ Confirm Certificate Verification' : '⚠️ Lock Certificate Verification';
+    this.cautionMessage = verified
+      ? `Are you sure you want to verify the Education Certificate for ${request.studentName} (${request.registrationNumber})? This will automatically generate a digital signature seal, save to database, notify the student, and unlock dispatch state controls.`
+      : `Are you sure you want to uncheck certificate verification for ${request.studentName}? Dispatch state controls will be locked.`;
+    this.showCautionModal = true;
+  }
+
+  onDispatchSelectChange(request: TranscriptPaymentRequest, newStatus: 'Pending Dispatch' | 'Dispatched' | 'Collected'): void {
+    this.pendingActionType = 'UPDATE_DISPATCH';
+    this.pendingActionData = { request, status: newStatus };
+    this.cautionTitle = '⚠️ Confirm Dispatch State Update';
+    this.cautionMessage = `Are you sure you want to change dispatch status to "${newStatus}" for ${request.studentName}? This will save to the database and update the student's status.`;
+    this.showCautionModal = true;
+  }
+
+  onApplySignatureClick(): void {
+    if (!this.selectedSigRequest) return;
+    this.pendingActionType = 'APPLY_SIGNATURE';
+    this.pendingActionData = { request: this.selectedSigRequest };
+    this.cautionTitle = '⚠️ Confirm Directorate Digital Seal & Signature';
+    this.cautionMessage = `Are you sure you want to apply the official Directorate Digital Seal and Signature token to ${this.selectedSigRequest.studentName}? This action will permanently sign and certify the release record in the database.`;
+    this.showCautionModal = true;
+  }
+
+  confirmCautionAction(): void {
+    if (!this.pendingActionData || !this.pendingActionType) return;
+
+    this.showCautionModal = false;
+    const { request, verified, status } = this.pendingActionData;
+
+    switch (this.pendingActionType) {
+      case 'VERIFY_CERTIFICATE':
+        if (verified !== undefined) {
+          this.executeCertificateVerification(request, verified);
+        }
+        break;
+      case 'UPDATE_DISPATCH':
+        if (status) {
+          this.executeUpdateDispatchStatus(request, status);
+        }
+        break;
+      case 'APPLY_SIGNATURE':
+        this.executeApplySignature();
+        break;
+    }
+
+    this.pendingActionType = null;
+    this.pendingActionData = null;
+  }
+
+  cancelCautionAction(): void {
+    this.showCautionModal = false;
+    this.pendingActionType = null;
+    this.pendingActionData = null;
+    this.loadRequests();
+  }
+
+  // EXECUTE ACTIONS AFTER CONFIRMATION (WITH DATABASE PERSISTENCE)
+  private executeCertificateVerification(request: TranscriptPaymentRequest, verified: boolean): void {
+    request.certificateVerified = verified;
+    this.transcriptService.updateVerificationStatus(request.id, verified);
+
+    if (verified) {
+      request.certificateVerifiedAt = new Date().toISOString();
+      if (!request.digitalSignatureHash) {
+        request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
+        request.signedBy = this.currentUser?.fullName || 'Directorate Secretary';
+        request.signedAt = new Date().toISOString();
+      }
+      this.saveVerificationToBackend(request, verified);
+      this.autoNotifyRelease(request);
+    } else {
+      request.certificateVerified = false;
+      this.saveVerificationToBackend(request, false);
+      this.showToast(`Verification unchecked for ${request.studentName}. Dispatch controls locked.`, 'error');
+      this.loadRequests();
+    }
+  }
+
+  private saveVerificationToBackend(request: TranscriptPaymentRequest, verified: boolean): void {
+    const studentIdentifier = request.registrationNumber || request.studentId;
+    if (!studentIdentifier) return;
+
+    const payload = {
+      studentId: studentIdentifier,
+      verified,
+      digitalSignatureHash: request.digitalSignatureHash,
+      signedBy: request.signedBy
+    };
+
+    const url = `${this.config.apiUrl}/dus-secretary/verify-certificate`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
+      next: () => console.log('Saved certificate verification to PostgreSQL database.'),
+      error: (err) => console.error('Error saving verification to database:', err)
+    });
+  }
+
+  private executeUpdateDispatchStatus(request: TranscriptPaymentRequest, status: 'Pending Dispatch' | 'Dispatched' | 'Collected'): void {
+    request.dispatchStatus = status;
+    if (status === 'Dispatched') {
+      request.dispatchedAt = new Date().toISOString();
+      this.transcriptService.markDispatched(request.id);
+    } else {
+      this.transcriptService.updateCollectionDetails(
+        request.id,
+        request.collectionMethod || 'Physical Collection',
+        request.postingAddress || '',
+        request.postingRegion,
+        request.postingWard,
+        request.postingPoBox,
+        request.postingContactPhone,
+        request.postingContactEmail
+      );
+    }
+
+    // Persist dispatch status update directly to backend database
+    const studentIdentifier = request.registrationNumber || request.studentId;
+    if (studentIdentifier) {
+      const url = `${this.config.apiUrl}/dus-secretary/update-dispatch`;
+      const token = this.authService.getToken();
+      const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+      this.http.post(url, { studentId: studentIdentifier, dispatchStatus: status }, { headers, withCredentials: true }).subscribe({
+        next: () => console.log('Dispatch status saved to PostgreSQL database.'),
+        error: (err) => console.error('Error saving dispatch status to database:', err)
+      });
+    }
+
+    this.showToast(`Dispatch status updated to "${status}" for ${request.studentName}. Saved to database.`, 'success');
+    this.loadRequests();
+  }
+
+  private executeApplySignature(): void {
+    if (!this.selectedSigRequest) return;
+
+    const sigHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
+    const signer = `${this.signatureForm.secretaryName} (${this.signatureForm.title})`;
+
+    this.selectedSigRequest.certificateVerified = true;
+    this.selectedSigRequest.certificateVerifiedAt = new Date().toISOString();
+    this.selectedSigRequest.digitalSignatureHash = sigHash;
+    this.selectedSigRequest.signedBy = signer;
+    this.selectedSigRequest.signedAt = new Date().toISOString();
+
+    this.transcriptService.applyDigitalSignature(this.selectedSigRequest.id, 'DUS_OFFICIAL_DIGITAL_STAMP', sigHash, signer);
+    this.transcriptService.updateVerificationStatus(this.selectedSigRequest.id, true);
+
+    this.saveVerificationToBackend(this.selectedSigRequest, true);
+
+    this.showToast(`✍️ Official Directorate Digital Seal & Signature applied to ${this.selectedSigRequest.studentName}! Saved to database.`, 'success');
+    this.autoNotifyRelease(this.selectedSigRequest);
+    this.closeSignatureModal();
+  }
+
+  // Digital Signature Modal Handlers
+  openSignatureModal(request: TranscriptPaymentRequest): void {
+    this.selectedSigRequest = request;
+    this.signatureForm.secretaryName = this.currentUser?.fullName || 'Directorate Secretary';
+    this.showSignatureModal = true;
+  }
+
+  closeSignatureModal(): void {
+    this.showSignatureModal = false;
+    this.selectedSigRequest = null;
+  }
+
+  autoNotifyRelease(request: TranscriptPaymentRequest): void {
+    const studentIdentifier = request.registrationNumber || request.studentId;
+    if (!studentIdentifier) return;
+
+    const payload = {
+      studentId: studentIdentifier,
+      studentName: request.studentName,
+      releaseType: 'Academic Transcript & Degree Certificate',
+      releaseDate: new Date().toISOString().split('T')[0],
+      instructions: request.collectionMethod === 'Post by DHL'
+        ? `Education Certificate verified and digitally signed. Dispatched via DHL Courier Service to ${request.postingRegion || 'specified address'}.`
+        : 'Education Certificate verified and digitally signed. Please visit DUS Secretary Office Room 102 with your valid Student ID or National ID.',
+      trackingNumber: '',
+      customNote: `Digitally Signed and Sealed by ${request.signedBy || 'Directorate Secretary'} (${request.digitalSignatureHash || 'UDSM-DUS-SIG-SEALED'}).`
+    };
+
+    const url = `${this.config.apiUrl}/dus-secretary/notify-release`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
+      next: (res: any) => {
+        this.showToast(`🎓 Certificate verified, signed & release notification automatically sent to ${res.studentName || request.studentName}!`, 'success');
+        this.loadRequests();
+      },
+      error: () => {
+        this.showToast(`Education certificate verified and signed for ${request.studentName}. System alert sent.`, 'success');
+        this.loadRequests();
+      }
+    });
+  }
+
+  showToast(msg: string, type: 'success' | 'error'): void {
+    this.toastMessage = msg;
+    this.toastType = type;
+    setTimeout(() => {
+      this.toastMessage = '';
+    }, 4000);
+  }
+
+  getStatusClass(status?: string): string {
+    return status ? status.toLowerCase().replace(/\s+/g, '-') : 'pending';
+  }
+}

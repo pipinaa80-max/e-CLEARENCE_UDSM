@@ -50,6 +50,12 @@ public class User implements UserDetails {
     @Column(name = "registration_number", unique = true)
     private String registrationNumber;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Student student;
+
     @Column(name = "programme")
     private String programme;
 
@@ -295,5 +301,141 @@ public class User implements UserDetails {
         this.emailVerified = true;
         this.verificationToken = null;
         this.verificationTokenExpiry = null;
+    }
+
+    // =========================================================
+    // 3NF DELEGATING ACCESSORS (ONE SOURCE OF TRUTH IN STUDENT)
+    // =========================================================
+
+    public String getProgramme() {
+        return (this.student != null && this.student.getProgramme() != null) ? this.student.getProgramme() : this.programme;
+    }
+
+    public void setProgramme(String programme) {
+        this.programme = programme;
+        if (this.student != null) {
+            this.student.setProgramme(programme);
+        }
+    }
+
+    public String getCollege() {
+        return (this.student != null && this.student.getCollege() != null) ? this.student.getCollege() : this.college;
+    }
+
+    public void setCollege(String college) {
+        this.college = college;
+        if (this.student != null) {
+            this.student.setCollege(college);
+        }
+    }
+
+    public String getDepartment() {
+        return (this.student != null && this.student.getDepartment() != null) ? this.student.getDepartment() : this.department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+        if (this.student != null) {
+            this.student.setDepartment(department);
+        }
+    }
+
+    public String getHall() {
+        return (this.student != null && this.student.getHall() != null) ? this.student.getHall() : this.hall;
+    }
+
+    public void setHall(String hall) {
+        this.hall = hall;
+        if (this.student != null) {
+            this.student.setHall(hall);
+        }
+    }
+
+    public String getRoomNumber() {
+        return (this.student != null && this.student.getRoomNumber() != null) ? this.student.getRoomNumber() : this.roomNumber;
+    }
+
+    public void setRoomNumber(String roomNumber) {
+        this.roomNumber = roomNumber;
+        if (this.student != null) {
+            this.student.setRoomNumber(roomNumber);
+        }
+    }
+
+    public String getAcademicYear() {
+        return (this.student != null && this.student.getAcademicYear() != null) ? this.student.getAcademicYear() : this.academicYear;
+    }
+
+    public void setAcademicYear(String academicYear) {
+        this.academicYear = academicYear;
+        if (this.student != null) {
+            this.student.setAcademicYear(academicYear);
+        }
+    }
+
+    public String getGraduationYear() {
+        return (this.student != null && this.student.getGraduationYear() != null) ? this.student.getGraduationYear() : this.graduationYear;
+    }
+
+    public void setGraduationYear(String graduationYear) {
+        this.graduationYear = graduationYear;
+        if (this.student != null) {
+            this.student.setGraduationYear(graduationYear);
+        }
+    }
+
+    public String getSemester() {
+        return (this.student != null && this.student.getSemester() != null) ? this.student.getSemester() : this.semester;
+    }
+
+    public void setSemester(String semester) {
+        this.semester = semester;
+        if (this.student != null) {
+            this.student.setSemester(semester);
+        }
+    }
+
+    public String getYearOfStudy() {
+        return (this.student != null && this.student.getYearOfStudy() != null) ? this.student.getYearOfStudy() : this.yearOfStudy;
+    }
+
+    public void setYearOfStudy(String yearOfStudy) {
+        this.yearOfStudy = yearOfStudy;
+        if (this.student != null) {
+            this.student.setYearOfStudy(yearOfStudy);
+        }
+    }
+
+    public String getWing() {
+        return (this.student != null && this.student.getWing() != null) ? this.student.getWing() : this.wing;
+    }
+
+    public void setWing(String wing) {
+        this.wing = wing;
+        if (this.student != null) {
+            this.student.setWing(wing);
+        }
+    }
+
+    public String getBlock() {
+        return (this.student != null && this.student.getBlock() != null) ? this.student.getBlock() : this.block;
+    }
+
+    public void setBlock(String block) {
+        this.block = block;
+        if (this.student != null) {
+            this.student.setBlock(block);
+        }
+    }
+
+    public String getSponsor() {
+        return (this.student != null && this.student.getSponsor() != null) ? this.student.getSponsor() : this.sponsor;
+    }
+
+    public void setSponsor(String sponsor) {
+        this.sponsor = sponsor;
+        if (this.student != null) {
+            this.student.setSponsor(sponsor);
+        }
     }
 }

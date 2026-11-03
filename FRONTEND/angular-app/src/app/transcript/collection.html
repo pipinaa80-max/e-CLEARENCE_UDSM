@@ -1,15 +1,9 @@
 <section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
 
-  <!-- =========================
-       SIDEBAR OVERLAY
-  ========================== -->
-
+  <!-- SIDEBAR OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-  <!-- =========================
-       SIDEBAR
-  ========================== -->
-
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
       <img src="/udsm-logo.png" alt="UDSM Logo" />
@@ -42,16 +36,9 @@
         Notifications
       </a>
     </nav>
-
-    <button type="button" class="logout-link" (click)="logout()">
-      Log out
-    </button>
   </aside>
 
-  <!-- =========================
-       MAIN CONTENT
-  ========================== -->
-
+  <!-- MAIN CONTENT -->
   <main class="content-panel">
 
     <app-dashboard-header
@@ -86,14 +73,59 @@
       <div><span class="step-label">Payment approved</span><h2>Choose collection method</h2><p>No further staff approval is required for this step.</p></div>
     </div>
 
+    <div *ngIf="message" class="toast-banner success" style="margin-bottom: 16px; padding: 12px; border-radius: 8px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 700; font-size: 13px;">
+      {{ message }}
+    </div>
+
     <form [formGroup]="form" (ngSubmit)="save()">
       <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Physical Collection'">
         <input type="radio" formControlName="collectionMethod" value="Physical Collection" />
-        <span><strong>Physical Collection</strong><small>Collect the transcript from the designated University office.</small></span>
+        <span><strong>Physical Collection at Pick-up Center</strong><small>Select a UDSM Collection Station or Regional Center nearest to you.</small></span>
       </label>
+
+      <!-- SMART UDSM COLLECTION STATION SELECTOR -->
+      <div class="station-selector-panel" *ngIf="isPhysical" style="margin: 16px 0; padding: 18px; border: 1px solid #bae6fd; border-radius: 10px; background: #f0f9ff;">
+        <label class="field" style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 800; color: #0369a1; text-transform: uppercase; letter-spacing: 0.04em;">
+            📍 Select Nearest UDSM Collection Station / Regional Hub *
+          </span>
+          <select
+            formControlName="stationId"
+            (change)="onStationSelectChange($event)"
+            style="padding: 11px 14px; border: 1.5px solid #0284c7; border-radius: 8px; font-size: 14px; font-weight: 700; color: #0f172a; background: #ffffff; cursor: pointer;"
+          >
+            <ng-container *ngFor="let region of regions">
+              <optgroup [attr.label]="'Region / City: ' + region">
+                <option *ngFor="let station of getStationsForRegion(region)" [value]="station.id">
+                  🏢 {{ station.name }} ({{ station.district || station.region }})
+                </option>
+              </optgroup>
+            </ng-container>
+          </select>
+        </label>
+
+        <!-- LIVE STATION DETAILS CARD -->
+        <div class="selected-station-card" *ngIf="selectedStation" style="margin-top: 14px; padding: 14px 16px; background: #ffffff; border: 1px solid #e0f2fe; border-left: 5px solid #0284c7; border-radius: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px;">
+            <strong style="color: #0369a1; font-size: 15px; font-weight: 800;">{{ selectedStation.name }}</strong>
+            <span style="padding: 3px 10px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 800; text-transform: uppercase;">
+              {{ selectedStation.region }}
+            </span>
+          </div>
+          <p style="margin: 4px 0; color: #334155; font-size: 13px; line-height: 1.4;">
+            <strong>Address / Location:</strong> {{ selectedStation.address }}
+          </p>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: #64748b; font-weight: 600;">
+            <span>⏰ <strong>Operating Hours:</strong> {{ selectedStation.operatingHours }}</span>
+            <span *ngIf="selectedStation.contactPhone">📞 <strong>Phone:</strong> {{ selectedStation.contactPhone }}</span>
+            <span *ngIf="selectedStation.contactEmail">✉️ <strong>Email:</strong> {{ selectedStation.contactEmail }}</span>
+          </div>
+        </div>
+      </div>
+
       <label class="choice" [class.selected]="form.controls.collectionMethod.value === 'Post by DHL'">
         <input type="radio" formControlName="collectionMethod" value="Post by DHL" />
-        <span><strong>Post by DHL</strong><small>Have the transcript posted to your preferred address.</small></span>
+        <span><strong>Post by DHL Courier Service</strong><small>Have the transcript posted directly to your preferred address.</small></span>
       </label>
 
       <div class="address-fields-grid" *ngIf="isPost" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 18px 0; padding: 18px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">

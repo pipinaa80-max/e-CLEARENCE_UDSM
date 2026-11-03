@@ -221,9 +221,52 @@
   transition: all 0.2s ease;
 }
 
-.notifications-card button:hover {
-  background: var(--udsm-blue-dark);
-  transform: scale(1.05);
+.header-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff !important;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+}
+
+.header-back-btn i {
+  font-size: 1rem;
+}
+
+.header-back-btn:hover {
+  background: #ffffff;
+  color: #003b5c !important;
+  transform: translateX(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.mark-read-btn {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mark-read-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
 .notification-list {

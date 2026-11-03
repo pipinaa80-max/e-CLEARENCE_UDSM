@@ -38,6 +38,7 @@ import { DepartmentReviewComponent } from './dashboard/department-review/departm
 import { DepartmentOfficerComponent } from "./dashboard/Department-officer/department-officer.component";
 import { LecturerDashboard } from './dashboard/lecturer/lecturer';
 import { DirectorUndergraduateStudiesDashboard } from './dashboard/director_undergraduate_studies/director-undergraduate-studies';
+import { DusSecretaryDashboardComponent } from './dashboard/dus_secretary/dus-secretary';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -142,9 +143,14 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Workshop'])]
   },
   {
-    path: 'dashboard/laboratory',
-    component: LaboratoryComponent,
-    canActivate: [authGuard, roleGuard(['Laboratory'])]
+    path: 'dashboard/director-undergraduate-studies',
+    component: DirectorUndergraduateStudiesDashboard,
+    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/dus-secretary',
+    component: DusSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
 
   // Clearance Routes

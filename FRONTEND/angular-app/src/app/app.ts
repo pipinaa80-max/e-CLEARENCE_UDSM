@@ -21,6 +21,7 @@ export class App {
   readonly currentYear = new Date().getFullYear();
   branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', backgroundUrl: '/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI', footerLinks: [] };
   private brandingObserver?: MutationObserver;
+  private debounceTimer?: any;
 
   constructor() {
     const saved = this.projectAdminService.getSavedBranding();
@@ -33,7 +34,10 @@ export class App {
       if (customEvent.detail?.branding) this.applyBranding(customEvent.detail.branding);
     });
 
-    this.brandingObserver = new MutationObserver(() => this.refreshBrandingNodes());
+    this.brandingObserver = new MutationObserver(() => {
+      if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(() => this.refreshBrandingNodes(), 300);
+    });
     this.brandingObserver.observe(document.body, { childList: true, subtree: true });
   }
 
@@ -53,8 +57,6 @@ export class App {
       return;
     }
 
-    // Keep the last saved institutional assets when logged out. Fetching public branding
-    // again here can replace the logo/background URL the admin just saved.
     if (saved && (
       Boolean(saved.logoUrl || saved.backgroundUrl) ||
       (saved.primaryColor && normalizeUdsmBrandColor(saved.primaryColor) !== DEFAULT_UDSM_BRAND_COLOR)
@@ -63,7 +65,6 @@ export class App {
       return;
     }
 
-    // Only fallback to public/global branding if no custom theme is found locally
     this.projectAdminService.getPublicBranding().subscribe({
       next: (config) => {
         this.projectAdminService.setSavedBranding(config);
@@ -88,7 +89,6 @@ export class App {
     root.style.setProperty('--udsm-blue', this.branding.primaryColor);
     root.style.setProperty('--udsm-blue-dark', `color-mix(in srgb, ${this.branding.primaryColor} 85%, #000)`);
     root.style.setProperty('--udsm-blue-light', `color-mix(in srgb, ${this.branding.primaryColor} 12%, #fff)`);
-    // Explicitly set sidebar background to match primary or dark version for better UI
     root.style.setProperty('--sidebar-bg', this.branding.primaryColor);
     if (this.branding.fontFamily) root.style.setProperty('--app-font-family', this.branding.fontFamily);
 
@@ -96,9 +96,7 @@ export class App {
       root.style.setProperty('--app-logo-url', `url("${this.branding.logoUrl}")`);
     }
 
-    // Robustly handle the background image URL
     if (this.branding.backgroundUrl === '' || !this.branding.backgroundUrl) {
-      // Use default background if empty
       root.style.setProperty('--app-bg-url', 'url("/background_image.png")');
       root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7))');
     } else if (this.branding.backgroundUrl.toLowerCase() === 'none') {
@@ -106,8 +104,6 @@ export class App {
       root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7))');
     } else {
       root.style.setProperty('--app-bg-url', `url(${JSON.stringify(this.branding.backgroundUrl)})`);
-
-      // Set the overlay to be transparent (0% tint) for custom backgrounds
       root.style.setProperty('--hero-gradient', 'none');
     }
 
@@ -115,45 +111,63 @@ export class App {
   }
 
   private refreshBrandingNodes(): void {
-    if (this.branding.logoUrl) {
-      const logoUrl = normalizeBrandAssetUrl(this.branding.logoUrl, '/udsm-logo.png');
-      document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
-        .forEach(image => {
-          const currentUrl = normalizeBrandAssetUrl(image.getAttribute('src'), '');
-          if (currentUrl !== logoUrl) image.setAttribute('src', logoUrl);
-        });
-    }
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    const textNodes: Text[] = [];
-    while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-
     const targetName = 'University of Dar es Salaam';
     const currentName = this.branding.universityName || 'University of Dar es Salaam';
 
     const targetShortName = 'UDSM';
     const currentShortName = this.branding.shortName || 'UDSM';
 
-    textNodes.forEach(node => {
-      const parent = node.parentElement;
-      if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') return;
+    const defaultLogo = '/udsm-logo.png';
+    const currentLogo = this.branding.logoUrl ? normalizeBrandAssetUrl(this.branding.logoUrl, defaultLogo) : defaultLogo;
 
-      let originalText = parent.getAttribute('data-original-text');
-      if (!originalText) {
-        if (node.nodeValue?.includes(targetName) || node.nodeValue?.includes(targetShortName)) {
-          originalText = node.nodeValue;
-          parent.setAttribute('data-original-text', originalText);
-        }
+    // Skip DOM tree walk if using default UDSM branding to preserve performance
+    if (currentName === targetName && currentShortName === targetShortName && currentLogo === defaultLogo) {
+      return;
+    }
+
+    if (this.brandingObserver) {
+      this.brandingObserver.disconnect();
+    }
+
+    try {
+      if (this.branding.logoUrl) {
+        document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
+          .forEach(image => {
+            const currentUrl = normalizeBrandAssetUrl(image.getAttribute('src'), '');
+            if (currentUrl !== currentLogo) image.setAttribute('src', currentLogo);
+          });
       }
 
-      if (originalText) {
-        let newText = originalText.replaceAll(targetName, currentName);
-        if (currentShortName && currentShortName !== targetShortName) {
-          newText = newText.replaceAll(targetShortName, currentShortName);
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const textNodes: Text[] = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+
+      textNodes.forEach(node => {
+        const parent = node.parentElement;
+        if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') return;
+
+        let originalText = parent.getAttribute('data-original-text');
+        if (!originalText) {
+          if (node.nodeValue?.includes(targetName) || node.nodeValue?.includes(targetShortName)) {
+            originalText = node.nodeValue;
+            parent.setAttribute('data-original-text', originalText);
+          }
         }
-        if (node.nodeValue !== newText) {
-          node.nodeValue = newText;
+
+        if (originalText) {
+          let newText = originalText.replaceAll(targetName, currentName);
+          if (currentShortName && currentShortName !== targetShortName) {
+            newText = newText.replaceAll(targetShortName, currentShortName);
+          }
+          if (node.nodeValue !== newText) {
+            node.nodeValue = newText;
+          }
         }
+      });
+    } finally {
+      if (this.brandingObserver && document.body) {
+        this.brandingObserver.observe(document.body, { childList: true, subtree: true });
       }
-    });
+    }
   }
 }
