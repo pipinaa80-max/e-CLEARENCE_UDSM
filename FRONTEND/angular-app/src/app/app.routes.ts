@@ -194,8 +194,9 @@ export const routes: Routes = [
   { path: 'principal', component: PrincipalComponent, canActivate: [authGuard, roleGuard(['Principal'])] },
 
   // Department Officer Routes
-  { path: 'department/dashboard', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department'])] },
-  { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department'])] },
+  { path: 'department/dashboard', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
+  { path: 'dashboard/department', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
+  { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
 
   // Convocation Staff Routes
   { path: 'convocation/dashboard', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] },

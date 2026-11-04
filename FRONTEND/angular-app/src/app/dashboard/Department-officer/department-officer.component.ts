@@ -148,11 +148,11 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     loadOpenDebtFlags(): void {
         if (this.debtFlagsLoading) return;
+        this.debtFlagsLoading = true;
         this.debtFlagCheckError = '';
         this.studentDebtService.listOpenForDepartment().pipe(
             timeout({ first: 5000 }),
-            catchError(err => {        this.debtFlagsLoading = true;
-
+            catchError(err => {
                 console.warn('Could not load departmental debt flags from backend, proceeding with local clearance:', err);
                 return of([]);
             })

@@ -83,13 +83,14 @@ public class StudentDebtFlagService {
 
     @Transactional(readOnly = true)
     public List<StudentDebtFlag> listOpenForDepartment(String username) {
-        User department = requireRole(username, ERole.DEPARTMENT_OFFICER);
-        String deptCol = requireScope(department.getCollege());
-        String deptName = requireScope(department.getDepartment());
-        return inProject(debtRepository.findAll(), department)
+        User user = requireDepartmentOrAdminRole(username);
+        String deptCol = user.getCollege();
+        String deptName = user.getDepartment();
+        return inProject(debtRepository.findAll(), user)
                 .stream()
                 .filter(flag -> "OPEN".equals(flag.getStatus()))
-                .filter(flag -> matchesScope(flag.getCollege(), deptCol) && matchesScope(flag.getDepartment(), deptName))
+                .filter(flag -> (deptCol == null || deptCol.isBlank() || matchesScope(flag.getCollege(), deptCol))
+                        && (deptName == null || deptName.isBlank() || matchesScope(flag.getDepartment(), deptName)))
                 .toList();
     }
 
@@ -180,6 +181,19 @@ public class StudentDebtFlagService {
                 .or(() -> userRepository.findByUsername(username))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User account not found."));
         if (user.getRole() != role) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account does not have access to this action.");
+        }
+        return user;
+    }
+
+    private User requireDepartmentOrAdminRole(String username) {
+        User user = userRepository.findByEmail(username)
+                .or(() -> userRepository.findByUsername(username))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User account not found."));
+        if (user.getRole() != ERole.DEPARTMENT_OFFICER
+                && user.getRole() != ERole.ADMINISTRATOR
+                && user.getRole() != ERole.ADMIN
+                && user.getRole() != ERole.SUPERUSER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account does not have access to this action.");
         }
         return user;

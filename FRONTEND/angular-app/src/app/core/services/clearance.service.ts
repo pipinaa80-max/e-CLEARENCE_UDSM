@@ -42,11 +42,12 @@ export class ClearanceService {
   ];
 
   private getAuthHeaders(): HttpHeaders {
-    const token = this.storage.get<string>('udsm-auth-token')
+    let token = this.storage.get<string>('udsm-auth-token')
       || (typeof localStorage !== 'undefined' ? localStorage.getItem('udsm-auth-token') : null);
     if (!token) {
       return new HttpHeaders();
     }
+    token = token.replace(/^"|"$/g, '').trim();
     return new HttpHeaders({
       Authorization: `Bearer ${token}`
     });

@@ -55,7 +55,7 @@ public class StudentDebtFlagController {
     }
 
     @GetMapping("/department/open")
-    @PreAuthorize("hasRole('DEPARTMENT_OFFICER')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_OFFICER', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER')")
     public List<StudentDebtFlag> listOpenForDepartment(@AuthenticationPrincipal UserDetails user) {
         return debtService.listOpenForDepartment(user.getUsername());
     }
