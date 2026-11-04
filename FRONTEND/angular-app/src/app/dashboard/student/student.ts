@@ -229,6 +229,27 @@ export class StudentDashboard implements OnInit {
     return this.currentUser?.award || 'Bachelor Degree';
   }
 
+  get awardType(): 'degree' | 'diploma' | 'certificate' | 'postgraduate' | 'masters' | 'phd' {
+    const award = this.studentAward.toLowerCase();
+    if (award.includes('phd') || award.includes('doctor')) return 'phd';
+    if (award.includes('master')) return 'masters';
+    if (award.includes('postgraduate')) return 'postgraduate';
+    if (award.includes('diploma')) return 'diploma';
+    if (award.includes('certificate')) return 'certificate';
+    return 'degree';
+  }
+
+  get dashboardEyebrow(): string {
+    switch (this.awardType) {
+      case 'diploma': return 'Diploma Student Dashboard';
+      case 'certificate': return 'Certificate Student Dashboard';
+      case 'postgraduate': return 'Postgraduate Diploma Student Dashboard';
+      case 'masters': return 'Master Degree Student Dashboard';
+      case 'phd': return 'PhD Doctoral Student Dashboard';
+      default: return 'Degree Student Dashboard';
+    }
+  }
+
   get dashboardSubtitle(): string {
     const process = this.isTranscriptSystem ? 'transcript request and payment process' : 'clearance process';
     return `Manage your ${this.studentAward} student information and ${process}.`;

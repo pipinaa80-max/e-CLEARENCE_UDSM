@@ -153,6 +153,8 @@ export class LecturerDashboard implements OnInit {
         this.resolvingFlag = null;
         this.resolutionNote = '';
         this.message = `Debt for ${resolved.studentName} was cleared after negotiation. Department verification is available again.`;
+        // Refresh department requests in background so department dashboard syncs immediately
+        this.debts.listOpenForDepartment().subscribe({ next: () => {}, error: () => {} });
       },
       error: err => { this.error = err?.error?.message || 'This debt record could not be resolved.'; }
     });

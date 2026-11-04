@@ -576,6 +576,27 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     return this.buildBreakdown(req => req.college || 'Unspecified College');
   }
 
+  showAllRegisteredYears = false;
+  showAllColleges = false;
+
+  get displayedRegisteredStudentsByYear(): RegisteredYearBarItem[] {
+    const list = this.registeredStudentsByYear;
+    return this.showAllRegisteredYears ? list : list.slice(0, 4);
+  }
+
+  get displayedCollegeBreakdown(): BreakdownItem[] {
+    const list = this.collegeBreakdown;
+    return this.showAllColleges ? list : list.slice(0, 4);
+  }
+
+  toggleRegisteredYears(): void {
+    this.showAllRegisteredYears = !this.showAllRegisteredYears;
+  }
+
+  toggleColleges(): void {
+    this.showAllColleges = !this.showAllColleges;
+  }
+
   get yearBreakdown(): BreakdownItem[] {
     return this.buildBreakdown(req => this.getYearLabel(req));
   }

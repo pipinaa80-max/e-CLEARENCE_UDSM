@@ -53,9 +53,9 @@ export const routes: Routes = [
   // Public Routes
   { path: '', component: Landing },
   { path: 'login', component: Login },
-  { path: 'signup-options', component: SignupOptions },
-  { path: 'register', component: Register },
-  { path: 'staff-register', component: StaffRegister },
+  { path: 'signup-options', redirectTo: 'login', pathMatch: 'full' },
+  { path: 'register', redirectTo: 'login', pathMatch: 'full' },
+  { path: 'staff-register', redirectTo: 'login', pathMatch: 'full' },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'verify-email', component: VerifyEmail },
@@ -198,5 +198,6 @@ export const routes: Routes = [
   { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department'])] },
 
   // Convocation Staff Routes
-  { path: 'convocation/dashboard', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] }
+  { path: 'convocation/dashboard', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] },
+  { path: 'convocation/requests', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] }
 ];

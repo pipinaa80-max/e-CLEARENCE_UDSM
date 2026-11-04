@@ -35,9 +35,8 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
 
         <div class="user-profile clickable" *ngIf="showProfile && user && user.id" (click)="toggleProfileCard($event)" title="Click to view complete profile details">
-          <div class="profile-info">
+          <div class="profile-info" *ngIf="showProfileInfo">
             <span class="user-name">{{ user.fullName || 'User' }}</span>
-            <span class="user-role">{{ user.role || 'Role' }}</span>
           </div>
           <div class="avatar-circle">
             <img *ngIf="user.photo || user.profilePhoto" [src]="user.photo || user.profilePhoto" [alt]="user.fullName">
@@ -445,6 +444,7 @@ export class DashboardHeaderComponent {
   @Input() eyebrow?: string;
   @Input() user?: any;
   @Input() showProfile = true;
+  @Input() showProfileInfo = true;
   @Input() showToggle = true;
 
   @Output() toggleSidebar = new EventEmitter<void>();

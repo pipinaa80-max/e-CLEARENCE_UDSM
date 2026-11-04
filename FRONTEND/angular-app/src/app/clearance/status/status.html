@@ -474,11 +474,22 @@
           </a>
 
           <a
+            *ngIf="!isTranscriptProcessCompleted"
             routerLink="/transcript/process"
             class="approval-button"
           >
             Start Transcript Process
           </a>
+
+          <button
+            *ngIf="isTranscriptProcessCompleted"
+            type="button"
+            class="approval-button disabled"
+            disabled
+            title="Transcript process has already been completed"
+          >
+            Start Transcript Process
+          </button>
         </div>
 
       </section>

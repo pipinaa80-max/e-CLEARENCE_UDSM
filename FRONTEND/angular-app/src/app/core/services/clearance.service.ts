@@ -579,25 +579,50 @@ export class ClearanceService {
           departmentApproval?.status === 'Approved' ||
           departmentApproval?.status === 'Rejected';
         if (!departmentStageReached) return false;
+
+        return (
+            (!college || this.matchCollegeName(request.college, college)) &&
+            (!department || this.matchDepartmentName(request.department, department))
+        );
+      }
+
+      if (office === 'Principal') {
+        const principalApproval = request.approvals.find(approval => approval.office === 'Principal');
+        const deptApproval = request.approvals.find(approval => approval.office === 'Department');
+        const principalStageReached = request.currentStage === 'Principal' ||
+          deptApproval?.status === 'Approved' ||
+          principalApproval?.status === 'Approved' ||
+          principalApproval?.status === 'Rejected' ||
+          request.currentStage === 'Finance' ||
+          request.status === 'Completed';
+        if (!principalStageReached) return false;
+
+        return !college || this.matchCollegeName(request.college, college);
       }
 
       if (request.approvals.some(a => a && a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
         return true;
       }
 
-      if (office === 'Department') {
-        return (
-            (!college || this.matchCollegeName(request.college, college)) &&
-            (!department || !request.department || request.department.trim().toLowerCase() === department.trim().toLowerCase() || request.department.toLowerCase().includes(department.toLowerCase()) || department.toLowerCase().includes(request.department.toLowerCase()))
-        );
-      }
-
-      if (office === 'Principal') {
-        return !college || this.matchCollegeName(request.college, college);
-      }
-
       return true;
     });
+  }
+
+  matchDepartmentName(d1?: string, d2?: string): boolean {
+    if (!d1 || !d2 || !d1.trim() || !d2.trim()) return true;
+    const s1 = d1.trim().toLowerCase();
+    const s2 = d2.trim().toLowerCase();
+    if (s1 === s2 || s1.includes(s2) || s2.includes(s1)) return true;
+    const getAcronym = (s: string) => {
+      const match = s.match(/\(([^)]+)\)/);
+      return match ? match[1].trim().toLowerCase() : '';
+    };
+    const a1 = getAcronym(s1);
+    const a2 = getAcronym(s2);
+    if (a1 && (a1 === s2 || s2.includes(a1))) return true;
+    if (a2 && (a2 === s1 || s1.includes(a2))) return true;
+    if (a1 && a2 && a1 === a2) return true;
+    return false;
   }
 
   matchCollegeName(c1?: string, c2?: string): boolean {

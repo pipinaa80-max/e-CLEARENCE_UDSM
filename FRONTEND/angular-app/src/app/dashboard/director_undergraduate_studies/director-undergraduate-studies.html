@@ -83,9 +83,7 @@
   <main class="content">
 
     <app-dashboard-header
-      eyebrow="Directorate Office"
-      title="Director of Undergraduate Studies"
-      subtitle="Clearance analytics, colleges, and collection stations"
+      title="Directorate Office"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
@@ -97,12 +95,9 @@
       <section class="analytics-section" id="analytics">
       <div class="analytics-heading">
         <div>
-          <span class="analytics-eyebrow">Institution-wide overview</span>
           <h2>Clearance analytics &amp; statistical overview</h2>
-          <p>Track completed, pending, and rejected clearances across colleges, programmes, academic years, and students.</p>
         </div>
         <div class="analytics-actions">
-          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownPdf()">Download Office PDF</button>
           <button type="button" class="analytics-primary" (click)="downloadComprehensivePdf()">Download PDF report</button>
         </div>
       </div>
@@ -112,7 +107,6 @@
           <div class="chart-heading">
             <div>
               <h3>Total students registered for every year</h3>
-              <span>Undergraduate student enrollment breakdown across study years</span>
             </div>
             <div class="card-head-actions">
               <span class="total-registered-pill">{{ totalRegisteredStudents }} total registered</span>
@@ -123,7 +117,7 @@
             </div>
           </div>
           <div class="bar-list" *ngIf="registeredStudentsByYear.length; else noRegisteredYearStats">
-            <div class="bar-row" *ngFor="let yr of registeredStudentsByYear">
+            <div class="bar-row" *ngFor="let yr of displayedRegisteredStudentsByYear">
               <div class="bar-label">
                 <span class="registered-year-title">
                   <i class="year-color-indicator" [style.background-color]="yr.color"></i>
@@ -141,6 +135,12 @@
                 <small>{{ yr.clearanceRequests }} applied for clearance · {{ yr.clearedRequests }} cleared</small>
               </div>
             </div>
+
+            <div class="view-more-container" *ngIf="registeredStudentsByYear.length > 4">
+              <button type="button" class="view-more-btn" (click)="toggleRegisteredYears()">
+                {{ showAllRegisteredYears ? 'View less ▲' : 'View more (' + (registeredStudentsByYear.length - 4) + ' more) ▼' }}
+              </button>
+            </div>
           </div>
           <ng-template #noRegisteredYearStats><p class="analytics-empty">Registered student data will appear here.</p></ng-template>
         </article>
@@ -149,7 +149,6 @@
           <div class="chart-heading">
             <div>
               <h3>Most-cleared colleges</h3>
-              <span>Cleared / Total requests</span>
             </div>
             <div class="card-head-actions">
               <button type="button" class="btn-card-pdf" (click)="downloadCollegesPdf()" title="Download PDF for colleges">
@@ -159,12 +158,18 @@
             </div>
           </div>
           <div class="bar-list" *ngIf="collegeBreakdown.length; else noCollegeStats">
-            <div class="bar-row" *ngFor="let col of collegeBreakdown.slice(0, 6)">
+            <div class="bar-row" *ngFor="let col of displayedCollegeBreakdown">
               <div class="bar-label">
                 <span>{{ col.label }}</span>
                 <strong>{{ col.cleared }} / {{ col.total }} ({{ col.rate }}%)</strong>
               </div>
               <div class="bar-track college-track"><span [style.width.%]="col.barWidth"></span></div>
+            </div>
+
+            <div class="view-more-container" *ngIf="collegeBreakdown.length > 4">
+              <button type="button" class="view-more-btn" (click)="toggleColleges()">
+                {{ showAllColleges ? 'View less ▲' : 'View more (' + (collegeBreakdown.length - 4) + ' more) ▼' }}
+              </button>
             </div>
           </div>
           <ng-template #noCollegeStats><p class="analytics-empty">College clearance statistics will appear here.</p></ng-template>
@@ -174,7 +179,6 @@
           <div class="chart-heading">
             <div>
               <h3>Clearances by academic year (Histogram)</h3>
-              <span>Volume &amp; clearance distribution per year</span>
             </div>
             <div class="card-head-actions">
               <div class="histogram-legend">
@@ -237,87 +241,10 @@
           <ng-template #noYearHistogram><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
         </article>
 
-        <article class="analytics-chart-card year-pie-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Clearance share by academic year (Pie chart)</h3>
-              <span>Cohort proportion &amp; clearance progress</span>
-            </div>
-            <div class="card-head-actions">
-              <span class="cohort-count-badge" *ngIf="yearPieSlices.length">{{ yearPieSlices.length }} active cohorts</span>
-              <button type="button" class="btn-card-pdf" (click)="downloadYearPiePdf()" title="Download PDF for year pie chart">
-                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span>Download PDF</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="pie-layout-wrap" *ngIf="yearPieSlices.length; else noYearPie">
-            <div class="pie-svg-container">
-              <svg class="donut-svg" viewBox="0 0 240 240" aria-label="Academic year distribution pie chart">
-                <defs>
-                  <filter id="pieShadow" x="-10%" y="-10%" width="120%" height="120%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12" />
-                  </filter>
-                </defs>
-                <g filter="url(#pieShadow)">
-                  <path *ngFor="let slice of yearPieSlices"
-                        [attr.d]="slice.svgPath"
-                        [attr.fill]="slice.color"
-                        class="pie-slice-path"
-                        [class.active-slice]="hoveredYear === slice.yearLabel"
-                        (mouseenter)="setHoveredYear(slice.yearLabel)"
-                        (mouseleave)="setHoveredYear(null)">
-                    <title>{{ slice.yearLabel }}: {{ slice.total }} students ({{ slice.percentage }}%)</title>
-                  </path>
-                </g>
-                <!-- Central stats -->
-                <circle cx="120" cy="120" r="50" fill="#ffffff" stroke="#e1e8ed" stroke-width="1"></circle>
-                <text x="120" y="112" text-anchor="middle" class="donut-center-total">{{ totalRequestsCount }}</text>
-                <text x="120" y="126" text-anchor="middle" class="donut-center-sub">Students</text>
-                <text x="120" y="139" text-anchor="middle" class="donut-center-rate">{{ overallClearanceRate }}% cleared</text>
-              </svg>
-            </div>
-
-            <div class="pie-legend-list">
-              <div class="pie-legend-row"
-                   *ngFor="let slice of yearPieSlices"
-                   [class.active-legend]="hoveredYear === slice.yearLabel"
-                   (mouseenter)="setHoveredYear(slice.yearLabel)"
-                   (mouseleave)="setHoveredYear(null)">
-                <div class="legend-header">
-                  <span class="legend-dot" [style.background-color]="slice.color"></span>
-                  <div class="legend-title-wrap">
-                    <span class="legend-year-name">{{ slice.yearLabel }}</span>
-                  </div>
-                  <strong class="legend-pct">{{ slice.percentage }}%</strong>
-                </div>
-                <div class="legend-progress-bar">
-                  <span class="legend-progress-fill" [style.width.%]="slice.percentage" [style.background-color]="slice.color"></span>
-                </div>
-                <div class="legend-stats-sub">
-                  <span>{{ slice.total }} total</span>
-                  <span class="legend-sub-cleared">{{ slice.cleared }} cleared</span>
-                  <span class="legend-sub-pending" *ngIf="slice.pending">{{ slice.pending }} pending</span>
-                  <span class="legend-sub-rejected" *ngIf="slice.rejected">{{ slice.rejected }} rejected</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <ng-template #noYearPie><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
-        </article>
-
         <article class="analytics-chart-card">
           <div class="chart-heading">
             <div>
               <h3>Most-cleared programmes</h3>
-              <span>Undergraduate degree programmes</span>
             </div>
             <div class="card-head-actions">
               <button type="button" class="btn-card-pdf" (click)="downloadProgrammesPdf()" title="Download PDF for programmes">
@@ -348,7 +275,6 @@
           <div class="chart-heading">
             <div>
               <h3>Overall clearance system status</h3>
-              <span>All undergraduate requests</span>
             </div>
             <div class="card-head-actions">
               <button type="button" class="btn-card-pdf" (click)="downloadOverallStatusPdf()" title="Download PDF for system status">
@@ -378,10 +304,6 @@
           </p>
         </article>
       </div>
-
-      <p class="analytics-note">
-        Analytics aggregate all undergraduate clearance requests across colleges, departments, and corresponding clearance offices.
-      </p>
     </section>
   </ng-container>
 
@@ -434,7 +356,6 @@
           <thead>
             <tr>
               <th>Corresponding Office</th>
-              <th>Clearance Stage</th>
               <th>Cleared</th>
               <th>Pending</th>
               <th>Rejected</th>
@@ -445,7 +366,6 @@
           <tbody>
             <tr *ngFor="let o of officeStatusSummaries">
               <td class="compact-name">{{ o.office }}</td>
-              <td>{{ o.stageGroup }}</td>
               <td><span class="office-stat cleared">{{ o.cleared }}</span></td>
               <td><span class="office-stat pending">{{ o.pending }}</span></td>
               <td><span class="office-stat rejected">{{ o.rejected }}</span></td>
@@ -465,7 +385,6 @@
           <tfoot>
             <tr class="office-total-row">
               <td class="compact-name">TOTAL (ALL OFFICES)</td>
-              <td>All Clearance Stages</td>
               <td><span class="office-stat cleared">{{ totalOfficeApprovalsCount }}</span></td>
               <td><span class="office-stat pending">{{ totalOfficePendingCount }}</span></td>
               <td><span class="office-stat rejected">{{ totalOfficeRejectedCount }}</span></td>
@@ -850,11 +769,9 @@
     <!-- COLLECTION STATIONS MANAGEMENT TAB -->
     <ng-container *ngIf="activeTab === 'stations'">
       <section class="transcript-ledger-section" id="collection-stations">
-        <div class="ledger-header-box" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+        <div class="ledger-header-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 20px;">
           <div>
-            <span class="ledger-eyebrow">Directorate Management</span>
-            <h2>UDSM Collection Stations & Regional Pickup Hubs</h2>
-            <p>Manage physical pickup centers and regional dispatch stations for student certificates & transcripts.</p>
+            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a;">Collection Stations &amp; Regional Pickup Hubs</h2>
           </div>
           <div>
             <button type="button" class="btn-primary-action" (click)="openCreateStationModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 8px; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
@@ -862,22 +779,6 @@
               <span>Add Collection Station</span>
             </button>
           </div>
-        </div>
-
-        <!-- STATS OVERVIEW CARDS -->
-        <div class="analytics-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0;">
-          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
-            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Total Pickup Hubs</span>
-            <strong style="display: block; font-size: 24px; font-weight: 800; color: #0f172a; margin-top: 4px;">{{ stations.length }}</strong>
-          </article>
-          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; border-left: 4px solid #16a34a;">
-            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Active Pickup Hubs</span>
-            <strong style="display: block; font-size: 24px; font-weight: 800; color: #16a34a; margin-top: 4px;">{{ activeStationsCount }}</strong>
-          </article>
-          <article class="metric-card" style="padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; border-left: 4px solid #0284c7;">
-            <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Regions Covered</span>
-            <strong style="display: block; font-size: 24px; font-weight: 800; color: #0284c7; margin-top: 4px;">{{ stationRegionsCount }}</strong>
-          </article>
         </div>
 
         <!-- SEARCH BAR -->

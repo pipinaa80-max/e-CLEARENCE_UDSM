@@ -51,11 +51,6 @@ public class StudentDebtFlagService {
         }
         String college = student != null ? student.getCollege() : studentAccount.getCollege();
         String department = student != null ? student.getDepartment() : studentAccount.getDepartment();
-        if (!sameScope(lecturer.getCollege(), college)
-                || !sameScope(lecturer.getDepartment(), department)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "This student is outside your registered college and department.");
-        }
         if (studentAccount != null && !sameProject(lecturer.getProjectId(), studentAccount.getProjectId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This student is outside your registered project.");
         }
@@ -83,16 +78,19 @@ public class StudentDebtFlagService {
     @Transactional(readOnly = true)
     public List<StudentDebtFlag> listForLecturer(String username) {
         User lecturer = requireRole(username, ERole.LECTURER);
-        return inProject(debtRepository.findByCollegeIgnoreCaseAndDepartmentIgnoreCaseOrderByCreatedAtDesc(
-                requireScope(lecturer.getCollege()), requireScope(lecturer.getDepartment())), lecturer);
+        return inProject(debtRepository.findByLecturerIdOrderByCreatedAtDesc(lecturer.getId()), lecturer);
     }
 
     @Transactional(readOnly = true)
     public List<StudentDebtFlag> listOpenForDepartment(String username) {
         User department = requireRole(username, ERole.DEPARTMENT_OFFICER);
-        return inProject(debtRepository.findByCollegeIgnoreCaseAndDepartmentIgnoreCaseOrderByCreatedAtDesc(
-                        requireScope(department.getCollege()), requireScope(department.getDepartment())), department)
-                .stream().filter(flag -> "OPEN".equals(flag.getStatus())).toList();
+        String deptCol = requireScope(department.getCollege());
+        String deptName = requireScope(department.getDepartment());
+        return inProject(debtRepository.findAll(), department)
+                .stream()
+                .filter(flag -> "OPEN".equals(flag.getStatus()))
+                .filter(flag -> matchesScope(flag.getCollege(), deptCol) && matchesScope(flag.getDepartment(), deptName))
+                .toList();
     }
 
     @Transactional
@@ -109,11 +107,6 @@ public class StudentDebtFlagService {
         }
         String studentCollege = studentAccount != null ? studentAccount.getCollege() : studentProfile.getCollege();
         String studentDepartment = studentAccount != null ? studentAccount.getDepartment() : studentProfile.getDepartment();
-        if (!sameScope(lecturer.getCollege(), studentCollege)
-                || !sameScope(lecturer.getDepartment(), studentDepartment)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "This student is outside your registered college and department.");
-        }
         if (studentAccount != null && !sameProject(lecturer.getProjectId(), studentAccount.getProjectId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "This student is outside your registered project.");
@@ -156,11 +149,11 @@ public class StudentDebtFlagService {
         User lecturer = requireRole(username, ERole.LECTURER);
         StudentDebtFlag flag = debtRepository.findById(flagId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Debt record not found."));
-        if (!sameScope(lecturer.getCollege(), flag.getCollege())
-                || !sameScope(lecturer.getDepartment(), flag.getDepartment())
-                || !sameProject(lecturer, flag)) {
+        boolean isCreator = lecturer.getId() != null && lecturer.getId().equals(flag.getLecturerId());
+        boolean isSameDept = sameScope(lecturer.getCollege(), flag.getCollege()) && sameScope(lecturer.getDepartment(), flag.getDepartment());
+        if ((!isCreator && !isSameDept) || !sameProject(lecturer, flag)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "You can only resolve debt records in your registered college and department.");
+                    "You can only resolve debt records you recorded or records in your registered college and department.");
         }
         if (!"OPEN".equals(flag.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This debt record is already resolved.");
@@ -212,7 +205,32 @@ public class StudentDebtFlagService {
     }
 
     private boolean sameScope(String left, String right) {
-        return left != null && right != null && left.trim().equalsIgnoreCase(right.trim());
+        return matchesScope(left, right);
+    }
+
+    private boolean matchesScope(String studentScope, String userScope) {
+        if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
+            return true;
+        }
+        String s1 = studentScope.trim().toLowerCase();
+        String s2 = userScope.trim().toLowerCase();
+        if (s1.equals(s2) || s1.contains(s2) || s2.contains(s1)) {
+            return true;
+        }
+        String a1 = extractAcronym(s1);
+        String a2 = extractAcronym(s2);
+        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1))) {
+            return true;
+        }
+        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2))) {
+            return true;
+        }
+        return !a1.isEmpty() && !a2.isEmpty() && a1.equals(a2);
+    }
+
+    private String extractAcronym(String s) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\(([^)]+)\\)").matcher(s);
+        return matcher.find() ? matcher.group(1).trim().toLowerCase() : "";
     }
 
     private String trimToNull(String value) {

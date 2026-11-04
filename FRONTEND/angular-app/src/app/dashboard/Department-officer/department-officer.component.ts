@@ -91,8 +91,18 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.clearanceService.fetchOfficeRequests('Department').subscribe({
+            next: () => this.loadData(),
+            error: () => this.loadData()
+        });
         this.loadData();
-        this.debtFlagRefreshTimer = setInterval(() => this.loadOpenDebtFlags(), 30000);
+        this.debtFlagRefreshTimer = setInterval(() => {
+            this.loadOpenDebtFlags();
+            this.clearanceService.fetchOfficeRequests('Department').subscribe({
+                next: () => this.loadData(),
+                error: () => {}
+            });
+        }, 30000);
     }
 
     ngOnDestroy(): void {
@@ -138,11 +148,11 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     loadOpenDebtFlags(): void {
         if (this.debtFlagsLoading) return;
-        this.debtFlagsLoading = true;
         this.debtFlagCheckError = '';
         this.studentDebtService.listOpenForDepartment().pipe(
             timeout({ first: 5000 }),
-            catchError(err => {
+            catchError(err => {        this.debtFlagsLoading = true;
+
                 console.warn('Could not load departmental debt flags from backend, proceeding with local clearance:', err);
                 return of([]);
             })

@@ -65,7 +65,6 @@
 
     <app-dashboard-header
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
-      [subtitle]="dashboardSubtitle"
       [user]="currentUser"
       [showProfile]="false"
       [showToggle]="true"
@@ -96,13 +95,6 @@
     ========================== -->
 
     <section class="student-summary" *ngIf="currentUser">
-      <div class="student-summary-header">
-        <div class="student-details">
-          <span class="section-label">Student Information</span>
-          <h2>{{ currentUser.fullName }}</h2>
-        </div>
-      </div>
-
       <div class="student-clearance">
         <article class="clearance-progress-card">
           <div class="card-heading">
@@ -138,14 +130,22 @@
             <a *ngIf="!currentRequest && !isClearanceCompleted" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
             <a *ngIf="isClearanceCompleted" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
             <a
-              *ngIf="isClearanceCompleted"
-              [routerLink]="isTranscriptProcessCompleted ? '/transcript/payment' : '/transcript'"
-              [queryParams]="isTranscriptProcessCompleted ? { additional: true } : null"
+              *ngIf="isClearanceCompleted && !isTranscriptProcessCompleted"
+              routerLink="/transcript"
               class="primary-button"
               (click)="startTranscriptProcess()"
             >
-              {{ isTranscriptProcessCompleted ? 'Acquire Additional Copies' : (hasStartedTranscriptProcess ? 'Continue with Transcript Process' : 'Start Transcript Process') }}
+              {{ hasStartedTranscriptProcess ? 'Continue with Transcript Process' : 'Start Transcript Process' }}
             </a>
+            <button
+              *ngIf="isClearanceCompleted && isTranscriptProcessCompleted"
+              type="button"
+              class="primary-button disabled"
+              disabled
+              title="Transcript process has already been completed"
+            >
+              Start Transcript Process
+            </button>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">
             <a routerLink="/transcript" class="secondary-button">{{ currentTranscriptRequest ? 'Manage Transcript' : 'Start Transcript Request' }}</a>

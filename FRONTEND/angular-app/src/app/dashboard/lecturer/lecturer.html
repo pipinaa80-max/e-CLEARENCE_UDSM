@@ -50,7 +50,7 @@
           </tr></tbody>
         </table>
       </div>
-      <ng-template #emptyRegister><div class="empty-register">{{ isLoading ? 'Loading debt records…' : showAllPaymentRecords ? 'No payment records have been filed for your department.' : 'No students currently require payment.' }}</div></ng-template>
+      <ng-template #emptyRegister><div class="empty-register">{{ isLoading ? 'Loading debt records…' : showAllPaymentRecords ? 'No debt records have been filed.' : 'No students currently require payment.' }}</div></ng-template>
     </section>
 
     <section class="resolve-overlay" *ngIf="resolvingFlag" (click)="resolvingFlag = null">

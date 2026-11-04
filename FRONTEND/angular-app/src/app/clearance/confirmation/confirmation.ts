@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
@@ -15,9 +16,20 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
 export class ClearanceConfirmationComponent {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
+
+  get isTranscriptProcessCompleted(): boolean {
+    const user = this.currentUser;
+    if (!user || typeof localStorage === 'undefined') return false;
+
+    const firstRequest = this.transcriptService.getStudentRequests(user.id)
+      .find(request => request.attemptNumber === 1);
+    return localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true' ||
+      !!firstRequest?.collectionMethod;
+  }
 
   get request() { const user = this.authService.getCurrentUser(); return user ? this.clearanceService.getStudentRequests(user.id).at(-1) ?? null : null; }
   get registrationNumber(): string { return this.authService.getCurrentUser()?.registrationNumber ?? ''; }

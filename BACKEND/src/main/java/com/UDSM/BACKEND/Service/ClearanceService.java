@@ -210,6 +210,18 @@ public class ClearanceService {
                         return false;
                     }
 
+                    if ("Principal".equalsIgnoreCase(targetOffice)
+                            && !"Principal".equalsIgnoreCase(cr.getCurrentStage())
+                            && approval.getStatus() == ClearanceStatus.PENDING) {
+                        // Check if Department approval is completed for this request
+                        boolean deptApproved = departmentApprovalRepository.findByClearanceRequest(cr).stream()
+                                .filter(a -> matchesOffice(a.getDepartment(), "Department", cr))
+                                .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        if (!deptApproved) {
+                            return false;
+                        }
+                    }
+
                     if (statusFilter != null && !statusFilter.isBlank() && !"ALL".equalsIgnoreCase(statusFilter)) {
                         if (!approval.getStatus().name().equalsIgnoreCase(statusFilter)) {
                             return false;
@@ -218,18 +230,18 @@ public class ClearanceService {
 
                     // Scope by Department if Department Officer
                     if (user.getRole() == ERole.DEPARTMENT_OFFICER && user.getDepartment() != null && !user.getDepartment().isBlank()) {
-                        String userDept = user.getDepartment().trim().toLowerCase();
-                        String studentDept = (cr.getDepartment() != null ? cr.getDepartment() : (cr.getStudent() != null ? cr.getStudent().getDepartment() : "")).trim().toLowerCase();
-                        if (!studentDept.contains(userDept) && !userDept.contains(studentDept)) {
+                        String userDept = user.getDepartment().trim();
+                        String studentDept = (cr.getDepartment() != null ? cr.getDepartment() : (cr.getStudent() != null ? cr.getStudent().getDepartment() : "")).trim();
+                        if (!matchesScope(studentDept, userDept)) {
                             return false;
                         }
                     }
 
                     // Scope by College if Principal
                     if (user.getRole() == ERole.PRINCIPAL && user.getCollege() != null && !user.getCollege().isBlank()) {
-                        String userCol = user.getCollege().trim().toLowerCase();
-                        String studentCol = (cr.getCollege() != null ? cr.getCollege() : (cr.getStudent() != null ? cr.getStudent().getCollege() : "")).trim().toLowerCase();
-                        if (!studentCol.contains(userCol) && !userCol.contains(studentCol)) {
+                        String userCol = user.getCollege().trim();
+                        String studentCol = (cr.getCollege() != null ? cr.getCollege() : (cr.getStudent() != null ? cr.getStudent().getCollege() : "")).trim();
+                        if (!matchesScope(studentCol, userCol)) {
                             return false;
                         }
                     }
@@ -973,5 +985,30 @@ public class ClearanceService {
         summary.put("totalRegisteredStudents", totalRegisteredStudents);
         summary.put("registeredStudentsByYear", registeredStudentsByYear);
         return summary;
+    }
+
+    private boolean matchesScope(String studentScope, String userScope) {
+        if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
+            return true;
+        }
+        String s1 = studentScope.trim().toLowerCase();
+        String s2 = userScope.trim().toLowerCase();
+        if (s1.equals(s2) || s1.contains(s2) || s2.contains(s1)) {
+            return true;
+        }
+        String a1 = extractAcronym(s1);
+        String a2 = extractAcronym(s2);
+        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1))) {
+            return true;
+        }
+        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2))) {
+            return true;
+        }
+        return !a1.isEmpty() && !a2.isEmpty() && a1.equals(a2);
+    }
+
+    private String extractAcronym(String s) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\(([^)]+)\\)").matcher(s);
+        return matcher.find() ? matcher.group(1).trim().toLowerCase() : "";
     }
 }

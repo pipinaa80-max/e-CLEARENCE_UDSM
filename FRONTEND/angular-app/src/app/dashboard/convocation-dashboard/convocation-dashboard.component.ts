@@ -42,7 +42,8 @@ export class ConvocationDashboardComponent implements OnInit {
   totalIssued = 0;
   totalCompleted = 0;
 
-  filterStatus = 'all';
+  activeTab: 'dashboard' | 'requests' = 'dashboard';
+  filterStatus = 'pending';
   searchTerm = '';
   dateFilter = 'all';
   currentPage = 1;
@@ -115,7 +116,7 @@ export class ConvocationDashboardComponent implements OnInit {
       }
     }
 
-    if (this.filterStatus === 'all' || this.filterStatus === 'pending') {
+    if (this.filterStatus === 'pending') {
       allRequests = allRequests.filter(r => r && this.getRequestOfficeStatus(r, 'Convocation') === 'Pending');
     } else if (this.filterStatus === 'approved') {
       allRequests = allRequests.filter(r => r && this.getRequestOfficeStatus(r, 'Convocation') === 'Approved');
@@ -126,7 +127,25 @@ export class ConvocationDashboardComponent implements OnInit {
     return allRequests;
   }
 
+  setTab(tab: 'dashboard' | 'requests'): void {
+    this.activeTab = tab;
+    this.closeSidebar();
+    if (tab === 'requests') {
+      this.filterStatus = 'all';
+    } else {
+      this.filterStatus = 'pending';
+    }
+    this.onFilterChange();
+  }
+
   ngOnInit(): void {
+    if (this.router.url.includes('/convocation/requests')) {
+      this.activeTab = 'requests';
+      this.filterStatus = 'all';
+    } else {
+      this.activeTab = 'dashboard';
+      this.filterStatus = 'pending';
+    }
     this.loadData();
   }
 

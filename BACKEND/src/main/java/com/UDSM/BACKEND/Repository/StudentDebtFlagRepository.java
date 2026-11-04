@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface StudentDebtFlagRepository extends JpaRepository<StudentDebtFlag, String> {
     List<StudentDebtFlag> findByCollegeIgnoreCaseAndDepartmentIgnoreCaseOrderByCreatedAtDesc(String college, String department);
+    List<StudentDebtFlag> findByLecturerIdOrderByCreatedAtDesc(String lecturerId);
     void deleteByStudentId(String studentId);
     void deleteByRegistrationNumber(String registrationNumber);
 }
+

@@ -90,6 +90,10 @@ export class PrincipalComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        this.clearanceService.fetchOfficeRequests('Principal').subscribe({
+            next: () => this.loadData(),
+            error: () => this.loadData()
+        });
         this.loadData();
     }
 

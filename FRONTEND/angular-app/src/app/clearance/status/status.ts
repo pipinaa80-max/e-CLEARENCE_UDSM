@@ -72,6 +72,16 @@ export class ClearanceStatusComponent implements OnInit {
     return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
+  get isTranscriptProcessCompleted(): boolean {
+    const user = this.student;
+    if (!user || typeof localStorage === 'undefined') return false;
+
+    const firstRequest = this.transcriptService.getStudentRequests(user.id)
+      .find(request => request.attemptNumber === 1);
+    return localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true' ||
+      !!firstRequest?.collectionMethod;
+  }
+
   // =====================================================
   // CURRENT STUDENT REQUEST
   // =====================================================
