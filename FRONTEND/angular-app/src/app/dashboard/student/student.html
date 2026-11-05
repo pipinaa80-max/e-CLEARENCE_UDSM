@@ -183,7 +183,6 @@
         <div class="transcript-card-header">
           <div>
             <h3>Academic Transcript Requests ({{ submittedTranscriptCopies.length }} {{ submittedTranscriptCopies.length === 1 ? 'Copy' : 'Copies' }})</h3>
-            <p>Each copy requested has been submitted separately to the Directorate of Undergraduate Studies (DUS).</p>
           </div>
           <button type="button" class="btn-request-more" (click)="openTranscriptModal()">
             + Request More Copies
@@ -387,7 +386,7 @@
             <button
               type="button"
               class="approval-button receipt-submit-btn"
-              [disabled]="(!selectedReceiptFile && !receiptNote?.trim()) || isSubmittingReceipt"
+              [disabled]="(!selectedReceiptFile && !receiptNote.trim()) || isSubmittingReceipt"
               (click)="submitRejectionReceipt()"
             >
               {{ isSubmittingReceipt ? 'Submitting Receipt...' : '📤 Submit Receipt to Finance' }}
@@ -523,19 +522,10 @@
             </div>
             <div>
               <h3 id="transcriptModalTitle">Official Academic Transcript Request</h3>
-              <p>Directorate of Undergraduate Studies (DUS) &bull; UDSM</p>
+              <p>Directorate of Undergraduate Studies (DUS)</p>
             </div>
           </div>
           <button type="button" class="modal-close-btn" (click)="closeTranscriptModal()" aria-label="Close">✕</button>
-        </div>
-
-        <!-- CLEARANCE VERIFIED BANNER -->
-        <div class="modal-verified-banner">
-          <i class="bi bi-shield-check"></i>
-          <div>
-            <strong>Clearance Requirements Completed</strong>
-            <p>Your institutional graduation clearance is approved. Specify the required number of transcript copies and attach your payment receipt(s).</p>
-          </div>
         </div>
 
         <!-- ERROR & SUCCESS MESSAGES -->
@@ -546,15 +536,12 @@
           ✓ {{ transcriptSuccessMessage }}
         </div>
 
-        <!-- NUMBER OF COPIES SPECIFICATION -->
-        <div class="modal-input-section">
-          <label class="modal-label">
-            <span>Specify Number of Copies Required</span>
-            <span class="required-indicator">*</span>
-          </label>
-          <div class="copies-stepper-box">
+        <!-- COPIES & FEE SUMMARY -->
+        <div class="copies-pricing-container">
+          <div class="copies-picker-column">
+            <label class="modal-label">Number of Copies <span class="required-indicator">*</span></label>
             <div class="stepper-actions">
-              <button type="button" class="stepper-btn" (click)="decrementCopies()" [disabled]="transcriptCopies <= 1">-</button>
+              <button type="button" class="stepper-btn" (click)="decrementCopies()" [disabled]="transcriptCopies <= 1" aria-label="Decrease copies">-</button>
               <input
                 type="number"
                 class="stepper-input"
@@ -563,23 +550,14 @@
                 min="1"
                 max="10"
               />
-              <button type="button" class="stepper-btn" (click)="incrementCopies()" [disabled]="transcriptCopies >= 10">+</button>
-            </div>
-            <div class="copies-caption">
-              <strong>{{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Official Copy' : 'Official Copies' }}</strong>
-              <small>Each copy goes to DUS as a separate individual request</small>
+              <button type="button" class="stepper-btn" (click)="incrementCopies()" [disabled]="transcriptCopies >= 10" aria-label="Increase copies">+</button>
             </div>
           </div>
 
-          <div class="fee-calculation-card">
-            <div class="fee-line">
-              <span>Standard Cost:</span>
-              <span>1st Copy: <strong>15,000 TZS</strong><span *ngIf="transcriptCopies > 1"> &bull; Each Additional: <strong>5,000 TZS</strong></span></span>
-            </div>
-            <div class="fee-line fee-total-row">
-              <span>Total Payable Amount:</span>
-              <strong class="total-amount-highlight">{{ getEstimatedTranscriptCost() | number }} TZS</strong>
-            </div>
+          <div class="fee-summary-column">
+            <span class="fee-summary-label">Payable Fee</span>
+            <div class="fee-summary-amount">{{ getEstimatedTranscriptCost() | number }} <small>TZS</small></div>
+            <span class="fee-summary-rate">1st copy: 15,000 TZS<span *ngIf="transcriptCopies > 1"> &bull; +5,000 each</span></span>
           </div>
         </div>
 
@@ -590,7 +568,7 @@
               <span>Upload Payment Receipt(s) (Risiti ya Malipo)</span>
               <span class="required-indicator">*</span>
             </label>
-            <span class="hint-pill">Upload 1 or more receipts (e.g. for multiple copies)</span>
+            <span class="hint-pill">Upload 1 or more receipts</span>
           </div>
 
           <!-- Hidden multiple file input -->
@@ -606,11 +584,11 @@
           <!-- Dropzone -->
           <div class="multi-receipt-dropzone" (click)="transcriptFilesInput.click()">
             <div class="dropzone-inner">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
-              <strong>Click or Drag &amp; Drop Payment Receipts Here</strong>
-              <small>Supports multiple PNG, JPG, or PDF files &bull; Max 10MB each</small>
+              <strong>Click or Drag &amp; Drop Receipts Here</strong>
+              <small>PNG, JPG, or PDF files &bull; Max 10MB each</small>
             </div>
           </div>
 
@@ -643,17 +621,6 @@
           </div>
         </div>
 
-        <!-- OPTIONAL PAYMENT NOTE -->
-        <div class="modal-input-section">
-          <label class="modal-label">Payment Remarks / Reference (Optional)</label>
-          <input
-            type="text"
-            class="modal-text-input"
-            [(ngModel)]="transcriptPaymentNote"
-            placeholder="e.g. GePG Transaction Reference, Bank slip #, remarks..."
-          />
-        </div>
-
         <!-- MODAL FOOTER ACTIONS -->
         <div class="modal-footer-actions">
           <button type="button" class="btn-modal-cancel" (click)="closeTranscriptModal()">
@@ -666,10 +633,10 @@
             (click)="submitTranscriptRequest()"
           >
             <span *ngIf="!isSubmittingTranscript">
-              📤 Submit {{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Copy Request' : 'Copy Requests' }} to DUS
+              Submit Request ({{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Copy' : 'Copies' }})
             </span>
             <span *ngIf="isSubmittingTranscript">
-              ⏳ Submitting to DUS...
+              Submitting...
             </span>
           </button>
         </div>
