@@ -138,7 +138,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   selectedTranscriptForModal: TranscriptPaymentRequest | null = null;
 
   get transcriptRequests(): TranscriptPaymentRequest[] {
-    return this.transcriptService.getAllRequests().filter(r => !!r.collectionMethod);
+    return this.transcriptService.getAllRequests().filter(r => !!r.collectionMethod || !!r.receiptFileName || r.status === 'Receipt Submitted');
   }
 
   get dispatchedCount(): number {

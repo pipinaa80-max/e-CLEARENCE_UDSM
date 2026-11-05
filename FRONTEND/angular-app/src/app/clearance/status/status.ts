@@ -269,6 +269,182 @@ export class ClearanceStatusComponent implements OnInit {
   }
 
   // =====================================================
+  // IN-DASHBOARD TRANSCRIPT REQUEST & MULTI-RECEIPT MODAL
+  // =====================================================
+  showTranscriptModal = false;
+  transcriptCopies = 1;
+  transcriptCollectionMethod: 'Physical Collection' | 'Post by DHL' = 'Physical Collection';
+  transcriptRegion = 'Dar es Salaam';
+  transcriptWard = '';
+  transcriptAddress = '';
+  transcriptPoBox = '';
+  transcriptPhone = '';
+  transcriptPaymentNote = '';
+  isSubmittingTranscript = false;
+  transcriptErrorMessage = '';
+  transcriptSuccessMessage = '';
+  activeControlNumber = '';
+
+  uploadedTranscriptReceipts: {
+    file: File;
+    fileName: string;
+    previewUrl: string | null;
+    sizeText: string;
+    receiptData: string;
+  }[] = [];
+
+  openTranscriptModal(): void {
+    this.showTranscriptModal = true;
+    this.transcriptErrorMessage = '';
+    this.transcriptSuccessMessage = '';
+    if (!this.activeControlNumber) {
+      this.activeControlNumber = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    }
+    const user = this.student;
+    if (user?.phoneNumber && !this.transcriptPhone) {
+      this.transcriptPhone = user.phoneNumber;
+    }
+  }
+
+  closeTranscriptModal(): void {
+    this.showTranscriptModal = false;
+    this.transcriptErrorMessage = '';
+    this.transcriptSuccessMessage = '';
+  }
+
+  incrementCopies(): void {
+    if (this.transcriptCopies < 10) {
+      this.transcriptCopies++;
+    }
+  }
+
+  decrementCopies(): void {
+    if (this.transcriptCopies > 1) {
+      this.transcriptCopies--;
+    }
+  }
+
+  onCopiesCountChange(): void {
+    if (!this.transcriptCopies || this.transcriptCopies < 1) {
+      this.transcriptCopies = 1;
+    } else if (this.transcriptCopies > 10) {
+      this.transcriptCopies = 10;
+    }
+  }
+
+  getEstimatedTranscriptCost(): number {
+    const copies = Math.max(1, Math.floor(this.transcriptCopies || 1));
+    return 15000 + (copies - 1) * 5000;
+  }
+
+  async onTranscriptReceiptsSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const files: File[] = Array.from(input.files);
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        this.transcriptErrorMessage = `File ${file.name} exceeds 10MB limit.`;
+        continue;
+      }
+      const sizeText = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      try {
+        const receiptData = await this.readFileAsDataUrl(file);
+        const isImage = file.type.startsWith('image/');
+        this.uploadedTranscriptReceipts.push({
+          file,
+          fileName: file.name,
+          previewUrl: isImage ? receiptData : null,
+          sizeText,
+          receiptData
+        });
+      } catch {
+        this.transcriptErrorMessage = `Failed to process ${file.name}.`;
+      }
+    }
+    input.value = '';
+  }
+
+  removeTranscriptReceipt(index: number): void {
+    this.uploadedTranscriptReceipts.splice(index, 1);
+  }
+
+  submitTranscriptRequest(): void {
+    const user = this.student;
+    if (!user) {
+      this.transcriptErrorMessage = 'Unable to identify current student.';
+      return;
+    }
+
+    if (this.uploadedTranscriptReceipts.length === 0) {
+      this.transcriptErrorMessage = 'Please upload at least one payment receipt.';
+      return;
+    }
+
+    if (this.transcriptCollectionMethod === 'Post by DHL') {
+      if (!this.transcriptRegion?.trim() || !this.transcriptAddress?.trim() || !this.transcriptPhone?.trim()) {
+        this.transcriptErrorMessage = 'Please complete all required DHL delivery fields (Region, Address, and Phone).';
+        return;
+      }
+    }
+
+    this.isSubmittingTranscript = true;
+    this.transcriptErrorMessage = '';
+
+    const receiptsPayload = this.uploadedTranscriptReceipts.map(r => ({
+      fileName: r.fileName,
+      receiptData: r.receiptData,
+      sizeText: r.sizeText
+    }));
+
+    const copyRequests = this.transcriptService.createMultipleCopyRequests({
+      studentId: user.id,
+      studentName: user.fullName,
+      registrationNumber: user.registrationNumber || user.id,
+      award: user.programme || 'Degree Certificate & Transcript',
+      graduationYear: '2024',
+      totalCopies: this.transcriptCopies,
+      collectionMethod: this.transcriptCollectionMethod,
+      receipts: receiptsPayload,
+      receiptNote: this.transcriptPaymentNote,
+      postingRegion: this.transcriptRegion,
+      postingWard: this.transcriptWard,
+      postingPoBox: this.transcriptPoBox,
+      postingAddress: this.transcriptAddress,
+      postingContactPhone: this.transcriptPhone,
+      postingContactEmail: user.email
+    });
+
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
+    }
+
+    setTimeout(() => {
+      this.isSubmittingTranscript = false;
+      this.transcriptSuccessMessage = `Successfully submitted ${copyRequests.length} separate transcript copy ${copyRequests.length === 1 ? 'request' : 'requests'} to DUS!`;
+      this.toastService.success('Transcript Requests Submitted', `${copyRequests.length} separate copy requests sent to DUS.`);
+      setTimeout(() => {
+        this.closeTranscriptModal();
+        this.uploadedTranscriptReceipts = [];
+        this.transcriptPaymentNote = '';
+      }, 1500);
+    }, 600);
+  }
+
+  get submittedTranscriptCopies() {
+    const user = this.student;
+    if (!user) return [];
+    return this.transcriptService.getStudentRequests(user.id);
+  }
+
+  get hasSubmittedTranscriptRequests(): boolean {
+    return this.submittedTranscriptCopies.length > 0;
+  }
+
+  // =====================================================
   // SEVEN CLEARANCE OFFICES
   // =====================================================
 

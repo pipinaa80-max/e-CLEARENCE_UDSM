@@ -60,6 +60,76 @@ export class TranscriptPaymentService {
     return request;
   }
 
+  createMultipleCopyRequests(params: {
+    studentId: string;
+    studentName: string;
+    registrationNumber: string;
+    award: string;
+    graduationYear: string;
+    totalCopies: number;
+    collectionMethod: 'Physical Collection' | 'Post by DHL';
+    receipts: { fileName: string; receiptData: string; sizeText?: string }[];
+    receiptNote?: string;
+    postingRegion?: string;
+    postingWard?: string;
+    postingPoBox?: string;
+    postingAddress?: string;
+    postingContactPhone?: string;
+    postingContactEmail?: string;
+  }): TranscriptPaymentRequest[] {
+    const all = this.getAllRequests();
+    const count = Math.max(1, Math.floor(params.totalCopies));
+    const created: TranscriptPaymentRequest[] = [];
+    const sharedControlNumber = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
+    const now = new Date().toISOString();
+
+    for (let i = 1; i <= count; i++) {
+      const costForThisCopy = i === 1 ? 15000 : 5000;
+      const primaryReceipt = params.receipts.length > 0
+        ? (params.receipts[(i - 1) % params.receipts.length] || params.receipts[0])
+        : undefined;
+
+      const req: TranscriptPaymentRequest = {
+        id: crypto.randomUUID(),
+        studentId: params.studentId,
+        studentName: params.studentName,
+        registrationNumber: params.registrationNumber,
+        award: params.award || 'Degree Certificate & Transcript',
+        graduationYear: params.graduationYear || '2024',
+        transcriptCount: 1, // each row represents 1 copy
+        copyNumber: i,
+        totalCopies: count,
+        amount: costForThisCopy,
+        currency: 'TZS',
+        attemptNumber: i,
+        controlNumber: sharedControlNumber,
+        controlNumberIssuedAt: now,
+        requestedAt: now,
+        controlNumberRequestedAt: now,
+        status: 'Receipt Submitted',
+        receiptSubmittedAt: now,
+        receiptFileName: primaryReceipt?.fileName,
+        receiptData: primaryReceipt?.receiptData,
+        receipts: params.receipts,
+        receiptNote: params.receiptNote,
+        collectionMethod: params.collectionMethod,
+        postingRegion: params.postingRegion,
+        postingWard: params.postingWard,
+        postingPoBox: params.postingPoBox,
+        postingAddress: params.postingAddress,
+        postingContactPhone: params.postingContactPhone,
+        postingContactEmail: params.postingContactEmail,
+        dispatchStatus: 'Pending Dispatch'
+      };
+
+      all.push(req);
+      created.push(req);
+    }
+
+    this.storage.save(this.requestKey, all);
+    return created;
+  }
+
   issueControlNumber(requestId: string, controlNumber: string): boolean {
     const request = this.getAllRequests().find(item => item.id === requestId);
     if (!request || !controlNumber.trim()) {

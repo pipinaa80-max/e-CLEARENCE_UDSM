@@ -159,27 +159,74 @@
         <div class="student-summary-action">
           <ng-container *ngIf="!isTranscriptSystem">
             <a *ngIf="!currentRequest && !isClearanceCompleted" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
-            <a
-              *ngIf="isClearanceCompleted && !isTranscriptProcessCompleted"
-              routerLink="/transcript"
-              class="primary-button"
-              (click)="startTranscriptProcess()"
-            >
-              {{ hasStartedTranscriptProcess ? 'Continue with Transcript Process' : 'Start Transcript Process' }}
-            </a>
             <button
-              *ngIf="isClearanceCompleted && isTranscriptProcessCompleted"
+              *ngIf="isClearanceCompleted"
               type="button"
-              class="primary-button disabled"
-              disabled
-              title="Transcript process has already been completed"
+              class="primary-button"
+              (click)="openTranscriptModal()"
             >
-              Start Transcript Process
+              {{ hasSubmittedTranscriptRequests ? 'Request More Transcript Copies' : 'Start Transcript Process' }}
             </button>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">
             <a routerLink="/transcript" class="secondary-button">{{ currentTranscriptRequest ? 'Manage Transcript' : 'Start Transcript Request' }}</a>
           </ng-container>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================
+         SUBMITTED TRANSCRIPT REQUESTS (PER COPY)
+    ================================================== -->
+    <section class="transcript-copies-section" *ngIf="submittedTranscriptCopies.length > 0">
+      <div class="transcript-section-card">
+        <div class="transcript-card-header">
+          <div>
+            <h3>Academic Transcript Requests ({{ submittedTranscriptCopies.length }} {{ submittedTranscriptCopies.length === 1 ? 'Copy' : 'Copies' }})</h3>
+            <p>Each copy requested has been submitted separately to the Directorate of Undergraduate Studies (DUS).</p>
+          </div>
+          <button type="button" class="btn-request-more" (click)="openTranscriptModal()">
+            + Request More Copies
+          </button>
+        </div>
+
+        <div class="transcript-copies-grid">
+          <div class="transcript-copy-item" *ngFor="let copyReq of submittedTranscriptCopies">
+            <div class="copy-item-header">
+              <span class="copy-badge">
+                <i class="bi bi-file-earmark-text"></i> Copy {{ copyReq.copyNumber || 1 }} of {{ copyReq.totalCopies || submittedTranscriptCopies.length }}
+              </span>
+              <span class="copy-status" [ngClass]="copyReq.dispatchStatus === 'Dispatched' ? 'status-dispatched' : (copyReq.certificateVerified ? 'status-verified' : 'status-submitted')">
+                {{ copyReq.dispatchStatus === 'Dispatched' ? 'Dispatched' : (copyReq.certificateVerified ? 'Verified & Sealed' : copyReq.status) }}
+              </span>
+            </div>
+            <div class="copy-item-details">
+              <div class="copy-detail-row">
+                <span class="detail-label">Control Number:</span>
+                <span class="detail-value"><code>{{ copyReq.controlNumber }}</code></span>
+              </div>
+              <div class="copy-detail-row">
+                <span class="detail-label">Amount:</span>
+                <span class="detail-value">{{ copyReq.amount | number }} TZS</span>
+              </div>
+              <div class="copy-detail-row">
+                <span class="detail-label">Collection Method:</span>
+                <span class="detail-value">{{ copyReq.collectionMethod || 'Physical Collection' }}</span>
+              </div>
+              <div class="copy-detail-row" *ngIf="copyReq.collectionMethod === 'Post by DHL'">
+                <span class="detail-label">Delivery Destination:</span>
+                <span class="detail-value">{{ copyReq.postingRegion }}, {{ copyReq.postingWard }}</span>
+              </div>
+              <div class="copy-detail-row" *ngIf="copyReq.receiptFileName">
+                <span class="detail-label">Receipt File:</span>
+                <span class="detail-value receipt-pill">📄 {{ copyReq.receiptFileName }}</span>
+              </div>
+              <div class="copy-detail-row" *ngIf="copyReq.digitalSignatureHash">
+                <span class="detail-label">DUS Official Seal:</span>
+                <span class="detail-value seal-pill">🔒 {{ copyReq.digitalSignatureHash }}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -463,6 +510,243 @@
         </section>
       </ng-template>
     </section>
+
+    <!-- =================================================
+         TRANSCRIPT REQUEST MODAL WITH BLURRED BACKDROP
+    ================================================== -->
+    <div class="transcript-modal-backdrop" *ngIf="showTranscriptModal" (click)="closeTranscriptModal()">
+      <div class="transcript-modal-card" role="dialog" aria-modal="true" aria-labelledby="transcriptModalTitle" (click)="$event.stopPropagation()">
+
+        <!-- MODAL HEADER -->
+        <div class="transcript-modal-header">
+          <div class="transcript-modal-title-area">
+            <div class="modal-icon-badge">
+              <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div>
+              <h3 id="transcriptModalTitle">Official Academic Transcript Request</h3>
+              <p>Directorate of Undergraduate Studies (DUS) &bull; UDSM</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeTranscriptModal()" aria-label="Close">✕</button>
+        </div>
+
+        <!-- CLEARANCE VERIFIED BANNER -->
+        <div class="modal-verified-banner">
+          <i class="bi bi-shield-check"></i>
+          <div>
+            <strong>Clearance Requirements Completed</strong>
+            <p>Your institutional graduation clearance is approved. Specify the required number of transcript copies and attach your payment receipt(s).</p>
+          </div>
+        </div>
+
+        <!-- ERROR & SUCCESS MESSAGES -->
+        <div *ngIf="transcriptErrorMessage" class="modal-alert-error">
+          ⚠️ {{ transcriptErrorMessage }}
+        </div>
+        <div *ngIf="transcriptSuccessMessage" class="modal-alert-success">
+          ✓ {{ transcriptSuccessMessage }}
+        </div>
+
+        <!-- NUMBER OF COPIES SPECIFICATION -->
+        <div class="modal-input-section">
+          <label class="modal-label">
+            <span>Specify Number of Copies Required</span>
+            <span class="required-indicator">*</span>
+          </label>
+          <div class="copies-stepper-box">
+            <div class="stepper-actions">
+              <button type="button" class="stepper-btn" (click)="decrementCopies()" [disabled]="transcriptCopies <= 1">-</button>
+              <input
+                type="number"
+                class="stepper-input"
+                [(ngModel)]="transcriptCopies"
+                (change)="onCopiesCountChange()"
+                min="1"
+                max="10"
+              />
+              <button type="button" class="stepper-btn" (click)="incrementCopies()" [disabled]="transcriptCopies >= 10">+</button>
+            </div>
+            <div class="copies-caption">
+              <strong>{{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Official Copy' : 'Official Copies' }}</strong>
+              <small>Each copy goes to DUS as a separate individual request</small>
+            </div>
+          </div>
+
+          <div class="fee-calculation-card">
+            <div class="fee-line">
+              <span>Standard Cost:</span>
+              <span>1st Copy: <strong>15,000 TZS</strong><span *ngIf="transcriptCopies > 1"> &bull; Each Additional: <strong>5,000 TZS</strong></span></span>
+            </div>
+            <div class="fee-line fee-total-row">
+              <span>Total Payable Amount:</span>
+              <strong class="total-amount-highlight">{{ getEstimatedTranscriptCost() | number }} TZS</strong>
+            </div>
+            <div class="control-number-banner">
+              <span>GePG Payment Control Number: <strong>{{ activeControlNumber }}</strong></span>
+              <small>Payable through Mobile Money (M-Pesa, Airtel Money, Tigo Pesa, HaloPesa) or Bank deposit</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLLECTION / DELIVERY METHOD -->
+        <div class="modal-input-section">
+          <label class="modal-label">
+            <span>Transcript Collection / Delivery Method</span>
+            <span class="required-indicator">*</span>
+          </label>
+          <div class="collection-methods-row">
+            <label class="method-card-label" [class.active-method]="transcriptCollectionMethod === 'Physical Collection'">
+              <input
+                type="radio"
+                name="transcriptMethod"
+                value="Physical Collection"
+                [(ngModel)]="transcriptCollectionMethod"
+              />
+              <div class="method-card-content">
+                <strong><i class="bi bi-building"></i> Physical Pickup</strong>
+                <small>DUS Main Campus Directorate Office</small>
+              </div>
+            </label>
+
+            <label class="method-card-label" [class.active-method]="transcriptCollectionMethod === 'Post by DHL'">
+              <input
+                type="radio"
+                name="transcriptMethod"
+                value="Post by DHL"
+                [(ngModel)]="transcriptCollectionMethod"
+              />
+              <div class="method-card-content">
+                <strong><i class="bi bi-truck"></i> Post by DHL Courier</strong>
+                <small>Direct delivery to your destination address</small>
+              </div>
+            </label>
+          </div>
+
+          <!-- DHL Delivery Details if selected -->
+          <div class="dhl-fields-container" *ngIf="transcriptCollectionMethod === 'Post by DHL'">
+            <div class="dhl-form-row">
+              <div class="dhl-field">
+                <label>Region / City *</label>
+                <input type="text" [(ngModel)]="transcriptRegion" placeholder="e.g. Dar es Salaam, Arusha..." />
+              </div>
+              <div class="dhl-field">
+                <label>District / Ward *</label>
+                <input type="text" [(ngModel)]="transcriptWard" placeholder="e.g. Kinondoni, Ubungo..." />
+              </div>
+            </div>
+            <div class="dhl-form-row">
+              <div class="dhl-field">
+                <label>Street / Building / Delivery Address *</label>
+                <input type="text" [(ngModel)]="transcriptAddress" placeholder="Physical street, plot, house or office..." />
+              </div>
+              <div class="dhl-field">
+                <label>P.O. Box (Optional)</label>
+                <input type="text" [(ngModel)]="transcriptPoBox" placeholder="e.g. P.O. Box 35091" />
+              </div>
+            </div>
+            <div class="dhl-form-row">
+              <div class="dhl-field full-width">
+                <label>Contact Phone Number *</label>
+                <input type="tel" [(ngModel)]="transcriptPhone" placeholder="e.g. +255 712 345 678" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTI-RECEIPT UPLOAD SECTION -->
+        <div class="modal-input-section">
+          <div class="section-label-with-hint">
+            <label class="modal-label">
+              <span>Upload Payment Receipt(s) (Risiti ya Malipo)</span>
+              <span class="required-indicator">*</span>
+            </label>
+            <span class="hint-pill">Upload 1 or more receipts (e.g. for multiple copies)</span>
+          </div>
+
+          <!-- Hidden multiple file input -->
+          <input
+            #transcriptFilesInput
+            type="file"
+            multiple
+            (change)="onTranscriptReceiptsSelected($event)"
+            accept="image/png,image/jpeg,image/jpg,application/pdf"
+            style="display: none;"
+          />
+
+          <!-- Dropzone -->
+          <div class="multi-receipt-dropzone" (click)="transcriptFilesInput.click()">
+            <div class="dropzone-inner">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <strong>Click or Drag &amp; Drop Payment Receipts Here</strong>
+              <small>Supports multiple PNG, JPG, or PDF files &bull; Max 10MB each</small>
+            </div>
+          </div>
+
+          <!-- Uploaded Receipts Preview List -->
+          <div class="uploaded-receipts-container" *ngIf="uploadedTranscriptReceipts.length > 0">
+            <div class="receipts-list-bar">
+              <span>Attached Receipts ({{ uploadedTranscriptReceipts.length }})</span>
+              <button type="button" class="btn-attach-another" (click)="transcriptFilesInput.click()">
+                + Attach Another Receipt
+              </button>
+            </div>
+
+            <div class="receipt-chips-list">
+              <div class="receipt-chip-item" *ngFor="let item of uploadedTranscriptReceipts; let idx = index">
+                <div class="receipt-thumb-box" *ngIf="item.previewUrl">
+                  <img [src]="item.previewUrl" alt="Receipt preview" />
+                </div>
+                <div class="receipt-thumb-box pdf" *ngIf="!item.previewUrl">
+                  <span>PDF</span>
+                </div>
+                <div class="receipt-chip-info">
+                  <strong class="receipt-chip-title" [title]="item.fileName">{{ item.fileName }}</strong>
+                  <small>{{ item.sizeText }} &bull; Receipt #{{ idx + 1 }}</small>
+                </div>
+                <button type="button" class="btn-remove-chip" (click)="removeTranscriptReceipt(idx)" title="Remove receipt">
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OPTIONAL PAYMENT NOTE -->
+        <div class="modal-input-section">
+          <label class="modal-label">Payment Remarks / Reference (Optional)</label>
+          <input
+            type="text"
+            class="modal-text-input"
+            [(ngModel)]="transcriptPaymentNote"
+            placeholder="e.g. GePG Transaction Reference, Bank slip #, remarks..."
+          />
+        </div>
+
+        <!-- MODAL FOOTER ACTIONS -->
+        <div class="modal-footer-actions">
+          <button type="button" class="btn-modal-cancel" (click)="closeTranscriptModal()">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-modal-submit"
+            [disabled]="uploadedTranscriptReceipts.length === 0 || isSubmittingTranscript"
+            (click)="submitTranscriptRequest()"
+          >
+            <span *ngIf="!isSubmittingTranscript">
+              📤 Submit {{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Copy Request' : 'Copy Requests' }} to DUS
+            </span>
+            <span *ngIf="isSubmittingTranscript">
+              ⏳ Submitting to DUS...
+            </span>
+          </button>
+        </div>
+
+      </div>
+    </div>
 
   </main>
 

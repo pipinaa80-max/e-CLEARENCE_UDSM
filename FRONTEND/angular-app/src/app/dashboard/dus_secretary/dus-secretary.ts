@@ -75,17 +75,50 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
     this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
       next: (students) => {
-        if (students && students.length > 0) {
-          this.requests = students.map(s => this.mapStudentToRequest(s));
-        } else {
-          this.requests = [];
-        }
+        const backendRequests = (students && students.length > 0)
+          ? students.map(s => this.mapStudentToRequest(s))
+          : [];
+        this.mergeRequests(backendRequests);
       },
       error: (err) => {
         console.error('Failed to load students from backend:', err);
-        this.requests = [];
+        this.mergeRequests([]);
       }
     });
+  }
+
+  private mergeRequests(backendRequests: TranscriptPaymentRequest[]): void {
+    const localRequests = this.transcriptService.getAllRequests();
+    // Prioritize specific local copy requests (each copy requested separately)
+    const combined: TranscriptPaymentRequest[] = [...localRequests];
+    for (const bReq of backendRequests) {
+      const existsInLocal = localRequests.some(
+        l => l.studentId === bReq.studentId || l.registrationNumber === bReq.registrationNumber
+      );
+      if (!existsInLocal) {
+        combined.push(bReq);
+      }
+    }
+    this.requests = combined;
+  }
+
+  // Selected receipt for preview modal
+  selectedReceiptView: { fileName: string; dataUrl: string; studentName: string; copyNumber?: number; totalCopies?: number } | null = null;
+
+  viewReceipt(req: TranscriptPaymentRequest): void {
+    const dataUrl = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
+    const fileName = req.receiptFileName || (req.receipts && req.receipts[0]?.fileName) || 'Receipt.png';
+    this.selectedReceiptView = {
+      fileName,
+      dataUrl,
+      studentName: req.studentName,
+      copyNumber: req.copyNumber,
+      totalCopies: req.totalCopies
+    };
+  }
+
+  closeReceiptView(): void {
+    this.selectedReceiptView = null;
   }
 
   private mapStudentToRequest(s: any): TranscriptPaymentRequest {

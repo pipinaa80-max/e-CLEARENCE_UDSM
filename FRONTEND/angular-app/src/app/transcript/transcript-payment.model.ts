@@ -41,6 +41,12 @@ export interface TranscriptPaymentRequest {
   signedBy?: string;
   signedAt?: string;
 
+  // Multi-copy & Multi-receipt fields
+  copyNumber?: number;
+  totalCopies?: number;
+  receiptNote?: string;
+  receipts?: { fileName: string; receiptData: string; sizeText?: string }[];
+
   // Station Secretary Intake & Handover fields
   stationCode?: string;
   stationName?: string;

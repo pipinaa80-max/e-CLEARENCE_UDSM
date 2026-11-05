@@ -622,7 +622,10 @@
                 <!-- Copies & Degree -->
                 <td>
                   <div class="copies-cell">
-                    <span class="copy-count-badge">
+                    <span class="copy-count-badge" *ngIf="tReq.copyNumber">
+                      <i class="bi bi-file-earmark-text"></i> Copy {{ tReq.copyNumber }} of {{ tReq.totalCopies || tReq.transcriptCount }}
+                    </span>
+                    <span class="copy-count-badge" *ngIf="!tReq.copyNumber">
                       <i class="bi bi-files"></i> {{ tReq.transcriptCount }} {{ tReq.transcriptCount === 1 ? 'Copy' : 'Copies' }}
                     </span>
                     <small class="degree-note" *ngIf="tReq.award || tReq.graduationYear">

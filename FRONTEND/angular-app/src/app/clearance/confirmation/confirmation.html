@@ -188,22 +188,11 @@
       </a>
 
       <a
-        *ngIf="!isTranscriptProcessCompleted"
-        routerLink="/transcript/process"
+        routerLink="/clearance/status"
         class="primary-button"
       >
         Start Transcript Process
       </a>
-
-      <button
-        *ngIf="isTranscriptProcessCompleted"
-        type="button"
-        class="primary-button disabled"
-        disabled
-        title="Transcript process has already been completed"
-      >
-        Start Transcript Process
-      </button>
 
     </div>
 
