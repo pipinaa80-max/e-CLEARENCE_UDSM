@@ -615,10 +615,6 @@
               </div>
               <div class="copy-item-details">
                 <div class="copy-detail-row">
-                  <span class="detail-label">Control Number:</span>
-                  <span class="detail-value"><code>{{ copyReq.controlNumber }}</code></span>
-                </div>
-                <div class="copy-detail-row">
                   <span class="detail-label">Amount:</span>
                   <span class="detail-value">{{ copyReq.amount | number }} TZS</span>
                 </div>
@@ -765,10 +761,6 @@
             <div class="fee-line fee-total-row">
               <span>Total Payable Amount:</span>
               <strong class="total-amount-highlight">{{ getEstimatedTranscriptCost() | number }} TZS</strong>
-            </div>
-            <div class="control-number-banner">
-              <span>GePG Payment Control Number: <strong>{{ activeControlNumber }}</strong></span>
-              <small>Payable through Mobile Money (M-Pesa, Airtel Money, Tigo Pesa, HaloPesa) or Bank deposit</small>
             </div>
           </div>
         </div>

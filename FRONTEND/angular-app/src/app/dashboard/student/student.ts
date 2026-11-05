@@ -525,7 +525,6 @@ export class StudentDashboard implements OnInit, OnDestroy {
   isSubmittingTranscript = false;
   transcriptErrorMessage = '';
   transcriptSuccessMessage = '';
-  activeControlNumber = '';
 
   uploadedTranscriptReceipts: {
     file: File;
@@ -539,9 +538,6 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.showTranscriptModal = true;
     this.transcriptErrorMessage = '';
     this.transcriptSuccessMessage = '';
-    if (!this.activeControlNumber) {
-      this.activeControlNumber = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
-    }
     const user = this.currentUser;
     if (user?.phoneNumber && !this.transcriptPhone) {
       this.transcriptPhone = user.phoneNumber;

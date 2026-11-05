@@ -80,7 +80,6 @@ export class TranscriptPaymentService {
     const all = this.getAllRequests();
     const count = Math.max(1, Math.floor(params.totalCopies));
     const created: TranscriptPaymentRequest[] = [];
-    const sharedControlNumber = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
     const now = new Date().toISOString();
 
     for (let i = 1; i <= count; i++) {
@@ -102,10 +101,7 @@ export class TranscriptPaymentService {
         amount: costForThisCopy,
         currency: 'TZS',
         attemptNumber: i,
-        controlNumber: sharedControlNumber,
-        controlNumberIssuedAt: now,
         requestedAt: now,
-        controlNumberRequestedAt: now,
         status: 'Receipt Submitted',
         receiptSubmittedAt: now,
         receiptFileName: primaryReceipt?.fileName,
