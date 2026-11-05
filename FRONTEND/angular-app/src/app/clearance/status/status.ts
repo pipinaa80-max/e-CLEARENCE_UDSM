@@ -268,17 +268,17 @@ export class ClearanceStatusComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get hasStartedTranscriptProcess(): boolean {
+    const user = this.student;
+    return !!user && typeof localStorage !== 'undefined' &&
+      localStorage.getItem(`udsm-transcript-process-started-${user.id}`) === 'true';
+  }
+
   // =====================================================
   // IN-DASHBOARD TRANSCRIPT REQUEST & MULTI-RECEIPT MODAL
   // =====================================================
   showTranscriptModal = false;
   transcriptCopies = 1;
-  transcriptCollectionMethod: 'Physical Collection' | 'Post by DHL' = 'Physical Collection';
-  transcriptRegion = 'Dar es Salaam';
-  transcriptWard = '';
-  transcriptAddress = '';
-  transcriptPoBox = '';
-  transcriptPhone = '';
   transcriptPaymentNote = '';
   isSubmittingTranscript = false;
   transcriptErrorMessage = '';
@@ -293,13 +293,13 @@ export class ClearanceStatusComponent implements OnInit {
   }[] = [];
 
   openTranscriptModal(): void {
+    const user = this.student;
+    if (user && typeof localStorage !== 'undefined') {
+      localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
+    }
     this.showTranscriptModal = true;
     this.transcriptErrorMessage = '';
     this.transcriptSuccessMessage = '';
-    const user = this.student;
-    if (user?.phoneNumber && !this.transcriptPhone) {
-      this.transcriptPhone = user.phoneNumber;
-    }
   }
 
   closeTranscriptModal(): void {
@@ -380,13 +380,6 @@ export class ClearanceStatusComponent implements OnInit {
       return;
     }
 
-    if (this.transcriptCollectionMethod === 'Post by DHL') {
-      if (!this.transcriptRegion?.trim() || !this.transcriptAddress?.trim() || !this.transcriptPhone?.trim()) {
-        this.transcriptErrorMessage = 'Please complete all required DHL delivery fields (Region, Address, and Phone).';
-        return;
-      }
-    }
-
     this.isSubmittingTranscript = true;
     this.transcriptErrorMessage = '';
 
@@ -403,14 +396,10 @@ export class ClearanceStatusComponent implements OnInit {
       award: user.programme || 'Degree Certificate & Transcript',
       graduationYear: '2024',
       totalCopies: this.transcriptCopies,
-      collectionMethod: this.transcriptCollectionMethod,
+      collectionMethod: 'Physical Collection',
       receipts: receiptsPayload,
       receiptNote: this.transcriptPaymentNote,
-      postingRegion: this.transcriptRegion,
-      postingWard: this.transcriptWard,
-      postingPoBox: this.transcriptPoBox,
-      postingAddress: this.transcriptAddress,
-      postingContactPhone: this.transcriptPhone,
+      postingContactPhone: user.phoneNumber || '',
       postingContactEmail: user.email
     });
 

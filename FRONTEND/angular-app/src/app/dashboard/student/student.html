@@ -146,7 +146,7 @@
               <span *ngIf="!isClearanceCompleted">{{ completedOffices }} approved</span>
               <span *ngIf="!isClearanceCompleted">{{ pendingOffices }} pending</span>
               <span *ngIf="rejectedOffices && !isClearanceCompleted" class="rejected-text">{{ rejectedOffices }} rejected</span>
-              <span *ngIf="isClearanceCompleted" class="completed-text" style="color: #16a34a; font-weight: 700;">✓ Clearance Completed & Approved</span>
+              <span *ngIf="isClearanceCompleted && !hasStartedTranscriptProcess" class="completed-text" style="color: #16a34a; font-weight: 700;">✓ Clearance Completed & Approved</span>
             </ng-container>
             <ng-container *ngIf="isTranscriptSystem">
               <span>Step {{ transcriptProgressSteps }} of 4</span>
@@ -165,7 +165,7 @@
               class="primary-button"
               (click)="openTranscriptModal()"
             >
-              {{ hasSubmittedTranscriptRequests ? 'Request More Transcript Copies' : 'Start Transcript Process' }}
+              {{ hasStartedTranscriptProcess ? 'Continue with Transcript Process' : 'Start Transcript Process' }}
             </button>
           </ng-container>
           <ng-container *ngIf="isTranscriptSystem">
@@ -205,14 +205,6 @@
                 <span class="detail-label">Amount:</span>
                 <span class="detail-value">{{ copyReq.amount | number }} TZS</span>
               </div>
-              <div class="copy-detail-row">
-                <span class="detail-label">Collection Method:</span>
-                <span class="detail-value">{{ copyReq.collectionMethod || 'Physical Collection' }}</span>
-              </div>
-              <div class="copy-detail-row" *ngIf="copyReq.collectionMethod === 'Post by DHL'">
-                <span class="detail-label">Delivery Destination:</span>
-                <span class="detail-value">{{ copyReq.postingRegion }}, {{ copyReq.postingWard }}</span>
-              </div>
               <div class="copy-detail-row" *ngIf="copyReq.receiptFileName">
                 <span class="detail-label">Receipt File:</span>
                 <span class="detail-value receipt-pill">📄 {{ copyReq.receiptFileName }}</span>
@@ -232,7 +224,7 @@
     ================================================== -->
     <section
       class="dashboard-clearance-stepper-card"
-      *ngIf="currentRequest && !isTranscriptSystem && (!isClearanceCompleted || hasStartedTranscriptProcess)"
+      *ngIf="currentRequest && !isTranscriptSystem && !isClearanceCompleted"
     >
       <ng-container *ngIf="!isClearanceCompleted; else transcriptProcessStepper">
 
@@ -577,71 +569,6 @@
             <div class="fee-line fee-total-row">
               <span>Total Payable Amount:</span>
               <strong class="total-amount-highlight">{{ getEstimatedTranscriptCost() | number }} TZS</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- COLLECTION / DELIVERY METHOD -->
-        <div class="modal-input-section">
-          <label class="modal-label">
-            <span>Transcript Collection / Delivery Method</span>
-            <span class="required-indicator">*</span>
-          </label>
-          <div class="collection-methods-row">
-            <label class="method-card-label" [class.active-method]="transcriptCollectionMethod === 'Physical Collection'">
-              <input
-                type="radio"
-                name="transcriptMethod"
-                value="Physical Collection"
-                [(ngModel)]="transcriptCollectionMethod"
-              />
-              <div class="method-card-content">
-                <strong><i class="bi bi-building"></i> Physical Pickup</strong>
-                <small>DUS Main Campus Directorate Office</small>
-              </div>
-            </label>
-
-            <label class="method-card-label" [class.active-method]="transcriptCollectionMethod === 'Post by DHL'">
-              <input
-                type="radio"
-                name="transcriptMethod"
-                value="Post by DHL"
-                [(ngModel)]="transcriptCollectionMethod"
-              />
-              <div class="method-card-content">
-                <strong><i class="bi bi-truck"></i> Post by DHL Courier</strong>
-                <small>Direct delivery to your destination address</small>
-              </div>
-            </label>
-          </div>
-
-          <!-- DHL Delivery Details if selected -->
-          <div class="dhl-fields-container" *ngIf="transcriptCollectionMethod === 'Post by DHL'">
-            <div class="dhl-form-row">
-              <div class="dhl-field">
-                <label>Region / City *</label>
-                <input type="text" [(ngModel)]="transcriptRegion" placeholder="e.g. Dar es Salaam, Arusha..." />
-              </div>
-              <div class="dhl-field">
-                <label>District / Ward *</label>
-                <input type="text" [(ngModel)]="transcriptWard" placeholder="e.g. Kinondoni, Ubungo..." />
-              </div>
-            </div>
-            <div class="dhl-form-row">
-              <div class="dhl-field">
-                <label>Street / Building / Delivery Address *</label>
-                <input type="text" [(ngModel)]="transcriptAddress" placeholder="Physical street, plot, house or office..." />
-              </div>
-              <div class="dhl-field">
-                <label>P.O. Box (Optional)</label>
-                <input type="text" [(ngModel)]="transcriptPoBox" placeholder="e.g. P.O. Box 35091" />
-              </div>
-            </div>
-            <div class="dhl-form-row">
-              <div class="dhl-field full-width">
-                <label>Contact Phone Number *</label>
-                <input type="tel" [(ngModel)]="transcriptPhone" placeholder="e.g. +255 712 345 678" />
-              </div>
             </div>
           </div>
         </div>

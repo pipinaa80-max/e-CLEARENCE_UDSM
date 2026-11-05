@@ -535,13 +535,13 @@ export class StudentDashboard implements OnInit, OnDestroy {
   }[] = [];
 
   openTranscriptModal(): void {
+    const user = this.currentUser;
+    if (user && typeof localStorage !== 'undefined') {
+      localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
+    }
     this.showTranscriptModal = true;
     this.transcriptErrorMessage = '';
     this.transcriptSuccessMessage = '';
-    const user = this.currentUser;
-    if (user?.phoneNumber && !this.transcriptPhone) {
-      this.transcriptPhone = user.phoneNumber;
-    }
   }
 
   closeTranscriptModal(): void {
@@ -622,13 +622,6 @@ export class StudentDashboard implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.transcriptCollectionMethod === 'Post by DHL') {
-      if (!this.transcriptRegion?.trim() || !this.transcriptAddress?.trim() || !this.transcriptPhone?.trim()) {
-        this.transcriptErrorMessage = 'Please complete all required DHL delivery fields (Region, Address, and Phone).';
-        return;
-      }
-    }
-
     this.isSubmittingTranscript = true;
     this.transcriptErrorMessage = '';
 
@@ -645,14 +638,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
       award: user.programme || 'Degree Certificate & Transcript',
       graduationYear: '2024',
       totalCopies: this.transcriptCopies,
-      collectionMethod: this.transcriptCollectionMethod,
+      collectionMethod: 'Physical Collection',
       receipts: receiptsPayload,
       receiptNote: this.transcriptPaymentNote,
-      postingRegion: this.transcriptRegion,
-      postingWard: this.transcriptWard,
-      postingPoBox: this.transcriptPoBox,
-      postingAddress: this.transcriptAddress,
-      postingContactPhone: this.transcriptPhone,
+      postingContactPhone: user.phoneNumber || '',
       postingContactEmail: user.email
     });
 
@@ -1030,11 +1019,11 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const documentsSubmitted = !!user &&
       localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
 
-    if (isAcquired || request?.collectionMethod) return 'Transcript process completed';
-    if (documentsSubmitted) return 'Step 3: Transcript Collection';
+    if (isAcquired) return 'Transcript process completed';
+    if (documentsSubmitted) return 'Step 2: Documentation Submitted';
     if (request?.status === 'Paid') return 'Step 2: Upload Documentation';
-    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for Payment Approval';
-    return 'Step 1: Transcript Payment';
+    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for DUS Review';
+    return 'Step 1: Transcript Payment & Receipt';
   }
 
   get transcriptProcessSteps(): TranscriptDashboardStep[] {
@@ -1052,10 +1041,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
     return [
       {
         number: 1,
-        label: 'Transcript Payment',
-        detail: request?.controlNumber
-          ? 'Pay the transcript fee using your issued control number.'
-          : 'Start your transcript request and obtain a payment control number.',
+        label: 'Transcript Payment & Receipt',
+        detail: 'Specify copy count and submit official payment receipt(s).',
         status: paymentStepStatus
       },
       {
@@ -1063,14 +1050,6 @@ export class StudentDashboard implements OnInit, OnDestroy {
         label: 'Upload Documentation',
         detail: 'Upload and submit the required transcript documents.',
         status: documentsSubmitted ? 'Approved' : paymentStatus === 'Paid' ? 'Pending' : 'Locked'
-      },
-      {
-        number: 3,
-        label: 'Transcript Collection',
-        detail: 'Choose physical collection or delivery by DHL.',
-        status: request?.collectionMethod || isAcquired
-          ? 'Approved'
-          : documentsSubmitted ? 'Pending' : 'Locked'
       }
     ];
   }
