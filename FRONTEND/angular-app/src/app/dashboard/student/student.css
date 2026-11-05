@@ -2348,6 +2348,22 @@
   border-color: #004d7a;
 }
 
+.multi-receipt-dropzone.dropzone-disabled {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+  border-style: solid !important;
+  cursor: default !important;
+}
+
+.multi-receipt-dropzone.dropzone-disabled:hover {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+}
+
+.multi-receipt-dropzone.dropzone-disabled .dropzone-inner svg {
+  color: #16a34a !important;
+}
+
 .dropzone-inner {
   display: flex;
   flex-direction: column;

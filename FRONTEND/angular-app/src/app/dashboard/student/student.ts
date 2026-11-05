@@ -550,15 +550,29 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.transcriptSuccessMessage = '';
   }
 
+  triggerReceiptUpload(input: HTMLInputElement): void {
+    if (this.uploadedTranscriptReceipts.length >= this.transcriptCopies) {
+      this.transcriptErrorMessage = `You selected ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}. Increase the number of copies above if you wish to upload more receipts.`;
+      return;
+    }
+    this.transcriptErrorMessage = '';
+    input.click();
+  }
+
   incrementCopies(): void {
     if (this.transcriptCopies < 10) {
       this.transcriptCopies++;
+      this.transcriptErrorMessage = '';
     }
   }
 
   decrementCopies(): void {
     if (this.transcriptCopies > 1) {
       this.transcriptCopies--;
+      if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+        this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+      }
+      this.transcriptErrorMessage = '';
     }
   }
 
@@ -568,6 +582,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
     } else if (this.transcriptCopies > 10) {
       this.transcriptCopies = 10;
     }
+    if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+      this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+    }
+    this.transcriptErrorMessage = '';
   }
 
   getEstimatedTranscriptCost(): number {
@@ -579,7 +597,20 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
 
-    const files: File[] = Array.from(input.files);
+    this.transcriptErrorMessage = '';
+    const availableSlots = Math.max(0, this.transcriptCopies - this.uploadedTranscriptReceipts.length);
+    if (availableSlots <= 0) {
+      this.transcriptErrorMessage = `Maximum limit of ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'receipt' : 'receipts'} reached for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+      input.value = '';
+      return;
+    }
+
+    const allFiles: File[] = Array.from(input.files);
+    if (allFiles.length > availableSlots) {
+      this.transcriptErrorMessage = `You selected ${allFiles.length} files, but only ${availableSlots} more ${availableSlots === 1 ? 'receipt is' : 'receipts are'} allowed for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+    }
+
+    const files: File[] = allFiles.slice(0, availableSlots);
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
         this.transcriptErrorMessage = `File ${file.name} exceeds 10MB limit.`;
@@ -617,8 +648,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.uploadedTranscriptReceipts.length === 0) {
-      this.transcriptErrorMessage = 'Please upload at least one payment receipt.';
+    if (!this.uploadedTranscriptReceipts || this.uploadedTranscriptReceipts.length === 0) {
+      this.transcriptErrorMessage = 'Please upload your payment receipt(s) before submitting.';
       return;
     }
 

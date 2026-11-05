@@ -550,35 +550,56 @@
           <span>Upload Payment Receipt(s) (Risiti ya Malipo)</span>
           <span class="required-indicator">*</span>
         </label>
-        <span class="hint-pill">Upload 1 or more receipts</span>
+        <span class="hint-pill" *ngIf="transcriptCopies === 1">Upload 1 receipt (1 copy)</span>
+        <span class="hint-pill" *ngIf="transcriptCopies > 1">Upload up to {{ transcriptCopies }} receipts ({{ uploadedTranscriptReceipts.length }}/{{ transcriptCopies }})</span>
       </div>
 
-      <!-- Hidden multiple file input -->
+      <!-- Hidden file input: only multiple if transcriptCopies > 1 -->
       <input
         #transcriptFilesInput
         type="file"
-        multiple
+        [multiple]="transcriptCopies > 1"
         (change)="onTranscriptReceiptsSelected($event)"
         accept="image/png,image/jpeg,image/jpg,application/pdf"
         style="display: none;"
       />
 
       <!-- Dropzone -->
-      <div class="multi-receipt-dropzone" (click)="transcriptFilesInput.click()">
+      <div
+        class="multi-receipt-dropzone"
+        [class.dropzone-disabled]="uploadedTranscriptReceipts.length >= transcriptCopies"
+        (click)="triggerReceiptUpload(transcriptFilesInput)"
+      >
         <div class="dropzone-inner">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          <strong>Click or Drag &amp; Drop Receipts Here</strong>
-          <small>PNG, JPG, or PDF files &bull; Max 10MB each</small>
+          <strong *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
+            {{ transcriptCopies === 1 ? 'Click or Drag & Drop Receipt Here' : 'Click or Drag & Drop Receipts Here' }}
+          </strong>
+          <strong *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
+            ✓ All {{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Receipt' : 'Receipts' }} Attached
+          </strong>
+          <small *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
+            PNG, JPG, or PDF files &bull; Max 10MB each
+            <span *ngIf="transcriptCopies > 1"> &bull; Max {{ transcriptCopies }} receipts (1 per copy)</span>
+          </small>
+          <small *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
+            {{ transcriptCopies }} of {{ transcriptCopies }} receipts attached. Increase number of copies above to upload more.
+          </small>
         </div>
       </div>
 
       <!-- Uploaded Receipts Preview List -->
       <div class="uploaded-receipts-container" *ngIf="uploadedTranscriptReceipts.length > 0">
         <div class="receipts-list-bar">
-          <span>Attached Receipts ({{ uploadedTranscriptReceipts.length }})</span>
-          <button type="button" class="btn-attach-another" (click)="transcriptFilesInput.click()">
+          <span>Attached Receipts ({{ uploadedTranscriptReceipts.length }} of {{ transcriptCopies }})</span>
+          <button
+            type="button"
+            class="btn-attach-another"
+            *ngIf="uploadedTranscriptReceipts.length < transcriptCopies"
+            (click)="triggerReceiptUpload(transcriptFilesInput)"
+          >
             + Attach Another Receipt
           </button>
         </div>
