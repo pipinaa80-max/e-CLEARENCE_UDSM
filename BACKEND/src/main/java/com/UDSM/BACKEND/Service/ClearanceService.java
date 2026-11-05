@@ -438,7 +438,7 @@ public class ClearanceService {
                             student.getUser(),
                             "Clearance Complete!",
                             "Congratulations! Your clearance has been fully completed and approved by all offices.",
-                            NotificationType.CERTIFICATE_READY
+                            NotificationType.CLEARANCE_UPDATE
                     );
                 }
             }

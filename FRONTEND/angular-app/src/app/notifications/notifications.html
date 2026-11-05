@@ -133,7 +133,7 @@
               <div class="notice-body">
                 <div class="notice-header">
                   <strong>{{ notification.title }}</strong>
-                  <span class="type-badge" [ngClass]="getTypeClass(notification.type)">{{ getTypeLabel(notification.type) }}</span>
+                  <span class="type-badge" [ngClass]="getTypeClass(notification.type, notification.title)">{{ getTypeLabel(notification.type, notification.title) }}</span>
                 </div>
                 <span class="notice-message">{{ notification.message }}</span>
                 <small>{{ notification.createdAt | date:'medium' }}</small>

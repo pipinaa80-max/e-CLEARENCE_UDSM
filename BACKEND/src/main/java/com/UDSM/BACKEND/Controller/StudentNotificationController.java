@@ -175,10 +175,22 @@ public class StudentNotificationController {
                     n.setStudent(student);
                     n.setTitle(title);
                     n.setMessage("Congratulations! Your clearance has been fully completed and approved by all offices.");
-                    n.setType(NotificationType.CERTIFICATE_READY);
+                    n.setType(NotificationType.CLEARANCE_UPDATE);
                     n.setCreatedAt(LocalDateTime.now());
                     n.setRead(false);
                     notificationRepository.save(n);
+                }
+            }
+
+            // Remove legacy "Ready for Collection" notifications after clearance process
+            for (Notification oldNotice : existing) {
+                String oldTitle = oldNotice.getTitle() != null ? oldNotice.getTitle().toLowerCase() : "";
+                String oldMsg = oldNotice.getMessage() != null ? oldNotice.getMessage().toLowerCase() : "";
+                if (oldTitle.contains("collection") || oldMsg.contains("physical collection")) {
+                    notificationRepository.delete(oldNotice);
+                } else if (oldNotice.getType() == NotificationType.CERTIFICATE_READY) {
+                    oldNotice.setType(NotificationType.CLEARANCE_UPDATE);
+                    notificationRepository.save(oldNotice);
                 }
             }
         } catch (Exception e) {
@@ -197,7 +209,11 @@ public class StudentNotificationController {
         resp.put("id", notice.getId() != null ? notice.getId() : "");
         resp.put("title", notice.getTitle() != null ? notice.getTitle() : "Notification");
         resp.put("message", notice.getMessage() != null ? notice.getMessage() : "");
-        resp.put("type", notice.getType() != null ? notice.getType().name() : "SYSTEM");
+        NotificationType type = notice.getType();
+        if (type == NotificationType.CERTIFICATE_READY) {
+            type = NotificationType.CLEARANCE_UPDATE;
+        }
+        resp.put("type", type != null ? type.name() : "CLEARANCE_UPDATE");
         resp.put("read", notice.isRead());
         resp.put("createdAt", notice.getCreatedAt() != null ? notice.getCreatedAt().toString() : LocalDateTime.now().toString());
         return resp;

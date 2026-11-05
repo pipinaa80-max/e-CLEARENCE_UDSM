@@ -26,6 +26,9 @@
 .dashboard-shell {
   min-height: 100vh;
   display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
 }
 
 
@@ -34,31 +37,45 @@
 ========================================= */
 
 .sidebar {
-  position: fixed;
-  z-index: 1000;
-
-  top: 0;
-  left: 0;
-
   width: 270px;
+  flex: 0 0 270px;
+  min-height: 100vh;
   height: 100vh;
-
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-
   padding: 24px 18px;
-
-  background: var(--sidebar-bg, var(--udsm-blue-dark));
+  background: var(--sidebar-bg, var(--udsm-blue-dark)) !important;
   color: #ffffff;
-
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  overflow-y: auto;
+  transform: none;
+  transition: transform 0.25s ease;
 }
 
-.sidebar-open .sidebar {
-  transform: translateX(0);
+@media (max-width: 768px) {
+  .dashboard-shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    transform: translateX(-100%);
+    z-index: 2000;
+  }
+
+  .sidebar-open .sidebar {
+    transform: translateX(0) !important;
+  }
 }
 
 
@@ -152,9 +169,9 @@
 
 .content-panel {
   flex: 1;
+  min-width: 0;
   min-height: 100vh;
   padding: 0 42px 45px;
-  transition: margin-left 0.25s ease;
   background:
     linear-gradient(
       rgba(5, 63, 112, 0.65),
@@ -164,12 +181,6 @@
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-}
-
-@media (min-width: 1000px) {
-  .sidebar-open .content-panel {
-    margin-left: 270px;
-  }
 }
 
 .notifications-card {

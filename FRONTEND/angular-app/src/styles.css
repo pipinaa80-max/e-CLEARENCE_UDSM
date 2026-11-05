@@ -314,7 +314,8 @@ textarea:focus-visible {
   align-items: stretch;
 }
 .sidebar {
-  height: auto;
+  min-height: 100vh !important;
+  align-self: stretch !important;
 }
 
 .sidebar .brand {
@@ -436,6 +437,7 @@ textarea:focus-visible {
   .office-page {
     display: flex !important;
     flex-direction: row !important;
+    align-items: stretch !important;
   }
 
   .sidebar,
@@ -446,8 +448,13 @@ textarea:focus-visible {
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    position: relative !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    align-self: flex-start !important;
     transform: none !important;
+    overflow-y: auto !important;
   }
 }
 

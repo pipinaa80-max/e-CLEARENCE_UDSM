@@ -176,49 +176,6 @@
         </div>
 
       </section>
-
-      <!-- CLEARANCE STATUS BADGE -->
-      <section class="clearance-status-badge" *ngIf="hasClearanceRequest">
-        <div class="status-container">
-          <span class="status-label">Clearance Status</span>
-          <span class="status-value" [class]="clearanceStatus.toLowerCase().replace(' ', '-')">
-            {{ clearanceStatus }}
-          </span>
-        </div>
-      </section>
-
-      <!-- CLEARANCE REQUEST REQUIRED -->
-      <section class="request-warning" *ngIf="needsClearanceRequest">
-        <div class="warning-icon" aria-hidden="true">
-          <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.5rem;"></i>
-        </div>
-        <div class="warning-content">
-          <span>Clearance Request Required</span>
-          <h2>Complete your clearance request first</h2>
-          <p>
-            Before you can start the clearance process,
-            you must first complete your Clearance Request.
-          </p>
-          <a routerLink="/clearance/request" class="primary-button">
-            Complete Clearance Request
-          </a>
-        </div>
-      </section>
-
-      <!-- REQUEST COMPLETED -->
-      <section class="request-completed" *ngIf="hasClearanceRequest">
-        <div class="completed-icon"><i class="bi bi-check-circle-fill"></i></div>
-        <div class="completed-content">
-          <span>Clearance Request Completed</span>
-          <h2>Your clearance request has been submitted</h2>
-          <p>
-            Your information has been saved successfully.
-          </p>
-          <a routerLink="/clearance/status" class="primary-button">
-            View Clearance Process
-          </a>
-        </div>
-      </section>
     </div>
   </main>
 

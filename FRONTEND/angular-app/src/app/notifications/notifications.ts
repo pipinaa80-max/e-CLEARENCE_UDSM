@@ -140,10 +140,27 @@ export class NotificationListComponent implements OnInit {
     return 'Dashboard';
   }
 
+  private sanitizeNotifications(items: NotificationItem[]): NotificationItem[] {
+    return (items || []).filter(item => {
+      const title = (item.title || '').toLowerCase();
+      const msg = (item.message || '').toLowerCase();
+      // Remove any ready for collection notice after clearance process
+      if (title.includes('ready for collection') || msg.includes('ready for physical collection')) {
+        return false;
+      }
+      return true;
+    }).map(item => {
+      if (item.type === 'CERTIFICATE_READY' as any) {
+        return { ...item, type: 'CLEARANCE_UPDATE' as any };
+      }
+      return item;
+    });
+  }
+
   ngOnInit(): void {
     const cached = this.notificationService.getNotifications();
     if (cached && cached.length > 0) {
-      this.notificationsList = cached;
+      this.notificationsList = this.sanitizeNotifications(cached);
       this.isLoading = false;
     } else {
       this.isLoading = true;
@@ -152,7 +169,7 @@ export class NotificationListComponent implements OnInit {
     this.notificationService.getStudentNotifications().subscribe({
       next: (items) => {
         this.ngZone.run(() => {
-          this.notificationsList = items || [];
+          this.notificationsList = this.sanitizeNotifications(items);
           this.isLoading = false;
           this.cdr.detectChanges();
         });
@@ -169,7 +186,7 @@ export class NotificationListComponent implements OnInit {
     this.notificationService.notifications$.subscribe(items => {
       this.ngZone.run(() => {
         if (items && items.length > 0) {
-          this.notificationsList = items;
+          this.notificationsList = this.sanitizeNotifications(items);
           this.isLoading = false;
         }
         this.cdr.detectChanges();
@@ -228,23 +245,31 @@ export class NotificationListComponent implements OnInit {
     this.notificationService.clearAllNotifications().subscribe();
   }
 
-  getTypeLabel(type: string): string {
-    switch (type) {
+  getTypeLabel(type: string, title?: string): string {
+    const t = String(type || '').toUpperCase();
+    const ttl = String(title || '').toLowerCase();
+    if (t === 'CERTIFICATE_READY' || ttl.includes('clearance complete')) {
+      return 'Clearance Complete';
+    }
+    switch (t) {
       case 'APPROVAL': return 'Approved';
       case 'REJECTION': return 'Action Required';
       case 'CLEARANCE_UPDATE': return 'Clearance Update';
-      case 'CERTIFICATE_READY': return 'Ready for Collection';
       case 'REMINDER': return 'Reminder';
       case 'SYSTEM': default: return 'Official Notice';
     }
   }
 
-  getTypeClass(type: string): string {
-    switch (type) {
+  getTypeClass(type: string, title?: string): string {
+    const t = String(type || '').toUpperCase();
+    const ttl = String(title || '').toLowerCase();
+    if (t === 'CERTIFICATE_READY' || ttl.includes('clearance complete')) {
+      return 'badge-approval';
+    }
+    switch (t) {
       case 'APPROVAL': return 'badge-approval';
       case 'REJECTION': return 'badge-rejection';
       case 'CLEARANCE_UPDATE': return 'badge-update';
-      case 'CERTIFICATE_READY': return 'badge-ready';
       case 'REMINDER': return 'badge-reminder';
       case 'SYSTEM': default: return 'badge-system';
     }
