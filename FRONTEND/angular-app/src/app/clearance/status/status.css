@@ -40,7 +40,7 @@
 
 .status-card {
   width: min(100%, 1100px);
-  margin: 32px auto;
+  margin: 24px 0 32px 0;
   padding: 32px;
   background: var(--surface);
   border: 1px solid var(--border-soft);
