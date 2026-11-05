@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, inject, NgZone, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
@@ -18,17 +18,55 @@ export class NotificationListComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly ngZone = inject(NgZone);
 
   sidebarOpen = false;
+  userDropdownOpen = false;
   isLoading = true;
+  profilePhoto: string | null = null;
+  photoLoadFailed = false;
   notificationsList: NotificationItem[] = [];
 
   get user() { return this.authService.getCurrentUser(); }
   get currentUser() { return this.user; }
   get notifications(): NotificationItem[] { return this.notificationsList; }
 
+  get unreadCount(): number {
+    return this.notificationsList.filter(n => !n.read).length;
+  }
+
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.userDropdownOpen = !this.userDropdownOpen;
+  }
+
+  closeUserDropdown(): void {
+    this.userDropdownOpen = false;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.userDropdownOpen = false;
+  }
+
+  hasPhoto(): boolean {
+    return !this.photoLoadFailed && !!this.getPhotoSource();
+  }
+
+  getPhotoSource(): string | null {
+    return this.profilePhoto || this.authService.getProfilePhotoSource(this.currentUser);
+  }
+
+  onImageError(): void {
+    this.profilePhoto = null;
+    this.photoLoadFailed = true;
+  }
+
   get isStudent(): boolean {
-    return !this.currentUser || this.currentUser.role === 'Student';
+    const role = String(this.currentUser?.role || '').trim().toUpperCase();
+    return !this.currentUser || role === 'STUDENT';
   }
 
   get hasUnread(): boolean {
@@ -83,16 +121,16 @@ export class NotificationListComponent implements OnInit {
   }
 
   get portalTitle(): string {
-    const role = this.currentUser?.role;
-    if (!role || role === 'Student') return 'STUDENT PORTAL';
+    if (this.isStudent) return 'STUDENT PORTAL';
+    const role = this.currentUser?.role || 'Staff';
     return `${role.toUpperCase()} PORTAL`;
   }
 
   get portalSubtitle(): string {
+    if (this.isStudent) return 'University of Dar es Salaam';
     const role = this.currentUser?.role;
     if (role === 'DUS Secretary') return 'Undergraduate Studies';
     if (role === 'Director of Undergraduate Studies') return 'Directorate Office';
-    if (!role || role === 'Student') return 'University of Dar es Salaam';
     return `${role} Office`;
   }
 
@@ -103,21 +141,50 @@ export class NotificationListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.isLoading = true;
+    const cached = this.notificationService.getNotifications();
+    if (cached && cached.length > 0) {
+      this.notificationsList = cached;
+      this.isLoading = false;
+    } else {
+      this.isLoading = true;
+    }
+
     this.notificationService.getStudentNotifications().subscribe({
       next: (items) => {
-        this.notificationsList = items || [];
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.notificationsList = items || [];
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       },
       error: (err) => {
         console.warn('Could not fetch server notifications:', err);
-        this.isLoading = false;
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
       }
     });
 
     this.notificationService.notifications$.subscribe(items => {
-      this.notificationsList = items || [];
+      this.ngZone.run(() => {
+        if (items && items.length > 0) {
+          this.notificationsList = items;
+          this.isLoading = false;
+        }
+        this.cdr.detectChanges();
+      });
     });
+
+    // Professional fast disappear fallback (never keep user waiting for spinner)
+    setTimeout(() => {
+      if (this.isLoading) {
+        this.ngZone.run(() => {
+          this.isLoading = false;
+          this.cdr.detectChanges();
+        });
+      }
+    }, 350);
   }
 
   toggleSidebar(): void {
@@ -134,19 +201,30 @@ export class NotificationListComponent implements OnInit {
   }
 
   markAllRead(): void {
-    this.notificationService.markAllStudentNotificationsRead().subscribe();
+    this.notificationService.markAllStudentNotificationsRead().subscribe({
+      next: () => {
+        this.notificationsList = this.notificationsList.map(n => ({ ...n, read: true }));
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   markRead(id: string): void {
+    this.notificationsList = this.notificationsList.map(n => n.id === id ? { ...n, read: true } : n);
+    this.cdr.detectChanges();
     this.notificationService.markStudentNotificationRead(id).subscribe();
   }
 
   deleteNotification(event: Event, id: string): void {
     event.stopPropagation();
+    this.notificationsList = this.notificationsList.filter(n => n.id !== id);
+    this.cdr.detectChanges();
     this.notificationService.deleteNotification(id).subscribe();
   }
 
   clearAll(): void {
+    this.notificationsList = [];
+    this.cdr.detectChanges();
     this.notificationService.clearAllNotifications().subscribe();
   }
 

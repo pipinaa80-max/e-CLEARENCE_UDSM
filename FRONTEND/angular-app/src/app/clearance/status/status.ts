@@ -1,5 +1,5 @@
 // clearance-status.component.ts - Fixed for parallel offices
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -210,8 +210,45 @@ export class ClearanceStatusComponent implements OnInit {
     });
   }
 
+  userDropdownOpen = false;
+  photoLoadFailed = false;
+
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
+  }
+
   get currentUser() {
     return this.student;
+  }
+
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.userDropdownOpen = !this.userDropdownOpen;
+    if (this.userDropdownOpen) {
+      this.notificationService.refreshUnreadCount().subscribe();
+    }
+  }
+
+  closeUserDropdown(): void {
+    this.userDropdownOpen = false;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.userDropdownOpen = false;
+  }
+
+  hasPhoto(): boolean {
+    return !this.photoLoadFailed && !!this.getPhotoSource();
+  }
+
+  getPhotoSource(): string | null {
+    return this.authService.getProfilePhotoSource(this.currentUser);
+  }
+
+  onImageError(): void {
+    this.photoLoadFailed = true;
   }
 
   toggleSidebar(): void {
@@ -695,6 +732,7 @@ export class ClearanceStatusComponent implements OnInit {
   ngOnInit(): void {
     this.loadData();
     this.checkAndAutoAdvanceStage();
+    this.notificationService.refreshUnreadCount().subscribe();
   }
 
   checkAndAutoAdvanceStage(): void {

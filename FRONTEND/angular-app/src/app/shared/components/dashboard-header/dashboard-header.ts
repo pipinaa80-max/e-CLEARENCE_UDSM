@@ -244,25 +244,31 @@ import { AuthService } from '../../../core/services/auth.service';
       color: #f59e0b !important;
     }
     .avatar-circle {
-      width: 38px;
-      height: 38px;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      aspect-ratio: 1 / 1;
       background: #001f34;
-      border: 2px solid #f59e0b;
+      border: 2.5px solid #f59e0b;
       border-radius: 50%;
       display: grid;
       place-items: center;
       font-weight: 800;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #ffffff;
       overflow: hidden;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
       flex-shrink: 0;
       transition: all 0.2s ease;
     }
     .avatar-circle img {
       width: 100%;
       height: 100%;
+      border-radius: 50%;
       object-fit: cover;
+      object-position: center top;
+      display: block;
     }
     /* HEADER LOGOUT BUTTON AFTER PROFILE ICON - COMPACT & SLEEK ICON-ONLY */
     .header-logout-btn {

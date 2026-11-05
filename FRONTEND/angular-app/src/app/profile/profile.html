@@ -42,9 +42,55 @@
       eyebrow="Student Account"
       title="My Profile"
       subtitle="View your student information and clearance account."
-      [user]="null"
+      [user]="currentUser"
+      [showProfile]="false"
+      [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions class="header-user-dropdown-container">
+        <button
+          type="button"
+          class="header-avatar-button"
+          (click)="toggleUserDropdown($event)"
+          title="Account menu"
+          aria-haspopup="true"
+          [attr.aria-expanded]="userDropdownOpen"
+        >
+          <img
+            *ngIf="hasPhoto(); else profileInitial"
+            [src]="getPhotoSource()"
+            [alt]="currentUser?.fullName || 'Student profile photo'"
+            (error)="onImageError()"
+          />
+          <ng-template #profileInitial>
+            <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
+          </ng-template>
+          <span class="profile-notification-dot" *ngIf="unreadNotifications > 0" aria-label="Unread notifications"></span>
+        </button>
+
+        <!-- Dropdown menu with Profile and Notifications -->
+        <div class="header-user-dropdown-menu" *ngIf="userDropdownOpen" (click)="$event.stopPropagation()">
+          <div class="dropdown-user-header">
+            <strong>{{ currentUser?.fullName || 'Student' }}</strong>
+            <small>{{ currentUser?.registrationNumber || currentUser?.email || 'Student' }}</small>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" routerLink="/profile" (click)="closeUserDropdown()">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+            </svg>
+            <span>Profile</span>
+          </a>
+          <a class="dropdown-item" routerLink="/notifications" (click)="closeUserDropdown()">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
+            </svg>
+            <span>Notifications</span>
+            <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+          </a>
+        </div>
+      </div>
     </app-dashboard-header>
 
     <div class="profile-content">

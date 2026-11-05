@@ -167,7 +167,7 @@ export const routes: Routes = [
   // Clearance Routes
   { path: 'clearance/request', component: ClearanceRequestComponent, canActivate: [authGuard] },
   { path: 'clearance/status', component: ClearanceStatusComponent, canActivate: [authGuard] },
-  { path: 'clearance/confirmation', component: ClearanceConfirmationComponent, canActivate: [authGuard] },
+  { path: 'clearance/confirmation', redirectTo: 'clearance/status', pathMatch: 'full' },
   { path: 'clearance/history', component: ClearanceHistoryComponent, canActivate: [authGuard] },
   { path: 'clearance/report', component: ClearanceReportComponent, canActivate: [authGuard] },
 

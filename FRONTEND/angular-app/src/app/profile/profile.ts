@@ -1,11 +1,12 @@
 // profile.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
+import { NotificationService } from '../core/services/notification.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 
@@ -21,16 +22,40 @@ export class ProfileComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
+  userDropdownOpen = false;
   profilePhoto: string | null = null;
   photoLoadFailed = false;
   isLoading = true;
 
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
+  }
+
   get currentUser() {
     return this.user;
+  }
+
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.userDropdownOpen = !this.userDropdownOpen;
+    if (this.userDropdownOpen) {
+      this.notificationService.refreshUnreadCount().subscribe();
+    }
+  }
+
+  closeUserDropdown(): void {
+    this.userDropdownOpen = false;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.userDropdownOpen = false;
   }
 
   toggleSidebar(): void {
@@ -101,6 +126,7 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfilePhoto();
+    this.notificationService.refreshUnreadCount().subscribe();
   }
 
   refreshInformation(): void {

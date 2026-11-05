@@ -123,19 +123,22 @@
 
 .header-avatar-button {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
-  flex: 0 0 40px;
+  flex: 0 0 46px;
   overflow: visible;
-  border: 2px solid #f59e0b;
+  border: 2.5px solid #f59e0b;
   border-radius: 50%;
   background: #001f34;
   color: #ffffff;
   padding: 0;
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
@@ -148,8 +151,10 @@
 .header-avatar-button img {
   width: 100%;
   height: 100%;
-  border-radius: inherit;
+  border-radius: 50%;
   object-fit: cover;
+  object-position: center top;
+  display: block;
 }
 
 .header-user-dropdown-menu {
