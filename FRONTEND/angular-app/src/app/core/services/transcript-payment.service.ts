@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { StorageService } from './storage.service';
+import { ReceiptFileStoreService } from './receipt-file-store.service';
 import {
   TranscriptPaymentRequest,
   TranscriptPaymentStatus
@@ -8,6 +9,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class TranscriptPaymentService {
   private readonly storage = new StorageService();
+  private readonly receiptFileStore = inject(ReceiptFileStoreService);
   private readonly requestKey = 'udsm-transcript-payment-requests';
 
   getAllRequests(): TranscriptPaymentRequest[] {
@@ -60,7 +62,7 @@ export class TranscriptPaymentService {
     return request;
   }
 
-  createMultipleCopyRequests(params: {
+  async createMultipleCopyRequestsAsync(params: {
     studentId: string;
     studentName: string;
     registrationNumber: string;
@@ -76,16 +78,107 @@ export class TranscriptPaymentService {
     postingAddress?: string;
     postingContactPhone?: string;
     postingContactEmail?: string;
+  }): Promise<TranscriptPaymentRequest[]> {
+    const preparedReceipts = await Promise.all(
+      params.receipts.map(async (r) => {
+        const storageId = 'rcpt-' + crypto.randomUUID();
+        const mimeType = this.receiptFileStore.detectMimeType(r.receiptData, r.fileName);
+        await this.receiptFileStore.saveReceipt(storageId, r.receiptData, r.fileName);
+        return {
+          fileName: r.fileName,
+          receiptData: r.receiptData,
+          sizeText: r.sizeText,
+          storageId,
+          mimeType
+        };
+      })
+    );
+
+    return this.buildAndSaveMultipleCopyRequests({
+      ...params,
+      receipts: preparedReceipts
+    });
+  }
+
+  createMultipleCopyRequests(params: {
+    studentId: string;
+    studentName: string;
+    registrationNumber: string;
+    award: string;
+    graduationYear: string;
+    totalCopies: number;
+    collectionMethod?: 'Physical Collection' | 'Post by DHL';
+    receipts: { fileName: string; receiptData: string; sizeText?: string; storageId?: string; mimeType?: string }[];
+    receiptNote?: string;
+    postingRegion?: string;
+    postingWard?: string;
+    postingPoBox?: string;
+    postingAddress?: string;
+    postingContactPhone?: string;
+    postingContactEmail?: string;
   }): TranscriptPaymentRequest[] {
-    const all = this.getAllRequests();
+    const preparedReceipts = params.receipts.map((r) => {
+      const storageId = r.storageId || ('rcpt-' + crypto.randomUUID());
+      const mimeType = r.mimeType || this.receiptFileStore.detectMimeType(r.receiptData, r.fileName);
+      void this.receiptFileStore.saveReceipt(storageId, r.receiptData, r.fileName);
+      return {
+        fileName: r.fileName,
+        receiptData: r.receiptData,
+        sizeText: r.sizeText,
+        storageId,
+        mimeType
+      };
+    });
+
+    return this.buildAndSaveMultipleCopyRequests({
+      ...params,
+      receipts: preparedReceipts
+    });
+  }
+
+  private buildAndSaveMultipleCopyRequests(params: {
+    studentId: string;
+    studentName: string;
+    registrationNumber: string;
+    award: string;
+    graduationYear: string;
+    totalCopies: number;
+    collectionMethod?: 'Physical Collection' | 'Post by DHL';
+    receipts: { fileName: string; receiptData: string; sizeText?: string; storageId: string; mimeType: string }[];
+    receiptNote?: string;
+    postingRegion?: string;
+    postingWard?: string;
+    postingPoBox?: string;
+    postingAddress?: string;
+    postingContactPhone?: string;
+    postingContactEmail?: string;
+  }): TranscriptPaymentRequest[] {
+    // Replace any previously rejected receipt batch for this student so active submission is clean
+    const all = this.getAllRequests().filter(
+      existing => !(existing.studentId === params.studentId && existing.status === 'Receipt Rejected')
+    );
     const count = Math.max(1, Math.floor(params.totalCopies));
     const created: TranscriptPaymentRequest[] = [];
     const now = new Date().toISOString();
+    const sharedControlNo = '99' + Math.floor(1000000000 + Math.random() * 9000000000).toString();
+
+    // Store lightweight IDB pointers in receipts[] array to avoid duplicating MBs across copies
+    const lightweightReceipts = params.receipts.map(r => ({
+      fileName: r.fileName,
+      receiptData: r.receiptData.length <= 200000 ? r.receiptData : `IDB:${r.storageId}`,
+      sizeText: r.sizeText,
+      storageId: r.storageId,
+      mimeType: r.mimeType
+    }));
 
     for (let i = 1; i <= count; i++) {
       const costForThisCopy = i === 1 ? 15000 : 5000;
       const primaryReceipt = params.receipts.length > 0
         ? (params.receipts[(i - 1) % params.receipts.length] || params.receipts[0])
+        : undefined;
+
+      const inlineOrIdbData = primaryReceipt
+        ? (primaryReceipt.receiptData.length <= 350000 ? primaryReceipt.receiptData : `IDB:${primaryReceipt.storageId}`)
         : undefined;
 
       const req: TranscriptPaymentRequest = {
@@ -95,18 +188,22 @@ export class TranscriptPaymentService {
         registrationNumber: params.registrationNumber,
         award: params.award || 'Degree Certificate & Transcript',
         graduationYear: params.graduationYear || '2024',
-        transcriptCount: 1, // each row represents 1 copy
+        transcriptCount: 1,
         copyNumber: i,
         totalCopies: count,
         amount: costForThisCopy,
         currency: 'TZS',
+        controlNumber: sharedControlNo,
+        controlNumberIssuedAt: now,
         attemptNumber: i,
         requestedAt: now,
         status: 'Receipt Submitted',
         receiptSubmittedAt: now,
         receiptFileName: primaryReceipt?.fileName,
-        receiptData: primaryReceipt?.receiptData,
-        receipts: params.receipts,
+        receiptData: inlineOrIdbData,
+        receiptStorageId: primaryReceipt?.storageId,
+        receiptMimeType: primaryReceipt?.mimeType,
+        receipts: lightweightReceipts,
         receiptNote: params.receiptNote,
         collectionMethod: params.collectionMethod,
         postingRegion: params.postingRegion,
@@ -122,7 +219,23 @@ export class TranscriptPaymentService {
       created.push(req);
     }
 
-    this.storage.save(this.requestKey, all);
+    const saved = this.storage.save(this.requestKey, all);
+    if (!saved) {
+      // Quota fallback: replace inline base64 across all rows with IDB references (data is safely in IndexedDB)
+      for (const item of all) {
+        if (item.receiptStorageId) {
+          item.receiptData = `IDB:${item.receiptStorageId}`;
+        }
+        if (item.receipts) {
+          item.receipts = item.receipts.map(r => ({
+            ...r,
+            receiptData: r.storageId ? `IDB:${r.storageId}` : ''
+          }));
+        }
+      }
+      this.storage.save(this.requestKey, all);
+    }
+
     return created;
   }
 
@@ -140,14 +253,19 @@ export class TranscriptPaymentService {
   }
 
   rejectReceipt(requestId: string, reason: string): boolean {
-    const request = this.getAllRequests().find(item => item.id === requestId);
+    const all = this.getAllRequests();
+    const request = all.find(item => item.id === requestId);
     if (!request || request.status !== 'Receipt Submitted') {
       return false;
     }
 
-    request.status = 'Receipt Rejected';
-    request.rejectionReason = reason;
-    this.save(request);
+    all.forEach(item => {
+      if (item.studentId === request.studentId && item.status === 'Receipt Submitted') {
+        item.status = 'Receipt Rejected';
+        item.rejectionReason = reason;
+      }
+    });
+    this.storage.save(this.requestKey, all);
     return true;
   }
 
@@ -158,8 +276,14 @@ export class TranscriptPaymentService {
       return false;
     }
 
+    const storageId = 'rcpt-' + crypto.randomUUID();
+    const mimeType = this.receiptFileStore.detectMimeType(receiptData, fileName);
+    void this.receiptFileStore.saveReceipt(storageId, receiptData, fileName);
+
     request.receiptFileName = fileName;
-    request.receiptData = receiptData;
+    request.receiptStorageId = storageId;
+    request.receiptMimeType = mimeType;
+    request.receiptData = receiptData.length <= 350000 ? receiptData : `IDB:${storageId}`;
     request.receiptSubmittedAt = new Date().toISOString();
     request.status = 'Receipt Submitted';
 
@@ -168,9 +292,7 @@ export class TranscriptPaymentService {
 
     const saved = this.storage.save(this.requestKey, all);
     if (!saved) {
-      // Fallback: If storage is full, save without the heavy image data so the process can at least continue
-      console.warn('Storage quota exceeded. Saving receipt without full image data.');
-      request.receiptData = 'IMAGE_TOO_LARGE_PLACEHOLDER';
+      request.receiptData = `IDB:${storageId}`;
       all[index] = request;
       return this.storage.save(this.requestKey, all);
     }

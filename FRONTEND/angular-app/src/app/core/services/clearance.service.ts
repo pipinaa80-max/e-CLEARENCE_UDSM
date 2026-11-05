@@ -13,6 +13,7 @@ import {
 
 import { StorageService } from './storage.service';
 import { ConfigService } from './config.service';
+import { ReceiptFileStoreService } from './receipt-file-store.service';
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +22,7 @@ export class ClearanceService {
 
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly receiptFileStore = inject(ReceiptFileStoreService);
   private readonly storage = new StorageService();
   private readonly requestKey = 'udsm-clearance-requests';
   private readonly draftKey = 'udsm-clearance-drafts';
@@ -854,9 +856,18 @@ export class ClearanceService {
       return false;
     }
 
+    const resolvedName = fileName || 'Payment_Receipt.jpg';
+    const storageId = receiptData ? ('clr-rcpt-' + crypto.randomUUID()) : undefined;
+    const mimeType = receiptData ? this.receiptFileStore.detectMimeType(receiptData, resolvedName) : undefined;
+    if (storageId && receiptData) {
+      void this.receiptFileStore.saveReceipt(storageId, receiptData, resolvedName);
+    }
+
     request.financeReceipt = {
-      receiptFileName: fileName || 'Payment_Receipt.jpg',
-      receiptData: receiptData,
+      receiptFileName: resolvedName,
+      receiptData: receiptData && receiptData.length > 350000 && storageId ? `IDB:${storageId}` : receiptData,
+      receiptStorageId: storageId,
+      receiptMimeType: mimeType,
       receiptSubmittedAt: new Date().toISOString(),
       receiptNote: note?.trim() || ''
     };

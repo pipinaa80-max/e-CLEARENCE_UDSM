@@ -87,7 +87,7 @@ export class TranscriptCollectionComponent implements OnInit {
     }
 
     if (!this.request || this.request.status !== 'Paid') {
-      this.router.navigate(['/transcript/payment']);
+      this.router.navigate(['/dashboard/student']);
       return;
     }
 
@@ -180,6 +180,6 @@ export class TranscriptCollectionComponent implements OnInit {
     }
 
     this.message = `Collection preference saved successfully! Allocated to: ${method === 'Physical Collection' ? this.selectedStation?.name : 'DHL Courier Service'}.`;
-    setTimeout(() => this.router.navigate(['/transcript/process']), 2000);
+    setTimeout(() => this.router.navigate(['/dashboard/student']), 1200);
   }
 }

@@ -20,6 +20,8 @@ export interface TranscriptPaymentRequest {
   controlNumber?: string;
   receiptFileName?: string;
   receiptData?: string;
+  receiptStorageId?: string;
+  receiptMimeType?: string;
   rejectionReason?: string;
   requestedAt: string;
   controlNumberRequestedAt?: string;
@@ -45,7 +47,7 @@ export interface TranscriptPaymentRequest {
   copyNumber?: number;
   totalCopies?: number;
   receiptNote?: string;
-  receipts?: { fileName: string; receiptData: string; sizeText?: string }[];
+  receipts?: { fileName: string; receiptData: string; sizeText?: string; storageId?: string; mimeType?: string }[];
 
   // Station Secretary Intake & Handover fields
   stationCode?: string;

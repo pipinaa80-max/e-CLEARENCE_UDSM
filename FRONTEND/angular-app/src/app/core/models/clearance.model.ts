@@ -46,6 +46,8 @@ export interface ConvocationPayment {
 export interface FinanceReceiptSubmission {
   receiptFileName?: string;
   receiptData?: string;
+  receiptStorageId?: string;
+  receiptMimeType?: string;
   receiptSubmittedAt?: string;
   receiptNote?: string;
   controlNumber?: string;

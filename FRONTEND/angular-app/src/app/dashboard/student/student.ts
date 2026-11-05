@@ -643,7 +643,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.uploadedTranscriptReceipts.splice(index, 1);
   }
 
-  submitTranscriptRequest(): void {
+  async submitTranscriptRequest(): Promise<void> {
     const user = this.currentUser;
     if (!user) {
       this.transcriptErrorMessage = 'Unable to identify current student.';
@@ -664,43 +664,42 @@ export class StudentDashboard implements OnInit, OnDestroy {
       sizeText: r.sizeText
     }));
 
-    const copyRequests = this.transcriptService.createMultipleCopyRequests({
-      studentId: user.id,
-      studentName: user.fullName,
-      registrationNumber: user.registrationNumber || user.id,
-      award: user.programme || 'Degree Certificate & Transcript',
-      graduationYear: '2024',
-      totalCopies: this.transcriptCopies,
-      // collectionMethod is NOT set here - it is chosen in Step 3
-      receipts: receiptsPayload,
-      receiptNote: this.transcriptPaymentNote,
-      postingContactPhone: user.phoneNumber || '',
-      postingContactEmail: user.email
-    });
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
+        localStorage.removeItem(`udsm-transcript-documents-submitted-${user.id}`);
+        localStorage.removeItem(`udsm-transcript-acquired-${user.id}`);
+      }
 
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
-    }
+      const copyRequests = await this.transcriptService.createMultipleCopyRequestsAsync({
+        studentId: user.id,
+        studentName: user.fullName,
+        registrationNumber: user.registrationNumber || user.id,
+        award: user.programme || 'Degree Certificate & Transcript',
+        graduationYear: '2024',
+        totalCopies: this.transcriptCopies,
+        // collectionMethod is NOT set here - it is chosen in Step 3
+        receipts: receiptsPayload,
+        receiptNote: this.transcriptPaymentNote,
+        postingContactPhone: user.phoneNumber || '',
+        postingContactEmail: user.email
+      });
 
-    // Send student notification that receipt is waiting for finance approval
-    this.notificationService.createNotification(
-      user.id,
-      'Payment Receipt Submitted to Finance',
-      `Your payment receipt for ${copyRequests.length} transcript ${copyRequests.length === 1 ? 'copy' : 'copies'} has been submitted to Finance and is currently waiting for approval.`,
-      'CLEARANCE_UPDATE' as any
-    );
+      this.notificationService.createNotification(
+        user.id,
+        'Payment Receipt Submitted to Finance',
+        `Your payment receipt for ${copyRequests.length} transcript ${copyRequests.length === 1 ? 'copy' : 'copies'} has been submitted to the Finance Office and is awaiting approval.`,
+        'CLEARANCE_UPDATE' as any
+      );
 
-    this.toastService.info('Waiting for Finance Approval', 'Payment receipt submitted to Finance for verification.');
-
-    setTimeout(() => {
       this.isSubmittingTranscript = false;
-      this.transcriptSuccessMessage = `Receipt submitted to Finance! Waiting for Finance approval.`;
-      setTimeout(() => {
-        this.closeTranscriptModal();
-        this.uploadedTranscriptReceipts = [];
-        this.transcriptPaymentNote = '';
-      }, 1000);
-    }, 500);
+      this.uploadedTranscriptReceipts = [];
+      this.transcriptPaymentNote = '';
+      this.closeTranscriptModal();
+    } catch {
+      this.isSubmittingTranscript = false;
+      this.transcriptErrorMessage = 'Unable to submit payment receipt. Please try again.';
+    }
   }
 
   get submittedTranscriptCopies(): TranscriptPaymentRequest[] {
@@ -1051,34 +1050,42 @@ export class StudentDashboard implements OnInit, OnDestroy {
   get clearanceTranscriptRequest(): TranscriptPaymentRequest | null {
     const user = this.currentUser;
     if (!user) return null;
-    return this.transcriptService.getStudentRequests(user.id)
-      .find(request => request.attemptNumber === 1) ?? null;
+    const requests = this.transcriptService.getStudentRequests(user.id);
+    return requests.at(-1) ?? null;
   }
 
   get isTranscriptDocumentsSubmitted(): boolean {
     const user = this.currentUser;
-    return !!user && localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    const req = this.clearanceTranscriptRequest;
+    if (!user || !req || req.status !== 'Paid') return false;
+    return localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
   }
 
   get transcriptProcessStageLabel(): string {
     const request = this.clearanceTranscriptRequest;
-    const user = this.currentUser;
-    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
     const documentsSubmitted = this.isTranscriptDocumentsSubmitted;
 
-    if (isAcquired || request?.collectionMethod) return 'Transcript Process Completed · Submitted to DUS';
-    if (documentsSubmitted) return 'Step 3: Specify Mode of Collection';
-    if (request?.status === 'Paid') return 'Step 2: Upload Necessary Certificate';
-    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for Finance Approval';
+    if (request?.status === 'Paid' && request?.collectionMethod) {
+      return 'Transcript Process Completed · Submitted to DUS';
+    }
+    if (request?.status === 'Paid' && documentsSubmitted) {
+      return 'Step 3: Specify Mode of Collection';
+    }
+    if (request?.status === 'Paid') {
+      return 'Step 2: Upload Necessary Certificate';
+    }
+    if (request?.status === 'Receipt Submitted') {
+      return 'Step 1: Waiting for Finance Approval';
+    }
     return 'Step 1: Transcript Payment & Receipt';
   }
 
   get transcriptProcessSteps(): TranscriptDashboardStep[] {
     const request = this.clearanceTranscriptRequest;
-    const user = this.currentUser;
-    const documentsSubmitted = this.isTranscriptDocumentsSubmitted;
-    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
     const paymentStatus = request?.status;
+    const documentsSubmitted = this.isTranscriptDocumentsSubmitted;
+    const collectionCompleted = paymentStatus === 'Paid' && !!request?.collectionMethod;
+
     const paymentStepStatus: TranscriptDashboardStep['status'] =
       paymentStatus === 'Paid' ? 'Approved'
         : paymentStatus === 'Receipt Submitted' ? 'Waiting for Approval'
@@ -1089,7 +1096,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
         number: 1,
         label: 'Transcript Payment',
         detail: paymentStatus === 'Receipt Submitted'
-          ? 'Receipt submitted. Waiting for Finance approval.'
+          ? 'Receipt submitted — awaiting Finance Office approval.'
           : paymentStatus === 'Paid'
             ? 'Payment verified & approved by Finance.'
             : 'Upload and submit official payment receipt(s).',
@@ -1106,10 +1113,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
       {
         number: 3,
         label: 'Transcript Collection',
-        detail: request?.collectionMethod
-          ? `Mode specified: ${request.collectionMethod}. Submitted to DUS.`
-          : 'Choose physical collection hub or DHL post.',
-        status: (request?.collectionMethod || isAcquired)
+        detail: collectionCompleted
+          ? `Mode specified: ${request?.collectionMethod}. Submitted to DUS.`
+          : 'Pick up processed transcript from DUS.',
+        status: collectionCompleted
           ? 'Approved'
           : (documentsSubmitted ? 'Pending' : 'Locked')
       }

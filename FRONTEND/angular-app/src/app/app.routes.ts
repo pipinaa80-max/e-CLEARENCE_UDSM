@@ -44,7 +44,6 @@ import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
 import { TranscriptCollectionComponent } from './transcript/collection';
-import { TranscriptFinancePaymentComponent } from './transcript/finance-payment';
 import { TranscriptDocumentsComponent } from './documents/transcript-documents/transcript-documents';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
@@ -176,7 +175,7 @@ export const routes: Routes = [
   { path: 'transcript/payment', component: TranscriptPaymentComponent, canActivate: [authGuard] },
   { path: 'transcript/collection', component: TranscriptCollectionComponent, canActivate: [authGuard] },
   { path: 'documents/transcript', component: TranscriptDocumentsComponent, canActivate: [authGuard] },
-  { path: 'dashboard/finance/transcript-payments', component: TranscriptFinancePaymentComponent, canActivate: [authGuard, roleGuard(['Finance'])] },
+  { path: 'dashboard/finance/transcript-payments', redirectTo: 'dashboard/finance', pathMatch: 'full' },
 
   // Documents & Notifications
   { path: 'documents', component: DocumentsListComponent, canActivate: [authGuard] },

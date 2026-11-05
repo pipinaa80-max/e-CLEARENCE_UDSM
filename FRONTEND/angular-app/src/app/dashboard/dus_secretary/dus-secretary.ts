@@ -1,10 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { ReceiptFileStoreService } from '../../core/services/receipt-file-store.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ConfigService } from '../../core/services/config.service';
@@ -19,6 +21,9 @@ import { ConfigService } from '../../core/services/config.service';
 export class DusSecretaryDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly receiptFileStore = inject(ReceiptFileStoreService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
@@ -107,21 +112,45 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   // Selected receipt for preview modal
-  selectedReceiptView: { fileName: string; dataUrl: string; studentName: string; copyNumber?: number; totalCopies?: number } | null = null;
+  selectedReceiptView: {
+    fileName: string;
+    dataUrl: string;
+    blobUrl: string | null;
+    safeResourceUrl: SafeResourceUrl | null;
+    isPdf: boolean;
+    isImage: boolean;
+    studentName: string;
+    copyNumber?: number;
+    totalCopies?: number;
+  } | null = null;
 
-  viewReceipt(req: TranscriptPaymentRequest): void {
-    const dataUrl = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
-    const fileName = req.receiptFileName || (req.receipts && req.receipts[0]?.fileName) || 'Receipt.png';
+  async viewReceipt(req: TranscriptPaymentRequest): Promise<void> {
+    const rawData = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
+    const storageId = req.receiptStorageId || (req.receipts && req.receipts[0]?.storageId);
+    const fileName = req.receiptFileName || (req.receipts && req.receipts[0]?.fileName) || 'Receipt';
+    const resolved = await this.receiptFileStore.resolveDataUrl(rawData, storageId);
+    const isPdf = this.receiptFileStore.isPdf(resolved ?? undefined, fileName, req.receiptMimeType);
+    const isImage = !isPdf && this.receiptFileStore.isImage(resolved ?? undefined, fileName, req.receiptMimeType);
+    const blobUrl = resolved ? this.receiptFileStore.dataUrlToBlobUrl(resolved, fileName) : null;
+
     this.selectedReceiptView = {
       fileName,
-      dataUrl,
+      dataUrl: resolved || '',
+      blobUrl,
+      safeResourceUrl: blobUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl) : null,
+      isPdf,
+      isImage,
       studentName: req.studentName,
       copyNumber: req.copyNumber,
       totalCopies: req.totalCopies
     };
+    this.cdr.detectChanges();
   }
 
   closeReceiptView(): void {
+    if (this.selectedReceiptView?.blobUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.selectedReceiptView.blobUrl);
+    }
     this.selectedReceiptView = null;
   }
 

@@ -1,13 +1,56 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { ReceiptFileStoreService } from '../../core/services/receipt-file-store.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
+import { sortTranscriptRequestsForFinance } from '../../transcript/finance-payment.utils';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+
+export interface UnifiedFinanceItem {
+  kind: 'clearance' | 'transcript';
+  id: string;
+  studentId: string;
+  registrationNumber: string;
+  studentName: string;
+  listName: string;
+  email: string;
+  phoneNumber: string;
+  programme: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  submittedAt?: string;
+  hasReceipt: boolean;
+  receiptCount: number;
+  isResubmittedReceipt: boolean;
+  totalCopies?: number;
+  totalAmount?: number;
+  currency?: string;
+  controlNumber?: string;
+  receiptNote?: string;
+  rejectionReason?: string;
+  clearanceRequest?: ClearanceRequest;
+  transcriptRequest?: TranscriptPaymentRequest;
+  transcriptBatch?: TranscriptPaymentRequest[];
+}
+
+export interface ResolvedReceiptPreview {
+  index: number;
+  fileName: string;
+  mimeType: string;
+  isPdf: boolean;
+  isImage: boolean;
+  dataUrl: string | null;
+  blobUrl: string | null;
+  safeResourceUrl: SafeResourceUrl | null;
+  sizeText?: string;
+}
 
 @Component({
   selector: 'app-finance-dashboard',
@@ -16,79 +59,55 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
   templateUrl: './finance.html',
   styleUrl: './finance.css'
 })
-export class FinanceDashboard {
+export class FinanceDashboard implements OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly transcriptPaymentService = inject(TranscriptPaymentService);
+  private readonly receiptFileStore = inject(ReceiptFileStoreService);
   private readonly notificationService = inject(NotificationService);
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'analytics' = 'all';
-  selectedRequest: ClearanceRequest | null = null;
-  detailsRequest: ClearanceRequest | null = null;
-  rejectionComment = '';
-  message = '';
-
-  readonly Math = Math;
-  selectedAnalyticsYear: string = 'all';
-  selectedAnalyticsGender: string = 'all';
-
-  setViewMode(mode: 'all' | 'requests' | 'analytics'): void {
-    this.viewMode = mode;
-  }
-
   searchTerm = '';
-  filterStatus: 'all' | 'pending' | 'fresh' | 'resubmitted' | 'rejected' | 'approved' = 'pending';
-
-  setFilterStatus(status: 'all' | 'pending' | 'fresh' | 'resubmitted' | 'rejected' | 'approved'): void {
-    this.filterStatus = status;
-    this.currentPage = 1;
-  }
-
-  isReceiptReported(request: ClearanceRequest): boolean {
-    return !!(
-      request.resubmittedWithReceipt ||
-      (request.financeReceipt && (request.financeReceipt.receiptData || request.financeReceipt.receiptSubmittedAt)) ||
-      (request.rejectionHistory && request.rejectionHistory.length > 0 && (request.financeReceipt || request.convocation?.receiptData))
-    );
-  }
-
-  isNewlyInitiated(request: ClearanceRequest): boolean {
-    const isPending = this.getRequestOfficeStatus(request, 'Finance') === 'Pending';
-    return isPending && !this.isReceiptReported(request) && (!request.rejectionHistory || request.rejectionHistory.length === 0);
-  }
-
-  get allPendingCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
-    ).length;
-  }
-
-  get freshInitiatedCount(): number {
-    return this.requests.filter(request => this.isNewlyInitiated(request)).length;
-  }
-
-  get receiptReportedCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Pending' && this.isReceiptReported(request)
-    ).length;
-  }
-
-  get rejectedFinanceCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Rejected'
-    ).length;
-  }
-
-  get approvedFinanceCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Approved'
-    ).length;
-  }
+  filterStatus: 'pending' | 'transcript' | 'clearance' | 'approved' | 'rejected' | 'all' = 'pending';
 
   // Pagination
   currentPage = 1;
   pageSize = 10;
+
+  // Modals & messages
+  detailsItem: UnifiedFinanceItem | null = null;
+  rejectTarget: UnifiedFinanceItem | null = null;
+  rejectionComment = '';
+  message = '';
+  enlargedPhotoUrl: string | null = null;
+
+  // Receipt resolution state for active modal
+  isLoadingReceipts = false;
+  resolvedReceipts: ResolvedReceiptPreview[] = [];
+  activeReceiptIndex = 0;
+  private activeBlobUrls: string[] = [];
+
+  private studentCache: Map<string, any> = new Map();
+
+  ngOnDestroy(): void {
+    this.revokeActiveBlobUrls();
+  }
+
+  private revokeActiveBlobUrls(): void {
+    for (const url of this.activeBlobUrls) {
+      if (url.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // Ignore revoke errors
+        }
+      }
+    }
+    this.activeBlobUrls = [];
+  }
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
@@ -102,59 +121,207 @@ export class FinanceDashboard {
     return this.authService.getCurrentUser();
   }
 
-  get isOfficer(): boolean {
-    return this.currentUser?.role === 'Finance';
+  setFilterStatus(status: 'pending' | 'transcript' | 'clearance' | 'approved' | 'rejected' | 'all'): void {
+    this.filterStatus = status;
+    this.currentPage = 1;
   }
 
-  get studentRequest(): ClearanceRequest | null {
-    const user = this.currentUser;
-    if (!user || user.role !== 'Student') return null;
-    const requests = this.clearanceService.getStudentRequests(user.id);
-    return requests.at(-1) ?? null;
+  onFilterChange(): void {
+    this.currentPage = 1;
   }
 
-  get requests(): ClearanceRequest[] {
+  // =====================================================
+  // UNIFIED ITEMS (CLEARANCE + TRANSCRIPT RECEIPTS)
+  // =====================================================
+
+  get clearanceRequests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Finance');
   }
 
-  get pendingRequestCount(): number {
-    return this.allPendingCount;
+  get transcriptBatchItems(): UnifiedFinanceItem[] {
+    const raw = sortTranscriptRequestsForFinance(this.transcriptPaymentService.getAllRequests()).filter(
+      r =>
+        r.status === 'Receipt Submitted' ||
+        r.status === 'Paid' ||
+        r.status === 'Receipt Rejected' ||
+        !!r.receiptData ||
+        !!r.receiptStorageId ||
+        !!(r.receipts && r.receipts.length > 0)
+    );
+
+    const grouped = new Map<string, TranscriptPaymentRequest[]>();
+    for (const req of raw) {
+      const batchKey = `${req.studentId}::${req.controlNumber || req.requestedAt || req.id}`;
+      const existing = grouped.get(batchKey);
+      if (existing) {
+        existing.push(req);
+      } else {
+        grouped.set(batchKey, [req]);
+      }
+    }
+
+    const items: UnifiedFinanceItem[] = [];
+    grouped.forEach((batch) => {
+      batch.sort((a, b) => (a.copyNumber ?? 1) - (b.copyNumber ?? 1));
+      const rep = batch[0];
+      const user = this.getStudentData(rep.studentId);
+
+      const fullName = (rep.studentName || user?.fullName || '').trim() || 'Student';
+      const regNo = (rep.registrationNumber || user?.registrationNumber || user?.studentId || '—').trim();
+      const email = (rep.postingContactEmail || user?.email || '—').trim();
+      const phone = (rep.postingContactPhone || user?.phoneNumber || user?.phone || '—').trim();
+      const programme = (rep.award || user?.programme || 'Academic Transcript').trim();
+
+      const status: 'Pending' | 'Approved' | 'Rejected' =
+        rep.status === 'Paid'
+          ? 'Approved'
+          : rep.status === 'Receipt Rejected'
+            ? 'Rejected'
+            : 'Pending';
+
+      const totalCopies = batch.length > 1 ? batch.length : (rep.totalCopies || rep.transcriptCount || 1);
+      const totalAmount = batch.length > 1
+        ? batch.reduce((sum, item) => sum + (item.amount || 0), 0)
+        : rep.amount;
+
+      let receiptCount = 0;
+      if (rep.receipts && rep.receipts.length > 0) {
+        receiptCount = rep.receipts.length;
+      } else if (rep.receiptData || rep.receiptStorageId || rep.receiptFileName) {
+        receiptCount = 1;
+      }
+
+      items.push({
+        kind: 'transcript',
+        id: `transcript-${rep.id}`,
+        studentId: rep.studentId,
+        registrationNumber: regNo,
+        studentName: fullName,
+        listName: this.formatListName(fullName, user),
+        email: email || '—',
+        phoneNumber: phone || '—',
+        programme: programme || '—',
+        status,
+        submittedAt: rep.receiptSubmittedAt || rep.requestedAt,
+        hasReceipt: receiptCount > 0,
+        receiptCount,
+        isResubmittedReceipt: false,
+        totalCopies,
+        totalAmount,
+        currency: rep.currency || 'TZS',
+        controlNumber: rep.controlNumber,
+        receiptNote: rep.receiptNote,
+        rejectionReason: rep.rejectionReason,
+        transcriptRequest: rep,
+        transcriptBatch: batch
+      });
+    });
+
+    return items;
   }
 
-  get filteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
+  get allUnifiedItems(): UnifiedFinanceItem[] {
+    const clearanceItems: UnifiedFinanceItem[] = this.clearanceRequests.map((req) => {
+      const officeStatus = this.getRequestOfficeStatus(req, 'Finance');
+      const status: 'Pending' | 'Approved' | 'Rejected' =
+        officeStatus === 'Approved' ? 'Approved' : officeStatus === 'Rejected' ? 'Rejected' : 'Pending';
+      const receiptCount = this.countClearanceReceipts(req);
+
+      return {
+        kind: 'clearance',
+        id: `clearance-${req.id}`,
+        studentId: req.studentId,
+        registrationNumber: this.getStudentRegNumber(req),
+        studentName: this.getStudentName(req),
+        listName: this.getStudentListName(req),
+        email: this.getStudentEmail(req),
+        phoneNumber: this.getStudentPhone(req),
+        programme: this.getStudentProgramme(req),
+        status,
+        submittedAt: this.getReceiptSubmittedAt(req) || req.requestDate,
+        hasReceipt: receiptCount > 0,
+        receiptCount,
+        isResubmittedReceipt: this.isReceiptReported(req),
+        receiptNote: this.getReceiptNote(req),
+        rejectionReason: status === 'Rejected' ? this.getFinanceRejectionReason(req) : undefined,
+        clearanceRequest: req
+      };
+    });
+
+    const combined = [...this.transcriptBatchItems, ...clearanceItems];
+    return combined.sort((a, b) => {
+      if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+      if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+      const ta = a.submittedAt ? Date.parse(a.submittedAt) || 0 : 0;
+      const tb = b.submittedAt ? Date.parse(b.submittedAt) || 0 : 0;
+      return tb - ta;
+    });
+  }
+
+  get allPendingCount(): number {
+    return this.allUnifiedItems.filter(i => i.status === 'Pending').length;
+  }
+
+  get pendingTranscriptCount(): number {
+    return this.allUnifiedItems.filter(i => i.kind === 'transcript' && i.status === 'Pending').length;
+  }
+
+  get pendingClearanceCount(): number {
+    return this.allUnifiedItems.filter(i => i.kind === 'clearance' && i.status === 'Pending').length;
+  }
+
+  get approvedCount(): number {
+    return this.allUnifiedItems.filter(i => i.status === 'Approved').length;
+  }
+
+  get rejectedCount(): number {
+    return this.allUnifiedItems.filter(i => i.status === 'Rejected').length;
+  }
+
+  get filteredItems(): UnifiedFinanceItem[] {
+    let list = this.allUnifiedItems;
 
     if (this.searchTerm.trim()) {
-      const s = this.searchTerm.toLowerCase();
-      list = list.filter(r =>
-        (r.studentName || '').toLowerCase().includes(s) ||
-        (r.registrationNumber || '').toLowerCase().includes(s) ||
-        r.programme.toLowerCase().includes(s)
+      const s = this.searchTerm.trim().toLowerCase();
+      list = list.filter(item =>
+        item.studentName.toLowerCase().includes(s) ||
+        item.listName.toLowerCase().includes(s) ||
+        item.registrationNumber.toLowerCase().includes(s) ||
+        item.programme.toLowerCase().includes(s) ||
+        (item.controlNumber || '').toLowerCase().includes(s)
       );
     }
 
-    if (this.filterStatus === 'pending') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending');
-    } else if (this.filterStatus === 'fresh') {
-      list = list.filter(r => this.isNewlyInitiated(r));
-    } else if (this.filterStatus === 'resubmitted') {
-      list = list.filter(r => this.isReceiptReported(r));
-    } else if (this.filterStatus === 'approved') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved');
-    } else if (this.filterStatus === 'rejected') {
-      list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Rejected');
+    switch (this.filterStatus) {
+      case 'pending':
+        list = list.filter(i => i.status === 'Pending');
+        break;
+      case 'transcript':
+        list = list.filter(i => i.kind === 'transcript');
+        break;
+      case 'clearance':
+        list = list.filter(i => i.kind === 'clearance');
+        break;
+      case 'approved':
+        list = list.filter(i => i.status === 'Approved');
+        break;
+      case 'rejected':
+        list = list.filter(i => i.status === 'Rejected');
+        break;
+      case 'all':
+        break;
     }
 
     return list;
   }
 
-  get paginatedRequests(): ClearanceRequest[] {
+  get paginatedItems(): UnifiedFinanceItem[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRequests.slice(start, start + this.pageSize);
+    return this.filteredItems.slice(start, start + this.pageSize);
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+    return Math.ceil(this.filteredItems.length / this.pageSize) || 1;
   }
 
   nextPage(): void {
@@ -171,25 +338,292 @@ export class FinanceDashboard {
     }
   }
 
-  onFilterChange(): void {
-    this.currentPage = 1;
+  // =====================================================
+  // MODAL & RECEIPT RESOLUTION (IMAGES + PDFs)
+  // =====================================================
+
+  get activeReceipt(): ResolvedReceiptPreview | null {
+    return this.resolvedReceipts[this.activeReceiptIndex] ?? null;
   }
 
-  getOfficeStatus(office: string): string {
-    const request = this.studentRequest;
-    if (!request) return 'Pending';
-    const approval = request.approvals.find(a => a.office === office);
-    return approval?.status ?? 'Pending';
+  selectReceiptTab(idx: number): void {
+    if (idx >= 0 && idx < this.resolvedReceipts.length) {
+      this.activeReceiptIndex = idx;
+    }
   }
+
+  async openItemDetails(item: UnifiedFinanceItem): Promise<void> {
+    this.detailsItem = item;
+    this.activeReceiptIndex = 0;
+    this.resolvedReceipts = [];
+    this.revokeActiveBlobUrls();
+
+    if (!item.hasReceipt) {
+      this.isLoadingReceipts = false;
+      return;
+    }
+
+    this.isLoadingReceipts = true;
+    this.cdr.detectChanges();
+
+    try {
+      const rawEntries = this.extractRawReceiptEntries(item);
+      const previews: ResolvedReceiptPreview[] = [];
+
+      for (let i = 0; i < rawEntries.length; i++) {
+        const entry = rawEntries[i];
+        const dataUrl = await this.receiptFileStore.resolveDataUrl(entry.receiptData, entry.storageId);
+        const mimeType = this.receiptFileStore.detectMimeType(dataUrl ?? undefined, entry.fileName);
+        const isPdf = this.receiptFileStore.isPdf(dataUrl ?? undefined, entry.fileName, entry.mimeType || mimeType);
+        const isImage = !isPdf && this.receiptFileStore.isImage(dataUrl ?? undefined, entry.fileName, entry.mimeType || mimeType);
+        const blobUrl = dataUrl ? this.receiptFileStore.dataUrlToBlobUrl(dataUrl, entry.fileName) : null;
+
+        if (blobUrl && blobUrl.startsWith('blob:')) {
+          this.activeBlobUrls.push(blobUrl);
+        }
+
+        const safeResourceUrl = blobUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl) : null;
+
+        previews.push({
+          index: i,
+          fileName: entry.fileName || `Receipt_${i + 1}`,
+          mimeType,
+          isPdf,
+          isImage,
+          dataUrl,
+          blobUrl,
+          safeResourceUrl,
+          sizeText: entry.sizeText
+        });
+      }
+
+      this.resolvedReceipts = previews;
+    } finally {
+      this.isLoadingReceipts = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  closeDetails(): void {
+    this.detailsItem = null;
+    this.resolvedReceipts = [];
+    this.activeReceiptIndex = 0;
+    this.revokeActiveBlobUrls();
+  }
+
+  private extractRawReceiptEntries(item: UnifiedFinanceItem): {
+    fileName: string;
+    receiptData?: string;
+    storageId?: string;
+    mimeType?: string;
+    sizeText?: string;
+  }[] {
+    if (item.kind === 'transcript' && item.transcriptRequest) {
+      const req = item.transcriptRequest;
+      if (req.receipts && req.receipts.length > 0) {
+        return req.receipts.map((r, idx) => ({
+          fileName: r.fileName || `Transcript_Receipt_${idx + 1}`,
+          receiptData: r.receiptData,
+          storageId: r.storageId,
+          mimeType: r.mimeType,
+          sizeText: r.sizeText
+        }));
+      }
+      if (req.receiptData || req.receiptStorageId || req.receiptFileName) {
+        return [
+          {
+            fileName: req.receiptFileName || 'Transcript_Receipt',
+            receiptData: req.receiptData,
+            storageId: req.receiptStorageId,
+            mimeType: req.receiptMimeType
+          }
+        ];
+      }
+      return [];
+    }
+
+    if (item.kind === 'clearance' && item.clearanceRequest) {
+      const cReq = item.clearanceRequest;
+      const entries: {
+        fileName: string;
+        receiptData?: string;
+        storageId?: string;
+        mimeType?: string;
+      }[] = [];
+
+      if (cReq.financeReceipt && (cReq.financeReceipt.receiptData || cReq.financeReceipt.receiptStorageId || cReq.financeReceipt.receiptFileName)) {
+        entries.push({
+          fileName: cReq.financeReceipt.receiptFileName || 'Finance_Payment_Receipt',
+          receiptData: cReq.financeReceipt.receiptData,
+          storageId: cReq.financeReceipt.receiptStorageId,
+          mimeType: cReq.financeReceipt.receiptMimeType
+        });
+      }
+      if (cReq.convocation && (cReq.convocation.receiptData || cReq.convocation.receiptFileName)) {
+        entries.push({
+          fileName: cReq.convocation.receiptFileName || 'Convocation_Receipt',
+          receiptData: cReq.convocation.receiptData
+        });
+      }
+      return entries;
+    }
+
+    return [];
+  }
+
+  // =====================================================
+  // UNIFIED APPROVE / REJECT / WITHDRAW ACTIONS
+  // =====================================================
+
+  async approveItem(item: UnifiedFinanceItem): Promise<void> {
+    const staff = this.currentUser;
+    if (!staff) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    if (item.kind === 'transcript' && item.transcriptRequest) {
+      const ok = this.transcriptPaymentService.updateStatus(item.transcriptRequest.id, 'Paid');
+      if (!ok) return;
+
+      this.notificationService.createNotification(
+        item.studentId,
+        'Transcript Payment Approved',
+        'Finance has verified and approved your transcript payment receipt. Open your dashboard and click Continue to upload your necessary certificate.',
+        'success'
+      );
+
+      this.message = `Transcript payment receipt approved for ${item.studentName}.`;
+      if (this.detailsItem?.id === item.id) {
+        this.closeDetails();
+      }
+      return;
+    }
+
+    if (item.kind === 'clearance' && item.clearanceRequest) {
+      if (!await this.clearanceService.approveRequest(item.clearanceRequest.id, 'Finance', staff.fullName)) {
+        return;
+      }
+
+      this.notificationService.createNotification(
+        item.studentId,
+        'Clearance completed',
+        'Finance has approved your application. Your graduation clearance is now complete.',
+        'success'
+      );
+
+      this.message = `Clearance approved for ${item.studentName}.`;
+      if (this.detailsItem?.id === item.id) {
+        this.closeDetails();
+      }
+    }
+  }
+
+  openRejectModal(item: UnifiedFinanceItem): void {
+    this.rejectTarget = item;
+    this.rejectionComment = '';
+    this.message = '';
+  }
+
+  closeRejectModal(): void {
+    this.rejectTarget = null;
+    this.rejectionComment = '';
+  }
+
+  async submitRejection(): Promise<void> {
+    const staff = this.currentUser;
+    const target = this.rejectTarget;
+    const reason = this.rejectionComment.trim();
+
+    if (!staff || !target || !reason) {
+      return;
+    }
+
+    if (target.kind === 'transcript' && target.transcriptRequest) {
+      const ok = this.transcriptPaymentService.rejectReceipt(target.transcriptRequest.id, reason);
+      if (!ok) return;
+
+      this.notificationService.createNotification(
+        target.studentId,
+        'Transcript Receipt Returned by Finance',
+        reason,
+        'warning'
+      );
+
+      this.message = `Transcript payment receipt returned to ${target.studentName}.`;
+      if (this.detailsItem?.id === target.id) {
+        this.closeDetails();
+      }
+      this.closeRejectModal();
+      return;
+    }
+
+    if (target.kind === 'clearance' && target.clearanceRequest) {
+      if (!await this.clearanceService.rejectRequest(target.clearanceRequest.id, 'Finance', staff.fullName, reason)) {
+        return;
+      }
+
+      this.notificationService.createNotification(
+        target.studentId,
+        'Finance action required',
+        reason,
+        'warning'
+      );
+
+      this.message = `Clearance returned to ${target.studentName} with required action.`;
+      if (this.detailsItem?.id === target.id) {
+        this.closeDetails();
+      }
+      this.closeRejectModal();
+    }
+  }
+
+  async withdrawItemDecision(item: UnifiedFinanceItem): Promise<void> {
+    if (item.kind === 'transcript' && item.transcriptRequest) {
+      if (!this.transcriptPaymentService.updateStatus(item.transcriptRequest.id, 'Receipt Submitted')) {
+        return;
+      }
+      this.message = 'Transcript payment decision withdrawn. The receipt is pending review again.';
+      return;
+    }
+
+    if (item.kind === 'clearance' && item.clearanceRequest) {
+      if (!await this.clearanceService.withdrawOfficeDecision(item.clearanceRequest.id, 'Finance')) {
+        return;
+      }
+      this.message = 'Finance clearance decision withdrawn. The request is pending again.';
+    }
+  }
+
+  // =====================================================
+  // STUDENT & CLEARANCE HELPERS
+  // =====================================================
 
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
     return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
   }
 
-  async withdrawDecision(request: ClearanceRequest): Promise<void> {
-    if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Finance')) return;
-    this.message = 'Finance decision withdrawn. The request is pending again.';
-    this.detailsRequest = request;
+  isReceiptReported(request: ClearanceRequest): boolean {
+    return !!(
+      request.resubmittedWithReceipt ||
+      (request.financeReceipt && (request.financeReceipt.receiptData || request.financeReceipt.receiptStorageId || request.financeReceipt.receiptSubmittedAt)) ||
+      (request.rejectionHistory && request.rejectionHistory.length > 0 && (request.financeReceipt || request.convocation?.receiptData))
+    );
+  }
+
+  private countClearanceReceipts(request: ClearanceRequest): number {
+    let count = 0;
+    if (
+      request.financeReceipt?.receiptData ||
+      request.financeReceipt?.receiptStorageId ||
+      request.financeReceipt?.receiptFileName
+    ) {
+      count++;
+    }
+    if (request.convocation?.receiptData || request.convocation?.receiptFileName) {
+      count++;
+    }
+    return count;
   }
 
   getFinanceRejectionReason(request: ClearanceRequest): string {
@@ -200,77 +634,13 @@ export class FinanceDashboard {
     return request.rejectionHistory ?? [];
   }
 
-  getRejectionReason(office: string): string {
-    const request = this.studentRequest;
-    if (!request) return '';
-    const approval = request.approvals.find(a => a.office === office);
-    return approval?.comment ?? '';
+  getReceiptNote(request: ClearanceRequest): string {
+    return request.financeReceipt?.receiptNote || '';
   }
 
-  async approve(request: ClearanceRequest): Promise<void> {
-    const staff = this.currentUser;
-
-    if (!staff) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    if (!await this.clearanceService.approveRequest(
-      request.id,
-      'Finance',
-      staff.fullName
-    )) return;
-
-    this.notificationService.createNotification(
-      request.studentId,
-      'Clearance completed',
-      'Finance has approved your application. Your graduation clearance is now complete.',
-      'success'
-    );
-
-    this.message = 'Clearance completed successfully.';
+  getReceiptSubmittedAt(request: ClearanceRequest): string | undefined {
+    return request.financeReceipt?.receiptSubmittedAt || request.convocation?.receiptSubmittedAt;
   }
-
-  openRejectForm(request: ClearanceRequest): void {
-    this.selectedRequest = request;
-    this.rejectionComment = '';
-    this.message = '';
-  }
-
-  async reject(): Promise<void> {
-    const staff = this.currentUser;
-
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
-      return;
-    }
-    if (!await this.clearanceService.rejectRequest(
-      this.selectedRequest.id,
-      'Finance',
-      staff.fullName,
-      this.rejectionComment
-    )) return;
-
-    this.notificationService.createNotification(
-      this.selectedRequest.studentId,
-      'Finance action required',
-      this.rejectionComment,
-      'warning'
-    );
-
-    this.message = 'The student has been notified about the required action.';
-    this.selectedRequest = null;
-    this.rejectionComment = '';
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  // =====================================================
-  // STUDENT DATA UTILS
-  // =====================================================
-
-  private studentCache: Map<string, any> = new Map();
 
   private getStudentData(studentId: string): any | null {
     if (this.studentCache.has(studentId)) {
@@ -292,25 +662,31 @@ export class FinanceDashboard {
     return null;
   }
 
+  private formatListName(fullName: string, user?: any): string {
+    const firstName = user?.firstName?.trim();
+    const middleName = user?.middleName?.trim();
+    const lastName = user?.lastName?.trim();
+    if (firstName && lastName) {
+      return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
+    }
+    const clean = (fullName || '').trim();
+    if (!clean) return '—';
+    const parts = clean.split(/\s+/).filter(Boolean);
+    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : clean.toUpperCase();
+  }
+
   getStudentName(request: ClearanceRequest): string {
     if (request.studentName) return request.studentName;
     const user = this.getStudentData(request.studentId);
     if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
+      return user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.registrationNumber || 'Student';
     }
     return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
   }
 
   getStudentListName(request: ClearanceRequest): string {
     const user = this.getStudentData(request.studentId);
-    const firstName = user?.firstName?.trim();
-    const middleName = user?.middleName?.trim();
-    const lastName = user?.lastName?.trim();
-    if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
-    const fullName = (request.studentName || user?.fullName || '').trim();
-    if (!fullName) return '—';
-    const parts = fullName.split(/\s+/).filter(Boolean);
-    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
+    return this.formatListName(request.studentName || user?.fullName || '', user);
   }
 
   getStudentRegNumber(request: ClearanceRequest): string {
@@ -318,26 +694,18 @@ export class FinanceDashboard {
     return request.registrationNumber?.trim() || user?.registrationNumber?.trim() || user?.studentId?.trim() || '—';
   }
 
-  getStudentGender(request: ClearanceRequest): string {
-    const gender = this.getStudentData(request.studentId)?.gender || (request as ClearanceRequest & { gender?: string }).gender;
-    if (typeof gender === 'string' && gender.trim() && gender.trim() !== '—') {
-      return gender.trim();
+  getStudentGenderForItem(item: UnifiedFinanceItem): string {
+    if (item.clearanceRequest) {
+      const cGender = this.getStudentData(item.studentId)?.gender || (item.clearanceRequest as ClearanceRequest & { gender?: string }).gender;
+      if (typeof cGender === 'string' && cGender.trim() && cGender.trim() !== '—') {
+        return cGender.trim();
+      }
     }
-    const name = (this.getStudentName(request) || '').toLowerCase();
-    const femaleIndicators = [
-      'amina', 'fatuma', 'grace', 'mary', 'jane', 'zainab', 'neema', 'rehema',
-      'halima', 'rose', 'hellen', 'esther', 'faith', 'doris', 'irene', 'mwajuma',
-      'asha', 'hadija', 'salma', 'mariam', 'beatrice', 'lucy', 'joyce', 'sarah',
-      'glory', 'mercy', 'catherine', 'judith', 'anna', 'magdalena', 'victoria',
-      'veronica', 'jackline', 'doreen', 'fadhila', 'subira', 'tumaini', 'upendo'
-    ];
-    for (const femaleName of femaleIndicators) {
-      if (name.includes(femaleName)) return 'Female';
+    const uGender = this.getStudentData(item.studentId)?.gender;
+    if (typeof uGender === 'string' && uGender.trim() && uGender.trim() !== '—') {
+      return uGender.trim();
     }
-    const idStr = request.registrationNumber || request.studentId || name;
-    let sum = 0;
-    for (let i = 0; i < idStr.length; i++) sum += idStr.charCodeAt(i);
-    return sum % 2 === 0 ? 'Male' : 'Female';
+    return '—';
   }
 
   getStudentEmail(request: ClearanceRequest): string {
@@ -353,20 +721,15 @@ export class FinanceDashboard {
     return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
   }
 
-  openDetails(request: ClearanceRequest): void {
-    this.detailsRequest = request;
-  }
-
-  getStudentPhoto(request: ClearanceRequest): string | null {
-    let photo = request.photo;
+  getItemPhoto(item: UnifiedFinanceItem): string | null {
+    let photo = item.clearanceRequest?.photo;
     if (!photo) {
-      const user = this.getStudentData(request.studentId);
+      const user = this.getStudentData(item.studentId);
       if (user) {
         photo = user.photo || user.profilePhoto || user.profileImageUrl;
       }
     }
     if (!photo) return null;
-
     if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
       return photo;
     }
@@ -376,23 +739,16 @@ export class FinanceDashboard {
     return photo;
   }
 
-  getStudentInitials(request: ClearanceRequest): string {
-    const name = this.getStudentName(request);
+  getItemInitials(item: UnifiedFinanceItem): string {
+    const name = item.studentName;
     if (!name || name === 'Student') return 'ST';
-    const parts = name.split(' ');
+    const parts = name.split(' ').filter(Boolean);
     let initials = '';
     for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) initials += parts[i].charAt(0);
+      initials += parts[i].charAt(0);
     }
-    return initials.toUpperCase();
+    return initials.toUpperCase() || 'ST';
   }
-
-  hasPhoto(request: ClearanceRequest): boolean {
-    const photo = this.getStudentPhoto(request);
-    return !!photo;
-  }
-
-  enlargedPhotoUrl: string | null = null;
 
   openEnlargedPhoto(photoUrl: string | null): void {
     if (photoUrl) {
@@ -404,200 +760,8 @@ export class FinanceDashboard {
     this.enlargedPhotoUrl = null;
   }
 
-  hasReceipt(request: ClearanceRequest): boolean {
-    return !!(
-      request.financeReceipt?.receiptData ||
-      request.financeReceipt?.receiptFileName ||
-      request.financeReceipt?.receiptSubmittedAt ||
-      request.convocation?.receiptData ||
-      request.convocation?.receiptFileName ||
-      request.convocation?.receiptSubmittedAt
-    );
-  }
-
-  getReceiptImage(request: ClearanceRequest): string | null {
-    const data = request.financeReceipt?.receiptData || request.convocation?.receiptData;
-    if (!data || data === 'IMAGE_TOO_LARGE_PLACEHOLDER') return null;
-    if (data.startsWith('data:image') || data.startsWith('http') || data.startsWith('/')) {
-      return data;
-    }
-    return 'data:image/jpeg;base64,' + data;
-  }
-
-  getReceiptFileName(request: ClearanceRequest): string {
-    return request.financeReceipt?.receiptFileName || request.convocation?.receiptFileName || 'Payment_Receipt.pdf';
-  }
-
-  getReceiptNote(request: ClearanceRequest): string {
-    return request.financeReceipt?.receiptNote || '';
-  }
-
-  getReceiptSubmittedAt(request: ClearanceRequest): string | undefined {
-    return request.financeReceipt?.receiptSubmittedAt || request.convocation?.receiptSubmittedAt;
-  }
-
-  // =========================================================================
-  // FINANCE SPECIFIC STATISTICAL ANALYTICS ENGINE
-  // =========================================================================
-
-  getStudentYear(request: ClearanceRequest): string {
-    const reg = request.registrationNumber || '';
-    const match = reg.match(/\b(202[0-9])\b/);
-    if (match) return match[1];
-    return '2024';
-  }
-
-  get analyticsFilteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
-    if (this.selectedAnalyticsYear !== 'all') {
-      list = list.filter(r => this.getStudentYear(r) === this.selectedAnalyticsYear);
-    }
-    if (this.selectedAnalyticsGender !== 'all') {
-      list = list.filter(r => this.getStudentGender(r) === this.selectedAnalyticsGender);
-    }
-    return list;
-  }
-
-  get totalFinanceStudents(): number {
-    return this.analyticsFilteredRequests.length;
-  }
-
-  get clearedFinanceCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved').length;
-  }
-
-  get pendingFinanceCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending').length;
-  }
-
-  get flaggedDebtsCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Rejected').length;
-  }
-
-  get financeClearanceRate(): number {
-    const tot = Math.max(1, this.totalFinanceStudents);
-    return Math.round((this.clearedFinanceCount / tot) * 100);
-  }
-
-  get genderStats() {
-    const list = this.analyticsFilteredRequests;
-    const total = Math.max(1, list.length);
-    let maleTotal = 0;
-    let femaleTotal = 0;
-    list.forEach(r => {
-      if (this.getStudentGender(r) === 'Male') maleTotal++;
-      else femaleTotal++;
-    });
-    return {
-      maleTotal,
-      malePercent: Math.round((maleTotal / total) * 100),
-      femaleTotal,
-      femalePercent: Math.round((femaleTotal / total) * 100)
-    };
-  }
-
-  get yearFeeHistogram(): { label: string; count: number; cleared: number; heightPercent: number }[] {
-    const years = ['2024', '2023', '2022', '2021'];
-    const map = new Map<string, { count: number; cleared: number }>();
-    years.forEach(y => map.set(y, { count: 0, cleared: 0 }));
-
-    this.analyticsFilteredRequests.forEach(r => {
-      const yr = this.getStudentYear(r);
-      let rec = map.get(yr);
-      if (!rec) {
-        rec = { count: 0, cleared: 0 };
-        map.set(yr, rec);
-      }
-      rec.count++;
-      if (this.getRequestOfficeStatus(r, 'Finance') === 'Approved') {
-        rec.cleared++;
-      }
-    });
-
-    const maxCount = Math.max(1, ...Array.from(map.values()).map(v => v.count));
-
-    return years.map(y => {
-      const rec = map.get(y) || { count: 0, cleared: 0 };
-      return {
-        label: y,
-        count: rec.count,
-        cleared: rec.cleared,
-        heightPercent: Math.max(14, Math.round((rec.count / maxCount) * 100))
-      };
-    });
-  }
-
-  get pieSlices() {
-    const tot = Math.max(1, this.totalFinanceStudents);
-    const items = [
-      { label: 'Fees Fully Cleared', count: this.clearedFinanceCount, color: '#10b981' },
-      { label: 'Pending Receipt Check', count: this.pendingFinanceCount, color: '#f59e0b' },
-      { label: 'Outstanding Debt Flagged', count: this.flaggedDebtsCount, color: '#ef4444' }
-    ];
-
-    let currentAngle = -90;
-    return items.map(item => {
-      const sliceAngle = (item.count / tot) * 360;
-      const effectiveAngle = sliceAngle >= 359.99 ? 359.99 : sliceAngle;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + effectiveAngle;
-      const R = 85;
-      const r = 48;
-      const cx = 110;
-      const cy = 110;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArc = effectiveAngle > 180 ? 1 : 0;
-      const svgPath = `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-
-      currentAngle += sliceAngle;
-      return {
-        ...item,
-        percentage: Math.round((item.count / tot) * 100),
-        svgPath
-      };
-    });
-  }
-
-  downloadAnalyticsCsv(): void {
-    const rows = [
-      ['UDSM BURSAR / FINANCE OFFICE - CLEARANCE & FEE AUDIT REPORT'],
-      [`Date: ${new Date().toLocaleString()}`],
-      [],
-      ['Metric', 'Value'],
-      ['Total Finance Students', String(this.totalFinanceStudents)],
-      ['Fees Cleared & Approved', String(this.clearedFinanceCount)],
-      ['Pending Receipt Verification', String(this.pendingFinanceCount)],
-      ['Outstanding Debt Flags', String(this.flaggedDebtsCount)],
-      ['Finance Clearance Rate', `${this.financeClearanceRate}%`],
-      ['Male Students', `${this.genderStats.maleTotal} (${this.genderStats.malePercent}%)`],
-      ['Female Students', `${this.genderStats.femaleTotal} (${this.genderStats.femalePercent}%)`],
-      [],
-      ['Cohort Fee Clearance Breakdown', 'Total', 'Cleared'],
-      ...this.yearFeeHistogram.map(y => [y.label, String(y.count), String(y.cleared)])
-    ];
-
-    const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `finance-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-  }
-
-  printAnalytics(): void {
-    window.print();
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }
