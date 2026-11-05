@@ -310,11 +310,27 @@ textarea:focus-visible {
 }
 
 /* Ensure no gap between sidebar and footer in all conditions */
-.dashboard-shell {
-  align-items: stretch;
+.router-shell {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
+
+.router-shell > * {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 0 auto !important;
+}
+
+.dashboard-shell {
+  display: flex !important;
+  flex: 1 0 auto !important;
+  align-items: stretch !important;
+}
+
 .sidebar {
-  min-height: 100vh !important;
+  height: auto !important;
+  min-height: 100% !important;
   align-self: stretch !important;
 }
 
@@ -445,14 +461,13 @@ textarea:focus-visible {
   .dashboard-shell > .sidebar {
     width: 270px !important;
     flex: 0 0 270px !important;
+    height: auto !important;
+    min-height: 100% !important;
+    align-self: stretch !important;
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    align-self: flex-start !important;
+    position: relative !important;
     transform: none !important;
     overflow-y: auto !important;
   }

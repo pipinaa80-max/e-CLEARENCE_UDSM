@@ -1,5 +1,8 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 100%;
 }
 
 @keyframes fadeIn {
@@ -24,10 +27,11 @@
 }
 
 .dashboard-shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
+  flex: 1 0 auto;
+  min-height: 100%;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
   width: 100%;
 }
 
@@ -37,23 +41,24 @@
 ========================================= */
 
 .sidebar {
-  width: 270px;
-  flex: 0 0 270px;
-  min-height: 100vh;
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
+  width: 270px !important;
+  flex: 0 0 270px !important;
+  height: auto !important;
+  min-height: 100% !important;
+  align-self: stretch !important;
+  position: relative !important;
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 18px;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 24px 18px !important;
   background: var(--sidebar-bg, var(--udsm-blue-dark)) !important;
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow: 4px 0 18px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
   overflow-y: auto;
-  transform: none;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   transition: transform 0.25s ease;
 }
 
