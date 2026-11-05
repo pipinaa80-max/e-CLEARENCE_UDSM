@@ -136,6 +136,10 @@ export class ClearanceService {
         const mergedApprovals = (inc.approvals || []).map(incApp => {
           const currApp = (curr.approvals || []).find(a => a.office === incApp.office);
           if (currApp && currApp.status !== 'Pending' && incApp.status === 'Pending') {
+            // Do NOT restore 'Rejected' for Finance if receipt was resubmitted
+            if (incApp.office === 'Finance' && curr.resubmittedWithReceipt) {
+              return incApp;
+            }
             return {
               ...incApp,
               status: currApp.status,
@@ -154,7 +158,13 @@ export class ClearanceService {
           }
         }
 
-        map.set(inc.id, { ...curr, ...inc, approvals: mergedApprovals });
+        map.set(inc.id, {
+          ...curr,
+          ...inc,
+          financeReceipt: inc.financeReceipt || curr.financeReceipt,
+          resubmittedWithReceipt: inc.resubmittedWithReceipt ?? curr.resubmittedWithReceipt,
+          approvals: mergedApprovals
+        });
       } else {
         map.set(inc.id, inc);
       }
@@ -571,14 +581,31 @@ export class ClearanceService {
 
       if (office === 'Finance') {
         const otherApprovals = request.approvals.filter(a => a && a.office !== 'Finance');
-        return otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
+        const allOtherApproved = otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
+        const reachedFinance = request.currentStage === 'Finance' ||
+          request.resubmittedWithReceipt === true ||
+          !!request.financeReceipt ||
+          request.approvals.some(a => a && a.office === 'Finance' && (a.status === 'Approved' || a.status === 'Rejected')) ||
+          request.status === 'Completed';
+        return allOtherApproved || reachedFinance;
       }
 
       if (office === 'Department') {
-        const departmentApproval = request.approvals.find(approval => approval.office === 'Department');
+        const parallelOffices = ['Games Coach', 'Hall Warden', 'USAB', 'DARUSO', 'Library', 'Dean of Students', 'Smart Card', 'Workshop', 'Laboratory'];
+        const parallelApprovals = (request.approvals || []).filter(a => a && parallelOffices.some(po => po.toLowerCase() === (a.office || '').toLowerCase()));
+        const allParallelApproved = parallelApprovals.length > 0 && parallelApprovals.every(a => a.status === 'Approved');
+
+        const departmentApproval = (request.approvals || []).find(approval =>
+          approval && (approval.office === 'Department' || this.matchDepartmentName(approval.office, request.department))
+        );
+
         const departmentStageReached = request.currentStage === 'Department' ||
+          allParallelApproved ||
           departmentApproval?.status === 'Approved' ||
-          departmentApproval?.status === 'Rejected';
+          departmentApproval?.status === 'Rejected' ||
+          request.currentStage === 'Principal' ||
+          request.currentStage === 'Finance' ||
+          request.status === 'Completed';
         if (!departmentStageReached) return false;
 
         return (
@@ -611,35 +638,89 @@ export class ClearanceService {
 
   matchDepartmentName(d1?: string, d2?: string): boolean {
     if (!d1 || !d2 || !d1.trim() || !d2.trim()) return true;
-    const s1 = d1.trim().toLowerCase();
-    const s2 = d2.trim().toLowerCase();
-    if (s1 === s2 || s1.includes(s2) || s2.includes(s1)) return true;
-    const getAcronym = (s: string) => {
-      const match = s.match(/\(([^)]+)\)/);
-      return match ? match[1].trim().toLowerCase() : '';
+    if (d2.trim().toLowerCase() === 'all' || d2.trim().toLowerCase() === 'administration') return true;
+
+    const raw1 = d1.trim();
+    const raw2 = d2.trim();
+    if (raw1.toLowerCase() === raw2.toLowerCase()) return true;
+
+    const normalize = (s: string) => {
+      let norm = s.toLowerCase().trim();
+      norm = norm.replace(/&/g, ' and ');
+      norm = norm.replace(/^(department\s+of\s+|dept\.?\s+of\s+|department\s+|school\s+of\s+|college\s+of\s+)/, '');
+      norm = norm.replace(/[^a-z0-9\s]/g, ' ');
+      return norm.replace(/\s+/g, ' ').trim();
     };
-    const a1 = getAcronym(s1);
-    const a2 = getAcronym(s2);
-    if (a1 && (a1 === s2 || s2.includes(a1))) return true;
-    if (a2 && (a2 === s1 || s1.includes(a2))) return true;
-    if (a1 && a2 && a1 === a2) return true;
+
+    const n1 = normalize(raw1);
+    const n2 = normalize(raw2);
+
+    if (n1 && n2) {
+      if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+    }
+
+    const isCs = (s: string) => {
+      const lower = s.toLowerCase().trim();
+      return lower === 'cse' || lower === 'cs' || lower === 'docse' ||
+        lower.includes('computer science') || lower.includes('computer engineering');
+    };
+    if (isCs(raw1) && isCs(raw2)) return true;
+
+    const isEte = (s: string) => {
+      const lower = s.toLowerCase().trim();
+      return lower === 'ete' || lower.includes('electronics') || lower.includes('telecommunication');
+    };
+    if (isEte(raw1) && isEte(raw2)) return true;
+
+    const getAcronymOrInitials = (raw: string, norm: string) => {
+      const parenMatch = raw.match(/\(([^)]+)\)/);
+      if (parenMatch) return parenMatch[1].trim().toLowerCase();
+      if (norm.length <= 5 && !norm.includes(' ')) return norm;
+      return norm.split(/\s+/).filter(w => !['and', 'of', 'in', 'the'].includes(w) && w.length > 0).map(w => w[0]).join('');
+    };
+
+    const a1 = getAcronymOrInitials(raw1, n1);
+    const a2 = getAcronymOrInitials(raw2, n2);
+    if (a1 && a2) {
+      if (a1 === a2 || a1 === n2 || a2 === n1) return true;
+    }
+
     return false;
   }
 
   matchCollegeName(c1?: string, c2?: string): boolean {
     if (!c1 || !c2 || !c1.trim() || !c2.trim()) return true;
-    const s1 = c1.trim().toLowerCase();
-    const s2 = c2.trim().toLowerCase();
-    if (s1 === s2 || s1.includes(s2) || s2.includes(s1)) return true;
-    const getAcronym = (s: string) => {
-      const match = s.match(/\(([^)]+)\)/);
-      return match ? match[1].trim().toLowerCase() : '';
+    const raw1 = c1.trim();
+    const raw2 = c2.trim();
+    if (raw1.toLowerCase() === raw2.toLowerCase()) return true;
+
+    const normalize = (s: string) => {
+      let norm = s.toLowerCase().trim();
+      norm = norm.replace(/&/g, ' and ');
+      norm = norm.replace(/^(college\s+of\s+|school\s+of\s+|institute\s+of\s+)/, '');
+      norm = norm.replace(/[^a-z0-9\s]/g, ' ');
+      return norm.replace(/\s+/g, ' ').trim();
     };
-    const a1 = getAcronym(s1);
-    const a2 = getAcronym(s2);
-    if (a1 && (a1 === s2 || s2.includes(a1))) return true;
-    if (a2 && (a2 === s1 || s1.includes(a2))) return true;
-    if (a1 && a2 && a1 === a2) return true;
+
+    const n1 = normalize(raw1);
+    const n2 = normalize(raw2);
+    if (n1 && n2) {
+      if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+    }
+
+    const getAcronymOrInitials = (raw: string, norm: string) => {
+      const parenMatch = raw.match(/\(([^)]+)\)/);
+      if (parenMatch) return parenMatch[1].trim().toLowerCase();
+      if (norm.length <= 6 && !norm.includes(' ')) return norm;
+      return norm.split(/\s+/).filter(w => !['and', 'of', 'in', 'the'].includes(w) && w.length > 0).map(w => w[0]).join('');
+    };
+
+    const a1 = getAcronymOrInitials(raw1, n1);
+    const a2 = getAcronymOrInitials(raw2, n2);
+    if (a1 && a2) {
+      if (a1 === a2 || a1 === n2 || a2 === n1) return true;
+    }
+
     return false;
   }
 
@@ -758,6 +839,66 @@ export class ClearanceService {
     this.save(request);
   }
 
+  // =====================================================
+  // FINANCE PAYMENT RECEIPT SUBMISSION AFTER REJECTION
+  // =====================================================
+
+  submitFinanceReceiptAfterRejection(
+    requestId: string,
+    receiptData: string,
+    fileName?: string,
+    note?: string
+  ): boolean {
+    const request = this.getRequest(requestId);
+    if (!request) {
+      return false;
+    }
+
+    request.financeReceipt = {
+      receiptFileName: fileName || 'Payment_Receipt.jpg',
+      receiptData: receiptData,
+      receiptSubmittedAt: new Date().toISOString(),
+      receiptNote: note?.trim() || ''
+    };
+    request.resubmittedWithReceipt = true;
+
+    // Reset Finance approval status to 'Pending'
+    const financeApproval = request.approvals?.find(a => a && a.office === 'Finance');
+    if (financeApproval) {
+      financeApproval.status = 'Pending';
+      financeApproval.reviewedAt = undefined;
+      financeApproval.reviewedBy = undefined;
+    }
+
+    request.status = 'Pending';
+    request.currentStage = 'Finance';
+    request.currentOffice = 'Finance';
+    request.revisionOffice = undefined;
+
+    this.save(request);
+
+    const backendReqId = this.resolveBackendRequestId(request, requestId);
+    this.submitFinanceReceiptBackend(backendReqId, note, fileName).subscribe({
+      next: (res) => {
+        console.log('Backend acknowledged receipt submission for Finance:', res);
+      },
+      error: (err) => {
+        console.warn('Backend receipt submit notice (local state persisted):', err);
+      }
+    });
+
+    return true;
+  }
+
+  submitFinanceReceiptBackend(requestId: string, note?: string, fileName?: string): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.config.apiUrl}/clearance/submit-finance-receipt`, {
+      requestId,
+      note: note || '',
+      fileName: fileName || 'Payment_Receipt.jpg'
+    }, { headers });
+  }
+
   private resolveBackendRequestId(request: ClearanceRequest | undefined, fallbackId: string): string {
     const isInvalid = (val: string | undefined): boolean => {
       if (!val) return true;
@@ -829,6 +970,8 @@ export class ClearanceService {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
       request.status = 'Completed';
+      request.revisionOffice = undefined;
+      request.resubmittedWithReceipt = false;
     } else {
       this.moveToNextStage(request);
     }

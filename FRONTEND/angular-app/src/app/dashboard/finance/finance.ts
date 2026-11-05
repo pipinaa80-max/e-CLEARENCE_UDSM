@@ -38,7 +38,53 @@ export class FinanceDashboard {
   }
 
   searchTerm = '';
-  filterStatus = 'pending';
+  filterStatus: 'all' | 'pending' | 'fresh' | 'resubmitted' | 'rejected' | 'approved' = 'pending';
+
+  setFilterStatus(status: 'all' | 'pending' | 'fresh' | 'resubmitted' | 'rejected' | 'approved'): void {
+    this.filterStatus = status;
+    this.currentPage = 1;
+  }
+
+  isReceiptReported(request: ClearanceRequest): boolean {
+    return !!(
+      request.resubmittedWithReceipt ||
+      (request.financeReceipt && (request.financeReceipt.receiptData || request.financeReceipt.receiptSubmittedAt)) ||
+      (request.rejectionHistory && request.rejectionHistory.length > 0 && (request.financeReceipt || request.convocation?.receiptData))
+    );
+  }
+
+  isNewlyInitiated(request: ClearanceRequest): boolean {
+    const isPending = this.getRequestOfficeStatus(request, 'Finance') === 'Pending';
+    return isPending && !this.isReceiptReported(request) && (!request.rejectionHistory || request.rejectionHistory.length === 0);
+  }
+
+  get allPendingCount(): number {
+    return this.requests.filter(request =>
+      this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
+    ).length;
+  }
+
+  get freshInitiatedCount(): number {
+    return this.requests.filter(request => this.isNewlyInitiated(request)).length;
+  }
+
+  get receiptReportedCount(): number {
+    return this.requests.filter(request =>
+      this.getRequestOfficeStatus(request, 'Finance') === 'Pending' && this.isReceiptReported(request)
+    ).length;
+  }
+
+  get rejectedFinanceCount(): number {
+    return this.requests.filter(request =>
+      this.getRequestOfficeStatus(request, 'Finance') === 'Rejected'
+    ).length;
+  }
+
+  get approvedFinanceCount(): number {
+    return this.requests.filter(request =>
+      this.getRequestOfficeStatus(request, 'Finance') === 'Approved'
+    ).length;
+  }
 
   // Pagination
   currentPage = 1;
@@ -72,9 +118,7 @@ export class FinanceDashboard {
   }
 
   get pendingRequestCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
-    ).length;
+    return this.allPendingCount;
   }
 
   get filteredRequests(): ClearanceRequest[] {
@@ -91,6 +135,10 @@ export class FinanceDashboard {
 
     if (this.filterStatus === 'pending') {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending');
+    } else if (this.filterStatus === 'fresh') {
+      list = list.filter(r => this.isNewlyInitiated(r));
+    } else if (this.filterStatus === 'resubmitted') {
+      list = list.filter(r => this.isReceiptReported(r));
     } else if (this.filterStatus === 'approved') {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved');
     } else if (this.filterStatus === 'rejected') {
@@ -357,11 +405,18 @@ export class FinanceDashboard {
   }
 
   hasReceipt(request: ClearanceRequest): boolean {
-    return !!(request.convocation?.receiptData || request.convocation?.receiptFileName || request.convocation?.receiptSubmittedAt);
+    return !!(
+      request.financeReceipt?.receiptData ||
+      request.financeReceipt?.receiptFileName ||
+      request.financeReceipt?.receiptSubmittedAt ||
+      request.convocation?.receiptData ||
+      request.convocation?.receiptFileName ||
+      request.convocation?.receiptSubmittedAt
+    );
   }
 
   getReceiptImage(request: ClearanceRequest): string | null {
-    const data = request.convocation?.receiptData;
+    const data = request.financeReceipt?.receiptData || request.convocation?.receiptData;
     if (!data || data === 'IMAGE_TOO_LARGE_PLACEHOLDER') return null;
     if (data.startsWith('data:image') || data.startsWith('http') || data.startsWith('/')) {
       return data;
@@ -370,7 +425,15 @@ export class FinanceDashboard {
   }
 
   getReceiptFileName(request: ClearanceRequest): string {
-    return request.convocation?.receiptFileName || 'Payment_Receipt.pdf';
+    return request.financeReceipt?.receiptFileName || request.convocation?.receiptFileName || 'Payment_Receipt.pdf';
+  }
+
+  getReceiptNote(request: ClearanceRequest): string {
+    return request.financeReceipt?.receiptNote || '';
+  }
+
+  getReceiptSubmittedAt(request: ClearanceRequest): string | undefined {
+    return request.financeReceipt?.receiptSubmittedAt || request.convocation?.receiptSubmittedAt;
   }
 
   // =========================================================================

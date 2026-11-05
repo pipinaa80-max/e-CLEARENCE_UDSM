@@ -1,7 +1,10 @@
 // student-dashboard.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Subscription, timer } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
@@ -33,29 +36,218 @@ interface TranscriptDashboardStep {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
-export class StudentDashboard implements OnInit {
+export class StudentDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly router = inject(Router);
+  private pollSubscription?: Subscription;
 
   sidebarOpen = false;
   profilePhoto: string | null = null;
   photoLoadFailed = false;
   isLoading = true;
   systemType: StudentSystemType = environment.systemType;
+  userDropdownOpen = false;
+
+  // Receipt submission after rejection
+  showReceiptModal = false;
+  selectedReceiptFile: File | null = null;
+  receiptPreviewUrl: string | null = null;
+  receiptFileName: string = '';
+  receiptFileSizeText: string = '';
+  receiptNote: string = '';
+  isSubmittingReceipt = false;
+  receiptSuccessMessage = '';
+  receiptErrorMessage = '';
+
+  openReceiptModal(): void {
+    this.showReceiptModal = true;
+    this.receiptErrorMessage = '';
+  }
+
+  closeReceiptModal(): void {
+    this.showReceiptModal = false;
+  }
+
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.receiptErrorMessage = 'Receipt file must be an image (PNG, JPG) or PDF document.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.receiptErrorMessage = 'Receipt file size must be less than 10MB.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedReceiptFile = file;
+    this.receiptFileName = file.name;
+    const sizeKb = Math.round(file.size / 1024);
+    this.receiptFileSizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+    this.receiptErrorMessage = '';
+    this.receiptSuccessMessage = '';
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.receiptPreviewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.receiptPreviewUrl = null;
+    }
+  }
+
+  removeReceiptFile(): void {
+    this.selectedReceiptFile = null;
+    this.receiptPreviewUrl = null;
+    this.receiptFileName = '';
+    this.receiptFileSizeText = '';
+    this.receiptErrorMessage = '';
+  }
+
+  async submitRejectionReceipt(): Promise<void> {
+    if (!this.selectedReceiptFile && !this.receiptNote?.trim()) {
+      this.receiptErrorMessage = 'Please choose a payment receipt file or enter your payment reference / control number.';
+      return;
+    }
+
+    if (!this.currentRequest) {
+      this.receiptErrorMessage = 'No active clearance request found.';
+      return;
+    }
+
+    this.isSubmittingReceipt = true;
+    this.receiptErrorMessage = '';
+    this.receiptSuccessMessage = '';
+
+    try {
+      let base64Data = '';
+      if (this.selectedReceiptFile) {
+        base64Data = await this.readFileAsDataUrl(this.selectedReceiptFile);
+      }
+      const fileName = this.selectedReceiptFile ? this.receiptFileName : ('Payment_Reference_' + Date.now() + '.txt');
+
+      const success = this.clearanceService.submitFinanceReceiptAfterRejection(
+        this.currentRequest.id,
+        base64Data,
+        fileName,
+        this.receiptNote
+      );
+
+      if (success) {
+        this.receiptSuccessMessage = 'Payment receipt submitted successfully! Your clearance request has returned to Finance for review.';
+        this.removeReceiptFile();
+        this.receiptNote = '';
+        this.showReceiptModal = false;
+        this.notificationService.getStudentNotifications().subscribe();
+      } else {
+        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+      }
+    } catch (err: any) {
+      this.receiptErrorMessage = err?.message || 'Error processing receipt file.';
+    } finally {
+      this.isSubmittingReceipt = false;
+    }
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        if (file.type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1200;
+            if (img.width > maxDim || img.height > maxDim) {
+              const scale = maxDim / Math.max(img.width, img.height);
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+                return;
+              }
+            }
+            resolve(result);
+          };
+          img.onerror = () => resolve(result);
+          img.src = result;
+        } else {
+          resolve(result);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  get hasReportedReceiptUnderReview(): boolean {
+    const r = this.currentRequest;
+    if (!r) return false;
+    return r.status === 'Pending' && r.currentStage === 'Finance' && !!(r.resubmittedWithReceipt || r.financeReceipt);
+  }
+
+  get rejectedOfficeName(): string {
+    const r = this.currentRequest;
+    if (!r) return '';
+    if (r.revisionOffice) return r.revisionOffice;
+    const rej = r.approvals?.find(a => a.status === 'Rejected');
+    return rej?.office || 'Clearance Office';
+  }
+
+  toggleUserDropdown(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.userDropdownOpen = !this.userDropdownOpen;
+    if (this.userDropdownOpen) {
+      this.notificationService.refreshUnreadCount().subscribe();
+    }
+  }
+
+  onOpenNotifications(): void {
+    this.closeUserDropdown();
+  }
+
+  closeUserDropdown(): void {
+    this.userDropdownOpen = false;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.userDropdownOpen = false;
+  }
 
   ngOnInit(): void {
     this.loadProfilePhoto();
+    this.notificationService.getStudentNotifications().subscribe();
+    this.pollSubscription = timer(5000, 10000).pipe(
+      switchMap(() => this.notificationService.refreshUnreadCount())
+    ).subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.pollSubscription?.unsubscribe();
   }
 
   refreshInformation(): void {
     this.loadProfilePhoto();
+    this.notificationService.getStudentNotifications().subscribe();
     this.authService.getProfile().subscribe({
       next: () => {
         this.loadProfilePhoto();
@@ -285,10 +477,12 @@ export class StudentDashboard implements OnInit {
 
   get isClearanceCompleted(): boolean {
     const request = this.currentRequest;
-    return !!request && (
+    if (!request) return false;
+    return (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
-      this.getOfficeStatus('Finance') === 'Approved'
+      this.getOfficeStatus('Finance') === 'Approved' ||
+      (this.offices.length > 0 && this.completedOffices === this.offices.length)
     );
   }
 
@@ -334,15 +528,15 @@ export class StudentDashboard implements OnInit {
     return this.clearanceService.getClearanceOffices(this.currentRequest?.college ?? '');
   }
 
-  getApproval(office: ClearanceOffice) {
+  getApproval(office: ClearanceOffice | string) {
     return this.currentRequest?.approvals.find(approval => approval.office === office) ?? null;
   }
 
-  getOfficeStatus(office: ClearanceOffice): string {
+  getOfficeStatus(office: ClearanceOffice | string): string {
     return this.getApproval(office)?.status ?? 'Pending';
   }
 
-  getRejectionReason(office: ClearanceOffice): string {
+  getRejectionReason(office: ClearanceOffice | string): string {
     const approval = this.getApproval(office);
     if (!approval || approval.status !== 'Rejected') {
       return '';
@@ -350,7 +544,7 @@ export class StudentDashboard implements OnInit {
     return approval.comment ?? '';
   }
 
-  getReviewerContact(office: ClearanceOffice): { name: string; email: string; phone: string } {
+  getReviewerContact(office: ClearanceOffice | string): { name: string; email: string; phone: string } {
     const approval = this.getApproval(office);
     const name = approval?.reviewedBy || '';
     let email = approval?.reviewerEmail || '';
@@ -425,6 +619,31 @@ export class StudentDashboard implements OnInit {
       const status = this.getOfficeStatus(office);
       return status === 'Approved';
     });
+  }
+
+  get parallelOfficesApprovedCount(): number {
+    if (!this.officeList.length) return 0;
+    return this.officeList.filter(office => this.getOfficeStatus(office) === 'Approved').length;
+  }
+
+  get parallelOfficesTotalCount(): number {
+    return this.officeList.length;
+  }
+
+  get parallelOfficesProgressPercent(): number {
+    if (!this.officeList.length) return 0;
+    if (this.allClearanceOfficesApproved ||
+        this.currentRequest?.currentStage === 'Department' ||
+        this.currentRequest?.currentStage === 'Principal' ||
+        this.currentRequest?.currentStage === 'Finance' ||
+        this.currentRequest?.status === 'Completed') {
+      return 100;
+    }
+    return Math.round((this.parallelOfficesApprovedCount / this.officeList.length) * 100);
+  }
+
+  get parallelOfficesProgressDegrees(): number {
+    return Math.round((this.parallelOfficesProgressPercent / 100) * 360);
   }
 
   get currentStageLabel(): string {
@@ -568,12 +787,7 @@ export class StudentDashboard implements OnInit {
   // =====================================================
 
   get unreadNotifications(): number {
-    const user = this.currentUser;
-    if (!user) return 0;
-
-    return this.notificationService
-        .getNotifications(user.id)
-        .filter((item) => !item.read).length;
+    return this.notificationService.unreadCount;
   }
 
   // =====================================================

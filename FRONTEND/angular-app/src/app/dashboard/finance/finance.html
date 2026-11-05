@@ -172,6 +172,59 @@
     </section>
 
 
+    <!-- FINANCE REQUEST CATEGORY TABS -->
+    <div class="finance-request-tabs" *ngIf="viewMode === 'all' || viewMode === 'requests'">
+      <button
+        type="button"
+        class="req-tab-btn"
+        [class.active]="filterStatus === 'pending'"
+        (click)="setFilterStatus('pending')"
+      >
+        <span>All Pending</span>
+        <span class="count-pill">{{ allPendingCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="req-tab-btn"
+        [class.active]="filterStatus === 'fresh'"
+        (click)="setFilterStatus('fresh')"
+      >
+        <span>Newly Initiated</span>
+        <span class="count-pill">{{ freshInitiatedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="req-tab-btn resubmitted-tab"
+        [class.active]="filterStatus === 'resubmitted'"
+        (click)="setFilterStatus('resubmitted')"
+      >
+        <span>🧾 Receipts Reported</span>
+        <span class="count-pill highlight" *ngIf="receiptReportedCount">{{ receiptReportedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="req-tab-btn"
+        [class.active]="filterStatus === 'rejected'"
+        (click)="setFilterStatus('rejected')"
+      >
+        <span>Previously Rejected</span>
+        <span class="count-pill">{{ rejectedFinanceCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="req-tab-btn"
+        [class.active]="filterStatus === 'approved'"
+        (click)="setFilterStatus('approved')"
+      >
+        <span>Approved</span>
+        <span class="count-pill">{{ approvedFinanceCount }}</span>
+      </button>
+    </div>
+
     <!-- FILTER BAR -->
     <section class="toolbar" *ngIf="requests.length || searchTerm">
       <div class="search-box">
@@ -184,9 +237,12 @@
       </div>
 
       <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="pending">All Pending ({{ allPendingCount }})</option>
+        <option value="fresh">Newly Initiated ({{ freshInitiatedCount }})</option>
+        <option value="resubmitted">Receipts Reported ({{ receiptReportedCount }})</option>
+        <option value="rejected">Previously Rejected ({{ rejectedFinanceCount }})</option>
+        <option value="approved">Approved ({{ approvedFinanceCount }})</option>
+        <option value="all">All Requests</option>
       </select>
     </section>
 
@@ -200,7 +256,17 @@
         <tbody>
           <tr *ngFor="let request of paginatedRequests">
             <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="compact-name">{{ getStudentListName(request) }}</td>
+            <td class="compact-name">
+              <div class="name-cell-wrap">
+                <span>{{ getStudentListName(request) }}</span>
+                <span class="badge-resubmitted" *ngIf="isReceiptReported(request)" title="Payment receipt uploaded after rejection">
+                  🧾 Receipt Reported
+                </span>
+                <span class="badge-fresh" *ngIf="isNewlyInitiated(request)">
+                  First Review
+                </span>
+              </div>
+            </td>
             <td>{{ getStudentEmail(request) }}</td>
             <td>{{ getStudentPhone(request) }}</td>
             <td>{{ getStudentProgramme(request) }}</td>
@@ -258,14 +324,19 @@
 
         <!-- Payment Receipt Review Section -->
         <div *ngIf="hasReceipt(detailsRequest)" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment Receipt (Risiti ya Malipo)</h4>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h4 style="margin: 0; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment Receipt (Risiti ya Malipo)</h4>
+            <span class="badge-resubmitted" *ngIf="isReceiptReported(detailsRequest)">Reported After Rejection</span>
+          </div>
           <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center;">
             <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px;">
-              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge receipt" />
+              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 240px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge receipt" />
             </div>
-            <div style="font-size: 0.85rem; color: #475569;">
+            <div style="font-size: 0.85rem; color: #475569; display: flex; flex-direction: column; gap: 4px; align-items: center;">
               <span>File: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
-              <span *ngIf="detailsRequest.convocation?.controlNumber"> · Control Number: <strong>{{ detailsRequest.convocation?.controlNumber }}</strong></span>
+              <span *ngIf="getReceiptSubmittedAt(detailsRequest)">Submitted on: <strong>{{ getReceiptSubmittedAt(detailsRequest) | date:'medium' }}</strong></span>
+              <span *ngIf="getReceiptNote(detailsRequest)" style="color: #0369a1; font-weight: 600;">Student Note: "{{ getReceiptNote(detailsRequest) }}"</span>
+              <span *ngIf="detailsRequest.convocation?.controlNumber">Control Number: <strong>{{ detailsRequest.convocation?.controlNumber }}</strong></span>
             </div>
           </div>
         </div>
@@ -282,11 +353,11 @@
       </div>
 
       <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
+        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : filterStatus === 'resubmitted' ? 'No reported receipts pending review' : filterStatus === 'fresh' ? 'No newly initiated requests' : 'No pending requests' }}
       </h2>
 
       <p>
-        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Finance.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Finance.' : 'There are currently no student applications awaiting Finance approval.' }}
+        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Finance.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Finance.' : filterStatus === 'resubmitted' ? 'There are no students who have reported receipts after rejection waiting for review.' : filterStatus === 'fresh' ? 'There are no first-time requests currently pending.' : 'There are currently no student applications awaiting Finance approval.' }}
       </p>
 
     </section>

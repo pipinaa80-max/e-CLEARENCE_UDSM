@@ -1,4 +1,5 @@
 package com.UDSM.BACKEND.Service;
+
 import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.NotificationRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -29,10 +31,46 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private EmailService emailService;
 
+    private User resolveStudentUser(Student student) {
+        if (student == null) return null;
+        if (student.getUser() != null) return student.getUser();
+        if (student.getEmail() != null && !student.getEmail().isBlank()) {
+            Optional<User> byEmail = userRepository.findByEmail(student.getEmail());
+            if (byEmail.isPresent()) {
+                student.setUser(byEmail.get());
+                try { studentRepository.save(student); } catch (Exception ignored) {}
+                return byEmail.get();
+            }
+        }
+        if (student.getRegistrationNumber() != null && !student.getRegistrationNumber().isBlank()) {
+            Optional<User> byReg = userRepository.findByRegistrationNumberIgnoreCase(student.getRegistrationNumber())
+                    .or(() -> userRepository.findByUsername(student.getRegistrationNumber()));
+            if (byReg.isPresent()) {
+                student.setUser(byReg.get());
+                try { studentRepository.save(student); } catch (Exception ignored) {}
+                return byReg.get();
+            }
+        }
+        return null;
+    }
+
+    private Student resolveUserStudent(User user) {
+        if (user == null) return null;
+        return studentRepository.findByUser(user)
+                .or(() -> user.getId() != null ? studentRepository.findByUserId(user.getId()) : Optional.empty())
+                .or(() -> user.getEmail() != null ? studentRepository.findByEmail(user.getEmail()) : Optional.empty())
+                .or(() -> user.getRegistrationNumber() != null ? studentRepository.findByRegistrationNumberIgnoreCase(user.getRegistrationNumber()) : Optional.empty())
+                .orElse(null);
+    }
+
     @Override
     public void sendNotification(User user, String title, String message, NotificationType type) {
         Notification notification = new Notification();
         notification.setUser(user);
+        Student student = resolveUserStudent(user);
+        if (student != null) {
+            notification.setStudent(student);
+        }
         notification.setTitle(title);
         notification.setMessage(message);
         notification.setType(type);
@@ -40,12 +78,14 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setRead(false);
 
         notificationRepository.save(notification);
+        log.info("🔔 Sent notification to user {}: {}", user != null ? user.getEmail() : "null", title);
 
-        // Optionally send email/SMS based on type
-        if (type == NotificationType.EMAIL) {
-            sendEmail(user.getEmail(), title, message);
-        } else if (type == NotificationType.SMS) {
-            sendSms(user.getPhoneNumber(), message);
+        if (user != null) {
+            if (type == NotificationType.EMAIL && user.getEmail() != null) {
+                sendEmail(user.getEmail(), title, message);
+            } else if (type == NotificationType.SMS && user.getPhoneNumber() != null) {
+                sendSms(user.getPhoneNumber(), message);
+            }
         }
     }
 
@@ -55,6 +95,10 @@ public class NotificationServiceImpl implements NotificationService {
         for (User user : users) {
             Notification notification = new Notification();
             notification.setUser(user);
+            Student student = resolveUserStudent(user);
+            if (student != null) {
+                notification.setStudent(student);
+            }
             notification.setTitle(title);
             notification.setMessage(message);
             notification.setType(type);
@@ -73,10 +117,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendSms(String phoneNumber, String message) {
-        // Implement SMS sending logic
         System.out.println("Sending SMS to: " + phoneNumber);
         System.out.println("Message: " + message);
-        // TODO: Add actual SMS implementation
     }
 
     @Override
@@ -121,25 +163,49 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendClearanceUpdate(String studentId, String status, String comments) {
-        // Find user by studentId and send notification
-        // Implementation depends on your UserRepository
-        System.out.println("Clearance update for student: " + studentId);
-        System.out.println("Status: " + status);
-        System.out.println("Comments: " + comments);
+        Student student = studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByRegistrationNumber(studentId))
+                .or(() -> studentRepository.findByRegistrationNumberIgnoreCase(studentId))
+                .orElse(null);
+        if (student == null) return;
+        User targetUser = resolveStudentUser(student);
+        Notification notification = new Notification();
+        notification.setUser(targetUser);
+        notification.setStudent(student);
+        notification.setTitle("Clearance Update - " + status);
+        notification.setMessage(comments != null && !comments.isBlank() ? comments : "Your clearance status has been updated to: " + status);
+        notification.setType(NotificationType.CLEARANCE_UPDATE);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setRead(false);
+        notificationRepository.save(notification);
     }
 
     @Override
     public void sendApprovalNotification(String studentId, String department, String approver) {
-        Student student = studentRepository.findById(studentId).orElse(null);
+        Student student = studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByRegistrationNumber(studentId))
+                .or(() -> studentRepository.findByRegistrationNumberIgnoreCase(studentId))
+                .orElse(null);
         if (student == null) {
             log.warn("⚠️ Student not found for approval notification: {}", studentId);
             return;
         }
 
+        User targetUser = resolveStudentUser(student);
+
         String title = "Clearance Approved - " + department;
         String message = "Your clearance request has been approved by the " + department + " office.";
-        
-        sendNotification(student.getUser(), title, message, NotificationType.APPROVAL);
+
+        Notification notification = new Notification();
+        notification.setUser(targetUser);
+        notification.setStudent(student);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setType(NotificationType.APPROVAL);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setRead(false);
+        notificationRepository.save(notification);
+        log.info("🔔 Created approval notification for student {} (user: {}) - {}", student.getRegistrationNumber(), targetUser != null ? targetUser.getEmail() : "null", title);
 
         // Send Real Email
         try {
@@ -151,16 +217,30 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendRejectionNotification(String studentId, String department, String reason) {
-        Student student = studentRepository.findById(studentId).orElse(null);
+        Student student = studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByRegistrationNumber(studentId))
+                .or(() -> studentRepository.findByRegistrationNumberIgnoreCase(studentId))
+                .orElse(null);
         if (student == null) {
             log.warn("⚠️ Student not found for rejection notification: {}", studentId);
             return;
         }
 
+        User targetUser = resolveStudentUser(student);
+
         String title = "Clearance Action Required - " + department;
         String message = "Your clearance request was rejected by " + department + ". Reason: " + reason;
-        
-        sendNotification(student.getUser(), title, message, NotificationType.REJECTION);
+
+        Notification notification = new Notification();
+        notification.setUser(targetUser);
+        notification.setStudent(student);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setType(NotificationType.REJECTION);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setRead(false);
+        notificationRepository.save(notification);
+        log.info("🔔 Created rejection notification for student {} (user: {}) - {}", student.getRegistrationNumber(), targetUser != null ? targetUser.getEmail() : "null", title);
 
         // Send Real Email
         try {
@@ -172,13 +252,39 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendCertificateReadyNotification(String studentId) {
-        System.out.println("Certificate ready for student: " + studentId);
+        Student student = studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByRegistrationNumber(studentId))
+                .or(() -> studentRepository.findByRegistrationNumberIgnoreCase(studentId))
+                .orElse(null);
+        if (student == null) return;
+        User targetUser = resolveStudentUser(student);
+        Notification notification = new Notification();
+        notification.setUser(targetUser);
+        notification.setStudent(student);
+        notification.setTitle("Certificate Ready for Collection");
+        notification.setMessage("Your degree certificate and academic transcript are now ready for physical collection at the DUS office.");
+        notification.setType(NotificationType.CERTIFICATE_READY);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setRead(false);
+        notificationRepository.save(notification);
     }
 
     @Override
     public void sendReminderNotification(String studentId, String department, String dueDate) {
-        System.out.println("Reminder for student: " + studentId);
-        System.out.println("Department: " + department);
-        System.out.println("Due date: " + dueDate);
+        Student student = studentRepository.findById(studentId)
+                .or(() -> studentRepository.findByRegistrationNumber(studentId))
+                .or(() -> studentRepository.findByRegistrationNumberIgnoreCase(studentId))
+                .orElse(null);
+        if (student == null) return;
+        User targetUser = resolveStudentUser(student);
+        Notification notification = new Notification();
+        notification.setUser(targetUser);
+        notification.setStudent(student);
+        notification.setTitle("Clearance Reminder - " + department);
+        notification.setMessage("Reminder: Your clearance action for " + department + " is pending. Due date: " + dueDate);
+        notification.setType(NotificationType.REMINDER);
+        notification.setCreatedAt(LocalDateTime.now());
+        notification.setRead(false);
+        notificationRepository.save(notification);
     }
 }

@@ -133,7 +133,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
                 return true;
             }
 
-            if (request.department !== user.department) return false;
+            if (user.department && !this.clearanceService.matchDepartmentName(request.department, user.department)) return false;
             return request.currentStage === 'Principal' ||
                 request.currentStage === 'Finance' ||
                 request.status === 'Completed';

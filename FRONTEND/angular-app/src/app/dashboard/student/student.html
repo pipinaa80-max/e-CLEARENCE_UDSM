@@ -50,7 +50,7 @@
       <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
         <span>Notifications</span>
-        <span class="notification-badge" *ngIf="unreadNotifications">
+        <span class="notification-badge" *ngIf="unreadNotifications > 0">
           {{ unreadNotifications }}
         </span>
       </a>
@@ -70,24 +70,50 @@
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <a
-        header-actions
-        class="notification-profile-button"
-        routerLink="/notifications"
-        title="View notifications"
-        [attr.aria-label]="unreadNotifications ? 'View notifications, ' + unreadNotifications + ' unread' : 'View notifications'"
-      >
-        <img
-          *ngIf="hasPhoto(); else profileInitial"
-          [src]="getPhotoSource()"
-          [alt]="currentUser?.fullName || 'Student profile photo'"
-          (error)="onImageError()"
-        />
-        <ng-template #profileInitial>
-          <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
-        </ng-template>
-        <span class="profile-notification-dot" *ngIf="unreadNotifications" aria-hidden="true"></span>
-      </a>
+      <div header-actions class="header-user-dropdown-container">
+        <button
+          type="button"
+          class="header-avatar-button"
+          (click)="toggleUserDropdown($event)"
+          title="Account menu"
+          aria-haspopup="true"
+          [attr.aria-expanded]="userDropdownOpen"
+        >
+          <img
+            *ngIf="hasPhoto(); else profileInitial"
+            [src]="getPhotoSource()"
+            [alt]="currentUser?.fullName || 'Student profile photo'"
+            (error)="onImageError()"
+          />
+          <ng-template #profileInitial>
+            <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
+          </ng-template>
+          <span class="profile-notification-dot" *ngIf="unreadNotifications > 0" aria-label="Unread notifications"></span>
+        </button>
+
+        <!-- Dropdown menu with Profile and Notifications -->
+        <div class="header-user-dropdown-menu" *ngIf="userDropdownOpen" (click)="$event.stopPropagation()">
+          <div class="dropdown-user-header">
+            <strong>{{ currentUser?.fullName || 'Student' }}</strong>
+            <small>{{ currentUser?.registrationNumber || currentUser?.email || 'Student' }}</small>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" routerLink="/profile" (click)="closeUserDropdown()">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+            </svg>
+            <span>Profile</span>
+          </a>
+          <a class="dropdown-item" routerLink="/notifications" (click)="closeUserDropdown()">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
+            </svg>
+            <span>Notifications</span>
+            <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+          </a>
+        </div>
+      </div>
     </app-dashboard-header>
 
     <!-- =========================
@@ -102,20 +128,25 @@
               <span class="section-label">Progress</span>
               <h2>{{ isTranscriptSystem ? 'Transcript Progress' : 'Clearance Progress' }}</h2>
             </div>
-            <strong class="progress-percentage">
-              {{ isTranscriptSystem ? transcriptProgressSteps + '/4' : completedOffices + '/' + (offices.length || 0) }}
+            <strong class="progress-percentage" [class.completed]="isClearanceCompleted">
+              {{ isTranscriptSystem ? transcriptProgressSteps + '/4' : (isClearanceCompleted ? (offices.length || completedOffices) + '/' + (offices.length || completedOffices) : completedOffices + '/' + (offices.length || 0)) }}
             </strong>
           </div>
 
           <div class="progress-track">
-            <div class="progress-fill" [style.width.%]="isTranscriptSystem ? transcriptProgressPercent : (offices.length ? (completedOffices / offices.length) * 100 : 0)"></div>
+            <div
+              class="progress-fill"
+              [class.completed]="isClearanceCompleted"
+              [style.width.%]="isTranscriptSystem ? transcriptProgressPercent : (isClearanceCompleted ? 100 : (offices.length ? (completedOffices / offices.length) * 100 : 0))"
+            ></div>
           </div>
 
           <div class="progress-footer">
             <ng-container *ngIf="!isTranscriptSystem">
-              <span>{{ completedOffices }} approved</span>
-              <span>{{ pendingOffices }} pending</span>
-              <span *ngIf="rejectedOffices" class="rejected-text">{{ rejectedOffices }} rejected</span>
+              <span *ngIf="!isClearanceCompleted">{{ completedOffices }} approved</span>
+              <span *ngIf="!isClearanceCompleted">{{ pendingOffices }} pending</span>
+              <span *ngIf="rejectedOffices && !isClearanceCompleted" class="rejected-text">{{ rejectedOffices }} rejected</span>
+              <span *ngIf="isClearanceCompleted" class="completed-text" style="color: #16a34a; font-weight: 700;">✓ Clearance Completed & Approved</span>
             </ng-container>
             <ng-container *ngIf="isTranscriptSystem">
               <span>Step {{ transcriptProgressSteps }} of 4</span>
@@ -128,7 +159,6 @@
         <div class="student-summary-action">
           <ng-container *ngIf="!isTranscriptSystem">
             <a *ngIf="!currentRequest && !isClearanceCompleted" routerLink="/clearance/request" class="primary-button">Request Clearance</a>
-            <a *ngIf="isClearanceCompleted" routerLink="/clearance/report" class="secondary-button">View Clearance Report</a>
             <a
               *ngIf="isClearanceCompleted && !isTranscriptProcessCompleted"
               routerLink="/transcript"
@@ -175,9 +205,18 @@
 
       <!-- FIVE MAIN STEPS -->
       <section class="process-path">
-        <article *ngFor="let step of processSteps; let last = last; let index = index" class="process-step" [ngClass]="step.status.toLowerCase()">
+        <article *ngFor="let step of processSteps; let last = last; let index = index" class="process-step" [ngClass]="step.status.toLowerCase().replace(' ', '-')">
           <div class="step-line" *ngIf="!last"></div>
-          <span class="step-number">{{ index + 1 }}</span>
+          <span
+            class="step-number"
+            [class.parallel-step]="step.number === 2"
+            [class.in-progress]="step.number === 2 && parallelOfficesApprovedCount > 0 && !allClearanceOfficesApproved"
+            [class.all-done]="step.number === 2 && (allClearanceOfficesApproved || parallelOfficesProgressPercent === 100)"
+            [style.--progress-deg]="parallelOfficesProgressDegrees + 'deg'"
+            [style.--progress-pct]="parallelOfficesProgressPercent + '%'"
+          >
+            <span class="step-num-text">{{ index + 1 }}</span>
+          </span>
           <div class="step-content">
             <strong>{{ step.label }}</strong>
             <small>{{ step.detail }}</small>
@@ -186,20 +225,141 @@
         </article>
       </section>
 
-      <!-- STEP DETAILS / CURRENT ACTION CARD -->
+      <!-- RECEIPT REPORTED UNDER REVIEW BANNER -->
       <section
-        *ngIf="currentRequest.status === 'Rejected' && currentRequest.revisionOffice"
+        *ngIf="hasReportedReceiptUnderReview"
+        class="waiting-card resubmitted-receipt-banner"
+      >
+        <div class="receipt-banner-content">
+          <div class="receipt-banner-icon">🧾</div>
+          <div>
+            <h2>Payment Receipt Submitted · Under Finance Review</h2>
+            <p>Your payment receipt was submitted on <strong>{{ currentRequest.financeReceipt?.receiptSubmittedAt | date:'medium' }}</strong>. Your clearance application has returned to the Finance Office as a resubmission and is currently under review.</p>
+            <div class="receipt-meta-tags" *ngIf="currentRequest.financeReceipt">
+              <span class="meta-tag">📄 {{ currentRequest.financeReceipt.receiptFileName || 'Payment_Receipt.jpg' }}</span>
+              <span class="meta-tag" *ngIf="currentRequest.financeReceipt.receiptNote">💬 Note: "{{ currentRequest.financeReceipt.receiptNote }}"</span>
+              <span class="meta-tag status-pill">Status: Pending Verification</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REJECTION / CORRECTION REQUIRED ACTION CARD -->
+      <section
+        *ngIf="currentRequest.status === 'Rejected' || rejectedOffices > 0"
         class="waiting-card revision-card"
       >
-        <h2>Changes Required</h2>
-        <p>{{ currentRequest.revisionOffice }} returned this request for correction.</p>
-        <p class="rejection-comment" *ngIf="currentRequest.revisionOffice">
-          <strong>Reason:</strong> {{ getRejectionReason(currentRequest.revisionOffice) }}
-        </p>
-        <a routerLink="/clearance/request" class="approval-button">
-          Correct and Resubmit
-        </a>
+        <div class="revision-header">
+          <div class="revision-badge">⚠️ Action Required</div>
+          <h2>Clearance Application Rejected</h2>
+          <p class="revision-office-sub">Returned by <strong>{{ currentRequest.revisionOffice || rejectedOfficeName }}</strong> for resolution.</p>
+        </div>
+
+        <div class="rejection-reason-box">
+          <strong>Staff Rejection Reason:</strong>
+          <p>{{ getRejectionReason(currentRequest.revisionOffice || rejectedOfficeName) || currentRequest.rejectionHistory?.at(-1)?.reason || 'Clearance requires payment or documentation update.' }}</p>
+          <small *ngIf="getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).name" class="reviewer-meta">
+            Reviewed by: {{ getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).name }}
+            <span *ngIf="getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).phone"> &middot; Tel: {{ getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).phone }}</span>
+            <span *ngIf="getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).email"> &middot; Email: {{ getReviewerContact(currentRequest.revisionOffice || rejectedOfficeName).email }}</span>
+          </small>
+        </div>
+
+        <div class="revision-actions" style="margin-top: 16px;">
+          <button
+            type="button"
+            class="approval-button correct-resubmit-btn"
+            (click)="openReceiptModal()"
+          >
+            Correct and Submit Receipt
+          </button>
+        </div>
       </section>
+
+      <!-- RECEIPT SUBMISSION PANEL (MODAL OVERLAY) -->
+      <div class="receipt-modal-backdrop" *ngIf="showReceiptModal" (click)="closeReceiptModal()">
+        <div class="receipt-modal-card" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle" (click)="$event.stopPropagation()">
+          <div class="receipt-modal-header">
+            <div>
+              <h3 id="receiptModalTitle">Submit Payment Receipt</h3>
+              <p>Attach your payment receipt (Risiti ya Malipo) to return your clearance request to Finance.</p>
+            </div>
+            <button type="button" class="modal-close-btn" (click)="closeReceiptModal()" aria-label="Close">✕</button>
+          </div>
+
+          <div class="modal-rejection-hint" *ngIf="currentRequest">
+            <strong>Staff Rejection Reason ({{ currentRequest.revisionOffice || rejectedOfficeName }}):</strong>
+            <p>{{ getRejectionReason(currentRequest.revisionOffice || rejectedOfficeName) || currentRequest.rejectionHistory?.at(-1)?.reason }}</p>
+          </div>
+
+          <div *ngIf="receiptErrorMessage" class="receipt-alert error">
+            ⚠️ {{ receiptErrorMessage }}
+          </div>
+
+          <!-- DROPZONE / FILE SELECTOR -->
+          <input
+            #receiptFileInput
+            type="file"
+            (change)="onReceiptFileSelected($event)"
+            accept="image/png,image/jpeg,image/jpg,application/pdf"
+            style="display: none;"
+          />
+
+          <div
+            class="receipt-dropzone"
+            [class.has-file]="!!selectedReceiptFile"
+            (click)="receiptFileInput.click()"
+          >
+            <ng-container *ngIf="!selectedReceiptFile">
+              <div class="dropzone-prompt">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <strong>Click or Drag Payment Receipt Here</strong>
+                <small>Supports JPG, PNG, or PDF (Max 10MB)</small>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="selectedReceiptFile">
+              <div class="file-preview-card" (click)="$event.stopPropagation()">
+                <div class="preview-thumb" *ngIf="receiptPreviewUrl">
+                  <img [src]="receiptPreviewUrl" alt="Receipt preview" />
+                </div>
+                <div class="preview-thumb pdf" *ngIf="!receiptPreviewUrl">
+                  <span>PDF</span>
+                </div>
+                <div class="preview-info">
+                  <strong>{{ receiptFileName }}</strong>
+                  <small>{{ receiptFileSizeText }}</small>
+                </div>
+                <button type="button" class="remove-file-btn" (click)="removeReceiptFile()" title="Remove file">✕</button>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- OPTIONAL NOTE / REFERENCE -->
+          <div class="receipt-note-field">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Payment Reference / Remarks (Optional)</label>
+            <input
+              type="text"
+              [(ngModel)]="receiptNote"
+              placeholder="e.g. GePG Control Number, Bank Deposit Slip #..."
+            />
+          </div>
+
+          <div class="receipt-modal-actions">
+            <button type="button" class="cancel-modal-btn" (click)="closeReceiptModal()">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="approval-button receipt-submit-btn"
+              [disabled]="(!selectedReceiptFile && !receiptNote?.trim()) || isSubmittingReceipt"
+              (click)="submitRejectionReceipt()"
+            >
+              {{ isSubmittingReceipt ? 'Submitting Receipt...' : '📤 Submit Receipt to Finance' }}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <section
         *ngIf="currentRequest.currentStage === 'Convocation'"

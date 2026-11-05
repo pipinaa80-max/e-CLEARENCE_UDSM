@@ -208,3 +208,309 @@
 .back-button:hover { background: #f8fafc; border-color: #94a3b8; }
 .step-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
 .step-navigation .approval-button, .step-navigation .back-button { margin-top: 0; }
+
+/* =========================================================================
+   RECEIPT SUBMISSION MODAL OVERLAY STYLES
+   ========================================================================= */
+
+.receipt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 20px;
+  animation: modalFadeIn 0.25s ease;
+}
+
+.receipt-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  box-sizing: border-box;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.receipt-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.receipt-modal-header h3 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.receipt-modal-header p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.modal-close-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.modal-rejection-hint {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+}
+
+.modal-rejection-hint strong {
+  display: block;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.modal-rejection-hint p {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.receipt-dropzone {
+  border: 2px dashed #94a3b8;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 14px;
+}
+
+.receipt-dropzone:hover {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.receipt-dropzone.has-file {
+  border: 1px solid #38bdf8;
+  background: #f0fdf4;
+  padding: 12px 16px;
+}
+
+.dropzone-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+}
+
+.dropzone-prompt svg {
+  color: #0284c7;
+}
+
+.dropzone-prompt strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.dropzone-prompt small {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.file-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.preview-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #e2e8f0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.preview-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-thumb.pdf span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-info small {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.remove-file-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.receipt-note-field {
+  margin-bottom: 16px;
+}
+
+.receipt-note-field input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.receipt-note-field input:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.receipt-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.cancel-modal-btn {
+  padding: 10px 18px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-modal-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.receipt-submit-btn {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  padding: 10px 20px !important;
+  border-radius: 7px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: background 0.2s;
+}
+
+.receipt-submit-btn:hover:not(:disabled) {
+  background: #15803d !important;
+}
+
+.receipt-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+}
+
+.receipt-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.receipt-alert.error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}

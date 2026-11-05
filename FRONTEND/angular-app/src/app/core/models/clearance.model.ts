@@ -43,6 +43,14 @@ export interface ConvocationPayment {
   receiptSubmittedAt?: string;
 }
 
+export interface FinanceReceiptSubmission {
+  receiptFileName?: string;
+  receiptData?: string;
+  receiptSubmittedAt?: string;
+  receiptNote?: string;
+  controlNumber?: string;
+}
+
 export interface ClearanceRequest {
   id: string;
   studentId: string;
@@ -71,6 +79,8 @@ export interface ClearanceRequest {
   revisionOffice?: ClearanceOffice;
   currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Completed';
   convocation?: ConvocationPayment;
+  financeReceipt?: FinanceReceiptSubmission;
+  resubmittedWithReceipt?: boolean;
   approvals: OfficeApproval[];
   rejectionHistory?: ClearanceRejectionRecord[];
 }

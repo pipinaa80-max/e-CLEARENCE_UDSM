@@ -77,6 +77,9 @@ public class AdminService {
         if (!users.isEmpty()) {
             log.debug("Admin: First user found: {}, project: {}", users.get(0).getEmail(), users.get(0).getProjectId());
         }
+        for (User u : users) {
+            u.setPhoto(null);
+        }
         return users;
     }
 
@@ -316,8 +319,8 @@ public class AdminService {
     public List<Map<String, Object>> getAllClearanceRequests() {
         String projectId = ProjectScope.currentProjectId();
         List<ClearanceRequest> requests = (projectId == null || projectId.trim().isEmpty())
-                ? clearanceRequestRepository.findAll()
-                : clearanceRequestRepository.findByProjectId(projectId);
+                ? clearanceRequestRepository.findAllWithStudent()
+                : clearanceRequestRepository.findByProjectIdWithStudent(projectId);
 
         return requests.stream().map(req -> {
             Map<String, Object> map = new LinkedHashMap<>();

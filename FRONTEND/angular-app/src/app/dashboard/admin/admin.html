@@ -34,6 +34,10 @@
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.669.864 8 0 6.331.864l-1.858.282-.842 1.68-1.337 1.32L2.6 6l-.306 1.854 1.337 1.32.842 1.68 1.858.282L8 12l1.669-.864 1.858-.282.842-1.68 1.337-1.32L13.4 6l.306-1.854-1.337-1.32-.842-1.68L9.669.864zm-3.81 12.35.282 1.858L8 16l1.858-.864.282-1.858-2.28 1.072-2.001-1.136z"/></svg>
         <span>Academic Awards</span>
       </a>
+      <a (click)="setTab('sponsors')" [class.active]="activeTab === 'sponsors'">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1H1zm7 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V5zm3 0a2 2 0 0 1-2 2v4a2 2 0 0 1 2 2h10a2 2 0 0 1 2-2V7a2 2 0 0 1-2-2H3z"/></svg>
+        <span>Sponsors & Funding</span>
+      </a>
     </nav>
   </aside>
 
@@ -54,13 +58,13 @@
       <div class="section-header">
         <h3>User Management (Total: {{ users.length }})</h3>
         <div class="header-actions">
-          <input type="text" [(ngModel)]="userSearchTerm" placeholder="Search users..." class="search-input">
-          <select [(ngModel)]="userRoleFilter" name="userRoleFilter" title="Filter users by role" class="filter-select">
+          <input type="text" [(ngModel)]="userSearchTerm" (ngModelChange)="onUserFilterChange()" placeholder="Search users..." class="search-input">
+          <select [(ngModel)]="userRoleFilter" name="userRoleFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by role" class="filter-select">
             <option value="">All roles</option>
             <option value="STAFF">All Staff</option>
             <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
           </select>
-          <select [(ngModel)]="userStatusFilter" name="userStatusFilter" title="Filter users by status" class="filter-select">
+          <select [(ngModel)]="userStatusFilter" name="userStatusFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by status" class="filter-select">
             <option value="">All statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
@@ -167,7 +171,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of paginatedUsers" [class.row-selected]="selectedUserIds.has(user.id)">
+            <tr *ngIf="isLoadingUsers">
+              <td colspan="7" style="text-align: center; padding: 36px; color: #0284c7; font-weight: 600;">
+                <span style="display: inline-block; width: 18px; height: 18px; border: 2.5px solid #cbd5e1; border-top-color: #0284c7; border-radius: 50%; vertical-align: middle; margin-right: 8px;"></span>
+                Loading users from database...
+              </td>
+            </tr>
+            <tr *ngFor="let user of paginatedUsers; trackBy: trackByUserId" [class.row-selected]="selectedUserIds.has(user.id)">
               <td>
                 <input type="checkbox" [checked]="selectedUserIds.has(user.id)" (change)="toggleSelection(user.id)">
               </td>
@@ -188,6 +198,11 @@
               </td>
               <td class="users-actions-cell">
                 <button class="btn-danger btn-sm" (click)="deleteUser(user.id)">Delete</button>
+              </td>
+            </tr>
+            <tr *ngIf="!isLoadingUsers && !paginatedUsers.length">
+              <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                No users found.
               </td>
             </tr>
           </tbody>
@@ -229,8 +244,8 @@
     <!-- Clearance Requests Tab -->
     <div *ngIf="activeTab === 'clearance'" class="tab-content">
       <div class="section-header">
-        <h3>All Clearance Requests</h3>
-        <input type="text" [(ngModel)]="requestSearchTerm" placeholder="Search requests..." class="search-input">
+        <h3>All Clearance Requests (Total: {{ clearanceRequests.length }})</h3>
+        <input type="text" [(ngModel)]="requestSearchTerm" (ngModelChange)="onRequestFilterChange()" placeholder="Search requests..." class="search-input">
       </div>
       <div class="table-container">
         <table>
@@ -245,7 +260,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let req of filteredRequests">
+            <tr *ngFor="let req of paginatedRequests; trackBy: trackByRequestId">
               <td>{{ req.student?.fullName || req.studentName || '-' }}</td>
               <td>{{ req.student?.registrationNumber || req.registrationNumber || '-' }}</td>
               <td>{{ req.department || '-' }}</td>
@@ -260,6 +275,37 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- CLEARANCE REQUESTS PAGINATION CONTROLS -->
+        <div class="pagination-bar" *ngIf="filteredRequests.length > 0" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding: 12px 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+          <div style="font-size: 13px; color: #475569; font-weight: 600;">
+            Showing <strong>{{ (currentRequestPage - 1) * requestPageSize + 1 }}</strong> &ndash; <strong>{{ Math.min(currentRequestPage * requestPageSize, filteredRequests.length) }}</strong> of <strong>{{ filteredRequests.length }}</strong> requests
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; font-weight: 600;">
+              <span>Show:</span>
+              <select [(ngModel)]="requestPageSize" (change)="onRequestPageSizeChange()" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 700;">
+                <option [ngValue]="10">10</option>
+                <option [ngValue]="25">25</option>
+                <option [ngValue]="50">50</option>
+                <option [ngValue]="100">100</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn-secondary btn-sm" [disabled]="currentRequestPage === 1" (click)="prevRequestPage()" style="padding: 5px 12px; font-weight: 700;">
+                &laquo; Prev
+              </button>
+              <span style="display: flex; align-items: center; padding: 0 8px; font-size: 13px; font-weight: 800; color: #0284c7;">
+                Page {{ currentRequestPage }} / {{ totalRequestPages }}
+              </span>
+              <button type="button" class="btn-secondary btn-sm" [disabled]="currentRequestPage === totalRequestPages" (click)="nextRequestPage()" style="padding: 5px 12px; font-weight: 700;">
+                Next &raquo;
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -498,6 +544,159 @@
 
       <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
         <button type="button" class="btn-secondary btn-sm" (click)="resetAwards()">Reset to Defaults</button>
+      </div>
+    </div>
+
+    <!-- Sponsors & Funding Tab -->
+    <div *ngIf="activeTab === 'sponsors'" class="tab-content">
+      <div class="section-header">
+        <div>
+          <h3>Sponsor & Funding Management (Total: {{ sponsorsList.length }})</h3>
+          <p class="section-description">
+            Manage student funding bodies and scholarships (e.g. HESLB, private sponsors, external grants). Newly added sponsors are automatically made available to students in their clearance request application.
+          </p>
+        </div>
+        <div class="header-actions">
+          <input
+            type="text"
+            [(ngModel)]="sponsorSearchTerm"
+            (ngModelChange)="applySponsorFilter()"
+            placeholder="Search sponsors by name or code..."
+            class="search-input"
+          >
+        </div>
+      </div>
+
+      <!-- Add Sponsor Form Card -->
+      <div class="card" style="margin-top: 15px; padding: 20px;">
+        <h4 style="margin-top: 0; margin-bottom: 12px; font-size: 1.05rem; color: #001f34;">Add New Sponsor</h4>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 3fr auto; gap: 12px; align-items: end;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 5px;">Sponsor Name *</label>
+            <input
+              type="text"
+              [(ngModel)]="newSponsorName"
+              placeholder="e.g. World Bank ACE II Project"
+              style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              (keyup.enter)="addSponsor()"
+            >
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 5px;">Code / Acronym</label>
+            <input
+              type="text"
+              [(ngModel)]="newSponsorCode"
+              placeholder="e.g. WB-ACE"
+              style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              (keyup.enter)="addSponsor()"
+            >
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 5px;">Description</label>
+            <input
+              type="text"
+              [(ngModel)]="newSponsorDescription"
+              placeholder="e.g. Postgraduate research scholarship"
+              style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;"
+              (keyup.enter)="addSponsor()"
+            >
+          </div>
+          <div>
+            <button type="button" class="btn-primary" (click)="addSponsor()" [disabled]="!newSponsorName.trim()">
+              + Add Sponsor
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sponsors Table -->
+      <div class="table-container" style="margin-top: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Sponsor Name</th>
+              <th style="width: 130px;">Code</th>
+              <th>Description</th>
+              <th style="width: 110px; text-align: center;">Status</th>
+              <th style="text-align: right; width: 190px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sponsor of filteredSponsors; let i = index">
+              <td><strong>{{ i + 1 }}</strong></td>
+              <td>
+                <ng-container *ngIf="editingSponsorId === (sponsor.id || sponsor.name); else sponsorNameView">
+                  <input
+                    type="text"
+                    [(ngModel)]="editedSponsorName"
+                    style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px;"
+                    (keyup.enter)="saveSponsorEdit()"
+                    (keyup.escape)="cancelEditSponsor()"
+                  >
+                </ng-container>
+                <ng-template #sponsorNameView>
+                  <strong style="color: #001f34;">{{ sponsor.name }}</strong>
+                </ng-template>
+              </td>
+              <td>
+                <ng-container *ngIf="editingSponsorId === (sponsor.id || sponsor.name); else sponsorCodeView">
+                  <input
+                    type="text"
+                    [(ngModel)]="editedSponsorCode"
+                    style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px;"
+                    (keyup.enter)="saveSponsorEdit()"
+                  >
+                </ng-container>
+                <ng-template #sponsorCodeView>
+                  <code style="font-weight: 700; color: #00679b;">{{ sponsor.code || '—' }}</code>
+                </ng-template>
+              </td>
+              <td>
+                <ng-container *ngIf="editingSponsorId === (sponsor.id || sponsor.name); else sponsorDescView">
+                  <input
+                    type="text"
+                    [(ngModel)]="editedSponsorDescription"
+                    style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px;"
+                    (keyup.enter)="saveSponsorEdit()"
+                  >
+                </ng-container>
+                <ng-template #sponsorDescView>
+                  <span style="color: #64748b; font-size: 0.88rem;">{{ sponsor.description || 'General funding' }}</span>
+                </ng-template>
+              </td>
+              <td style="text-align: center;">
+                <button
+                  type="button"
+                  class="btn-sm"
+                  [style.background]="sponsor.isActive !== false ? '#dcfce7' : '#f1f5f9'"
+                  [style.color]="sponsor.isActive !== false ? '#15803d' : '#64748b'"
+                  [style.border]="sponsor.isActive !== false ? '1px solid #86efac' : '1px solid #cbd5e1'"
+                  style="cursor: pointer; border-radius: 999px; padding: 3px 10px; font-weight: 700; font-size: 0.75rem;"
+                  (click)="toggleSponsorActive(sponsor)"
+                  [title]="sponsor.isActive !== false ? 'Click to deactivate' : 'Click to activate'"
+                >
+                  {{ sponsor.isActive !== false ? 'Active' : 'Inactive' }}
+                </button>
+              </td>
+              <td style="text-align: right;">
+                <ng-container *ngIf="editingSponsorId === (sponsor.id || sponsor.name); else sponsorActions">
+                  <button type="button" class="btn-primary btn-sm" (click)="saveSponsorEdit()">Save</button>
+                  <button type="button" class="btn-secondary btn-sm" (click)="cancelEditSponsor()">Cancel</button>
+                </ng-container>
+                <ng-template #sponsorActions>
+                  <button type="button" class="btn-secondary btn-sm" (click)="startEditSponsor(sponsor)">Edit</button>
+                  <button type="button" class="btn-danger btn-sm" (click)="deleteSponsor(sponsor)">Delete</button>
+                </ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="!filteredSponsors.length">
+              <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                No sponsors found. Add a new sponsor using the form above.
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </main>

@@ -1,6 +1,7 @@
 // clearance-status.component.ts - Fixed for parallel offices
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
@@ -28,6 +29,7 @@ interface ProcessStep {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     RouterLinkActive,
     DashboardHeaderComponent
@@ -46,6 +48,167 @@ export class ClearanceStatusComponent implements OnInit {
   sidebarOpen = false;
   isLoading = false;
   successMessage = '';
+
+  // Receipt submission after rejection
+  showReceiptModal = false;
+  selectedReceiptFile: File | null = null;
+  receiptPreviewUrl: string | null = null;
+  receiptFileName: string = '';
+  receiptFileSizeText: string = '';
+  receiptNote: string = '';
+  isSubmittingReceipt = false;
+  receiptErrorMessage = '';
+
+  openReceiptModal(): void {
+    this.showReceiptModal = true;
+    this.receiptErrorMessage = '';
+  }
+
+  closeReceiptModal(): void {
+    this.showReceiptModal = false;
+  }
+
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.receiptErrorMessage = 'Receipt file must be an image (PNG, JPG) or PDF document.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.receiptErrorMessage = 'Receipt file size must be less than 10MB.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedReceiptFile = file;
+    this.receiptFileName = file.name;
+    const sizeKb = Math.round(file.size / 1024);
+    this.receiptFileSizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+    this.receiptErrorMessage = '';
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.receiptPreviewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.receiptPreviewUrl = null;
+    }
+  }
+
+  removeReceiptFile(): void {
+    this.selectedReceiptFile = null;
+    this.receiptPreviewUrl = null;
+    this.receiptFileName = '';
+    this.receiptFileSizeText = '';
+    this.receiptErrorMessage = '';
+  }
+
+  get isRejected(): boolean {
+    if (!this.request) return false;
+    if (this.request.status === 'Rejected') return true;
+    return !!this.request.approvals?.some(a => a && a.status === 'Rejected');
+  }
+
+  get rejectedOfficeName(): string {
+    if (!this.request) return '';
+    if (this.request.revisionOffice) return this.request.revisionOffice;
+    const rej = this.request.approvals?.find(a => a && a.status === 'Rejected');
+    if (rej) return rej.office;
+    if (this.request.currentOffice) return this.request.currentOffice;
+    return 'Finance';
+  }
+
+  get hasReportedReceiptUnderReview(): boolean {
+    const r = this.request;
+    if (!r) return false;
+    return r.status === 'Pending' && r.currentStage === 'Finance' && !!(r.resubmittedWithReceipt || r.financeReceipt);
+  }
+
+  async submitRejectionReceipt(): Promise<void> {
+    if (!this.selectedReceiptFile && !this.receiptNote?.trim()) {
+      this.receiptErrorMessage = 'Please choose a payment receipt file or enter your payment reference / control number.';
+      return;
+    }
+
+    if (!this.request) {
+      this.receiptErrorMessage = 'No active clearance request found.';
+      return;
+    }
+
+    this.isSubmittingReceipt = true;
+    this.receiptErrorMessage = '';
+
+    try {
+      let base64Data = '';
+      if (this.selectedReceiptFile) {
+        base64Data = await this.readFileAsDataUrl(this.selectedReceiptFile);
+      }
+      const fileName = this.selectedReceiptFile ? this.receiptFileName : ('Payment_Reference_' + Date.now() + '.txt');
+
+      const success = this.clearanceService.submitFinanceReceiptAfterRejection(
+        this.request.id,
+        base64Data,
+        fileName,
+        this.receiptNote
+      );
+
+      if (success) {
+        this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully! Returned to Finance for review.');
+        this.removeReceiptFile();
+        this.receiptNote = '';
+        this.showReceiptModal = false;
+        this.loadData();
+        this.notificationService.getStudentNotifications().subscribe();
+      } else {
+        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+      }
+    } catch (err: any) {
+      this.receiptErrorMessage = err?.message || 'Error processing receipt file.';
+    } finally {
+      this.isSubmittingReceipt = false;
+    }
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        if (file.type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 1200;
+            if (img.width > maxDim || img.height > maxDim) {
+              const scale = maxDim / Math.max(img.width, img.height);
+              const canvas = document.createElement('canvas');
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+                return;
+              }
+            }
+            resolve(result);
+          };
+          img.onerror = () => resolve(result);
+          img.src = result;
+        } else {
+          resolve(result);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
 
   get currentUser() {
     return this.student;
@@ -117,7 +280,7 @@ export class ClearanceStatusComponent implements OnInit {
   // GET OFFICE APPROVAL
   // =====================================================
 
-  getApproval(office: ClearanceOffice) {
+  getApproval(office: ClearanceOffice | string) {
     return this.request?.approvals.find(approval => approval.office === office) ?? null;
   }
 
@@ -125,7 +288,7 @@ export class ClearanceStatusComponent implements OnInit {
   // GET OFFICE STATUS
   // =====================================================
 
-  getOfficeStatus(office: ClearanceOffice): string {
+  getOfficeStatus(office: ClearanceOffice | string): string {
     return this.getApproval(office)?.status ?? 'Pending';
   }
 
@@ -133,7 +296,7 @@ export class ClearanceStatusComponent implements OnInit {
   // GET REJECTION COMMENT
   // =====================================================
 
-  getRejectionReason(office: ClearanceOffice): string {
+  getRejectionReason(office: ClearanceOffice | string): string {
     const approval = this.getApproval(office);
     if (!approval || approval.status !== 'Rejected') {
       return '';
@@ -145,7 +308,7 @@ export class ClearanceStatusComponent implements OnInit {
   // REVIEWED BY
   // =====================================================
 
-  getReviewerContact(office: ClearanceOffice): { name: string; email: string; phone: string } {
+  getReviewerContact(office: ClearanceOffice | string): { name: string; email: string; phone: string } {
     const approval = this.getApproval(office);
     const name = approval?.reviewedBy || '';
     let email = approval?.reviewerEmail || '';

@@ -60,47 +60,33 @@
     <ng-container *ngIf="isClearanceComplete; else clearanceRequired">
 
     <app-dashboard-header
-      eyebrow="Clearance Step 3"
       title="Transcript"
       subtitle="Complete the transcript request and payment process."
       [user]="null"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions>
-        <a routerLink="/clearance/status" class="back-link">Back to Clearance</a>
-      </div>
     </app-dashboard-header>
 
     <div class="transcript-wrapper">
-      <!-- 1. ACTIVE TRANSCRIPT STAGE OVERVIEW -->
-      <div class="transcript-card" style="margin-bottom: 24px;">
-        <div class="transcript-state-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+      <!-- WHEN FIRST TRANSCRIPT COMPLETED -->
+      <div class="transcript-card" *ngIf="hasCompletedFirstRequest">
+        <section class="transcript-state-header">
+          <div class="state-icon">✔</div>
           <div>
-            <span class="section-kicker">Transcript Service Active Status</span>
-            <h2>{{ activeStageLabel }}</h2>
-            <p>{{ request?.programme || 'Official Academic Transcript Application & Verification' }}</p>
+            <span class="section-kicker">Transcript Service</span>
+            <h2>Transcript Request Completed</h2>
+            <p>Your academic transcript has been processed and issued.</p>
           </div>
-
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <a *ngIf="activeStageLabel !== 'Transcript Process Completed'" [routerLink]="activeStageRoute" class="primary-button" style="text-decoration: none; padding: 10px 20px;">
-              Continue Active Step &rarr;
-            </a>
-            <a *ngIf="canAcquireAdditionalCopies" routerLink="/transcript/payment" [queryParams]="{ additional: true }" class="primary-button" style="text-decoration: none; padding: 10px 20px; background: #166534; border-color: #166534;">
-              Acquire Additional Copies
-            </a>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 20px; padding: 18px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc;">
-          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Applicant Name</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.fullName }}</strong></div>
-          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Registration Number</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.registrationNumber }}</strong></div>
-          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Programme</span><strong style="display: block; color: #0f172a; font-size: 14px; margin-top: 2px;">{{ currentUser?.programme || request?.programme || '—' }}</strong></div>
-          <div><span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;">Clearance Status</span><strong style="display: block; color: #166534; font-size: 14px; margin-top: 2px;">✔ Cleared &amp; Completed</strong></div>
+        </section>
+        <div style="margin-top: 20px;" *ngIf="canAcquireAdditionalCopies">
+          <a routerLink="/transcript/payment" [queryParams]="{ additional: true }" class="primary-button" style="text-decoration: none; padding: 10px 20px; background: #166534; border-color: #166534;">
+            Acquire Additional Copies
+          </a>
         </div>
       </div>
 
       <!-- TRANSCRIPT APPLICATION FORM (When first transcript is not completed yet) -->
-      <div class="transcript-card" *ngIf="!hasCompletedFirstRequest" style="margin-top: 24px;">
+      <div class="transcript-card" *ngIf="!hasCompletedFirstRequest">
         <section class="transcript-state-header">
           <div class="state-icon">3</div>
           <div>

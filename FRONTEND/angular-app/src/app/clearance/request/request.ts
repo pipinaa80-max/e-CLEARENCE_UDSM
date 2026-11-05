@@ -15,6 +15,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { HostelService } from '../../core/services/hostel.service';
+import { SponsorService } from '../../core/services/sponsor.service';
 import { firstValueFrom } from 'rxjs';
 
 interface DepartmentData {
@@ -45,6 +46,7 @@ export class ClearanceRequestComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly hostelService = inject(HostelService);
+  private readonly sponsorService = inject(SponsorService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -379,8 +381,8 @@ export class ClearanceRequestComponent implements OnInit {
     return this.hostelService.getBlocksForHostel(hall);
   }
 
-  readonly sponsorOptions = [
-    'HELBS',
+  sponsorOptions: string[] = [
+    'HESLB',
     'Karimjee Scholarships',
     'MO scholarship',
     'PRIVATE'
@@ -431,6 +433,13 @@ export class ClearanceRequestComponent implements OnInit {
   // =====================================================
 
   ngOnInit(): void {
+    this.sponsorService.getActiveSponsors().subscribe(sponsors => {
+      if (sponsors && sponsors.length) {
+        const names = sponsors.map(s => s.name);
+        this.sponsorOptions = Array.from(new Set([...names, 'HESLB', 'Karimjee Scholarships', 'MO scholarship', 'PRIVATE']));
+      }
+    });
+
     this.loadStudentData();
 
     if (this.hasExistingRequest()) {
@@ -553,7 +562,11 @@ export class ClearanceRequestComponent implements OnInit {
       }
     }
 
-    const sponsorValue = this.sponsorOptions.includes(user.sponsor) ? user.sponsor : '';
+    const rawSponsor = user.sponsor === 'HELBS' ? 'HESLB' : user.sponsor;
+    if (rawSponsor && !this.sponsorOptions.includes(rawSponsor)) {
+      this.sponsorOptions.push(rawSponsor);
+    }
+    const sponsorValue = rawSponsor && this.sponsorOptions.includes(rawSponsor) ? rawSponsor : '';
 
     const rawCollege = user.college && user.college !== 'Not selected' ? user.college : (user.faculty || '');
     const matchedCollege = this.findMatchingCollege(rawCollege);
@@ -614,7 +627,11 @@ export class ClearanceRequestComponent implements OnInit {
     const wing = (resType === 'Hostel Dwellers' && hall === 'CoICT Hostels') ? (request.wing || '') : '';
     const block = (resType === 'Hostel Dwellers' && (hall === 'Mabibo Hostels' || hall === 'Magufuli Hostels')) ? (request.block || '') : '';
     const roomNumber = resType === 'Hostel Dwellers' ? (request.roomNumber || '') : '';
-    const sponsorVal = this.sponsorOptions.includes(request.sponsor || '') ? request.sponsor : '';
+    const rawReqSponsor = request.sponsor === 'HELBS' ? 'HESLB' : (request.sponsor || '');
+    if (rawReqSponsor && !this.sponsorOptions.includes(rawReqSponsor)) {
+      this.sponsorOptions.push(rawReqSponsor);
+    }
+    const sponsorVal = rawReqSponsor && this.sponsorOptions.includes(rawReqSponsor) ? rawReqSponsor : '';
 
     this.requestForm.patchValue({
       studentName: request.studentName || this.requestForm.controls.studentName.value,

@@ -66,8 +66,8 @@
     <!-- OFFICER VIEW -->
     <ng-container *ngIf="isOfficer">
       <app-dashboard-header
-        eyebrow="Clearance Office"
-        title="Department Approval"
+        [title]="'HOD ' + departmentName + ' Dashboard'"
+        subtitle="Departmental student clearance"
         [user]="currentUser"
         [showToggle]="true"
         (toggleSidebar)="toggleSidebar()"

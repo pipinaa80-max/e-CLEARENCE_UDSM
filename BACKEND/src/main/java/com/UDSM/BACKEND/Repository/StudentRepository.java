@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.UDSM.BACKEND.Model.ClearanceStatus;
 import com.UDSM.BACKEND.Model.Student;
+import com.UDSM.BACKEND.Model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +20,7 @@ public interface StudentRepository extends JpaRepository<Student, String> {
 
     Optional<Student> findByRegistrationNumberIgnoreCaseAndProjectId(String registrationNumber, String projectId);
 
+    Optional<Student> findByUser(User user);
 
     Optional<Student> findByUserId(String userId);
 
@@ -50,4 +52,10 @@ public interface StudentRepository extends JpaRepository<Student, String> {
 
     @Query("SELECT s.clearanceStatus, COUNT(s) FROM Student s GROUP BY s.clearanceStatus")
     List<Object[]> countByClearanceStatus();
+
+    @Query("SELECT s FROM Student s WHERE " +
+           "LOWER(s.registrationNumber) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           "LOWER(s.fullName) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           "LOWER(s.email) LIKE LOWER(CONCAT('%', :q, '%'))")
+    List<Student> searchStudents(@Param("q") String query, org.springframework.data.domain.Pageable pageable);
 }

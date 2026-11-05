@@ -2,11 +2,18 @@ export type NotificationType =
   | 'info'
   | 'success'
   | 'warning'
-  | 'error';
+  | 'error'
+  | 'CLEARANCE_UPDATE'
+  | 'APPROVAL'
+  | 'REJECTION'
+  | 'REMINDER'
+  | 'SYSTEM'
+  | 'CERTIFICATE_READY'
+  | string;
 
 export interface NotificationItem {
   id: string;
-  userId: string;
+  userId?: string;
   title: string;
   message: string;
   type: NotificationType;

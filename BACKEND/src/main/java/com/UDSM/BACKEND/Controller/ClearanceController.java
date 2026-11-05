@@ -38,6 +38,15 @@ public class ClearanceController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/submit-finance-receipt")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse> submitFinanceReceipt(
+            @RequestBody Map<String, String> payload,
+            Authentication authentication) {
+        ApiResponse response = clearanceService.submitFinanceReceipt(payload, authentication);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/my-request")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ClearanceResponse> getMyClearanceRequest(Authentication authentication) {

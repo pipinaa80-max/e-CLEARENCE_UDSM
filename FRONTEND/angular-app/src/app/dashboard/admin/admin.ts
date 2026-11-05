@@ -6,6 +6,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { AdminService } from '../../core/services/admin.service';
 import { normalizeBrandAssetUrl, ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
 import { AwardService } from '../../core/services/award.service';
+import { SponsorService } from '../../core/services/sponsor.service';
+import { Sponsor } from '../../core/models/sponsor.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor, UDSM_BRAND_COLORS } from '../../core/config/udsm-brand-colors';
 
@@ -31,17 +33,30 @@ export class AdminDashboard implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly projectAdminService = inject(ProjectAdminService);
   private readonly awardService = inject(AwardService);
+  private readonly sponsorService = inject(SponsorService);
 
   Math = Math;
   sidebarOpen = false;
   showAddForm = false;
   readonly themeColors = UDSM_BRAND_COLORS;
   themeColorDropdownOpen = false;
-  activeTab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' = 'users';
+  activeTab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' | 'sponsors' = 'users';
   newAwardName: string = '';
   awardsList: string[] = [];
   editingAwardName: string | null = null;
   editedAwardName = '';
+
+  // Sponsors Management
+  sponsorsList: Sponsor[] = [];
+  filteredSponsors: Sponsor[] = [];
+  newSponsorName: string = '';
+  newSponsorCode: string = '';
+  newSponsorDescription: string = '';
+  editingSponsorId: string | null = null;
+  editedSponsorName = '';
+  editedSponsorCode = '';
+  editedSponsorDescription = '';
+  sponsorSearchTerm = '';
 
   get currentUser() {
     return this.authService.getCurrentUser();
@@ -549,18 +564,29 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.projectConfig.branding.footerLinks.splice(index, 1);
   }
 
-  get filteredUsers(): any[] {
-    const term = this.userSearchTerm.toLowerCase();
-    return this.users.filter(u => {
+  filteredUsers: any[] = [];
+  paginatedUsers: any[] = [];
+  totalPages: number = 1;
+
+  // Pagination State for User Management Table
+  currentPage: number = 1;
+  pageSize: number = 25;
+  readonly maxFileUploadSizeBytes: number = 10 * 1024 * 1024; // 10MB file limit
+
+  applyUserFiltersAndPagination(): void {
+    const term = (this.userSearchTerm || '').trim().toLowerCase();
+    const filterRole = String(this.userRoleFilter ?? '').toUpperCase();
+    const statusFilter = this.userStatusFilter;
+
+    this.filteredUsers = this.users.filter(u => {
       const matchesSearch = !term ||
-        u.fullName?.toLowerCase().includes(term) ||
-        u.email?.toLowerCase().includes(term) ||
-        u.registrationNumber?.toLowerCase().includes(term) ||
-        u.role?.toLowerCase().includes(term);
+        (u.fullName && u.fullName.toLowerCase().includes(term)) ||
+        (u.email && u.email.toLowerCase().includes(term)) ||
+        (u.registrationNumber && u.registrationNumber.toLowerCase().includes(term)) ||
+        (u.role && u.role.toLowerCase().includes(term));
 
       // Normalize roles for comparison
       const userRole = String(u.role ?? '').toUpperCase();
-      const filterRole = String(this.userRoleFilter ?? '').toUpperCase();
 
       let matchesRole = true;
       if (filterRole === 'STAFF') {
@@ -569,47 +595,53 @@ export class AdminDashboard implements OnInit, OnDestroy {
         matchesRole = userRole === filterRole || String(this.authService.mapRole(u.role)).toUpperCase() === filterRole;
       }
 
-      const matchesStatus = !this.userStatusFilter ||
-        (this.userStatusFilter === 'active' ? u.isActive !== false : u.isActive === false);
+      const matchesStatus = !statusFilter ||
+        (statusFilter === 'active' ? u.isActive !== false : u.isActive === false);
 
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }
 
-  // Pagination State for User Management Table
-  currentPage: number = 1;
-  pageSize: number = 25;
-  readonly maxFileUploadSizeBytes: number = 10 * 1024 * 1024; // 10MB file limit
+    this.totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
 
-  get totalPages(): number {
-    return Math.ceil(this.filteredUsers.length / this.pageSize) || 1;
-  }
-
-  get paginatedUsers(): any[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredUsers.slice(start, start + this.pageSize);
+    this.paginatedUsers = this.filteredUsers.slice(start, start + this.pageSize);
+  }
+
+  onUserFilterChange(): void {
+    this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
   }
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
       this.currentPage++;
+      this.applyUserFiltersAndPagination();
     }
   }
 
   prevPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
+      this.applyUserFiltersAndPagination();
     }
   }
 
   goToPage(p: number): void {
     if (p >= 1 && p <= this.totalPages) {
       this.currentPage = p;
+      this.applyUserFiltersAndPagination();
     }
   }
 
   onPageSizeChange(): void {
     this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
   }
 
   clearUserFilters(): void {
@@ -617,12 +649,25 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.userRoleFilter = '';
     this.userStatusFilter = '';
     this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
   }
 
-  get filteredRequests(): any[] {
-    if (!this.requestSearchTerm) return this.clearanceRequests;
-    const term = this.requestSearchTerm.toLowerCase();
-    return this.clearanceRequests.filter(r => {
+  trackByUserId(index: number, user: any): string {
+    return user?.id || index.toString();
+  }
+
+  // Pagination & Filtering State for Clearance Requests Table
+  currentRequestPage: number = 1;
+  requestPageSize: number = 25;
+  filteredRequests: any[] = [];
+  paginatedRequests: any[] = [];
+  totalRequestPages: number = 1;
+
+  applyRequestFiltersAndPagination(): void {
+    const term = (this.requestSearchTerm || '').trim().toLowerCase();
+
+    this.filteredRequests = this.clearanceRequests.filter(r => {
+      if (!term) return true;
       const name = (r.student?.fullName || r.studentName || '').toLowerCase();
       const reg = (r.student?.registrationNumber || r.registrationNumber || '').toLowerCase();
       const dept = (r.department || '').toLowerCase();
@@ -630,9 +675,53 @@ export class AdminDashboard implements OnInit, OnDestroy {
       const stage = (r.currentStage || '').toLowerCase();
       return name.includes(term) || reg.includes(term) || dept.includes(term) || status.includes(term) || stage.includes(term);
     });
+
+    this.totalRequestPages = Math.max(1, Math.ceil(this.filteredRequests.length / this.requestPageSize));
+    if (this.currentRequestPage > this.totalRequestPages) {
+      this.currentRequestPage = this.totalRequestPages;
+    }
+    if (this.currentRequestPage < 1) {
+      this.currentRequestPage = 1;
+    }
+
+    const start = (this.currentRequestPage - 1) * this.requestPageSize;
+    this.paginatedRequests = this.filteredRequests.slice(start, start + this.requestPageSize);
   }
 
-  private pollingTimer?: any;
+  onRequestFilterChange(): void {
+    this.currentRequestPage = 1;
+    this.applyRequestFiltersAndPagination();
+  }
+
+  nextRequestPage(): void {
+    if (this.currentRequestPage < this.totalRequestPages) {
+      this.currentRequestPage++;
+      this.applyRequestFiltersAndPagination();
+    }
+  }
+
+  prevRequestPage(): void {
+    if (this.currentRequestPage > 1) {
+      this.currentRequestPage--;
+      this.applyRequestFiltersAndPagination();
+    }
+  }
+
+  goToRequestPage(p: number): void {
+    if (p >= 1 && p <= this.totalRequestPages) {
+      this.currentRequestPage = p;
+      this.applyRequestFiltersAndPagination();
+    }
+  }
+
+  onRequestPageSizeChange(): void {
+    this.currentRequestPage = 1;
+    this.applyRequestFiltersAndPagination();
+  }
+
+  trackByRequestId(index: number, req: any): string {
+    return req?.id || index.toString();
+  }
 
   ngOnInit(): void {
     const token = this.authService.getToken();
@@ -645,47 +734,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.loadData();
     this.loadProjectConfig();
     this.loadAwards();
-    this.startPolling(5000);
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
-  }
-
-  startPolling(intervalMs: number = 5000): void {
-    this.stopPolling();
-    this.pollingTimer = setInterval(() => {
-      this.refreshDataSilent();
-    }, intervalMs);
-  }
-
-  stopPolling(): void {
-    if (this.pollingTimer) {
-      clearInterval(this.pollingTimer);
-      this.pollingTimer = undefined;
-    }
-  }
-
-  refreshDataSilent(): void {
-    this.adminService.getAllUsers().subscribe({
-      next: (users) => {
-        if (Array.isArray(users)) {
-          this.users = users.map(u => this.authService.mapUserResponse(u));
-          this.calculateStats();
-        }
-      },
-      error: () => {}
-    });
-
-    this.adminService.getAllClearanceRequests().subscribe({
-      next: (requests) => {
-        if (Array.isArray(requests) && requests.length > 0) {
-          this.clearanceRequests = requests;
-          this.calculateStats();
-        }
-      },
-      error: () => {}
-    });
   }
 
   isLoadingUsers: boolean = false;
@@ -701,6 +752,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
           this.users = [];
         }
         this.calculateStats();
+        this.applyUserFiltersAndPagination();
         this.changeDetector.detectChanges();
       },
       error: (err) => {
@@ -712,25 +764,29 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   loadData(): void {
+    this.isLoadingUsers = true;
     this.adminService.getAllUsers().subscribe({
       next: (users) => {
-        console.log('📦 Admin fetched users:', users);
+        this.isLoadingUsers = false;
         if (Array.isArray(users)) {
           this.users = users.map(u => this.authService.mapUserResponse(u));
-          console.log('📦 Admin mapped users:', this.users);
+          console.log(`📦 Admin loaded ${this.users.length} users`);
         } else {
           console.error('📦 Admin users data is not an array:', users);
           this.users = [];
         }
         this.calculateStats();
+        this.applyUserFiltersAndPagination();
         this.changeDetector.detectChanges();
       },
       error: (err) => {
+        this.isLoadingUsers = false;
         console.error('Error loading users', err);
         this.message = 'Failed to load users. Please check backend connection.';
         this.isError = true;
         this.users = [];
         this.calculateStats();
+        this.applyUserFiltersAndPagination();
       }
     });
 
@@ -752,11 +808,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
           this.loadLocalClearanceRequests();
         }
         this.calculateStats();
+        this.applyRequestFiltersAndPagination();
       },
       error: (err) => {
         console.warn('Backend clearance requests fetch failed, checking local storage:', err);
         this.loadLocalClearanceRequests();
         this.calculateStats();
+        this.applyRequestFiltersAndPagination();
       }
     });
   }
@@ -780,6 +838,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
             currentStage: r.currentStage || r.stage || 'Clearance Process',
             submittedAt: r.requestDate || r.submittedAt || new Date().toISOString()
           }));
+          this.applyRequestFiltersAndPagination();
         }
       } catch (e) {
         console.error('Error loading local clearance requests:', e);
@@ -868,9 +927,16 @@ export class AdminDashboard implements OnInit, OnDestroy {
     localStorage.setItem('udsm-project-dashboards', JSON.stringify(dashboards));
   }
 
-  setTab(tab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards'): void {
+  setTab(tab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' | 'sponsors'): void {
     this.activeTab = tab;
     this.message = '';
+    if (tab === 'users') {
+      this.applyUserFiltersAndPagination();
+    } else if (tab === 'clearance') {
+      this.applyRequestFiltersAndPagination();
+    } else if (tab === 'sponsors') {
+      this.loadSponsors();
+    }
   }
 
   navigateToStudents(): void {
@@ -971,6 +1037,151 @@ export class AdminDashboard implements OnInit, OnDestroy {
       this.message = 'Awards reset to default options.';
       this.isError = false;
     }
+  }
+
+  // ==========================================
+  // SPONSOR & FUNDING MANAGEMENT
+  // ==========================================
+
+  loadSponsors(): void {
+    this.sponsorService.getAllSponsors().subscribe({
+      next: (list) => {
+        this.sponsorsList = list || [];
+        this.applySponsorFilter();
+      },
+      error: (err) => {
+        console.error('Failed to load sponsors:', err);
+        this.sponsorsList = [];
+        this.applySponsorFilter();
+      }
+    });
+  }
+
+  applySponsorFilter(): void {
+    const term = (this.sponsorSearchTerm || '').trim().toLowerCase();
+    if (!term) {
+      this.filteredSponsors = [...this.sponsorsList];
+    } else {
+      this.filteredSponsors = this.sponsorsList.filter(s =>
+        s.name.toLowerCase().includes(term) ||
+        (s.code && s.code.toLowerCase().includes(term)) ||
+        (s.description && s.description.toLowerCase().includes(term))
+      );
+    }
+  }
+
+  addSponsor(): void {
+    const name = this.newSponsorName.trim();
+    if (!name) {
+      this.message = 'Please enter a sponsor name.';
+      this.isError = true;
+      return;
+    }
+
+    const payload: Partial<Sponsor> = {
+      name,
+      code: this.newSponsorCode.trim() || undefined,
+      description: this.newSponsorDescription.trim() || undefined,
+      isActive: true
+    };
+
+    this.sponsorService.createSponsor(payload).subscribe({
+      next: (created) => {
+        this.message = `Sponsor "${created.name}" added successfully.`;
+        this.isError = false;
+        this.newSponsorName = '';
+        this.newSponsorCode = '';
+        this.newSponsorDescription = '';
+        this.loadSponsors();
+      },
+      error: (err) => {
+        console.error('Failed to add sponsor:', err);
+        this.message = err.error?.message || `Sponsor "${name}" already exists or could not be added.`;
+        this.isError = true;
+      }
+    });
+  }
+
+  startEditSponsor(s: Sponsor): void {
+    this.editingSponsorId = s.id || s.name;
+    this.editedSponsorName = s.name;
+    this.editedSponsorCode = s.code || '';
+    this.editedSponsorDescription = s.description || '';
+  }
+
+  cancelEditSponsor(): void {
+    this.editingSponsorId = null;
+    this.editedSponsorName = '';
+    this.editedSponsorCode = '';
+    this.editedSponsorDescription = '';
+  }
+
+  saveSponsorEdit(): void {
+    if (!this.editingSponsorId) return;
+    const name = this.editedSponsorName.trim();
+    if (!name) {
+      this.message = 'Sponsor name cannot be empty.';
+      this.isError = true;
+      return;
+    }
+
+    const sponsor = this.sponsorsList.find(s => (s.id || s.name) === this.editingSponsorId);
+    if (!sponsor || !sponsor.id) {
+      this.cancelEditSponsor();
+      return;
+    }
+
+    this.sponsorService.updateSponsor(sponsor.id, {
+      name,
+      code: this.editedSponsorCode.trim() || undefined,
+      description: this.editedSponsorDescription.trim() || undefined
+    }).subscribe({
+      next: (updated) => {
+        this.message = `Sponsor "${updated.name}" updated successfully.`;
+        this.isError = false;
+        this.cancelEditSponsor();
+        this.loadSponsors();
+      },
+      error: (err) => {
+        console.error('Failed to update sponsor:', err);
+        this.message = 'Failed to update sponsor.';
+        this.isError = true;
+      }
+    });
+  }
+
+  toggleSponsorActive(s: Sponsor): void {
+    if (!s.id) return;
+    const newStatus = s.isActive === false ? true : false;
+    this.sponsorService.updateSponsor(s.id, { isActive: newStatus }).subscribe({
+      next: () => {
+        s.isActive = newStatus;
+        this.message = `Sponsor "${s.name}" is now ${newStatus ? 'Active' : 'Inactive'}.`;
+        this.isError = false;
+      },
+      error: (err) => {
+        console.error('Failed to toggle sponsor status:', err);
+        this.message = 'Could not update sponsor status.';
+        this.isError = true;
+      }
+    });
+  }
+
+  deleteSponsor(s: Sponsor): void {
+    if (!confirm(`Are you sure you want to remove "${s.name}"?`)) return;
+    if (!s.id) return;
+    this.sponsorService.deleteSponsor(s.id).subscribe({
+      next: () => {
+        this.message = `Sponsor "${s.name}" removed successfully.`;
+        this.isError = false;
+        this.loadSponsors();
+      },
+      error: (err) => {
+        console.error('Failed to delete sponsor:', err);
+        this.message = 'Could not remove sponsor.';
+        this.isError = true;
+      }
+    });
   }
 
   addDashboard(): void {
@@ -1278,9 +1489,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
         // Immediate reload & auto-switch to User Management view
         this.loadData();
         this.setTab('users');
-
-        // Fast 2s polling burst for live hot-reload data updates
-        this.startPolling(3000);
       },
       error: (err) => {
         this.isUploading = false;

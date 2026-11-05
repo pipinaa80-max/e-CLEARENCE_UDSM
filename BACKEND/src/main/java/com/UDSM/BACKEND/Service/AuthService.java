@@ -725,7 +725,11 @@ public class AuthService {
 
         // Update sponsor
         if (request.getSponsor() != null && !request.getSponsor().isEmpty()) {
-            user.setSponsor(request.getSponsor());
+            String sp = request.getSponsor().trim();
+            if ("HELBS".equalsIgnoreCase(sp)) {
+                sp = "HESLB";
+            }
+            user.setSponsor(sp);
             updated = true;
         }
 
@@ -1212,7 +1216,7 @@ public class AuthService {
                 .programme(user.getProgramme() != null ? user.getProgramme() : student != null ? student.getProgramme() : null)
                 .hall(user.getHall())
                 .roomNumber(user.getRoomNumber())
-                .sponsor(user.getSponsor())
+                .sponsor(user.getSponsor() != null && "HELBS".equalsIgnoreCase(user.getSponsor()) ? "HESLB" : user.getSponsor())
                 .photo(user.getPhoto() != null ? user.getPhoto() : student != null ? student.getPhoto() : null)
                 .academicYear(user.getAcademicYear())
                 .graduationYear(user.getGraduationYear())

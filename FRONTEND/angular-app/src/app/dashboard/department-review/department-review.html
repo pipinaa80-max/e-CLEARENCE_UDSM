@@ -1,9 +1,8 @@
 <!-- department-review.html - Fixed all status comparisons -->
 <section class="review-page">
     <app-dashboard-header
-      eyebrow="Department Review"
-      title="Clearance Request Review"
-      subtitle="Review student information, documents, and approve or reject"
+      [title]="'HOD ' + departmentName + ' Review'"
+      subtitle="Departmental student clearance"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"

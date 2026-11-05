@@ -34,6 +34,10 @@ export class DepartmentReviewComponent implements OnInit {
         return this.authService.getCurrentUser();
     }
 
+    get departmentName(): string {
+        return this.currentUser?.department || this.request?.department || 'Department';
+    }
+
     ngOnInit(): void {
         this.route.params.subscribe(params => {
             this.requestId = params['id'];

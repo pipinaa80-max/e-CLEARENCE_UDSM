@@ -143,35 +143,132 @@
            STEP 1 — CONVOCATION
       ================================================== -->
 
+      <!-- RECEIPT UNDER REVIEW CARD -->
       <section
-        *ngIf="request.status === 'Rejected' && request.revisionOffice"
+        *ngIf="hasReportedReceiptUnderReview"
+        class="waiting-card"
+        style="border-left: 4px solid #0284c7; background: #f0f9ff; margin-bottom: 20px;"
+      >
+        <h2 style="color: #0369a1; margin-top: 0;">Receipt Under Review by Finance</h2>
+        <p style="color: #0c4a6e; margin-bottom: 0;">
+          Your payment receipt has been submitted and is currently being verified by the Finance Department. You will receive an update once reviewed.
+        </p>
+      </section>
+
+      <section
+        *ngIf="isRejected"
         class="waiting-card revision-card"
       >
 
         <h2>
-          Changes Required
+          Clearance Application Rejected
         </h2>
 
         <p>
-          {{ request.revisionOffice }} returned this request for correction.
+          Returned by <strong>{{ rejectedOfficeName }}</strong> for resolution.
         </p>
 
         <p
           class="rejection-comment"
-          *ngIf="request.revisionOffice"
         >
           <strong>Reason:</strong>
-          {{ getRejectionReason(request.revisionOffice) }}
+          {{ getRejectionReason(rejectedOfficeName) || request.rejectionHistory?.at(-1)?.reason || 'Payment receipt or clearance update required.' }}
         </p>
 
-        <a
-          routerLink="/clearance/request"
+        <button
+          type="button"
           class="approval-button"
+          (click)="openReceiptModal()"
         >
-          Correct and Resubmit
-        </a>
+          Correct and Submit Receipt
+        </button>
 
       </section>
+
+      <!-- RECEIPT SUBMISSION PANEL (MODAL OVERLAY) -->
+      <div class="receipt-modal-backdrop" *ngIf="showReceiptModal" (click)="closeReceiptModal()">
+        <div class="receipt-modal-card" role="dialog" aria-modal="true" aria-labelledby="statusReceiptModalTitle" (click)="$event.stopPropagation()">
+          <div class="receipt-modal-header">
+            <div>
+              <h3 id="statusReceiptModalTitle">Submit Payment Receipt</h3>
+              <p>Upload your payment receipt (Risiti ya Malipo) to return your clearance request to Finance.</p>
+            </div>
+            <button type="button" class="modal-close-btn" (click)="closeReceiptModal()" aria-label="Close">✕</button>
+          </div>
+
+          <div class="modal-rejection-hint" *ngIf="request">
+            <strong>Staff Rejection Reason ({{ rejectedOfficeName }}):</strong>
+            <p>{{ getRejectionReason(rejectedOfficeName) || request.rejectionHistory?.at(-1)?.reason || 'Payment verification required.' }}</p>
+          </div>
+
+          <div *ngIf="receiptErrorMessage" class="receipt-alert error">
+            ⚠️ {{ receiptErrorMessage }}
+          </div>
+
+          <!-- DROPZONE / FILE SELECTOR -->
+          <input
+            #statusReceiptFileInput
+            type="file"
+            (change)="onReceiptFileSelected($event)"
+            accept="image/png,image/jpeg,image/jpg,application/pdf"
+            style="display: none;"
+          />
+
+          <div
+            class="receipt-dropzone"
+            [class.has-file]="!!selectedReceiptFile"
+            (click)="statusReceiptFileInput.click()"
+          >
+            <ng-container *ngIf="!selectedReceiptFile">
+              <div class="dropzone-prompt">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <strong>Click or Drag Payment Receipt Here</strong>
+                <small>Supports JPG, PNG, or PDF (Max 10MB)</small>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="selectedReceiptFile">
+              <div class="file-preview-card" (click)="$event.stopPropagation()">
+                <div class="preview-thumb" *ngIf="receiptPreviewUrl">
+                  <img [src]="receiptPreviewUrl" alt="Receipt preview" />
+                </div>
+                <div class="preview-thumb pdf" *ngIf="!receiptPreviewUrl">
+                  <span>PDF</span>
+                </div>
+                <div class="preview-info">
+                  <strong>{{ receiptFileName }}</strong>
+                  <small>{{ receiptFileSizeText }}</small>
+                </div>
+                <button type="button" class="remove-file-btn" (click)="removeReceiptFile()" title="Remove file">✕</button>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- OPTIONAL NOTE / REFERENCE -->
+          <div class="receipt-note-field">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Payment Reference / Remarks (Optional)</label>
+            <input
+              type="text"
+              [(ngModel)]="receiptNote"
+              placeholder="e.g. GePG Control Number, Bank Deposit Slip #..."
+            />
+          </div>
+
+          <div class="receipt-modal-actions">
+            <button type="button" class="cancel-modal-btn" (click)="closeReceiptModal()">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="approval-button receipt-submit-btn"
+              [disabled]="(!selectedReceiptFile && !receiptNote?.trim()) || isSubmittingReceipt"
+              (click)="submitRejectionReceipt()"
+            >
+              {{ isSubmittingReceipt ? 'Submitting Receipt...' : '📤 Submit Receipt to Finance' }}
+            </button>
+          </div>
+        </div>
+      </div>
 
 
       <section
@@ -421,7 +518,7 @@
           for final Finance approval.
         </p>
 
-        <div *ngIf="getOfficeStatus('Finance') === 'Rejected'" style="margin: 14px 0; padding: 12px 14px; border-radius: 8px; background: #fff5f5; border: 1px solid #fecaca; border-left: 4px solid #dc2626;">
+        <div *ngIf="getOfficeStatus('Finance') === 'Rejected'" style="margin: 14px 0; padding: 14px; border-radius: 8px; background: #fff5f5; border: 1px solid #fecaca; border-left: 4px solid #dc2626;">
           <p class="rejection-comment" style="margin: 0; color: #991b1b; font-size: 13px;">
             <strong style="display: inline; color: #991b1b; font-size: 13px; font-weight: 700;">Staff Comment:</strong>
             <span style="color: #991b1b; font-weight: 600; margin-left: 6px;">{{ getRejectionReason('Finance') }}</span>
@@ -431,6 +528,15 @@
             <span *ngIf="getReviewerContact('Finance').phone"> &middot; Phone: {{ getReviewerContact('Finance').phone }}</span>
             <span *ngIf="getReviewerContact('Finance').email"> &middot; Email: {{ getReviewerContact('Finance').email }}</span>
           </small>
+          <div style="margin-top: 14px;">
+            <button
+              type="button"
+              class="approval-button"
+              (click)="openReceiptModal()"
+            >
+              Correct and Submit Receipt
+            </button>
+          </div>
         </div>
 
         <div class="step-navigation">

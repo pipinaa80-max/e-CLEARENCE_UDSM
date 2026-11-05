@@ -24,8 +24,8 @@
         />
       </a>
       <div>
-        <strong>DEPARTMENT</strong>
-        <small>Clearance Workspace</small>
+        <strong>HOD</strong>
+        <small>{{ departmentName }}</small>
       </div>
 
     </div>
@@ -52,9 +52,8 @@
   <main class="content">
 
     <app-dashboard-header
-      eyebrow="Clearance Office"
-      title="Department Officer Dashboard"
-      [subtitle]="'Departmental student clearance verification · ' + departmentName"
+      [title]="'HOD ' + departmentName + ' Dashboard'"
+      subtitle="Departmental student clearance"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"

@@ -18,6 +18,12 @@ public interface ClearanceRequestRepository extends JpaRepository<ClearanceReque
 
     List<ClearanceRequest> findByProjectId(String projectId);
 
+    @Query("SELECT cr FROM ClearanceRequest cr LEFT JOIN FETCH cr.student")
+    List<ClearanceRequest> findAllWithStudent();
+
+    @Query("SELECT cr FROM ClearanceRequest cr LEFT JOIN FETCH cr.student WHERE cr.projectId = :projectId")
+    List<ClearanceRequest> findByProjectIdWithStudent(@Param("projectId") String projectId);
+
     // =========================================================
     // STUDENT QUERIES
     // =========================================================

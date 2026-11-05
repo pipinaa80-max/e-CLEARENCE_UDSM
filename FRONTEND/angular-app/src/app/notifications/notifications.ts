@@ -5,6 +5,7 @@ import { AuthService } from '../core/services/auth.service';
 import { NotificationService } from '../core/services/notification.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
 import { UserRole } from '../core/models/user.model';
+import { NotificationItem } from '../core/models/notification.model';
 
 @Component({
   selector: 'app-notifications',
@@ -19,14 +20,19 @@ export class NotificationListComponent implements OnInit {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  notificationsList: any[] = [];
+  isLoading = true;
+  notificationsList: NotificationItem[] = [];
 
   get user() { return this.authService.getCurrentUser(); }
   get currentUser() { return this.user; }
-  get notifications() { return this.notificationsList; }
+  get notifications(): NotificationItem[] { return this.notificationsList; }
 
   get isStudent(): boolean {
     return !this.currentUser || this.currentUser.role === 'Student';
+  }
+
+  get hasUnread(): boolean {
+    return this.notificationsList.some(n => !n.read);
   }
 
   get dashboardRoute(): string {
@@ -97,15 +103,20 @@ export class NotificationListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.notificationsList = this.user ? this.notificationService.getNotifications(this.user.id) : [];
+    this.isLoading = true;
     this.notificationService.getStudentNotifications().subscribe({
-      next: serverItems => {
-        const localItems = this.user ? this.notificationService.getNotifications(this.user.id) : [];
-        this.notificationsList = [...serverItems, ...localItems];
+      next: (items) => {
+        this.notificationsList = items || [];
+        this.isLoading = false;
       },
       error: (err) => {
         console.warn('Could not fetch server notifications:', err);
+        this.isLoading = false;
       }
+    });
+
+    this.notificationService.notifications$.subscribe(items => {
+      this.notificationsList = items || [];
     });
   }
 
@@ -123,16 +134,41 @@ export class NotificationListComponent implements OnInit {
   }
 
   markAllRead(): void {
-    if (this.user) this.notificationService.markAllAsRead(this.user.id);
-    this.notificationService.markAllStudentNotificationsRead();
-    this.notificationsList = this.notificationsList.map(item => ({ ...item, read: true }));
+    this.notificationService.markAllStudentNotificationsRead().subscribe();
   }
 
   markRead(id: string): void {
-    this.notificationService.markAsRead(id);
-    if (!this.notificationService.getNotifications(this.user?.id ?? '').some(item => item.id === id)) {
-      this.notificationService.markStudentNotificationRead(id);
+    this.notificationService.markStudentNotificationRead(id).subscribe();
+  }
+
+  deleteNotification(event: Event, id: string): void {
+    event.stopPropagation();
+    this.notificationService.deleteNotification(id).subscribe();
+  }
+
+  clearAll(): void {
+    this.notificationService.clearAllNotifications().subscribe();
+  }
+
+  getTypeLabel(type: string): string {
+    switch (type) {
+      case 'APPROVAL': return 'Approved';
+      case 'REJECTION': return 'Action Required';
+      case 'CLEARANCE_UPDATE': return 'Clearance Update';
+      case 'CERTIFICATE_READY': return 'Ready for Collection';
+      case 'REMINDER': return 'Reminder';
+      case 'SYSTEM': default: return 'Official Notice';
     }
-    this.notificationsList = this.notificationsList.map(item => item.id === id ? { ...item, read: true } : item);
+  }
+
+  getTypeClass(type: string): string {
+    switch (type) {
+      case 'APPROVAL': return 'badge-approval';
+      case 'REJECTION': return 'badge-rejection';
+      case 'CLEARANCE_UPDATE': return 'badge-update';
+      case 'CERTIFICATE_READY': return 'badge-ready';
+      case 'REMINDER': return 'badge-reminder';
+      case 'SYSTEM': default: return 'badge-system';
+    }
   }
 }

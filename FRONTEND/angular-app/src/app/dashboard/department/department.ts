@@ -39,6 +39,10 @@ export class DepartmentStatusComponent {
     return this.currentUser?.role === 'Department';
   }
 
+  get departmentName(): string {
+    return this.currentUser?.department || 'Department';
+  }
+
   get studentRequest(): ClearanceRequest | null {
     const user = this.currentUser;
     if (!user || user.role !== 'Student') return null;

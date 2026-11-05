@@ -172,8 +172,32 @@
 .terms-copy h3 { margin: 0 0 8px; color: #003b5c; font-size: 14px; }
 .terms-copy p { margin: 0 0 11px; color: #53626a; font-size: 13px; line-height: 1.55; }
 .terms-copy p:last-child { margin-bottom: 0; }
-.terms-check { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; color: #35434a; font-size: 13px; line-height: 1.45; }
-.terms-check input { margin-top: 3px; accent-color: #00679b; }
+.terms-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: #35434a;
+  font-size: 13.5px;
+  line-height: 1.5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.terms-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #00679b;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.terms-check span {
+  display: inline-block;
+  line-height: 1.5;
+}
 .message { margin: 20px 0 0; padding: 12px 14px; background: #f0f8f2; border-left: 4px solid #176b37; color: #176b37; font-size: 13px; }
 .action-row { display: flex; justify-content: space-between; gap: 14px; padding-top: 24px; }
 .primary-button, .secondary-button {

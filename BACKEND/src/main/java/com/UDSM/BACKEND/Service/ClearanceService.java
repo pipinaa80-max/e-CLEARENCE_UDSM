@@ -3,6 +3,7 @@ package com.UDSM.BACKEND.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ public class ClearanceService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final com.UDSM.BACKEND.Repository.DepartmentRepository departmentRepository;
 
     // =========================================================
     // STUDENT CLEARANCE SUBMISSION
@@ -205,9 +207,25 @@ public class ClearanceService {
                     DepartmentApproval approval = approvalOpt.get();
 
                     if ("Department".equalsIgnoreCase(targetOffice)
-                            && !"Department".equalsIgnoreCase(cr.getCurrentStage())
                             && approval.getStatus() == ClearanceStatus.PENDING) {
-                        return false;
+                        List<DepartmentApproval> crApprovals = departmentApprovalRepository.findByClearanceRequest(cr);
+                        boolean convocationApproved = crApprovals.stream()
+                                .filter(a -> matchesOffice(a.getDepartment(), "Convocation", cr))
+                                .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        boolean allParallelApproved = crApprovals.stream()
+                                .filter(a -> isParallelApproval(a, cr))
+                                .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+
+                        if (!convocationApproved || !allParallelApproved) {
+                            return false;
+                        }
+
+                        // Self-heal stage if lagging
+                        if (!"Department".equalsIgnoreCase(cr.getCurrentStage())) {
+                            cr.setCurrentStage("Department");
+                            cr.setCurrentOffice("Department");
+                            clearanceRequestRepository.save(cr);
+                        }
                     }
 
                     if ("Principal".equalsIgnoreCase(targetOffice)
@@ -215,7 +233,7 @@ public class ClearanceService {
                             && approval.getStatus() == ClearanceStatus.PENDING) {
                         // Check if Department approval is completed for this request
                         boolean deptApproved = departmentApprovalRepository.findByClearanceRequest(cr).stream()
-                                .filter(a -> matchesOffice(a.getDepartment(), "Department", cr))
+                                .filter(a -> isDepartmentApproval(a, cr))
                                 .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
                         if (!deptApproved) {
                             return false;
@@ -231,8 +249,13 @@ public class ClearanceService {
                     // Scope by Department if Department Officer
                     if (user.getRole() == ERole.DEPARTMENT_OFFICER && user.getDepartment() != null && !user.getDepartment().isBlank()) {
                         String userDept = user.getDepartment().trim();
-                        String studentDept = (cr.getDepartment() != null ? cr.getDepartment() : (cr.getStudent() != null ? cr.getStudent().getDepartment() : "")).trim();
-                        if (!matchesScope(studentDept, userDept)) {
+                        String studentDept = (cr.getDepartment() != null && !cr.getDepartment().isBlank())
+                                ? cr.getDepartment().trim()
+                                : (cr.getStudent() != null && cr.getStudent().getDepartment() != null ? cr.getStudent().getDepartment().trim() : "");
+                        if (studentDept.isBlank() && cr.getProgramme() != null) {
+                            studentDept = cr.getProgramme().trim();
+                        }
+                        if (!matchesDepartmentScope(studentDept, userDept)) {
                             return false;
                         }
                     }
@@ -518,6 +541,60 @@ public class ClearanceService {
         return ApiResponse.success("Decision withdrawn successfully; request returned to Pending.");
     }
 
+    public ApiResponse submitFinanceReceipt(Map<String, String> payload, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        String projectId = ProjectScope.currentProjectId();
+        Student student = (projectId == null
+                ? studentRepository.findByUserId(user.getId())
+                : studentRepository.findByUserIdAndProjectId(user.getId(), projectId))
+                .or(() -> studentRepository.findByRegistrationNumber(user.getRegistrationNumber()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student profile not found for user: " + user.getEmail()));
+
+        List<ClearanceRequest> reqs = (projectId == null
+                ? clearanceRequestRepository.findByStudent(student)
+                : clearanceRequestRepository.findByStudentIdAndProjectId(student.getId(), projectId));
+
+        if (reqs.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No clearance request found for student");
+        }
+
+        ClearanceRequest request = reqs.get(reqs.size() - 1);
+
+        DepartmentApproval financeApproval = findMatchingApproval(request, "Finance")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Finance approval record not found"));
+
+        financeApproval.setStatus(ClearanceStatus.PENDING);
+        String note = payload != null ? payload.get("note") : null;
+        if (note != null && !note.isBlank()) {
+            financeApproval.setComments("Payment receipt reported: " + note.trim());
+        } else {
+            financeApproval.setComments("Payment receipt reported by student for verification");
+        }
+        financeApproval.setApprovalDate(null);
+        financeApproval.setApprovedBy(null);
+        departmentApprovalRepository.save(financeApproval);
+
+        request.setStatus(ClearanceStatus.PENDING.name());
+        request.setCurrentStage("Finance");
+        request.setCurrentOffice("Finance");
+        clearanceRequestRepository.save(request);
+
+        notificationService.sendNotification(
+                user,
+                "Payment Receipt Submitted",
+                "Your payment receipt has been received and returned to Finance for verification.",
+                NotificationType.CLEARANCE_UPDATE
+        );
+
+        auditLogService.logAction(
+                user.getId(),
+                "SUBMIT_FINANCE_RECEIPT",
+                "Student " + student.getRegistrationNumber() + " reported payment receipt after rejection"
+        );
+
+        return ApiResponse.success("Payment receipt submitted successfully and returned to Finance.");
+    }
+
     // =========================================================
     // STUDENT CLEARANCE STATUS
     // =========================================================
@@ -622,12 +699,41 @@ public class ClearanceService {
     // HELPER & MAPPING METHODS
     // =========================================================
 
+    public boolean isDepartmentApproval(DepartmentApproval approval, ClearanceRequest request) {
+        if (approval == null || approval.getDepartment() == null) return false;
+        return isDepartmentApproval(approval.getDepartment(), request);
+    }
+
+    public boolean isDepartmentApproval(String dept, ClearanceRequest request) {
+        if (dept == null || dept.isBlank()) return false;
+        if ("Department".equalsIgnoreCase(dept.trim())) return true;
+        String reqDept = request != null ? request.getDepartment() : null;
+        if (reqDept != null && !reqDept.isBlank() && matchesDepartmentScope(dept, reqDept)) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isParallelApproval(DepartmentApproval approval, ClearanceRequest request) {
+        if (approval == null || approval.getDepartment() == null) return false;
+        return isParallelApproval(approval.getDepartment(), request);
+    }
+
+    public boolean isParallelApproval(String dept, ClearanceRequest request) {
+        if (dept == null || dept.isBlank()) return false;
+        if (matchesOffice(dept, "Convocation", request)) return false;
+        if (matchesOffice(dept, "Principal", request)) return false;
+        if (matchesOffice(dept, "Finance", request)) return false;
+        if (isDepartmentApproval(dept, request)) return false;
+        return true;
+    }
+
     private void updateClearanceStage(ClearanceRequest request) {
         List<DepartmentApproval> approvals = departmentApprovalRepository.findByClearanceRequest(request);
 
         // Convocation stage
         Optional<DepartmentApproval> convocation = approvals.stream()
-                .filter(a -> "Convocation".equalsIgnoreCase(a.getDepartment()))
+                .filter(a -> matchesOffice(a.getDepartment(), "Convocation", request))
                 .findFirst();
 
         if (convocation.isPresent() && convocation.get().getStatus() != ClearanceStatus.APPROVED) {
@@ -638,7 +744,7 @@ public class ClearanceService {
 
         // Parallel stage
         List<DepartmentApproval> parallelApprovals = approvals.stream()
-                .filter(a -> !List.of("Convocation", "Department", "Principal", "Finance").contains(a.getDepartment()))
+                .filter(a -> isParallelApproval(a, request))
                 .toList();
 
         boolean allParallelApproved = parallelApprovals.stream()
@@ -652,7 +758,7 @@ public class ClearanceService {
 
         // Department stage
         Optional<DepartmentApproval> deptApproval = approvals.stream()
-                .filter(a -> "Department".equalsIgnoreCase(a.getDepartment()))
+                .filter(a -> isDepartmentApproval(a, request))
                 .findFirst();
 
         if (deptApproval.isPresent() && deptApproval.get().getStatus() != ClearanceStatus.APPROVED) {
@@ -663,7 +769,7 @@ public class ClearanceService {
 
         // Principal stage
         Optional<DepartmentApproval> principalApproval = approvals.stream()
-                .filter(a -> "Principal".equalsIgnoreCase(a.getDepartment()))
+                .filter(a -> matchesOffice(a.getDepartment(), "Principal", request))
                 .findFirst();
 
         if (principalApproval.isPresent() && principalApproval.get().getStatus() != ClearanceStatus.APPROVED) {
@@ -674,7 +780,7 @@ public class ClearanceService {
 
         // Finance stage
         Optional<DepartmentApproval> financeApproval = approvals.stream()
-                .filter(a -> "Finance".equalsIgnoreCase(a.getDepartment()))
+                .filter(a -> matchesOffice(a.getDepartment(), "Finance", request))
                 .findFirst();
 
         if (financeApproval.isPresent() && financeApproval.get().getStatus() != ClearanceStatus.APPROVED) {
@@ -705,7 +811,8 @@ public class ClearanceService {
         // Support both "Department" and specific department names
         if ("Department".equalsIgnoreCase(targetOffice) || "Department".equalsIgnoreCase(tClean)) {
             return "Department".equalsIgnoreCase(approvalDept)
-                    || (request.getDepartment() != null && request.getDepartment().equalsIgnoreCase(approvalDept));
+                    || (request != null && request.getDepartment() != null && matchesDepartmentScope(approvalDept, request.getDepartment()))
+                    || (request != null && isDepartmentApproval(approvalDept, request));
         }
         return false;
     }
@@ -770,7 +877,7 @@ public class ClearanceService {
         String hall = student != null ? student.getHall() : null;
         String roomNumber = student != null ? student.getRoomNumber() : null;
         String photo = student != null ? student.getPhoto() : null;
-        String sponsor = student != null ? student.getSponsor() : null;
+        String sponsor = student != null ? ("HELBS".equalsIgnoreCase(student.getSponsor()) ? "HESLB" : student.getSponsor()) : null;
 
         return ClearanceResponse.builder()
                 .requestId(String.valueOf(request.getId()))
@@ -987,6 +1094,126 @@ public class ClearanceService {
         return summary;
     }
 
+    public boolean matchesDepartmentScope(String studentScope, String userScope) {
+        if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
+            return true;
+        }
+        if ("all".equalsIgnoreCase(userScope.trim()) || "administration".equalsIgnoreCase(userScope.trim())) {
+            return true;
+        }
+
+        String s1 = studentScope.trim();
+        String s2 = userScope.trim();
+
+        // 1. Direct or case-insensitive match
+        if (s1.equalsIgnoreCase(s2)) {
+            return true;
+        }
+
+        // 2. Normalized strings
+        String n1 = normalizeDepartmentString(s1);
+        String n2 = normalizeDepartmentString(s2);
+
+        if (!n1.isEmpty() && !n2.isEmpty()) {
+            if (n1.equals(n2) || n1.contains(n2) || n2.contains(n1)) {
+                return true;
+            }
+        }
+
+        // 3. Known Computer Science alias cluster
+        if (isComputerScienceAlias(s1) && isComputerScienceAlias(s2)) {
+            return true;
+        }
+
+        // 4. Query Database 'departments' table for canonical match
+        try {
+            List<Department> allDepts = departmentRepository.findByIsActiveTrueOrderByNameAsc();
+            for (Department d : allDepts) {
+                boolean m1 = matchesDepartmentEntity(s1, n1, d);
+                boolean m2 = matchesDepartmentEntity(s2, n2, d);
+                if (m1 && m2) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error querying departments table for scope matching: {}", e.getMessage());
+        }
+
+        // 5. Acronym & Initials matching (e.g. "CSE" vs "Computer Science and Engineering")
+        String a1 = extractAcronymOrInitials(s1, n1);
+        String a2 = extractAcronymOrInitials(s2, n2);
+        if (!a1.isEmpty() && !a2.isEmpty()) {
+            if (a1.equalsIgnoreCase(a2) || a1.equalsIgnoreCase(n2) || a2.equalsIgnoreCase(n1)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isComputerScienceAlias(String s) {
+        if (s == null) return false;
+        String lower = s.toLowerCase().trim();
+        return lower.equals("cse") || lower.equals("cs") || lower.equals("docse")
+                || lower.contains("computer science")
+                || lower.contains("computer engineering");
+    }
+
+    private String normalizeDepartmentString(String raw) {
+        if (raw == null) return "";
+        String s = raw.toLowerCase().trim();
+        s = s.replace("&", " and ");
+        s = s.replaceAll("^(department\\s+of\\s+|dept\\.?\\s+of\\s+|department\\s+|school\\s+of\\s+|college\\s+of\\s+)", "");
+        s = s.replaceAll("[^a-z0-9\\s]", " ");
+        return s.replaceAll("\\s+", " ").trim();
+    }
+
+    private boolean matchesDepartmentEntity(String raw, String norm, Department d) {
+        if (d == null) return false;
+        if (d.getCode() != null) {
+            String code = d.getCode().trim().toLowerCase();
+            if (raw.equalsIgnoreCase(code) || norm.equals(code)) {
+                return true;
+            }
+        }
+        if (d.getName() != null) {
+            String dNorm = normalizeDepartmentString(d.getName());
+            if (raw.equalsIgnoreCase(d.getName()) || norm.equals(dNorm)) {
+                return true;
+            }
+            if (!norm.isEmpty() && !dNorm.isEmpty() && (norm.contains(dNorm) || dNorm.contains(norm))) {
+                return true;
+            }
+            String dInitials = generateInitials(dNorm);
+            if (!dInitials.isEmpty() && (norm.equals(dInitials) || raw.equalsIgnoreCase(dInitials))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String extractAcronymOrInitials(String raw, String norm) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\(([^)]+)\\)").matcher(raw);
+        if (m.find()) {
+            return m.group(1).trim().toLowerCase();
+        }
+        if (norm.length() <= 5 && !norm.contains(" ")) {
+            return norm;
+        }
+        return generateInitials(norm);
+    }
+
+    private String generateInitials(String norm) {
+        if (norm == null || norm.isBlank()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String word : norm.split("\\s+")) {
+            if (!word.equals("and") && !word.equals("of") && !word.equals("in") && !word.equals("the") && !word.isEmpty()) {
+                sb.append(word.charAt(0));
+            }
+        }
+        return sb.toString().toLowerCase();
+    }
+
     private boolean matchesScope(String studentScope, String userScope) {
         if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
             return true;
@@ -996,12 +1223,17 @@ public class ClearanceService {
         if (s1.equals(s2) || s1.contains(s2) || s2.contains(s1)) {
             return true;
         }
-        String a1 = extractAcronym(s1);
-        String a2 = extractAcronym(s2);
-        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1))) {
+        String n1 = normalizeDepartmentString(s1);
+        String n2 = normalizeDepartmentString(s2);
+        if (!n1.isEmpty() && !n2.isEmpty() && (n1.equals(n2) || n1.contains(n2) || n2.contains(n1))) {
             return true;
         }
-        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2))) {
+        String a1 = extractAcronymOrInitials(s1, n1);
+        String a2 = extractAcronymOrInitials(s2, n2);
+        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1) || a1.equals(n2))) {
+            return true;
+        }
+        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2) || a2.equals(n1))) {
             return true;
         }
         return !a1.isEmpty() && !a2.isEmpty() && a1.equals(a2);

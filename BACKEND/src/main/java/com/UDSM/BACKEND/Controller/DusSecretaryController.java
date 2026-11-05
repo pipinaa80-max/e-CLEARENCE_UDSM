@@ -10,6 +10,7 @@ import com.UDSM.BACKEND.Service.NotificationService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,15 +43,9 @@ public class DusSecretaryController {
     public ResponseEntity<List<Map<String, Object>>> getStudents(@RequestParam(value = "query", required = false) String query) {
         List<Student> students;
         if (query != null && !query.isBlank()) {
-            String q = query.trim().toLowerCase();
-            students = studentRepository.findAll().stream()
-                    .filter(s -> (s.getRegistrationNumber() != null && s.getRegistrationNumber().toLowerCase().contains(q))
-                            || (s.getFullName() != null && s.getFullName().toLowerCase().contains(q))
-                            || (s.getEmail() != null && s.getEmail().toLowerCase().contains(q)))
-                    .limit(50)
-                    .toList();
+            students = studentRepository.searchStudents(query.trim(), PageRequest.of(0, 50));
         } else {
-            students = studentRepository.findAll().stream().limit(50).toList();
+            students = studentRepository.findAll(PageRequest.of(0, 50)).getContent();
         }
 
         List<Map<String, Object>> result = students.stream().map(this::mapStudentToConsignmentResponse).toList();

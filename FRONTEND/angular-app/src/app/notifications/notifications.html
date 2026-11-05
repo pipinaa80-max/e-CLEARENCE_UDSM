@@ -68,30 +68,54 @@
         <app-dashboard-header
             title="Notifications"
             [user]="currentUser"
+            [showProfile]="false"
             [showToggle]="true"
             (toggleSidebar)="toggleSidebar()"
         >
-            <div header-actions style="display: flex; gap: 10px; align-items: center;">
+            <div header-actions class="notifications-header-actions">
                 <a [routerLink]="[dashboardRoute]" class="header-back-btn" title="Return to Dashboard">
                   <i class="bi bi-arrow-left"></i>
                   <span>Back to Dashboard</span>
                 </a>
-                <button *ngIf="notifications.length" type="button" class="mark-read-btn" (click)="markAllRead()">Mark all as read</button>
+                <button *ngIf="notifications.length && hasUnread" type="button" class="mark-read-btn" (click)="markAllRead()">
+                  <i class="bi bi-check2-all"></i>
+                  <span>Mark all as read</span>
+                </button>
+                <button *ngIf="notifications.length" type="button" class="clear-all-btn" (click)="clearAll()" title="Clear all notifications">
+                  <i class="bi bi-trash3"></i>
+                  <span>Clear all</span>
+                </button>
             </div>
         </app-dashboard-header>
         
-        <div class="empty-state" *ngIf="!notifications.length">You have no notifications yet. System updates will appear here.</div>
+        <div class="empty-state" *ngIf="!notifications.length && !isLoading">
+          <i class="bi bi-bell-slash empty-icon"></i>
+          <strong>No notifications yet</strong>
+          <p>You have no active notifications. System updates regarding your clearance will appear here.</p>
+        </div>
+
+        <div class="loading-state" *ngIf="isLoading">
+          <i class="bi bi-arrow-repeat spin-icon"></i>
+          <span>Loading notifications...</span>
+        </div>
+
         <ul class="notification-list" *ngIf="notifications.length">
             <li *ngFor="let notification of notifications" [class.unread]="!notification.read" (click)="markRead(notification.id)">
-            <span class="notice-icon">
-              <i *ngIf="notification.read" class="bi bi-check2-all"></i>
-              <i *ngIf="!notification.read" class="bi bi-bell-fill"></i>
-            </span>
-        <div>
-            <strong>{{ notification.title }}</strong>
-            <span>{{ notification.message }}</span>
-            <small>{{ notification.createdAt | date:'medium' }}</small>
-        </div>
+              <span class="notice-icon">
+                <i *ngIf="notification.read" class="bi bi-check2-all"></i>
+                <i *ngIf="!notification.read" class="bi bi-bell-fill"></i>
+              </span>
+              <div class="notice-body">
+                <div class="notice-header">
+                  <strong>{{ notification.title }}</strong>
+                  <span class="type-badge" [ngClass]="getTypeClass(notification.type)">{{ getTypeLabel(notification.type) }}</span>
+                </div>
+                <span class="notice-message">{{ notification.message }}</span>
+                <small>{{ notification.createdAt | date:'medium' }}</small>
+              </div>
+              <button type="button" class="dismiss-notice-btn" (click)="deleteNotification($event, notification.id)" title="Dismiss notification">
+                <i class="bi bi-x-lg"></i>
+              </button>
             </li>
         </ul>
     </div>
