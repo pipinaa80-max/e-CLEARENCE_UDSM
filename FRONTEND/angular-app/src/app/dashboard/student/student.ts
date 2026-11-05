@@ -13,6 +13,7 @@ import { NotificationItem } from '../../core/models/notification.model';
 import { ClearanceOffice } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { ToastService } from '../../core/services/toast.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { environment } from '../../environments/environment';
 
@@ -45,6 +46,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private pollSubscription?: Subscription;
 
@@ -669,7 +671,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       award: user.programme || 'Degree Certificate & Transcript',
       graduationYear: '2024',
       totalCopies: this.transcriptCopies,
-      collectionMethod: 'Physical Collection',
+      // collectionMethod is NOT set here - it is chosen in Step 3
       receipts: receiptsPayload,
       receiptNote: this.transcriptPaymentNote,
       postingContactPhone: user.phoneNumber || '',
@@ -680,15 +682,25 @@ export class StudentDashboard implements OnInit, OnDestroy {
       localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
     }
 
+    // Send student notification that receipt is waiting for finance approval
+    this.notificationService.createNotification(
+      user.id,
+      'Payment Receipt Submitted to Finance',
+      `Your payment receipt for ${copyRequests.length} transcript ${copyRequests.length === 1 ? 'copy' : 'copies'} has been submitted to Finance and is currently waiting for approval.`,
+      'CLEARANCE_UPDATE' as any
+    );
+
+    this.toastService.info('Waiting for Finance Approval', 'Payment receipt submitted to Finance for verification.');
+
     setTimeout(() => {
       this.isSubmittingTranscript = false;
-      this.transcriptSuccessMessage = `Successfully submitted ${copyRequests.length} separate transcript copy ${copyRequests.length === 1 ? 'request' : 'requests'} to DUS!`;
+      this.transcriptSuccessMessage = `Receipt submitted to Finance! Waiting for Finance approval.`;
       setTimeout(() => {
         this.closeTranscriptModal();
         this.uploadedTranscriptReceipts = [];
         this.transcriptPaymentNote = '';
-      }, 1500);
-    }, 600);
+      }, 1000);
+    }, 500);
   }
 
   get submittedTranscriptCopies(): TranscriptPaymentRequest[] {
@@ -1043,25 +1055,28 @@ export class StudentDashboard implements OnInit, OnDestroy {
       .find(request => request.attemptNumber === 1) ?? null;
   }
 
+  get isTranscriptDocumentsSubmitted(): boolean {
+    const user = this.currentUser;
+    return !!user && localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+  }
+
   get transcriptProcessStageLabel(): string {
     const request = this.clearanceTranscriptRequest;
     const user = this.currentUser;
     const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
-    const documentsSubmitted = !!user &&
-      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    const documentsSubmitted = this.isTranscriptDocumentsSubmitted;
 
-    if (isAcquired) return 'Transcript process completed';
-    if (documentsSubmitted) return 'Step 2: Documentation Submitted';
-    if (request?.status === 'Paid') return 'Step 2: Upload Documentation';
-    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for DUS Review';
+    if (isAcquired || request?.collectionMethod) return 'Transcript Process Completed · Submitted to DUS';
+    if (documentsSubmitted) return 'Step 3: Specify Mode of Collection';
+    if (request?.status === 'Paid') return 'Step 2: Upload Necessary Certificate';
+    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for Finance Approval';
     return 'Step 1: Transcript Payment & Receipt';
   }
 
   get transcriptProcessSteps(): TranscriptDashboardStep[] {
     const request = this.clearanceTranscriptRequest;
     const user = this.currentUser;
-    const documentsSubmitted = !!user &&
-      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    const documentsSubmitted = this.isTranscriptDocumentsSubmitted;
     const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
     const paymentStatus = request?.status;
     const paymentStepStatus: TranscriptDashboardStep['status'] =
@@ -1073,22 +1088,30 @@ export class StudentDashboard implements OnInit, OnDestroy {
       {
         number: 1,
         label: 'Transcript Payment',
-        detail: 'Upload and submit official payment receipt(s).',
+        detail: paymentStatus === 'Receipt Submitted'
+          ? 'Receipt submitted. Waiting for Finance approval.'
+          : paymentStatus === 'Paid'
+            ? 'Payment verified & approved by Finance.'
+            : 'Upload and submit official payment receipt(s).',
         status: paymentStepStatus
       },
       {
         number: 2,
         label: 'Upload Documentation',
-        detail: 'Upload and submit required academic clearance documentation.',
-        status: documentsSubmitted ? 'Approved' : paymentStatus === 'Paid' ? 'Pending' : 'Locked'
+        detail: documentsSubmitted
+          ? 'Necessary certificates and documents submitted.'
+          : 'Upload necessary academic certificate and clearance documents.',
+        status: documentsSubmitted ? 'Approved' : (paymentStatus === 'Paid' ? 'Pending' : 'Locked')
       },
       {
         number: 3,
         label: 'Transcript Collection',
-        detail: 'Pick up processed transcript from DUS.',
-        status: request?.collectionMethod || isAcquired
+        detail: request?.collectionMethod
+          ? `Mode specified: ${request.collectionMethod}. Submitted to DUS.`
+          : 'Choose physical collection hub or DHL post.',
+        status: (request?.collectionMethod || isAcquired)
           ? 'Approved'
-          : documentsSubmitted ? 'Pending' : 'Locked'
+          : (documentsSubmitted ? 'Pending' : 'Locked')
       }
     ];
   }

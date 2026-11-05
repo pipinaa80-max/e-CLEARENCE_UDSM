@@ -88,15 +88,19 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   private mergeRequests(backendRequests: TranscriptPaymentRequest[]): void {
-    const localRequests = this.transcriptService.getAllRequests();
-    // Prioritize specific local copy requests (each copy requested separately)
+    // DUS Secretary only receives requests after Step 3 (specifying mode of collection) is completed
+    const localRequests = this.transcriptService.getAllRequests().filter(
+      r => !!r.collectionMethod
+    );
     const combined: TranscriptPaymentRequest[] = [...localRequests];
     for (const bReq of backendRequests) {
-      const existsInLocal = localRequests.some(
-        l => l.studentId === bReq.studentId || l.registrationNumber === bReq.registrationNumber
-      );
-      if (!existsInLocal) {
-        combined.push(bReq);
+      if (bReq.collectionMethod) {
+        const existsInLocal = localRequests.some(
+          l => l.studentId === bReq.studentId || l.registrationNumber === bReq.registrationNumber
+        );
+        if (!existsInLocal) {
+          combined.push(bReq);
+        }
       }
     }
     this.requests = combined;

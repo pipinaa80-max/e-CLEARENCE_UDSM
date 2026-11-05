@@ -172,8 +172,8 @@
               <span class="copy-badge">
                 <i class="bi bi-file-earmark-text"></i> Copy {{ copyReq.copyNumber || 1 }} of {{ copyReq.totalCopies || submittedTranscriptCopies.length }}
               </span>
-              <span class="copy-status" [ngClass]="copyReq.dispatchStatus === 'Dispatched' ? 'status-dispatched' : (copyReq.certificateVerified ? 'status-verified' : 'status-submitted')">
-                {{ copyReq.dispatchStatus === 'Dispatched' ? 'Dispatched' : (copyReq.certificateVerified ? 'Verified & Sealed' : copyReq.status) }}
+              <span class="copy-status" [ngClass]="copyReq.dispatchStatus === 'Dispatched' ? 'status-dispatched' : (copyReq.certificateVerified ? 'status-verified' : (copyReq.status === 'Receipt Submitted' ? 'status-finance-review' : 'status-submitted'))">
+                {{ copyReq.dispatchStatus === 'Dispatched' ? 'Dispatched' : (copyReq.certificateVerified ? 'Verified & Sealed' : (copyReq.status === 'Receipt Submitted' ? 'Waiting for Finance Approval' : copyReq.status)) }}
               </span>
             </div>
             <div class="copy-item-details">
@@ -473,14 +473,95 @@
           </article>
         </section>
 
-        <div class="transcript-stepper-action" style="margin-top: 24px; display: flex; justify-content: flex-end;">
-          <button
-            type="button"
-            class="primary-button"
-            (click)="openTranscriptModal()"
+        <div class="transcript-stepper-action">
+          <!-- STAGE 0: NOT YET STARTED -->
+          <div *ngIf="!clearanceTranscriptRequest" style="display: flex; justify-content: flex-end;">
+            <button
+              type="button"
+              class="primary-button"
+              (click)="openTranscriptModal()"
+            >
+              Start Transcript Request
+            </button>
+          </div>
+
+          <!-- STAGE 1: RECEIPT SUBMITTED TO FINANCE -->
+          <div
+            *ngIf="clearanceTranscriptRequest && clearanceTranscriptRequest.status === 'Receipt Submitted'"
+            class="stepper-stage-banner stage-warning"
           >
-            Continue with Transcript Process
-          </button>
+            <div class="banner-left">
+              <span class="banner-icon">⏳</span>
+              <div class="banner-text">
+                <strong>Step 1: Receipt Submitted &bull; Waiting for Finance Approval</strong>
+                <span>Your payment receipt is being verified by Finance. Once approved, Step 2 will unlock automatically.</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="banner-btn-secondary"
+              (click)="openTranscriptModal()"
+            >
+              + Add More Copies
+            </button>
+          </div>
+
+          <!-- STAGE 2: FINANCE APPROVED, UPLOAD DOCUMENTS -->
+          <div
+            *ngIf="clearanceTranscriptRequest && clearanceTranscriptRequest.status === 'Paid' && !isTranscriptDocumentsSubmitted"
+            class="stepper-stage-banner stage-info"
+          >
+            <div class="banner-left">
+              <span class="banner-icon">📄</span>
+              <div class="banner-text">
+                <strong>Step 2: Upload Necessary Academic Certificate</strong>
+                <span>Finance verified your receipt. Please upload your certificates and required documents to proceed.</span>
+              </div>
+            </div>
+            <a routerLink="/documents/transcript" class="banner-btn-primary">
+              Proceed to Step 2 <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- STAGE 3: DOCUMENTS SUBMITTED, SPECIFY COLLECTION -->
+          <div
+            *ngIf="clearanceTranscriptRequest && clearanceTranscriptRequest.status === 'Paid' && isTranscriptDocumentsSubmitted && !clearanceTranscriptRequest.collectionMethod"
+            class="stepper-stage-banner stage-ready"
+          >
+            <div class="banner-left">
+              <span class="banner-icon">🚚</span>
+              <div class="banner-text">
+                <strong>Step 3: Specify Mode of Collection</strong>
+                <span>Academic documents verified! Select your physical pickup center or provide DHL delivery details.</span>
+              </div>
+            </div>
+            <a routerLink="/transcript/collection" class="banner-btn-primary">
+              Proceed to Step 3 <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+
+          <!-- ALL STEPS COMPLETED: FORWARDED TO DUS SECRETARY -->
+          <div
+            *ngIf="clearanceTranscriptRequest && clearanceTranscriptRequest.collectionMethod"
+            class="stepper-stage-banner stage-complete"
+          >
+            <div class="banner-left">
+              <span class="banner-icon" style="color: #16a34a;">✓</span>
+              <div class="banner-text">
+                <strong>Transcript Request Complete &bull; Forwarded to DUS Secretary</strong>
+                <span>
+                  All 3 steps completed (Mode: <strong>{{ clearanceTranscriptRequest.collectionMethod }}</strong>). Your request is now with the DUS Secretary for printing, verification, and dispatch.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="banner-btn-secondary"
+              (click)="openTranscriptModal()"
+            >
+              Request Additional Copy
+            </button>
+          </div>
         </div>
       </ng-template>
     </section>

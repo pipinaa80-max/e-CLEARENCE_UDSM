@@ -67,7 +67,7 @@ export class TranscriptPaymentService {
     award: string;
     graduationYear: string;
     totalCopies: number;
-    collectionMethod: 'Physical Collection' | 'Post by DHL';
+    collectionMethod?: 'Physical Collection' | 'Post by DHL';
     receipts: { fileName: string; receiptData: string; sizeText?: string }[];
     receiptNote?: string;
     postingRegion?: string;
@@ -115,7 +115,7 @@ export class TranscriptPaymentService {
         postingAddress: params.postingAddress,
         postingContactPhone: params.postingContactPhone,
         postingContactEmail: params.postingContactEmail,
-        dispatchStatus: 'Pending Dispatch'
+        dispatchStatus: params.collectionMethod ? 'Pending Dispatch' : undefined
       };
 
       all.push(req);
@@ -178,10 +178,17 @@ export class TranscriptPaymentService {
   }
 
   updateStatus(requestId: string, status: TranscriptPaymentStatus): boolean {
-    const request = this.getAllRequests().find(item => item.id === requestId);
+    const all = this.getAllRequests();
+    const request = all.find(item => item.id === requestId);
     if (!request) return false;
     request.status = status;
-    this.save(request);
+    // Update all matching batch copy requests for the same student
+    all.forEach(item => {
+      if (item.studentId === request.studentId && (item.status === 'Receipt Submitted' || status === 'Paid')) {
+        item.status = status;
+      }
+    });
+    this.storage.save(this.requestKey, all);
     return true;
   }
 
@@ -229,17 +236,25 @@ export class TranscriptPaymentService {
     postingContactPhone?: string,
     postingContactEmail?: string
   ): boolean {
-    const request = this.getAllRequests().find(item => item.id === requestId);
+    const all = this.getAllRequests();
+    const request = all.find(item => item.id === requestId);
     if (!request) return false;
-    request.collectionMethod = collectionMethod;
-    request.postingAddress = postingAddress;
-    request.postingRegion = postingRegion;
-    request.postingWard = postingWard;
-    request.postingPoBox = postingPoBox;
-    request.postingContactPhone = postingContactPhone;
-    request.postingContactEmail = postingContactEmail;
-    request.dispatchStatus = request.dispatchStatus || 'Pending Dispatch';
-    this.save(request);
+
+    // Update target request and all copy requests belonging to this student
+    all.forEach(item => {
+      if (item.id === requestId || item.studentId === request.studentId) {
+        item.collectionMethod = collectionMethod;
+        item.postingAddress = postingAddress;
+        item.postingRegion = postingRegion;
+        item.postingWard = postingWard;
+        item.postingPoBox = postingPoBox;
+        item.postingContactPhone = postingContactPhone;
+        item.postingContactEmail = postingContactEmail;
+        item.dispatchStatus = item.dispatchStatus || 'Pending Dispatch';
+      }
+    });
+
+    this.storage.save(this.requestKey, all);
     return true;
   }
 
