@@ -245,6 +245,63 @@ export class ClearanceStatusComponent implements OnInit {
       !!firstRequest?.collectionMethod;
   }
 
+  get clearanceTranscriptRequest() {
+    const user = this.student;
+    if (!user) return null;
+    return this.transcriptService.getStudentRequests(user.id)
+      .find(request => request.attemptNumber === 1) ?? null;
+  }
+
+  get transcriptProcessStageLabel(): string {
+    const request = this.clearanceTranscriptRequest;
+    const user = this.student;
+    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+    const documentsSubmitted = !!user &&
+      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+
+    if (isAcquired) return 'Transcript process completed';
+    if (documentsSubmitted) return 'Step 2: Documentation Submitted';
+    if (request?.status === 'Paid') return 'Step 2: Upload Documentation';
+    if (request?.status === 'Receipt Submitted') return 'Step 1: Waiting for DUS Review';
+    return 'Step 1: Transcript Payment';
+  }
+
+  get transcriptProcessSteps(): { number: number; label: string; detail: string; status: string }[] {
+    const request = this.clearanceTranscriptRequest;
+    const user = this.student;
+    const documentsSubmitted = !!user &&
+      localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    const isAcquired = !!user && localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true';
+    const paymentStatus = request?.status;
+    const paymentStepStatus =
+      paymentStatus === 'Paid' ? 'Approved'
+        : paymentStatus === 'Receipt Submitted' ? 'Waiting for Approval'
+          : paymentStatus === 'Receipt Rejected' ? 'Rejected' : 'Pending';
+
+    return [
+      {
+        number: 1,
+        label: 'Transcript Payment',
+        detail: 'Upload and submit official payment receipt(s).',
+        status: paymentStepStatus
+      },
+      {
+        number: 2,
+        label: 'Upload Documentation',
+        detail: 'Upload and submit required academic clearance documentation.',
+        status: documentsSubmitted ? 'Approved' : paymentStatus === 'Paid' ? 'Pending' : 'Locked'
+      },
+      {
+        number: 3,
+        label: 'Transcript Collection',
+        detail: 'Pick up processed transcript from DUS.',
+        status: request?.collectionMethod || isAcquired
+          ? 'Approved'
+          : documentsSubmitted ? 'Pending' : 'Locked'
+      }
+    ];
+  }
+
   // =====================================================
   // CURRENT STUDENT REQUEST
   // =====================================================

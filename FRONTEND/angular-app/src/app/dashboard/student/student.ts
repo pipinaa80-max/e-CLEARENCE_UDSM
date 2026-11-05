@@ -1041,15 +1041,23 @@ export class StudentDashboard implements OnInit, OnDestroy {
     return [
       {
         number: 1,
-        label: 'Transcript Payment & Receipt',
-        detail: 'Specify copy count and submit official payment receipt(s).',
+        label: 'Transcript Payment',
+        detail: 'Upload and submit official payment receipt(s).',
         status: paymentStepStatus
       },
       {
         number: 2,
         label: 'Upload Documentation',
-        detail: 'Upload and submit the required transcript documents.',
+        detail: 'Upload and submit required academic clearance documentation.',
         status: documentsSubmitted ? 'Approved' : paymentStatus === 'Paid' ? 'Pending' : 'Locked'
+      },
+      {
+        number: 3,
+        label: 'Transcript Collection',
+        detail: 'Pick up processed transcript from DUS.',
+        status: request?.collectionMethod || isAcquired
+          ? 'Approved'
+          : documentsSubmitted ? 'Pending' : 'Locked'
       }
     ];
   }

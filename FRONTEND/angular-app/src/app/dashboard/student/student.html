@@ -120,7 +120,7 @@
          STUDENT PROFILE SUMMARY
     ========================== -->
 
-    <section class="student-summary" *ngIf="currentUser">
+    <section class="student-summary" *ngIf="currentUser && !hasStartedTranscriptProcess">
       <div class="student-clearance">
         <article class="clearance-progress-card">
           <div class="card-heading">
@@ -224,7 +224,7 @@
     ================================================== -->
     <section
       class="dashboard-clearance-stepper-card"
-      *ngIf="currentRequest && !isTranscriptSystem && !isClearanceCompleted"
+      *ngIf="currentRequest && !isTranscriptSystem && (!isClearanceCompleted || hasStartedTranscriptProcess)"
     >
       <ng-container *ngIf="!isClearanceCompleted; else transcriptProcessStepper">
 
@@ -496,6 +496,16 @@
             </div>
           </article>
         </section>
+
+        <div class="transcript-stepper-action" style="margin-top: 24px; display: flex; justify-content: flex-end;">
+          <button
+            type="button"
+            class="primary-button"
+            (click)="openTranscriptModal()"
+          >
+            Continue with Transcript Process
+          </button>
+        </div>
       </ng-template>
     </section>
 
