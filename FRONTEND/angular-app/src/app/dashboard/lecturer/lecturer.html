@@ -11,8 +11,12 @@
   </aside>
 
   <main class="content">
-    <app-dashboard-header eyebrow="Academic Office" title="Lecturer Dashboard" subtitle="Record student debts and course material returns" [user]="currentUser" [showToggle]="true" (toggleSidebar)="toggleSidebar()">
-      <div header-actions class="lecturer-header-chip">{{ currentUser?.college }} · {{ currentUser?.department }}</div>
+    <app-dashboard-header
+      title="Lecturer Dashboard"
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
     </app-dashboard-header>
 
     <div class="notice success" *ngIf="message">{{ message }}</div>
@@ -25,16 +29,51 @@
     </section>
 
     <section class="debt-panel" id="debt-flag-form">
-      <div class="panel-heading"><div><h2>Record payment due</h2><p>Enter the registration number; clearance status is checked automatically when you leave the field.</p></div></div>
+      <div class="panel-heading">
+        <div>
+          <h2>Register Student Liability / Rented Item</h2>
+          <p>Register a student liability or rented item (equipment, books, tools, keys, etc.). This is stored securely in the database and automatically compares and blocks clearance until resolved.</p>
+        </div>
+      </div>
       <form class="debt-form" (ngSubmit)="createFlag()">
-        <label>Registration number<input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345"></label>
+        <label>Registration Number
+          <input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345">
+        </label>
         <div class="clearance-lookup-progress" *ngIf="clearanceLookupLoading">Checking clearance status for this registration number…</div>
-        <div class="clearance-lookup-result" *ngIf="clearanceLookup" [class.cleared]="clearanceLookup.cleared" [class.not-cleared]="!clearanceLookup.cleared"><strong>{{ clearanceLookup.studentName }}</strong><span>{{ clearanceLookup.registrationNumber }} · {{ clearanceLookup.college }} / {{ clearanceLookup.department }}</span><span class="lookup-status">{{ clearanceLookup.cleared ? 'Already cleared' : clearanceLookup.clearanceStatus === 'NOT_STARTED' ? 'Clearance not started' : 'Clearance: ' + clearanceLookup.clearanceStatus }}<ng-container *ngIf="clearanceLookup.currentStage && !clearanceLookup.cleared"> · Current stage: {{ clearanceLookup.currentStage }}</ng-container></span></div>
+        <div class="clearance-lookup-result" *ngIf="clearanceLookup" [class.cleared]="clearanceLookup.cleared" [class.not-cleared]="!clearanceLookup.cleared">
+          <strong>{{ clearanceLookup.studentName }}</strong>
+          <span>{{ clearanceLookup.registrationNumber }} · {{ clearanceLookup.college }} / {{ clearanceLookup.department }}</span>
+          <span class="lookup-status">{{ clearanceLookup.cleared ? 'Already cleared' : clearanceLookup.clearanceStatus === 'NOT_STARTED' ? 'Clearance not started' : 'Clearance: ' + clearanceLookup.clearanceStatus }}<ng-container *ngIf="clearanceLookup.currentStage && !clearanceLookup.cleared"> · Current stage: {{ clearanceLookup.currentStage }}</ng-container></span>
+        </div>
         <div class="clearance-lookup-error" *ngIf="clearanceLookupError">{{ clearanceLookupError }}</div>
-        <label>Amount owed (TZS)<input name="amount" type="number" min="0.01" step="0.01" [(ngModel)]="amount" required placeholder="0.00"></label>
-        <label class="wide">Debt reason<textarea name="reason" [(ngModel)]="reason" rows="3" required placeholder="Describe the outstanding debt"></textarea></label>
-        <label class="wide">Negotiation notes (optional)<textarea name="negotiationNotes" [(ngModel)]="negotiationNotes" rows="2" placeholder="Record any agreed payment plan or discussion"></textarea></label>
-        <div class="form-actions"><button type="submit" class="primary-button" [disabled]="isSubmitting || !clearanceLookupVerified || clearanceLookup?.cleared">{{ isSubmitting ? 'Recording…' : 'Record debt and notify Department' }}</button></div>
+
+        <label>Liability / Item Category
+          <select name="category" [(ngModel)]="category">
+            <option *ngFor="let cat of itemCategories" [value]="cat">{{ cat }}</option>
+          </select>
+        </label>
+
+        <label>Amount Owed / Value (TZS)
+          <input name="amount" type="number" min="0.01" step="0.01" [(ngModel)]="amount" required placeholder="0.00">
+        </label>
+
+        <label>Due / Return Target Date (Optional)
+          <input name="dueDate" type="date" [(ngModel)]="dueDate">
+        </label>
+
+        <label class="wide">Liability Description / Reason
+          <textarea name="reason" [(ngModel)]="reason" rows="3" required placeholder="Describe the rented item, equipment serial, or liability reason"></textarea>
+        </label>
+
+        <label class="wide">Negotiation / Reminder Notes (Optional)
+          <textarea name="negotiationNotes" [(ngModel)]="negotiationNotes" rows="2" placeholder="Record agreed terms, reminders, or payment plan notes"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-button" [disabled]="isSubmitting || !clearanceLookupVerified || clearanceLookup?.cleared">
+            {{ isSubmitting ? 'Registering…' : 'Register Liability & Activate Auto-Check' }}
+          </button>
+        </div>
       </form>
     </section>
 
@@ -43,8 +82,12 @@
       <div class="table-scroll" *ngIf="paymentDueFlags.length; else emptyRegister">
         <table><thead><tr><th>Registration Number</th><th>Student</th><th>Programme</th><th>Amount</th><th>Reason and negotiation</th><th>Status</th><th>Action</th></tr></thead>
           <tbody><tr *ngFor="let flag of paymentDueFlags">
-            <td>{{ flag.registrationNumber }}</td><td><strong>{{ flag.studentName }}</strong><small>{{ flag.college }} · {{ flag.department }}</small></td><td>{{ flag.programme || '—' }}</td>
-            <td>{{ flag.amount | currency:'TZS ':'symbol':'1.0-2' }}</td><td>{{ flag.reason }}<small *ngIf="flag.negotiationNotes">Negotiation: {{ flag.negotiationNotes }}</small><small *ngIf="flag.resolutionNote">Resolution: {{ flag.resolutionNote }}</small></td>
+            <td>
+              <strong>{{ flag.registrationNumber }}</strong>
+              <span class="category-badge" style="display: block; font-size: 0.72rem; color: #0284c7; font-weight: 700; margin-top: 2px;" *ngIf="flag.category">{{ flag.category }}</span>
+            </td>
+            <td><strong>{{ flag.studentName }}</strong><small>{{ flag.college }} · {{ flag.department }}</small></td><td>{{ flag.programme || '—' }}</td>
+            <td>{{ flag.amount | currency:'TZS ':'symbol':'1.0-2' }}</td><td>{{ flag.reason }}<small *ngIf="flag.dueDate" style="display: block; color: #d97706; font-weight: 600;">Due: {{ flag.dueDate | date:'mediumDate' }}</small><small *ngIf="flag.negotiationNotes">Negotiation: {{ flag.negotiationNotes }}</small><small *ngIf="flag.resolutionNote">Resolution: {{ flag.resolutionNote }}</small></td>
             <td><span class="status-pill" [class.resolved]="flag.status === 'RESOLVED'">{{ flag.status === 'OPEN' ? 'Open flag' : 'Resolved' }}</span></td>
             <td><button *ngIf="flag.status === 'OPEN'" type="button" class="resolve-button" (click)="beginResolution(flag)">Clear after negotiation</button><span *ngIf="flag.status === 'RESOLVED'">Cleared {{ flag.resolvedAt | date:'mediumDate' }}</span></td>
           </tr></tbody>

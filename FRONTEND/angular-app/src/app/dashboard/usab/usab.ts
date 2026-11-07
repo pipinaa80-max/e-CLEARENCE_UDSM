@@ -248,14 +248,7 @@ export class UsabComponent {
     this.toastService.info('Removed', `Hostel "${hostel.name}" was removed.`);
   }
 
-  resetHostels(): void {
-    if (!confirm('Reset all hostels to standard university defaults?')) {
-      return;
-    }
-    this.hostelService.resetToDefaults();
-    this.loadHostels();
-    this.toastService.success('Reset', 'Hostels restored to university defaults.');
-  }
+
 
   get paginatedRequests(): ClearanceRequest[] {
     const start = (this.currentPage - 1) * this.pageSize;

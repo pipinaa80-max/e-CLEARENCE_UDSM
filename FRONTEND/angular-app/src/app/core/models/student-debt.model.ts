@@ -7,10 +7,14 @@ export interface StudentDebtFlag {
   department: string;
   programme?: string;
   amount: number;
+  category?: string;
+  dueDate?: string;
   reason: string;
   negotiationNotes?: string;
   status: 'OPEN' | 'RESOLVED';
   lecturerName: string;
+  lecturerEmail?: string;
+  lecturerPhone?: string;
   resolutionNote?: string;
   createdAt: string;
   resolvedAt?: string;

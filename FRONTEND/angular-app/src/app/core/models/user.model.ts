@@ -16,6 +16,7 @@ export type UserRole =
   | 'Lecturer'
   | 'Director of Undergraduate Studies'
   | 'DUS Secretary'
+  | 'Station Secretary'
   | 'Workshop'
   | 'Laboratory'
   | 'Administrator';
@@ -34,6 +35,8 @@ export interface User {
   programme: string;
   department: string;
   college: string;
+  stationCode?: string;
+  stationName?: string;
   yearOfStudy: number;
   status: UserStatus;
   createdAt: string;

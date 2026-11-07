@@ -38,7 +38,10 @@ public class StudentNotificationController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<Map<String, Object>> list(@AuthenticationPrincipal UserDetails principal) {
+    public List<Map<String, Object>> list(
+            @AuthenticationPrincipal UserDetails principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "30") int size) {
         User user = requireUser(principal);
         syncClearanceNotifications(user);
 

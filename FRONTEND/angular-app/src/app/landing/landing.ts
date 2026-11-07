@@ -65,7 +65,8 @@ export class Landing implements OnInit {
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
-      'DUS Secretary': '/dashboard/dus-secretary'
+      'DUS Secretary': '/dashboard/dus-secretary',
+      'Station Secretary': '/dashboard/station-secretary'
     };
 
     return map[role] ?? '/dashboard';

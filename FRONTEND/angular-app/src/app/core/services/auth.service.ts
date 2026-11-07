@@ -166,9 +166,20 @@ export class AuthService {
       updatedAt: response.updated_at || response.updatedAt,
       clearanceStatus: response.clearance_status || response.clearanceStatus,
       isFinalYear: response.isFinalYear !== undefined ? response.isFinalYear : (response.finalYear !== undefined ? response.finalYear : response.is_final_year),
+      stationCode: response.station_code || response.stationCode,
+      stationName: response.station_name || response.stationName,
       photo: response.photo || response.profilePhoto || response.profile_photo || response.profileImageUrl || response.profile_image_url
     };
-    if (user.role) user.role = this.mapRole(user.role);
+    if (user.role) {
+      // Differentiate Main Campus DUS Secretary from Regional Station Secretary
+      const mapped = this.mapRole(user.role);
+      const isRegionalStation = user.stationCode && user.stationCode.toUpperCase() !== 'UDSM-MAIN';
+      if (mapped === 'DUS Secretary' && isRegionalStation) {
+        user.role = 'Station Secretary';
+      } else {
+        user.role = mapped;
+      }
+    }
     return user;
   }
 

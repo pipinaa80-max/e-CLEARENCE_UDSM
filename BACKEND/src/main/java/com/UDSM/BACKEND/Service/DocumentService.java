@@ -22,10 +22,16 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -202,17 +208,58 @@ public class DocumentService {
         private boolean allRequiredDocumentsVerified;
     }
 
-    // You'll need to create this service for file storage
+    // Hardened file storage service with path traversal protection and MIME validation
     @Service
     public static class FileStorageService {
+        private static final Set<String> ALLOWED_EXTENSIONS = Set.of("pdf", "jpg", "jpeg", "png");
+        private static final Set<String> FORBIDDEN_EXTENSIONS = Set.of(
+                "exe", "sh", "bat", "cmd", "php", "jsp", "asp", "aspx", "html", "htm", "js", "vbs", "jar", "war", "py"
+        );
+
         public String storeFile(MultipartFile file, String studentRegNumber) throws IOException {
-            // Implementation for file storage (e.g., AWS S3, local file system, etc.)
-            // Return the file URL
-            return "/uploads/" + studentRegNumber + "/" + file.getOriginalFilename();
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("Cannot upload an empty file");
+            }
+            String original = file.getOriginalFilename();
+            if (original == null || original.isBlank()) {
+                throw new IllegalArgumentException("Invalid file name");
+            }
+
+            // Path traversal protection: strip path elements
+            String cleanedOriginal = Paths.get(original).getFileName().toString()
+                    .replace("..", "").replace("/", "").replace("\\", "");
+            String extension = "";
+            int dotIdx = cleanedOriginal.lastIndexOf('.');
+            if (dotIdx > 0) {
+                extension = cleanedOriginal.substring(dotIdx + 1).toLowerCase();
+            }
+
+            if (FORBIDDEN_EXTENSIONS.contains(extension)) {
+                throw new SecurityException("Upload of executable or script files is strictly forbidden");
+            }
+
+            if (!ALLOWED_EXTENSIONS.contains(extension)) {
+                throw new IllegalArgumentException("Only PDF, JPG, and PNG documents are allowed");
+            }
+
+            String sanitizedReg = (studentRegNumber == null ? "anon" : studentRegNumber)
+                    .replaceAll("[^a-zA-Z0-9_-]", "_");
+            String safeFileName = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
+            Path uploadDir = Paths.get("uploads", sanitizedReg);
+            Files.createDirectories(uploadDir);
+            Path targetPath = uploadDir.resolve(safeFileName);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "/uploads/" + sanitizedReg + "/" + safeFileName;
         }
 
         public void deleteFile(String fileUrl) {
-            // Implementation for file deletion
+            if (fileUrl == null || fileUrl.isBlank()) return;
+            try {
+                String cleanPath = fileUrl.replaceFirst("^/uploads/", "").replace("..", "");
+                Path path = Paths.get("uploads", cleanPath);
+                Files.deleteIfExists(path);
+            } catch (Exception ignored) {}
         }
     }
 }

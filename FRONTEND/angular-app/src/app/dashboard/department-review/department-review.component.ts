@@ -1,12 +1,13 @@
-// department-review.component.ts
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { ToastService } from '../../core/services/toast.service';
+import { StudentDebtService } from '../../core/services/student-debt.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { StudentDebtFlag } from '../../core/models/student-debt.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
@@ -20,8 +21,10 @@ export class DepartmentReviewComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
     private readonly toastService = inject(ToastService);
+    private readonly studentDebtService = inject(StudentDebtService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     sidebarOpen = false;
     requestId: string = '';
@@ -29,6 +32,7 @@ export class DepartmentReviewComponent implements OnInit {
     studentData: any = null;
     isLoading = false;
     selectedTab: 'profile' | 'approvals' = 'profile';
+    openDebtFlag: StudentDebtFlag | null = null;
 
     get currentUser() {
         return this.authService.getCurrentUser();
@@ -60,6 +64,15 @@ export class DepartmentReviewComponent implements OnInit {
         }
 
         this.loadStudentData();
+        this.studentDebtService.listOpenForDepartment().subscribe({
+            next: (flags) => {
+                const regNum = this.getStudentRegNumber().trim().toLowerCase();
+                const found = (Array.isArray(flags) ? flags : []).find(f => f && f.status === 'OPEN' && f.registrationNumber && f.registrationNumber.trim().toLowerCase() === regNum);
+                this.openDebtFlag = found || null;
+                this.cdr.detectChanges();
+            },
+            error: () => {}
+        });
         this.isLoading = false;
     }
 

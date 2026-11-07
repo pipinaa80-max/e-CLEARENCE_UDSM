@@ -23,7 +23,7 @@ export class StudentDebtService {
     });
   }
 
-  create(data: { registrationNumber: string; amount: number; reason: string; negotiationNotes?: string }): Observable<StudentDebtFlag> {
+  create(data: { registrationNumber: string; amount: number; reason: string; negotiationNotes?: string; category?: string; dueDate?: string }): Observable<StudentDebtFlag> {
     return this.http.post<StudentDebtFlag>(this.endpoint, data, { headers: this.headers() });
   }
 

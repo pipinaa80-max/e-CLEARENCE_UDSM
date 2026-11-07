@@ -1,8 +1,13 @@
 package com.UDSM.BACKEND.Controller;
 
+import com.UDSM.BACKEND.Model.ClearanceRequest;
+import com.UDSM.BACKEND.Model.CollectionStation;
+import com.UDSM.BACKEND.Model.ERole;
 import com.UDSM.BACKEND.Model.NotificationType;
 import com.UDSM.BACKEND.Model.Student;
 import com.UDSM.BACKEND.Model.User;
+import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
+import com.UDSM.BACKEND.Repository.CollectionStationRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.Service.EmailService;
@@ -14,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,13 +39,16 @@ public class DusSecretaryController {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final CollectionStationRepository collectionStationRepository;
+    private final ClearanceRequestRepository clearanceRequestRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // =========================================================================
     // MAIN CAMPUS DUS SECRETARY ENDPOINTS
     // =========================================================================
 
     @GetMapping("/students")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<List<Map<String, Object>>> getStudents(@RequestParam(value = "query", required = false) String query) {
         List<Student> students;
         if (query != null && !query.isBlank()) {
@@ -53,7 +62,7 @@ public class DusSecretaryController {
     }
 
     @PostMapping("/verify-certificate")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> verifyCertificate(@RequestBody Map<String, Object> body) {
         String studentId = (String) body.get("studentId");
         Boolean verified = (Boolean) body.get("verified");
@@ -95,7 +104,7 @@ public class DusSecretaryController {
     }
 
     @PostMapping("/update-dispatch")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> updateDispatchState(@RequestBody Map<String, Object> body) {
         String studentId = (String) body.get("studentId");
         String dispatchStatus = (String) body.get("dispatchStatus");
@@ -108,19 +117,116 @@ public class DusSecretaryController {
 
         Student student = findStudentByIdentifier(studentId);
 
-        student.setDispatchStatus(dispatchStatus != null ? dispatchStatus : "Pending Dispatch");
-        if ("Dispatched".equalsIgnoreCase(dispatchStatus) || "Collected".equalsIgnoreCase(dispatchStatus)) {
-            student.setDispatchedAt(LocalDateTime.now());
-        }
+        String finalDispatchStatus = dispatchStatus != null && !dispatchStatus.isBlank() ? dispatchStatus : "Pending Dispatch";
+        student.setDispatchStatus(finalDispatchStatus);
+
+        // Resolve or validate destination Collection Station
+        CollectionStation targetStation = null;
         if (stationCode != null && !stationCode.isBlank()) {
-            student.setStationCode(stationCode);
+            targetStation = collectionStationRepository.findByCodeIgnoreCase(stationCode.trim()).orElse(null);
         }
-        if (stationName != null && !stationName.isBlank()) {
-            student.setStationName(stationName);
+
+        // If not found by stationCode, try to match by stationName
+        if (targetStation == null && stationName != null && !stationName.isBlank()) {
+            String nameQuery = stationName.trim().toLowerCase();
+            targetStation = collectionStationRepository.findAll().stream()
+                    .filter(s -> s.getName().toLowerCase().contains(nameQuery) || nameQuery.contains(s.getCode().toLowerCase()))
+                    .findFirst().orElse(null);
+        }
+
+        // If still not found, auto-match by student's college/department
+        if (targetStation == null) {
+            String college = student.getCollege() != null ? student.getCollege().toLowerCase() : "";
+            if (college.contains("coict") || college.contains("informatics") || college.contains("comput")) {
+                targetStation = collectionStationRepository.findByCodeIgnoreCase("COICT-HUB").orElse(null);
+            } else if (college.contains("arusha")) {
+                targetStation = collectionStationRepository.findByCodeIgnoreCase("ARUSHA-HUB").orElse(null);
+            } else if (college.contains("mwanza")) {
+                targetStation = collectionStationRepository.findByCodeIgnoreCase("MWANZA-HUB").orElse(null);
+            } else if (college.contains("mbeya")) {
+                targetStation = collectionStationRepository.findByCodeIgnoreCase("MBEYA-HUB").orElse(null);
+            } else if (college.contains("dodoma")) {
+                targetStation = collectionStationRepository.findByCodeIgnoreCase("DODOMA-HUB").orElse(null);
+            }
+        }
+
+        // Fallback default is UDSM Main Campus Central Station
+        if (targetStation == null) {
+            targetStation = collectionStationRepository.findByCodeIgnoreCase("UDSM-MAIN").orElse(null);
+        }
+
+        if (targetStation != null) {
+            student.setStationCode(targetStation.getCode());
+            student.setStationName(targetStation.getName());
+        } else {
+            if (stationCode != null && !stationCode.isBlank()) student.setStationCode(stationCode.trim());
+            if (stationName != null && !stationName.isBlank()) student.setStationName(stationName.trim());
+        }
+
+        // Transition intake status & dispatch timestamps based on dispatch state
+        if ("Dispatched".equalsIgnoreCase(finalDispatchStatus)) {
+            student.setDispatchedAt(LocalDateTime.now());
+            // Consignment is now In-Transit from Main Campus DUS to the destination Station Secretary
+            student.setIntakeStatus("In-Transit");
+        } else if ("Collected".equalsIgnoreCase(finalDispatchStatus)) {
+            student.setIntakeStatus("Collected by Student");
+        } else if ("Pending Dispatch".equalsIgnoreCase(finalDispatchStatus)) {
+            student.setIntakeStatus("Awaiting Intake");
+            student.setDispatchedAt(null);
         }
 
         studentRepository.save(student);
-        log.info("DUS Secretary: Dispatch status saved for student {} -> {}", student.getRegistrationNumber(), dispatchStatus);
+
+        // Synchronize with ClearanceRequest entities for this student
+        try {
+            List<ClearanceRequest> requests = clearanceRequestRepository.findByStudent(student);
+            for (ClearanceRequest req : requests) {
+                req.setDispatchStatus(student.getDispatchStatus());
+                req.setDispatchedAt(student.getDispatchedAt());
+                if (student.getCertificateVerified() != null) {
+                    req.setCertificateVerified(student.getCertificateVerified());
+                }
+                if (student.getDigitalSignatureHash() != null) {
+                    req.setDigitalSignatureHash(student.getDigitalSignatureHash());
+                    req.setSignedBy(student.getSignedBy());
+                    req.setSignedAt(student.getSignedAt());
+                }
+                clearanceRequestRepository.save(req);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to synchronize clearance requests for student {}: {}", student.getRegistrationNumber(), e.getMessage());
+        }
+
+        log.info("DUS Secretary: Consignment dispatched for student {} to station {} ({}) -> intakeStatus: {}",
+                student.getRegistrationNumber(), student.getStationName(), student.getStationCode(), student.getIntakeStatus());
+
+        // Notify student of consignment routing
+        if ("Dispatched".equalsIgnoreCase(finalDispatchStatus)) {
+            User targetUser = student.getUser();
+            if (targetUser == null && student.getEmail() != null) {
+                targetUser = userRepository.findByEmail(student.getEmail().toLowerCase()).orElse(null);
+            }
+            String stationLabel = student.getStationName() != null ? student.getStationName() : "Collection Station";
+            String title = "🚚 Consignment Dispatched to " + stationLabel;
+            String msg = "Dear " + student.getFullName() + ",\n\n"
+                    + "Your Degree Certificate & Academic Transcript have been physically dispatched from UDSM Main Campus DUS Directorate.\n\n"
+                    + "Destination Collection Station: " + stationLabel
+                    + " (" + (student.getStationCode() != null ? student.getStationCode() : "STATION") + ")\n"
+                    + "Status: In-Transit from Main Campus\n"
+                    + "Dispatched At: " + student.getDispatchedAt() + "\n\n"
+                    + "You will receive an automatic notification once the package arrives at the station intake desk and is secured in the station vault.";
+
+            if (targetUser != null) {
+                notificationService.sendNotification(targetUser, title, msg, NotificationType.SYSTEM);
+            }
+            if (student.getEmail() != null && !student.getEmail().isBlank()) {
+                try {
+                    emailService.sendClearanceUpdateEmail(student, "CERTIFICATE_DISPATCHED", "DUS Directorate Main Campus", msg);
+                } catch (Exception ex) {
+                    log.warn("Failed to dispatch email confirmation: {}", ex.getMessage());
+                }
+            }
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -128,13 +234,15 @@ public class DusSecretaryController {
         response.put("dispatchStatus", student.getDispatchStatus());
         response.put("stationCode", student.getStationCode());
         response.put("stationName", student.getStationName());
-        response.put("message", "Dispatch status saved to database.");
+        response.put("intakeStatus", student.getIntakeStatus());
+        response.put("dispatchedAt", student.getDispatchedAt() != null ? student.getDispatchedAt().toString() : null);
+        response.put("message", "Consignment routed to " + student.getStationName() + " and marked as In-Transit.");
 
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/notify-release")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> notifyCertificateRelease(@RequestBody CertificateReleaseNotificationRequest request) {
         if (request.getStudentId() == null || request.getStudentId().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student registration number or ID is required.");
@@ -198,7 +306,7 @@ public class DusSecretaryController {
      * Get consignments arriving from Main Campus DUS to a specific regional/campus station
      */
     @GetMapping("/station/consignments")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<List<Map<String, Object>>> getStationConsignments(
             @RequestParam(value = "stationCode", required = false) String stationCode,
             @RequestParam(value = "query", required = false) String query,
@@ -209,7 +317,8 @@ public class DusSecretaryController {
                     // Filter by station code if specified
                     if (stationCode != null && !stationCode.isBlank() && !"ALL".equalsIgnoreCase(stationCode)) {
                         boolean matchStation = stationCode.equalsIgnoreCase(s.getStationCode())
-                                || (s.getCollege() != null && s.getCollege().toLowerCase().contains(stationCode.toLowerCase()));
+                                || (s.getCollege() != null && s.getCollege().toLowerCase().contains(stationCode.toLowerCase()))
+                                || (s.getStationName() != null && s.getStationName().toLowerCase().contains(stationCode.toLowerCase()));
                         if (!matchStation) return false;
                     }
                     // Filter by status if specified
@@ -248,7 +357,7 @@ public class DusSecretaryController {
      * Station Secretary acknowledges physical package receipt into station vault/custody
      */
     @PostMapping("/station/intake")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> receiveStationIntake(@RequestBody Map<String, Object> body) {
         String studentId = (String) body.get("studentId");
         String stationCode = (String) body.get("stationCode");
@@ -305,7 +414,7 @@ public class DusSecretaryController {
      * Bulk intake all incoming dispatched consignments arriving in a batch
      */
     @PostMapping("/station/bulk-intake")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> bulkStationIntake(@RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<String> studentIds = (List<String>) body.get("studentIds");
@@ -348,7 +457,7 @@ public class DusSecretaryController {
      * Station Secretary approves student certificate/transcript handover
      */
     @PostMapping("/station/approve-handover")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> approveStationHandover(@RequestBody Map<String, Object> body) {
         String studentId = (String) body.get("studentId");
         String collectorType = (String) body.get("collectorType"); // "Student in Person" or "Authorized Legal Representative"
@@ -423,7 +532,7 @@ public class DusSecretaryController {
      * Report transit discrepancy or damaged parcel back to Main Campus DUS Secretary
      */
     @PostMapping("/station/report-discrepancy")
-    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<Map<String, Object>> reportStationDiscrepancy(@RequestBody Map<String, Object> body) {
         String studentId = (String) body.get("studentId");
         String issueType = (String) body.get("issueType");
@@ -500,6 +609,187 @@ public class DusSecretaryController {
         map.put("transitIssueNotes", s.getTransitIssueNotes());
 
         return map;
+    }
+
+    // =========================================================================
+    // STATION SECRETARY USER MANAGEMENT ENDPOINTS
+    // =========================================================================
+
+    @GetMapping("/station-secretaries")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
+    public ResponseEntity<List<Map<String, Object>>> getStationSecretaries() {
+        List<User> secretaries = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == ERole.DUS_SECRETARY)
+                .toList();
+
+        List<Map<String, Object>> result = secretaries.stream().map(u -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", u.getId());
+            map.put("fullName", u.getFullName() != null ? u.getFullName() : (u.getFirstName() + " " + u.getLastName()));
+            map.put("firstName", u.getFirstName());
+            map.put("lastName", u.getLastName());
+            map.put("email", u.getEmail());
+            map.put("username", u.getUsername());
+            map.put("phoneNumber", u.getPhoneNumber());
+            map.put("stationCode", u.getStationCode() != null ? u.getStationCode() : (u.getCollege() != null ? u.getCollege() : "UDSM-MAIN"));
+            map.put("stationName", u.getStationName() != null ? u.getStationName() : "UDSM Main Campus - Central DUS");
+            map.put("role", u.getRole() != null ? u.getRole().name() : "DUS_SECRETARY");
+            map.put("active", u.isActive());
+            map.put("createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
+            map.put("lastLogin", u.getLastLogin() != null ? u.getLastLogin().toString() : null);
+            return map;
+        }).toList();
+
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/station-secretaries")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
+    public ResponseEntity<Map<String, Object>> createStationSecretary(@RequestBody Map<String, Object> body) {
+        String fullName = (String) body.get("fullName");
+        String email = (String) body.get("email");
+        String phoneNumber = (String) body.get("phoneNumber");
+        String stationCode = (String) body.get("stationCode");
+        String password = (String) body.get("password");
+
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Full name is required.");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email address is required.");
+        }
+        if (stationCode == null || stationCode.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Station code is required.");
+        }
+
+        String cleanEmail = email.trim().toLowerCase();
+        if (userRepository.findByEmail(cleanEmail).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A user with email '" + cleanEmail + "' already exists.");
+        }
+
+        CollectionStation station = collectionStationRepository.findByCodeIgnoreCase(stationCode.trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection station not found for code: " + stationCode));
+
+        String[] parts = fullName.trim().split("\\s+", 2);
+        String firstName = parts[0];
+        String lastName = parts.length > 1 ? parts[1] : parts[0];
+
+        String baseUsername = cleanEmail.contains("@") ? cleanEmail.substring(0, cleanEmail.indexOf("@")) : cleanEmail;
+        String username = baseUsername;
+        int suffix = 1;
+        while (userRepository.findByUsername(username).isPresent()) {
+            username = baseUsername + suffix++;
+        }
+
+        String rawPassword = (password != null && !password.trim().isEmpty()) ? password.trim() : "UDSM@Station2026";
+
+        User user = User.builder()
+                .fullName(fullName.trim())
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(cleanEmail)
+                .username(username)
+                .password(passwordEncoder.encode(rawPassword))
+                .phoneNumber(phoneNumber != null ? phoneNumber.trim() : null)
+                .role(ERole.DUS_SECRETARY)
+                .stationCode(station.getCode())
+                .stationName(station.getName())
+                .college(station.getName())
+                .department("Station Intake & Custody Counter")
+                .active(true)
+                .emailVerified(true)
+                .projectId("UDSM")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        User saved = userRepository.save(user);
+        log.info("DUS Secretary: Created new Station Secretary {} ({}) for station {} ({})",
+                saved.getFullName(), saved.getEmail(), saved.getStationName(), saved.getStationCode());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("id", saved.getId());
+        response.put("fullName", saved.getFullName());
+        response.put("email", saved.getEmail());
+        response.put("username", saved.getUsername());
+        response.put("stationCode", saved.getStationCode());
+        response.put("stationName", saved.getStationName());
+        response.put("active", saved.isActive());
+        response.put("message", "Station Secretary account created successfully for " + saved.getStationName());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/station-secretaries/{id}")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
+    public ResponseEntity<Map<String, Object>> updateStationSecretary(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Station Secretary not found with ID: " + id));
+
+        String fullName = (String) body.get("fullName");
+        String phoneNumber = (String) body.get("phoneNumber");
+        String stationCode = (String) body.get("stationCode");
+        String password = (String) body.get("password");
+        Boolean active = (Boolean) body.get("active");
+
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            user.setFullName(fullName.trim());
+            String[] parts = fullName.trim().split("\\s+", 2);
+            user.setFirstName(parts[0]);
+            user.setLastName(parts.length > 1 ? parts[1] : parts[0]);
+        }
+        if (phoneNumber != null) {
+            user.setPhoneNumber(phoneNumber.trim());
+        }
+        if (stationCode != null && !stationCode.trim().isEmpty()) {
+            CollectionStation station = collectionStationRepository.findByCodeIgnoreCase(stationCode.trim())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection station not found for code: " + stationCode));
+            user.setStationCode(station.getCode());
+            user.setStationName(station.getName());
+            user.setCollege(station.getName());
+        }
+        if (password != null && !password.trim().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(password.trim()));
+        }
+        if (active != null) {
+            user.setActive(active);
+        }
+        user.setUpdatedAt(LocalDateTime.now());
+
+        User saved = userRepository.save(user);
+        log.info("DUS Secretary: Updated Station Secretary {} -> station: {}, active: {}", saved.getEmail(), saved.getStationCode(), saved.isActive());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("id", saved.getId());
+        response.put("fullName", saved.getFullName());
+        response.put("email", saved.getEmail());
+        response.put("stationCode", saved.getStationCode());
+        response.put("stationName", saved.getStationName());
+        response.put("active", saved.isActive());
+        response.put("message", "Station Secretary details updated successfully.");
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/station-secretaries/{id}")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
+    public ResponseEntity<Map<String, Object>> deleteStationSecretary(@PathVariable String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Station Secretary not found with ID: " + id));
+
+        user.setActive(false);
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        log.info("DUS Secretary: Deactivated Station Secretary {} ({})", user.getEmail(), user.getStationCode());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Station Secretary account deactivated successfully.");
+
+        return ResponseEntity.ok(response);
     }
 
     @Data

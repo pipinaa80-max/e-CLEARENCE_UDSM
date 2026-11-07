@@ -87,6 +87,10 @@ export class StationSecretaryDashboardComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get isStationSecretary(): boolean {
+    return this.currentUser?.role === 'Station Secretary';
+  }
+
   ngOnInit(): void {
     this.loadStations();
     this.loadRequests();
@@ -108,12 +112,18 @@ export class StationSecretaryDashboardComponent implements OnInit {
   loadStations(): void {
     this.stationService.getActiveStations().subscribe({
       next: (list) => {
-        this.stations = list;
+        this.stations = (list || []).map(s => ({
+          ...s,
+          name: s.name.replace(/^udsm/i, 'UDSM'),
+          code: s.code.toUpperCase()
+        }));
         if (this.stations.length > 0) {
-          // If secretary has an assigned college/station, match it, otherwise default to first station
+          // If secretary has an assigned stationCode or college/station, match it, otherwise default to first station
+          const userStationCode = this.currentUser?.stationCode?.toLowerCase() || '';
           const userCollege = this.currentUser?.college?.toLowerCase() || '';
           const match = this.stations.find(s =>
-            userCollege && (s.name.toLowerCase().includes(userCollege) || s.code.toLowerCase().includes(userCollege))
+            (userStationCode && s.code.toLowerCase() === userStationCode) ||
+            (userCollege && (s.name.toLowerCase().includes(userCollege) || s.code.toLowerCase().includes(userCollege)))
           );
           if (match) {
             this.selectedStationCode = match.code;
@@ -216,7 +226,7 @@ export class StationSecretaryDashboardComponent implements OnInit {
   get inTransitCount(): number {
     return this.filteredByStationList.filter(r =>
       (r.dispatchStatus === 'Dispatched' || r.certificateVerified) &&
-      (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake')
+      (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake' || r.intakeStatus === 'In-Transit')
     ).length;
   }
 
@@ -253,7 +263,7 @@ export class StationSecretaryDashboardComponent implements OnInit {
       // Tab filter
       if (this.filterTab === 'IN_TRANSIT') {
         const inTransit = (r.dispatchStatus === 'Dispatched' || r.certificateVerified) &&
-          (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake');
+          (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake' || r.intakeStatus === 'In-Transit');
         if (!inTransit) return false;
       } else if (this.filterTab === 'IN_VAULT') {
         const inVault = r.intakeStatus === 'Received at Station' && r.dispatchStatus !== 'Collected';

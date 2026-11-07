@@ -7,6 +7,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,11 +33,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    private final IpBlockingFilter ipBlockingFilter;
 
     @Bean
     public AuthenticationManager authenticationManager(
@@ -63,16 +60,32 @@ public class SecurityConfig {
     }
 
     @Bean
+    public FilterRegistrationBean<IpBlockingFilter> ipBlockingFilterRegistration(
+            IpBlockingFilter filter
+    ) {
+        FilterRegistrationBean<IpBlockingFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        log.info("✅ Disabled IpBlockingFilter registration as normal servlet filter");
+        return registration;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) throws Exception {
 
-        log.info("✅ Configuring SecurityFilterChain");
+        log.info("✅ Configuring SecurityFilterChain with Honeypot & IP Filter");
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers
+                        .contentTypeOptions(Customizer.withDefaults())
+                        .frameOptions(frame -> frame.sameOrigin())
+                        .xssProtection(Customizer.withDefaults())
+                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -80,16 +93,20 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/auth/**",
+                                "/collection-stations",
                                 "/control-plane/login",
                                 "/control-plane/public/**",
                                 "/api/test",
                                 "/swagger-ui/**",
                                 "/qr/**",
                                 "/uploads/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/.env", "/.git/**", "/wp-admin/**", "/wp-login.php", "/admin.php",
+                                "/phpmyadmin/**", "/pma/**", "/xmlrpc.php", "/api/v1/honeypot/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(ipBlockingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         log.info("✅ SecurityFilterChain configured successfully");

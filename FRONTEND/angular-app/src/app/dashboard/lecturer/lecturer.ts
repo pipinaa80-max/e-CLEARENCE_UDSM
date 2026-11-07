@@ -32,6 +32,17 @@ export class LecturerDashboard implements OnInit {
   clearanceLookupError = '';
   private clearanceLookupSequence = 0;
   amount: number | null = null;
+  category = 'Equipment / Item Rental';
+  dueDate = '';
+  readonly itemCategories = [
+    'Equipment / Item Rental',
+    'Library Book / Material',
+    'Laboratory Apparatus',
+    'Workshop Tool / Device',
+    'Hostel / Room Key',
+    'Academic Tuition / Fine',
+    'Other Liability'
+  ];
   reason = '';
   negotiationNotes = '';
   resolvingFlag: StudentDebtFlag | null = null;
@@ -117,7 +128,9 @@ export class LecturerDashboard implements OnInit {
       registrationNumber: this.registrationNumber.trim(),
       amount: this.amount,
       reason: this.reason.trim(),
-      negotiationNotes: this.negotiationNotes.trim() || undefined
+      negotiationNotes: this.negotiationNotes.trim() || undefined,
+      category: this.category,
+      dueDate: this.dueDate || undefined
     }).subscribe({
       next: flag => {
         this.flags = [flag, ...this.flags];
@@ -126,7 +139,9 @@ export class LecturerDashboard implements OnInit {
         this.amount = null;
         this.reason = '';
         this.negotiationNotes = '';
-        this.message = `Debt flag recorded for ${flag.studentName} (${flag.registrationNumber}) and sent to ${flag.department}.`;
+        this.category = 'Equipment / Item Rental';
+        this.dueDate = '';
+        this.message = `Liability registered for ${flag.studentName} (${flag.registrationNumber}) under ${flag.category || 'Rental'}. Automatic clearance checking is active.`;
         this.isSubmitting = false;
       },
       error: err => {

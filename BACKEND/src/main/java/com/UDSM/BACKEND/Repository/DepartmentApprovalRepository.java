@@ -24,6 +24,16 @@ public interface DepartmentApprovalRepository extends JpaRepository<DepartmentAp
     List<DepartmentApproval> findByClearanceRequest(ClearanceRequest clearanceRequest);
 
     /**
+     * Batch find all department approvals for a collection of clearance requests (eliminates N+1 queries)
+     */
+    List<DepartmentApproval> findByClearanceRequestIn(List<ClearanceRequest> clearanceRequests);
+
+    /**
+     * Batch find all department approvals for a collection of clearance request IDs (eliminates N+1 queries)
+     */
+    List<DepartmentApproval> findByClearanceRequestIdIn(List<Long> clearanceRequestIds);
+
+    /**
      * Find all department approvals by clearance request ID
      */
     List<DepartmentApproval> findByClearanceRequestId(Long clearanceRequestId);

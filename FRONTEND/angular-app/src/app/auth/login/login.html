@@ -2,7 +2,7 @@
   <div class="header-content">
     <!-- FIX: Changed from /public/ to /public/ -->
     <a routerLink="/"><img [src]="branding.logoUrl" alt="Institutional Logo" class="header-logo" /></a>
-    <h2>{{ branding.shortName }} MIS</h2>
+    <h2>University of Dar es Salaam</h2>
   </div>
 </header>
 
@@ -16,6 +16,11 @@
     </div>
 
     <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submit()">
+      <!-- Security Honeypot: Invisible to human users, traps automated bots -->
+      <div style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+        <input type="text" formControlName="honeypotTrap" tabindex="-1" autocomplete="off" aria-label="Security check" />
+      </div>
+
       <label class="field" for="identifier">
         <span>Email / Registration Number</span>
         <div class="field-input-wrap">
@@ -63,7 +68,6 @@
       <div class="helper-row">
         <!-- FIX: Changed routerLink from /login to /forgot-password -->
         <a routerLink="/forgot-password">Forgot Password?</a>
-        <a routerLink="/signup-options">Create Account</a>
       </div>
     </form>
   </div>

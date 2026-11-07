@@ -21,14 +21,50 @@
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
         <span>Dashboard</span>
       </a>
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm4.5 0a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zM8 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm3.4 2.1c-.8-.7-2.1-1.1-3.4-1.1s-2.6.4-3.4 1.1A1 1 0 0 0 4 14h8a1 1 0 0 0 .6-.9z"/></svg>
+        <span>My Profile</span>
+      </a>
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a.5.5 0 0 1-.5-.5zM8.5 7v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 0 1 0z"/></svg>
+        <span>Clearance Request</span>
+      </a>
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
         <span>Clearance Process</span>
+      </a>
+      <a routerLink="/transcript" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 1h6v7a.5.5 0 0 1-.757.429L9 7.083 6.757 8.43A.5.5 0 0 1 6 8V1z"/><path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3z"/></svg>
+        <span>Transcript Dashboard</span>
+      </a>
+      <a routerLink="/transcript/payment" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM8.5 4.5V6H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V7H6a.5.5 0 0 1 0-1h1.5V4.5a.5.5 0 0 1 1 0z"/></svg>
+        <span>Acquire More Transcript</span>
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
+        <span>Notifications</span>
+      </a>
+    </nav>
+
+    <!-- DUS / Station Secretary Sidebar Links (mirrors their dashboards) -->
+    <nav *ngIf="isSecretary">
+      <a *ngIf="!isStationSecretary" routerLink="/dashboard/dus-secretary" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+        <span>Main Campus Dispatch</span>
+      </a>
+      <a routerLink="/dashboard/station-secretary" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 1 0-6 0v2H3.5A1.5 1.5 0 0 0 2 6.5v7A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 12.5 5H11zm-7 1h8a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5z"/></svg>
+        <span>{{ isStationSecretary ? 'Station Vault & Intake' : 'Station Intake & Handover' }}</span>
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
+        <span>Notifications</span>
       </a>
     </nav>
 
     <!-- Staff Sidebar Links -->
-    <nav *ngIf="!isStudent">
+    <nav *ngIf="!isStudent && !isSecretary">
       <a [routerLink]="[dashboardRoute]" (click)="closeSidebar()">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
         <span>{{ dashboardLabel }}</span>
@@ -48,99 +84,30 @@
         <app-dashboard-header
             title="Notifications"
             [user]="currentUser"
-            [showProfile]="false"
             [showToggle]="true"
             (toggleSidebar)="toggleSidebar()"
         >
-            <div header-actions class="notifications-header-actions">
+            <div header-actions style="display: flex; gap: 10px; align-items: center;">
                 <a [routerLink]="[dashboardRoute]" class="header-back-btn" title="Return to Dashboard">
                   <i class="bi bi-arrow-left"></i>
                   <span>Back to Dashboard</span>
                 </a>
-                <button *ngIf="notifications.length && hasUnread" type="button" class="mark-read-btn" (click)="markAllRead()">
-                  <i class="bi bi-check2-all"></i>
-                  <span>Mark all as read</span>
-                </button>
-                <button *ngIf="notifications.length" type="button" class="clear-all-btn" (click)="clearAll()" title="Clear all notifications">
-                  <i class="bi bi-trash3"></i>
-                  <span>Clear all</span>
-                </button>
-
-                <!-- Student avatar dropdown if student -->
-                <div class="header-user-dropdown-container" *ngIf="isStudent">
-                  <button
-                    type="button"
-                    class="header-avatar-button"
-                    (click)="toggleUserDropdown($event)"
-                    title="Account menu"
-                    aria-haspopup="true"
-                    [attr.aria-expanded]="userDropdownOpen"
-                  >
-                    <img
-                      *ngIf="hasPhoto(); else profileInitial"
-                      [src]="getPhotoSource()"
-                      [alt]="currentUser?.fullName || 'Student profile photo'"
-                      (error)="onImageError()"
-                    />
-                    <ng-template #profileInitial>
-                      <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
-                    </ng-template>
-                    <span class="profile-notification-dot" *ngIf="hasUnread" aria-label="Unread notifications"></span>
-                  </button>
-
-                  <div class="header-user-dropdown-menu" *ngIf="userDropdownOpen" (click)="$event.stopPropagation()">
-                    <div class="dropdown-user-header">
-                      <strong>{{ currentUser?.fullName || 'Student' }}</strong>
-                      <small>{{ currentUser?.registrationNumber || currentUser?.email || 'Student' }}</small>
-                    </div>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" routerLink="/profile" (click)="closeUserDropdown()">
-                      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                        <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                        <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
-                      </svg>
-                      <span>Profile</span>
-                    </a>
-                    <a class="dropdown-item" routerLink="/notifications" (click)="closeUserDropdown()">
-                      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                        <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
-                      </svg>
-                      <span>Notifications</span>
-                      <span class="dropdown-badge" *ngIf="hasUnread">{{ unreadCount }}</span>
-                    </a>
-                  </div>
-                </div>
+                <button *ngIf="notifications.length" type="button" class="mark-read-btn" (click)="markAllRead()">Mark all as read</button>
             </div>
         </app-dashboard-header>
         
-        <div class="empty-state" *ngIf="!notifications.length && !isLoading">
-          <i class="bi bi-bell-slash empty-icon"></i>
-          <strong>No notifications yet</strong>
-          <p>You have no active notifications. System updates regarding your clearance will appear here.</p>
-        </div>
-
-        <div class="loading-state" *ngIf="isLoading && !notifications.length">
-          <i class="bi bi-arrow-repeat spin-icon"></i>
-          <span>Loading notifications...</span>
-        </div>
-
+        <div class="empty-state" *ngIf="!notifications.length">You have no notifications yet. System updates will appear here.</div>
         <ul class="notification-list" *ngIf="notifications.length">
             <li *ngFor="let notification of notifications" [class.unread]="!notification.read" (click)="markRead(notification.id)">
-              <span class="notice-icon">
-                <i *ngIf="notification.read" class="bi bi-check2-all"></i>
-                <i *ngIf="!notification.read" class="bi bi-bell-fill"></i>
-              </span>
-              <div class="notice-body">
-                <div class="notice-header">
-                  <strong>{{ notification.title }}</strong>
-                  <span class="type-badge" [ngClass]="getTypeClass(notification.type, notification.title)">{{ getTypeLabel(notification.type, notification.title) }}</span>
-                </div>
-                <span class="notice-message">{{ notification.message }}</span>
-                <small>{{ notification.createdAt | date:'medium' }}</small>
-              </div>
-              <button type="button" class="dismiss-notice-btn" (click)="deleteNotification($event, notification.id)" title="Dismiss notification">
-                <i class="bi bi-x-lg"></i>
-              </button>
+            <span class="notice-icon">
+              <i *ngIf="notification.read" class="bi bi-check2-all"></i>
+              <i *ngIf="!notification.read" class="bi bi-bell-fill"></i>
+            </span>
+        <div>
+            <strong>{{ notification.title }}</strong>
+            <span>{{ notification.message }}</span>
+            <small>{{ notification.createdAt | date:'medium' }}</small>
+        </div>
             </li>
         </ul>
     </div>

@@ -34,7 +34,6 @@ export class ParallelOfficeRequestTableComponent {
   @Output() view = new EventEmitter<ClearanceRequest>();
 
   private readonly studentCache = new Map<string, StudentProfile | null>();
-  detailsRequest: ClearanceRequest | null = null;
 
   async withdraw(request: ClearanceRequest): Promise<void> {
     if (await this.clearanceService.withdrawOfficeDecision(request.id, this.office)) {

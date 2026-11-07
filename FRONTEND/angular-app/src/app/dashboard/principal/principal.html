@@ -32,7 +32,7 @@
   <!-- MAIN CONTENT -->
   <main class="content">
     <app-dashboard-header
-      [title]="'Principal ' + collegeName + ' Dashboard'"
+      [title]="'Principal ' + collegeName"
       subtitle="Collegiate student clearance"
       [user]="currentUser"
       [showToggle]="true"
@@ -152,39 +152,6 @@
         <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()">
           📥 Export College CSV Report
         </button>
-      </div>
-
-      <!-- EXECUTIVE KPI GRID -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-label">Total Applications</span>
-          <strong class="kpi-val">{{ totalCollegeStudents }}</strong>
-          <small class="kpi-sub">Total students in {{ collegeName }}</small>
-        </div>
-
-        <div class="kpi-card success">
-          <span class="kpi-label">Cleared / Approved</span>
-          <strong class="kpi-val text-success">{{ clearedCollegeCount }}</strong>
-          <small class="kpi-sub">Principal approved applications</small>
-        </div>
-
-        <div class="kpi-card warning">
-          <span class="kpi-label">Pending Approval</span>
-          <strong class="kpi-val text-warning">{{ pendingCollegeCount }}</strong>
-          <small class="kpi-sub">Awaiting Principal review</small>
-        </div>
-
-        <div class="kpi-card danger">
-          <span class="kpi-label">Rejected / Returned</span>
-          <strong class="kpi-val text-danger">{{ rejectedCollegeCount }}</strong>
-          <small class="kpi-sub">Flagged for student action</small>
-        </div>
-
-        <div class="kpi-card accent">
-          <span class="kpi-label">College Clearance Rate</span>
-          <strong class="kpi-val text-accent">{{ collegeClearanceRate }}%</strong>
-          <small class="kpi-sub">Overall completion rate</small>
-        </div>
       </div>
 
       <!-- DEPARTMENTAL BREAKDOWN -->

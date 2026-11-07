@@ -2,8 +2,10 @@ package com.UDSM.BACKEND.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -11,9 +13,11 @@ import com.UDSM.BACKEND.Model.*;
 import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.Repository.DepartmentApprovalRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
+import com.UDSM.BACKEND.Repository.StudentDebtFlagRepository;
 import com.UDSM.BACKEND.config.ProjectScope;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.dto.ApiResponse;
+import com.UDSM.BACKEND.dto.BulkClearanceDecisionRequest;
 import com.UDSM.BACKEND.dto.ClearanceDecisionRequest;
 import com.UDSM.BACKEND.dto.ClearanceRequestDTO;
 import com.UDSM.BACKEND.dto.ClearanceResponse;
@@ -41,6 +45,7 @@ public class ClearanceService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final com.UDSM.BACKEND.Repository.DepartmentRepository departmentRepository;
+    private final StudentDebtFlagRepository studentDebtFlagRepository;
 
     // =========================================================
     // STUDENT CLEARANCE SUBMISSION
@@ -163,6 +168,29 @@ public class ClearanceService {
 
         departmentApprovalRepository.saveAll(approvals);
 
+        // Compare registration and automatically flag/notify if student has open rental/liability records
+        List<StudentDebtFlag> openDebts = studentDebtFlagRepository.findByRegistrationNumberIgnoreCaseAndStatus(student.getRegistrationNumber(), "OPEN");
+        if (openDebts != null && !openDebts.isEmpty()) {
+            for (StudentDebtFlag debt : openDebts) {
+                User lecturer = userRepository.findById(debt.getLecturerId()).orElse(null);
+                String lecturerEmail = lecturer != null && lecturer.getEmail() != null ? lecturer.getEmail() : "N/A";
+                String lecturerPhone = lecturer != null && lecturer.getPhoneNumber() != null ? lecturer.getPhoneNumber() : "N/A";
+
+                if (student.getUser() != null) {
+                    notificationService.sendNotification(
+                            student.getUser(),
+                            "Clearance Flagged: Open Rental / Liability Record",
+                            "Your clearance has been automatically flagged due to an open rental/liability record at stage/department: " + debt.getDepartment()
+                                    + ". Lecturer in charge: " + debt.getLecturerName()
+                                    + " (Email: " + lecturerEmail + ", Phone: " + lecturerPhone + "). "
+                                    + "Reason: " + debt.getReason() + ". Amount: " + debt.getAmount()
+                                    + ". Please resolve this debt with the lecturer to complete your clearance.",
+                            NotificationType.CLEARANCE_UPDATE
+                    );
+                }
+            }
+        }
+
         if (student.getUser() != null) {
             notificationService.sendNotification(
                     student.getUser(),
@@ -194,10 +222,19 @@ public class ClearanceService {
                 ? clearanceRequestRepository.findByProjectId(projectId)
                 : clearanceRequestRepository.findAll();
 
+        // High-concurrency optimization: Batch fetch all approvals in ONE query to eliminate N+1 queries
+        List<Long> reqIds = requests.stream().map(ClearanceRequest::getId).filter(Objects::nonNull).toList();
+        Map<Long, List<DepartmentApproval>> approvalsByReqId = reqIds.isEmpty() ? Map.of() :
+                departmentApprovalRepository.findByClearanceRequestIdIn(reqIds).stream()
+                        .filter(da -> da.getClearanceRequest() != null)
+                        .collect(Collectors.groupingBy(da -> da.getClearanceRequest().getId()));
+
         return requests.stream()
                 .filter(cr -> {
-                    // Check if this request has a department approval matching targetOffice
-                    Optional<DepartmentApproval> approvalOpt = departmentApprovalRepository.findByClearanceRequest(cr).stream()
+                    List<DepartmentApproval> reqApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
+
+                    // Check if this request has a department approval matching targetOffice (in-memory O(1) lookup)
+                    Optional<DepartmentApproval> approvalOpt = reqApprovals.stream()
                             .filter(a -> matchesOffice(a.getDepartment(), targetOffice, cr))
                             .findFirst();
 
@@ -295,6 +332,58 @@ public class ClearanceService {
         User user = getCurrentUser(authentication);
         String office = resolveTargetOffice(user, request.getOffice());
         return approveClearance(request.getRequestId(), office, request.getComments(), user);
+    }
+
+    public ApiResponse bulkApproveOfficeClearance(BulkClearanceDecisionRequest requestDTO, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        String office = resolveTargetOffice(user, requestDTO.getOffice());
+        String projectId = ProjectScope.currentProjectId();
+
+        if (requestDTO.getRequestIds() == null || requestDTO.getRequestIds().isEmpty()) {
+            return ApiResponse.error("No request IDs provided for bulk approval.");
+        }
+
+        int approvedCount = 0;
+        int skippedCount = 0;
+        List<String> skippedReasons = new ArrayList<>();
+
+        for (String reqId : requestDTO.getRequestIds()) {
+            try {
+                ClearanceRequest req = findRequestByIdOrRegistration(reqId, projectId);
+                
+                // 1. Check if rejected
+                boolean isRejected = "REJECTED".equalsIgnoreCase(req.getStatus());
+                Optional<DepartmentApproval> approvalOpt = findMatchingApproval(req, office);
+                if (approvalOpt.isPresent() && approvalOpt.get().getStatus() == ClearanceStatus.REJECTED) {
+                    isRejected = true;
+                }
+                if (isRejected) {
+                    skippedCount++;
+                    skippedReasons.add("Request #" + reqId + " is rejected.");
+                    continue;
+                }
+
+                // 2. Check if flagged (open student debt / rental liability)
+                if (req.getStudent() != null && req.getStudent().getRegistrationNumber() != null) {
+                    List<StudentDebtFlag> openDebts = studentDebtFlagRepository.findByRegistrationNumberIgnoreCaseAndStatus(req.getStudent().getRegistrationNumber(), "OPEN");
+                    if (openDebts != null && !openDebts.isEmpty()) {
+                        skippedCount++;
+                        skippedReasons.add("Request #" + reqId + " (" + req.getStudent().getRegistrationNumber() + ") is flagged with open debt/liability.");
+                        continue;
+                    }
+                }
+
+                // 3. Approve
+                approveClearance(String.valueOf(req.getId()), office, requestDTO.getComments(), user);
+                approvedCount++;
+            } catch (Exception e) {
+                skippedCount++;
+                skippedReasons.add("Request #" + reqId + " error: " + e.getMessage());
+                log.warn("Bulk approval skipped request {}: {}", reqId, e.getMessage());
+            }
+        }
+
+        return ApiResponse.success("Bulk approval complete. Approved: " + approvedCount + ", Skipped (flagged/rejected/error): " + skippedCount);
     }
 
     public ApiResponse rejectOfficeClearance(ClearanceDecisionRequest request, Authentication authentication) {
@@ -1218,29 +1307,40 @@ public class ClearanceService {
         if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
             return true;
         }
-        String s1 = studentScope.trim().toLowerCase();
-        String s2 = userScope.trim().toLowerCase();
-        if (s1.equals(s2) || s1.contains(s2) || s2.contains(s1)) {
+        String clean1 = cleanPrefixes(studentScope);
+        String clean2 = cleanPrefixes(userScope);
+        if (clean1.equals(clean2) || clean1.contains(clean2) || clean2.contains(clean1)) {
             return true;
         }
-        String n1 = normalizeDepartmentString(s1);
-        String n2 = normalizeDepartmentString(s2);
-        if (!n1.isEmpty() && !n2.isEmpty() && (n1.equals(n2) || n1.contains(n2) || n2.contains(n1))) {
+        String a1 = extractAcronym(studentScope);
+        String a2 = extractAcronym(userScope);
+        if (!a1.isEmpty() && (a1.equals(clean2) || clean2.contains(a1))) {
             return true;
         }
-        String a1 = extractAcronymOrInitials(s1, n1);
-        String a2 = extractAcronymOrInitials(s2, n2);
-        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1) || a1.equals(n2))) {
-            return true;
-        }
-        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2) || a2.equals(n1))) {
+        if (!a2.isEmpty() && (a2.equals(clean1) || clean1.contains(a2))) {
             return true;
         }
         return !a1.isEmpty() && !a2.isEmpty() && a1.equals(a2);
     }
 
+    private String cleanPrefixes(String s) {
+        return s.trim().toLowerCase()
+                .replaceAll("^(department|dept|college)\\s*(of)?\\s*", "")
+                .trim();
+    }
+
     private String extractAcronym(String s) {
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\(([^)]+)\\)").matcher(s);
-        return matcher.find() ? matcher.group(1).trim().toLowerCase() : "";
+        if (matcher.find()) {
+            return matcher.group(1).trim().toLowerCase();
+        }
+        String[] words = s.replaceAll("[^a-zA-Z0-9\\s]", " ").trim().toLowerCase().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String w : words) {
+            if (w.length() > 2 && !w.equals("and") && !w.equals("for") && !w.equals("the") && !w.equals("dept") && !w.equals("department") && !w.equals("college")) {
+                sb.append(w.charAt(0));
+            }
+        }
+        return sb.length() > 1 ? sb.toString() : "";
     }
 }

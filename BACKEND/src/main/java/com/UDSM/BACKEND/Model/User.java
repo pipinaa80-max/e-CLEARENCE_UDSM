@@ -102,6 +102,13 @@ public class User implements UserDetails {
     @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;
 
+    // ========== STATION ASSIGNMENT FIELDS ==========
+    @Column(name = "station_code", length = 50)
+    private String stationCode;
+
+    @Column(name = "station_name", length = 255)
+    private String stationName;
+
     // ========== ROLE & STATUS FIELDS ==========
     @Enumerated(EnumType.STRING)
     private ERole role;
@@ -192,7 +199,30 @@ public class User implements UserDetails {
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) return List.of();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        String roleName = this.role.name();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+        authorities.add(new SimpleGrantedAuthority(roleName));
+
+        // Canonical admin aliases
+        if (this.role == ERole.ADMIN || this.role == ERole.ADMINISTRATOR || this.role == ERole.SUPERUSER) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATOR"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERUSER"));
+            authorities.add(new SimpleGrantedAuthority("ADMIN"));
+            authorities.add(new SimpleGrantedAuthority("ADMINISTRATOR"));
+            authorities.add(new SimpleGrantedAuthority("SUPERUSER"));
+        }
+
+        // Directorate & DUS Secretary aliases
+        if (this.role == ERole.DUS_SECRETARY || this.role == ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_DUS_SECRETARY"));
+            authorities.add(new SimpleGrantedAuthority("ROLE_DIRECTOR_OF_UNDERGRADUATE_STUDIES"));
+            authorities.add(new SimpleGrantedAuthority("DUS_SECRETARY"));
+            authorities.add(new SimpleGrantedAuthority("DIRECTOR_OF_UNDERGRADUATE_STUDIES"));
+        }
+
+        return authorities;
     }
 
     @Override

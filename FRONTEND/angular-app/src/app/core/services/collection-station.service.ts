@@ -109,7 +109,9 @@ export class CollectionStationService {
   // Get active stations for student dropdowns
   getActiveStations(): Observable<CollectionStation[]> {
     const url = `${this.config.apiUrl}/collection-stations`;
-    return this.http.get<CollectionStation[]>(url).pipe(
+    let headers = this.getAuthHeaders() || new HttpHeaders();
+    headers = headers.set('X-Skip-Error-Toast', 'true');
+    return this.http.get<CollectionStation[]>(url, { headers, withCredentials: true }).pipe(
       catchError(() => of(this.defaultStations.filter(s => s.isActive)))
     );
   }
@@ -117,8 +119,9 @@ export class CollectionStationService {
   // Get all stations for Director of Undergraduate Studies
   getAllStations(): Observable<CollectionStation[]> {
     const url = `${this.config.apiUrl}/collection-stations/all`;
-    const headers = this.getAuthHeaders();
-    return this.http.get<CollectionStation[]>(url, { headers }).pipe(
+    let headers = this.getAuthHeaders() || new HttpHeaders();
+    headers = headers.set('X-Skip-Error-Toast', 'true');
+    return this.http.get<CollectionStation[]>(url, { headers, withCredentials: true }).pipe(
       catchError(() => of(this.defaultStations))
     );
   }
@@ -127,20 +130,20 @@ export class CollectionStationService {
   createStation(station: Omit<CollectionStation, 'id'>): Observable<CollectionStation> {
     const url = `${this.config.apiUrl}/collection-stations`;
     const headers = this.getAuthHeaders();
-    return this.http.post<CollectionStation>(url, station, { headers });
+    return this.http.post<CollectionStation>(url, station, { headers, withCredentials: true });
   }
 
   // Update station
   updateStation(id: string, station: Partial<CollectionStation>): Observable<CollectionStation> {
     const url = `${this.config.apiUrl}/collection-stations/${id}`;
     const headers = this.getAuthHeaders();
-    return this.http.put<CollectionStation>(url, station, { headers });
+    return this.http.put<CollectionStation>(url, station, { headers, withCredentials: true });
   }
 
   // Soft delete station
   deleteStation(id: string): Observable<void> {
     const url = `${this.config.apiUrl}/collection-stations/${id}`;
     const headers = this.getAuthHeaders();
-    return this.http.delete<void>(url, { headers });
+    return this.http.delete<void>(url, { headers, withCredentials: true });
   }
 }

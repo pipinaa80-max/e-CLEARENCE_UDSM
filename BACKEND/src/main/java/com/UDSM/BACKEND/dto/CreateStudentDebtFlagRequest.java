@@ -12,5 +12,7 @@ public record CreateStudentDebtFlagRequest(
         @NotBlank @Size(max = 50) String registrationNumber,
         @NotBlank @Size(max = 2000) String reason,
         @NotNull @DecimalMin("0.01") @Digits(integer = 12, fraction = 2) BigDecimal amount,
-        @Size(max = 4000) String negotiationNotes
+        @Size(max = 4000) String negotiationNotes,
+        @Size(max = 100) String category,
+        String dueDate
 ) {}

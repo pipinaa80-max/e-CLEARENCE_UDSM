@@ -24,13 +24,14 @@ export class Login implements OnInit {
 
   branding = {
     universityName: 'University of Dar es Salaam',
-    shortName: 'Clearance',
+    shortName: 'University of Dar es Salaam',
     logoUrl: '/udsm-logo.png'
   };
 
   loginForm = this.fb.nonNullable.group({
     identifier: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    honeypotTrap: ['']
   });
 
   isLoading = false;
@@ -121,7 +122,8 @@ export class Login implements OnInit {
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
-      'DUS Secretary': '/dashboard/dus-secretary'
+      'DUS Secretary': '/dashboard/dus-secretary',
+      'Station Secretary': '/dashboard/station-secretary'
     };
     return map[role] ?? '/dashboard';
   }

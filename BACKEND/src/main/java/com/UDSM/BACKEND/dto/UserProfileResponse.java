@@ -62,6 +62,12 @@ public class UserProfileResponse {
     @JsonProperty("college")
     private String college;
 
+    @JsonProperty("stationCode")
+    private String stationCode;
+
+    @JsonProperty("stationName")
+    private String stationName;
+
     @JsonProperty("programme")
     private String programme;
 
@@ -126,6 +132,8 @@ public class UserProfileResponse {
                 .physicalAddress(user.getPhysicalAddress() != null ? user.getPhysicalAddress() : user.getAddress())
                 .department(user.getDepartment())
                 .college(user.getCollege())
+                .stationCode(user.getStationCode())
+                .stationName(user.getStationName())
                 .programme(user.getProgramme())
                 .hall(user.getHall())
                 .wing(user.getWing())

@@ -1,12 +1,13 @@
-import { Component, Input, Output, EventEmitter, HostListener, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-dashboard-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <header class="dashboard-header">
       <div class="header-left">
@@ -34,7 +35,7 @@ import { AuthService } from '../../../core/services/auth.service';
           <ng-content select="[header-actions]"></ng-content>
         </div>
 
-        <div class="user-profile clickable" *ngIf="showProfile && user && user.id" (click)="toggleProfileCard($event)" title="Click to view complete profile details">
+        <div class="user-profile clickable" *ngIf="showProfile && user && user.id" (click)="toggleProfileCard($event)" title="Click to view profile & menu">
           <div class="profile-info" *ngIf="showProfileInfo">
             <span class="user-name">{{ user.fullName || 'User' }}</span>
           </div>
@@ -43,63 +44,23 @@ import { AuthService } from '../../../core/services/auth.service';
             <span *ngIf="!user.photo && !user.profilePhoto">{{ (user.fullName || 'U').charAt(0) }}</span>
           </div>
 
-          <!-- INTERACTIVE PROFILE DETAILS POPUP CARD -->
+          <!-- INTERACTIVE PROFILE DROPDOWN CARD MATCHING SCREENSHOT -->
           <div class="profile-dropdown-card" *ngIf="showProfileCard" (click)="$event.stopPropagation()">
-            <div class="profile-card-header">
-              <div class="card-avatar">
-                <img *ngIf="user.photo || user.profilePhoto" [src]="user.photo || user.profilePhoto" [alt]="user.fullName">
-                <span *ngIf="!user.photo && !user.profilePhoto">{{ (user.fullName || 'U').charAt(0) }}</span>
-              </div>
-              <div class="card-user-titles">
-                <strong>{{ user.fullName || 'User Profile' }}</strong>
-                <span class="role-badge">{{ user.role || 'Role' }}</span>
-              </div>
-              <button type="button" class="card-close-btn" (click)="showProfileCard = false; $event.stopPropagation()">&times;</button>
+            <div class="profile-card-top">
+              <strong class="card-name">{{ user.fullName || 'User Profile' }}</strong>
+              <span class="card-reg">{{ user.registrationNumber || user.email || 'ID not available' }}</span>
             </div>
 
-            <div class="profile-card-body">
-              <div class="detail-row" *ngIf="user.registrationNumber">
-                <span class="detail-label">Reg / Staff ID</span>
-                <span class="detail-value">{{ user.registrationNumber }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.email">
-                <span class="detail-label">Email Address</span>
-                <span class="detail-value">{{ user.email }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.phoneNumber || user.phone">
-                <span class="detail-label">Phone Number</span>
-                <span class="detail-value">{{ user.phoneNumber || user.phone }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.college">
-                <span class="detail-label">College / Faculty</span>
-                <span class="detail-value">{{ user.college }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.department">
-                <span class="detail-label">Department / Unit</span>
-                <span class="detail-value">{{ user.department }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.programme">
-                <span class="detail-label">Degree Programme</span>
-                <span class="detail-value">{{ user.programme }}</span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.hall">
-                <span class="detail-label">Hall / Residence</span>
-                <span class="detail-value">
-                  {{ user.hall }}
-                  <ng-container *ngIf="user.roomNumber"> (Room {{ user.roomNumber }})</ng-container>
-                </span>
-              </div>
-
-              <div class="detail-row" *ngIf="user.clearanceStatus">
-                <span class="detail-label">Clearance Status</span>
-                <span class="detail-value status-tag">{{ user.clearanceStatus }}</span>
-              </div>
+            <div class="profile-card-links">
+              <a routerLink="/profile" class="profile-card-link" (click)="showProfileCard = false">
+                <i class="bi bi-person-circle" style="font-size: 1.25rem; color: #0284c7;"></i>
+                <span>Profile</span>
+              </a>
+              <a routerLink="/notifications" class="profile-card-link" (click)="showProfileCard = false">
+                <i class="bi bi-bell-fill" style="font-size: 1.15rem; color: #0284c7;"></i>
+                <span>Notifications</span>
+                <span class="notification-badge-pill" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -155,7 +116,6 @@ import { AuthService } from '../../../core/services/auth.service';
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
-    /* Display toggle button ONLY on Mobile/Tablet (<= 768px) where sidebar is off-canvas */
     @media (max-width: 768px) {
       .sidebar-toggle-btn {
         display: flex !important;
@@ -205,11 +165,13 @@ import { AuthService } from '../../../core/services/auth.service';
       align-items: center;
       gap: 14px;
       flex-shrink: 0;
+      min-width: 0;
     }
     .header-actions-container {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-shrink: 0;
     }
     .user-profile {
       position: relative;
@@ -220,6 +182,8 @@ import { AuthService } from '../../../core/services/auth.service';
       border-left: 1.5px solid rgba(255, 255, 255, 0.2);
       cursor: pointer;
       user-select: none;
+      min-width: 0;
+      flex-shrink: 1;
     }
     .user-profile:hover .avatar-circle {
       transform: scale(1.08);
@@ -230,18 +194,17 @@ import { AuthService } from '../../../core/services/auth.service';
       display: none;
       flex-direction: column;
       text-align: right;
+      min-width: 0;
+      max-width: 220px;
     }
     .user-name {
       display: block;
       font-weight: 800;
       font-size: 0.88rem;
       color: #ffffff !important;
-    }
-    .user-role {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #f59e0b !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .avatar-circle {
       width: 44px;
@@ -270,7 +233,6 @@ import { AuthService } from '../../../core/services/auth.service';
       object-position: center top;
       display: block;
     }
-    /* HEADER LOGOUT BUTTON AFTER PROFILE ICON - COMPACT & SLEEK ICON-ONLY */
     .header-logout-btn {
       display: inline-flex;
       align-items: center;
@@ -302,17 +264,17 @@ import { AuthService } from '../../../core/services/auth.service';
     .header-logout-btn:active {
       transform: scale(0.96);
     }
-    /* PROFILE DROPDOWN CARD */
+    /* PROFILE DROPDOWN CARD MATCHING SCREENSHOT */
     .profile-dropdown-card {
       position: absolute;
       top: calc(100% + 14px);
       right: 0;
-      width: 310px;
+      width: 280px;
       background: #ffffff;
       color: #1e293b;
       border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+      border-radius: 14px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
       z-index: 3000;
       overflow: hidden;
       animation: profileFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -321,106 +283,56 @@ import { AuthService } from '../../../core/services/auth.service';
       from { opacity: 0; transform: translateY(-8px) scale(0.96); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .profile-card-header {
+    .profile-card-top {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .card-name {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .card-reg {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #64748b;
+    }
+    .profile-card-links {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .profile-card-link {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 16px;
-      background: linear-gradient(135deg, #001f34 0%, #003b5c 100%);
-      color: #ffffff;
-      position: relative;
-    }
-    .card-avatar {
-      width: 44px;
-      height: 44px;
-      background: #001f34;
-      border: 2px solid #f59e0b;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      font-size: 1rem;
-      color: #ffffff;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .card-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .card-user-titles {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .card-user-titles strong {
-      font-size: 0.92rem;
-      font-weight: 800;
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .role-badge {
-      display: inline-block;
-      font-size: 0.72rem;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #1e293b;
       font-weight: 700;
-      color: #f59e0b;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
     }
-    .card-close-btn {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      background: transparent;
-      border: none;
-      color: rgba(255,255,255,0.7);
-      font-size: 1.4rem;
-      cursor: pointer;
-      line-height: 1;
+    .profile-card-link:hover {
+      background: #f1f5f9;
+      color: #003b5c;
     }
-    .card-close-btn:hover {
+    .notification-badge-pill {
+      margin-left: auto;
+      background: #ef4444;
       color: #ffffff;
-    }
-    .profile-card-body {
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .detail-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 0.8rem;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 6px;
-    }
-    .detail-row:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-    .detail-label {
-      font-size: 0.68rem;
+      font-size: 0.75rem;
       font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #64748b;
-    }
-    .detail-value {
-      font-weight: 700;
-      color: #0f172a;
-      word-break: break-word;
-    }
-    .status-tag {
-      display: inline-block;
       padding: 2px 8px;
-      border-radius: 4px;
-      background: #e0f2fe;
-      color: #0369a1;
-      font-weight: 800;
-      width: fit-content;
+      border-radius: 12px;
+      min-width: 20px;
+      text-align: center;
     }
     @media (min-width: 992px) {
       .profile-info {
@@ -444,7 +356,7 @@ import { AuthService } from '../../../core/services/auth.service';
     }
   `]
 })
-export class DashboardHeaderComponent {
+export class DashboardHeaderComponent implements OnInit {
   @Input() title?: string;
   @Input() subtitle?: string;
   @Input() eyebrow?: string;
@@ -456,9 +368,24 @@ export class DashboardHeaderComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   private readonly authService = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
 
   showProfileCard = false;
+  unreadCount = 0;
+
+  ngOnInit(): void {
+    this.loadUnreadCount();
+  }
+
+  loadUnreadCount(): void {
+    this.notificationService.getStudentNotifications().subscribe({
+      next: (items) => {
+        this.unreadCount = (Array.isArray(items) ? items : []).filter(i => !i.read).length;
+      },
+      error: () => {}
+    });
+  }
 
   toggleProfileCard(event: Event): void {
     event.preventDefault();

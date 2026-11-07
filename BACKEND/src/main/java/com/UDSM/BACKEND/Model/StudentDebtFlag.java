@@ -37,6 +37,13 @@ public class StudentDebtFlag {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "item_category", length = 100)
+    @Builder.Default
+    private String category = "Equipment / Item Rental";
+
+    @Column(name = "due_date")
+    private java.time.LocalDate dueDate;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
@@ -52,6 +59,12 @@ public class StudentDebtFlag {
 
     @Column(name = "lecturer_name")
     private String lecturerName;
+
+    @Column(name = "lecturer_email")
+    private String lecturerEmail;
+
+    @Column(name = "lecturer_phone")
+    private String lecturerPhone;
 
     @Column(name = "resolution_note", columnDefinition = "TEXT")
     private String resolutionNote;

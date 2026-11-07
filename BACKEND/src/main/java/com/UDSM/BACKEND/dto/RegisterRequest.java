@@ -50,4 +50,7 @@ public class RegisterRequest {
     private String department;
     private String yearOfStudy;
     private String academicYear;
+
+    // Security Honeypot: Hidden field in UI. If filled, request is from an automated bot.
+    private String honeypotTrap;
 }

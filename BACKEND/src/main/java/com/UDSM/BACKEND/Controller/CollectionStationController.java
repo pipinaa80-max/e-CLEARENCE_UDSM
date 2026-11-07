@@ -4,6 +4,8 @@ import com.UDSM.BACKEND.Model.CollectionStation;
 import com.UDSM.BACKEND.Repository.CollectionStationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +21,23 @@ public class CollectionStationController {
 
     private final CollectionStationRepository stationRepository;
 
-    // GET /api/v1/collection-stations - Public / Student endpoint for active pickup stations
+    // GET /api/v1/collection-stations - Public / Student endpoint for active pickup stations (Cached)
     @GetMapping
+    @Cacheable(value = "stations")
     public ResponseEntity<List<CollectionStation>> getActiveStations() {
         return ResponseEntity.ok(stationRepository.findByIsActiveTrueOrderByRegionAscNameAsc());
     }
 
     // GET /api/v1/collection-stations/all - Director / Admin endpoint for all stations
     @GetMapping("/all")
-    @PreAuthorize("hasAnyRole('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DUS_SECRETARY', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DUS_SECRETARY', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<List<CollectionStation>> getAllStations() {
         return ResponseEntity.ok(stationRepository.findAllByOrderByRegionAscNameAsc());
     }
 
     // POST /api/v1/collection-stations - Create new station
     @PostMapping
+    @CacheEvict(value = "stations", allEntries = true)
     @PreAuthorize("hasAnyRole('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<CollectionStation> createStation(@RequestBody CollectionStation station) {
         log.info("Creating new collection station: {} ({})", station.getName(), station.getRegion());
@@ -43,6 +47,7 @@ public class CollectionStationController {
 
     // PUT /api/v1/collection-stations/{id} - Update station
     @PutMapping("/{id}")
+    @CacheEvict(value = "stations", allEntries = true)
     @PreAuthorize("hasAnyRole('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<CollectionStation> updateStation(@PathVariable String id, @RequestBody CollectionStation updated) {
         return stationRepository.findById(id).map(existing -> {
@@ -61,6 +66,7 @@ public class CollectionStationController {
 
     // DELETE /api/v1/collection-stations/{id} - Soft delete / deactivate station
     @DeleteMapping("/{id}")
+    @CacheEvict(value = "stations", allEntries = true)
     @PreAuthorize("hasAnyRole('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<Void> deleteStation(@PathVariable String id) {
         return stationRepository.findById(id).map(st -> {

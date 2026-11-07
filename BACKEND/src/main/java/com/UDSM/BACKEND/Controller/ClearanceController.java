@@ -2,6 +2,7 @@ package com.UDSM.BACKEND.Controller;
 
 import com.UDSM.BACKEND.Service.ClearanceService;
 import com.UDSM.BACKEND.dto.ApiResponse;
+import com.UDSM.BACKEND.dto.BulkClearanceDecisionRequest;
 import com.UDSM.BACKEND.dto.ClearanceDecisionRequest;
 import com.UDSM.BACKEND.dto.ClearanceRequestDTO;
 import com.UDSM.BACKEND.dto.ClearanceResponse;
@@ -98,6 +99,15 @@ public class ClearanceController {
             @RequestBody ClearanceDecisionRequest request,
             Authentication authentication) {
         ApiResponse response = clearanceService.approveOfficeClearance(request, authentication);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/office/bulk-approve")
+    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'LIBRARY_OFFICER', 'FINANCE_OFFICER', 'ICT_OFFICER', 'GAMES_COACH', 'HALL_WARDEN', 'USAB_OFFICER', 'DARUSO_OFFICER', 'DEAN_OF_STUDENTS', 'SMART_CARD_OFFICER', 'WORKSHOP_OFFICER', 'PRINCIPAL', 'LABORATORY_OFFICER', 'DEPARTMENT_OFFICER', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES')")
+    public ResponseEntity<ApiResponse> bulkApproveRequests(
+            @RequestBody BulkClearanceDecisionRequest request,
+            Authentication authentication) {
+        ApiResponse response = clearanceService.bulkApproveOfficeClearance(request, authentication);
         return ResponseEntity.ok(response);
     }
 

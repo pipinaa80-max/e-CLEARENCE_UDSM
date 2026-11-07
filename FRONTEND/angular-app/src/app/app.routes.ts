@@ -143,9 +143,9 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Workshop'])]
   },
   {
-    path: 'dashboard/director-undergraduate-studies',
-    component: DirectorUndergraduateStudiesDashboard,
-    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies', 'Administrator'])]
+    path: 'dashboard/laboratory',
+    component: LaboratoryComponent,
+    canActivate: [authGuard, roleGuard(['Laboratory'])]
   },
   {
     path: 'dashboard/dus-secretary',
@@ -155,12 +155,11 @@ export const routes: Routes = [
   {
     path: 'dashboard/station-secretary',
     component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
   {
-    path: 'dashboard/campus-dus-secretary',
-    component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    path: 'dashboard/campus-dus-secretary', component: StationSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
 
   // Clearance Routes

@@ -1,5 +1,5 @@
 // department-officer.component.ts
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -27,6 +27,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
     private readonly toastService = inject(ToastService);
     private readonly studentDebtService = inject(StudentDebtService);
     private readonly router = inject(Router);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     sidebarOpen = false;
     isLoading = false;
@@ -102,7 +103,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
                 next: () => this.loadData(),
                 error: () => {}
             });
-        }, 30000);
+        }, 3000);
     }
 
     ngOnDestroy(): void {
@@ -133,7 +134,7 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
                 return true;
             }
 
-            if (user.department && !this.clearanceService.matchDepartmentName(request.department, user.department)) return false;
+            if (!this.clearanceService.matchDepartmentName(request.department, user.department)) return false;
             return request.currentStage === 'Principal' ||
                 request.currentStage === 'Finance' ||
                 request.status === 'Completed';
@@ -164,11 +165,13 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
                     .filter(Boolean));
                 this.debtFlagsLoaded = true;
                 this.debtFlagsLoading = false;
+                this.cdr.detectChanges();
             },
             error: error => {
                 this.debtFlagsLoaded = true;
                 this.debtFlagsLoading = false;
                 console.error('Error in departmental debt flag check:', error);
+                this.cdr.detectChanges();
             }
         });
     }

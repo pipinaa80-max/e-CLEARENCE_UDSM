@@ -268,6 +268,35 @@ public class ControlPlaneService {
         return response;
     }
 
+    @Transactional
+    public void autoBlockIp(String ipAddress, String reason) {
+        if (ipAddress == null || ipAddress.isBlank()) return;
+        String targetIp = ipAddress.trim();
+        List<String> blocked = new ArrayList<>(getBlockedIps());
+        if (!blocked.contains(targetIp)) {
+            blocked.add(targetIp);
+            ProjectSetting value = setting("default");
+            try {
+                value.setBlockedIpsJson(objectMapper.writeValueAsString(blocked));
+                projectSettingRepository.save(value);
+                log.warn("🛡️ Security Honeypot: Automatically blocked IP {} for reason: {}", targetIp, reason);
+            } catch (Exception e) {
+                log.error("Failed to auto-block IP {}: {}", targetIp, e.getMessage());
+            }
+
+            try {
+                AuditLog audit = new AuditLog();
+                audit.setUserId("SYSTEM");
+                audit.setUsername("SECURITY_HONEYPOT");
+                audit.setAction("AUTO_BLOCK_HONEYPOT");
+                audit.setDetails("Honeypot security trigger: " + reason + " - Blocked IP: " + targetIp);
+                audit.setIpAddress(targetIp);
+                audit.setStatus("SECURITY_ALERT");
+                auditLogRepository.save(audit);
+            } catch (Exception ignored) {}
+        }
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Object> adminActivity(String id) {
         requireSuperuser();

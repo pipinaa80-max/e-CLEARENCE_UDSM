@@ -29,9 +29,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> register(@RequestBody @Valid RegisterRequest request) {
+    public ResponseEntity<ApiResponse> register(
+            @RequestBody @Valid RegisterRequest request,
+            HttpServletRequest httpRequest) {
         log.info("📝 Registering new user: {}", request.getEmail());
-        return ResponseEntity.ok(authService.register(request));
+        String clientIp = getClientIP(httpRequest);
+        return ResponseEntity.ok(authService.register(request, clientIp));
     }
 
     @PostMapping("/refresh")

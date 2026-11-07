@@ -69,6 +69,29 @@ public class ClearanceRequest {
     @Column(name = "project_id", length = 100)
     private String projectId;
 
+    @Column(name = "certificate_verified")
+    @Builder.Default
+    private Boolean certificateVerified = false;
+
+    @Column(name = "certificate_verified_at")
+    private LocalDateTime certificateVerifiedAt;
+
+    @Column(name = "digital_signature_hash")
+    private String digitalSignatureHash;
+
+    @Column(name = "signed_by")
+    private String signedBy;
+
+    @Column(name = "signed_at")
+    private LocalDateTime signedAt;
+
+    @Column(name = "dispatch_status", length = 50)
+    @Builder.Default
+    private String dispatchStatus = "Pending Dispatch";
+
+    @Column(name = "dispatched_at")
+    private LocalDateTime dispatchedAt;
+
     @PrePersist
     protected void onCreate() {
         submittedAt = LocalDateTime.now();

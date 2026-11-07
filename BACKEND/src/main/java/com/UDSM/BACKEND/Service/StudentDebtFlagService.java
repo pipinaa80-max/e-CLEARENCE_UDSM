@@ -125,11 +125,15 @@ public class StudentDebtFlagService {
                 .department(studentDepartment)
                 .programme(studentAccount != null ? studentAccount.getProgramme() : studentProfile.getProgramme())
                 .amount(request.amount())
+                .category(request.category() != null && !request.category().isBlank() ? request.category().trim() : "Equipment / Item Rental")
+                .dueDate(request.dueDate() != null && !request.dueDate().isBlank() ? java.time.LocalDate.parse(request.dueDate().trim()) : null)
                 .reason(request.reason().trim())
                 .negotiationNotes(trimToNull(request.negotiationNotes()))
                 .status("OPEN")
                 .lecturerId(lecturer.getId())
                 .lecturerName(lecturer.getFullName())
+                .lecturerEmail(lecturer.getEmail())
+                .lecturerPhone(lecturer.getPhoneNumber())
                 .projectId(lecturer.getProjectId())
                 .build());
         User targetStudent = studentAccount != null ? studentAccount
@@ -226,25 +230,41 @@ public class StudentDebtFlagService {
         if (studentScope == null || userScope == null || studentScope.isBlank() || userScope.isBlank()) {
             return true;
         }
-        String s1 = studentScope.trim().toLowerCase();
-        String s2 = userScope.trim().toLowerCase();
-        if (s1.equals(s2) || s1.contains(s2) || s2.contains(s1)) {
+        String clean1 = cleanPrefixes(studentScope);
+        String clean2 = cleanPrefixes(userScope);
+        if (clean1.equals(clean2) || clean1.contains(clean2) || clean2.contains(clean1)) {
             return true;
         }
-        String a1 = extractAcronym(s1);
-        String a2 = extractAcronym(s2);
-        if (!a1.isEmpty() && (a1.equals(s2) || s2.contains(a1))) {
+        String a1 = extractAcronym(studentScope);
+        String a2 = extractAcronym(userScope);
+        if (!a1.isEmpty() && (a1.equals(clean2) || clean2.contains(a1))) {
             return true;
         }
-        if (!a2.isEmpty() && (a2.equals(s1) || s1.contains(a2))) {
+        if (!a2.isEmpty() && (a2.equals(clean1) || clean1.contains(a2))) {
             return true;
         }
         return !a1.isEmpty() && !a2.isEmpty() && a1.equals(a2);
     }
 
+    private String cleanPrefixes(String s) {
+        return s.trim().toLowerCase()
+                .replaceAll("^(department|dept|college)\\s*(of)?\\s*", "")
+                .trim();
+    }
+
     private String extractAcronym(String s) {
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\(([^)]+)\\)").matcher(s);
-        return matcher.find() ? matcher.group(1).trim().toLowerCase() : "";
+        if (matcher.find()) {
+            return matcher.group(1).trim().toLowerCase();
+        }
+        String[] words = s.replaceAll("[^a-zA-Z0-9\\s]", " ").trim().toLowerCase().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String w : words) {
+            if (w.length() > 2 && !w.equals("and") && !w.equals("for") && !w.equals("the") && !w.equals("dept") && !w.equals("department") && !w.equals("college")) {
+                sb.append(w.charAt(0));
+            }
+        }
+        return sb.length() > 1 ? sb.toString() : "";
     }
 
     private String trimToNull(String value) {

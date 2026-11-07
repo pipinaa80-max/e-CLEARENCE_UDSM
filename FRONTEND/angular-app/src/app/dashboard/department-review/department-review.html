@@ -1,8 +1,8 @@
 <!-- department-review.html - Fixed all status comparisons -->
 <section class="review-page">
     <app-dashboard-header
-      [title]="'HOD ' + departmentName + ' Review'"
-      subtitle="Departmental student clearance"
+      title="HOD review"
+      [subtitle]="departmentName"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
@@ -41,6 +41,48 @@
                       [class.rejected]="request.status === 'Rejected'">
                     {{ request.status }}
                 </span>
+            </div>
+        </section>
+
+        <!-- LECTURER FLAG / RENTED ITEM LIABILITY DETAILS -->
+        <section class="review-section" *ngIf="openDebtFlag" style="background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; color: #dc2626;">
+                <i class="bi bi-exclamation-triangle-fill" style="font-size: 1.35rem;"></i>
+                <h3 style="margin: 0; color: #dc2626; font-weight: 800; font-size: 1.1rem;">Active Lecturer Liability / Rental Flag (Status: Flagged)</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+                <div class="field-row" style="border: none; padding: 0;">
+                    <span class="field-label">Lecturer in Charge</span>
+                    <span class="field-value" style="font-weight: 800; color: #0f172a;">{{ openDebtFlag.lecturerName }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0;">
+                    <span class="field-label">Amount Due / Value</span>
+                    <span class="field-value" style="font-weight: 800; color: #dc2626;">Tsh {{ openDebtFlag.amount | number }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0;">
+                    <span class="field-label">Lecturer Email</span>
+                    <span class="field-value">{{ openDebtFlag.lecturerEmail || 'N/A' }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0;">
+                    <span class="field-label">Lecturer Phone</span>
+                    <span class="field-value">{{ openDebtFlag.lecturerPhone || 'N/A' }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0; grid-column: span 2;" *ngIf="openDebtFlag.category">
+                    <span class="field-label">Liability Category</span>
+                    <span class="field-value" style="color: #0284c7; font-weight: 700;">{{ openDebtFlag.category }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0; grid-column: span 2;" *ngIf="openDebtFlag.dueDate">
+                    <span class="field-label">Due / Return Date</span>
+                    <span class="field-value" style="color: #d97706; font-weight: 700;">{{ openDebtFlag.dueDate | date:'mediumDate' }}</span>
+                </div>
+                <div class="field-row" style="border: none; padding: 0; grid-column: span 2;">
+                    <span class="field-label">Reason / Item Description</span>
+                    <p style="margin: 4px 0 0; color: #1f2937; font-weight: 600; line-height: 1.5;">{{ openDebtFlag.reason }}</p>
+                </div>
+                <div class="field-row" style="border: none; padding: 0; grid-column: span 2;" *ngIf="openDebtFlag.negotiationNotes">
+                    <span class="field-label">Negotiation / Additional Notes</span>
+                    <p style="margin: 4px 0 0; color: #4b5563; font-size: 0.9rem; font-style: italic;">{{ openDebtFlag.negotiationNotes }}</p>
+                </div>
             </div>
         </section>
 

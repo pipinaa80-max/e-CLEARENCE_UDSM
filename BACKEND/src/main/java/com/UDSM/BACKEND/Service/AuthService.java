@@ -30,7 +30,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,8 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final ControlPlaneService controlPlaneService;
+    private final Executor taskExecutor;
 
     // =========================================================
     // LOGIN SECURITY SETTINGS
@@ -63,6 +67,13 @@ public class AuthService {
 
         if (request == null) {
             throw new IllegalArgumentException("Login request cannot be null");
+        }
+
+        // Honeypot Bot Trap: Automated bots will fill hidden fields; humans never will
+        if (request.getHoneypotTrap() != null && !request.getHoneypotTrap().trim().isEmpty()) {
+            log.warn("🚨 Honeypot triggered in login form by IP: {}", clientIp);
+            controlPlaneService.autoBlockIp(clientIp, "Automated bot trapped in login form honeypot");
+            throw new BadCredentialsException("Invalid email/registration number or password");
         }
 
         if (request.getPassword() == null || request.getPassword().isEmpty()) {
@@ -106,8 +117,8 @@ public class AuthService {
 
             auditLogService.logLoginAttempt(user.getEmail(), true, clientIp);
 
-            // ========== SEND LOGIN NOTIFICATION EMAIL (ASYNC) ==========
-            new Thread(() -> sendLoginNotification(user, clientIp, userAgent)).start();
+            // ========== SEND LOGIN NOTIFICATION EMAIL (ASYNC MANAGED EXECUTOR) ==========
+            CompletableFuture.runAsync(() -> sendLoginNotification(user, clientIp, userAgent), taskExecutor);
 
             return JwtResponse.builder()
                     .accessToken(accessToken)
@@ -178,9 +189,21 @@ public class AuthService {
 
     @Transactional
     public ApiResponse register(RegisterRequest request) {
+        return register(request, null);
+    }
+
+    @Transactional
+    public ApiResponse register(RegisterRequest request, String clientIp) {
 
         if (request == null) {
             throw new IllegalArgumentException("Registration request cannot be null");
+        }
+
+        // Honeypot Bot Trap: Automated bots fill hidden fields; humans never will
+        if (request.getHoneypotTrap() != null && !request.getHoneypotTrap().trim().isEmpty()) {
+            log.warn("🚨 Honeypot triggered in registration form by IP: {}", clientIp);
+            controlPlaneService.autoBlockIp(clientIp, "Automated bot trapped in registration form honeypot");
+            throw new ApiException("Registration rejected by security policy", HttpStatus.FORBIDDEN);
         }
 
         // Validate email
@@ -322,7 +345,8 @@ public class AuthService {
         }
 
         String verificationLink = getFrontendUrl() + "/verify-email?token=" + savedUser.getVerificationToken();
-        new Thread(() -> sendVerificationEmail(savedUser, verificationLink)).start();
+        // ========== SEND VERIFICATION EMAIL (ASYNC MANAGED EXECUTOR) ==========
+        CompletableFuture.runAsync(() -> sendVerificationEmail(savedUser, verificationLink), taskExecutor);
 
         return ApiResponse.success(
                 "Registration successful. Check your email and click the verification link to activate your account. Admin activation is optional."

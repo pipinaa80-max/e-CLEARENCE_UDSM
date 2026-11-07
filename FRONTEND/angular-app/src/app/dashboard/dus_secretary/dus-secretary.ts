@@ -7,6 +7,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ReceiptFileStoreService } from '../../core/services/receipt-file-store.service';
+import { CollectionStationService, CollectionStation } from '../../core/services/collection-station.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ConfigService } from '../../core/services/config.service';
@@ -22,6 +23,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly receiptFileStore = inject(ReceiptFileStoreService);
+  private readonly stationService = inject(CollectionStationService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
@@ -30,6 +32,8 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
   sidebarOpen = false;
   requests: TranscriptPaymentRequest[] = [];
+  stations: CollectionStation[] = [];
+  selectedDispatchStationCode: string = 'UDSM-MAIN';
   searchTerm = '';
   filterTab: 'ALL' | 'PHYSICAL' | 'DHL' | 'PENDING' | 'DISPATCHED' = 'ALL';
 
@@ -45,6 +49,21 @@ export class DusSecretaryDashboardComponent implements OnInit {
     stampNote: 'Official Certificate & Transcript Release Verification'
   };
 
+  // Station Secretary Management State
+  stationSecretaries: any[] = [];
+  showStationSecretaryModal = false;
+  showSecretaryListModal = false;
+  isEditingSecretary = false;
+  secretaryForm = {
+    id: '',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    stationCode: 'COICT-HUB',
+    password: '',
+    active: true
+  };
+
   // Caution & Confirmation Modal State
   showCautionModal = false;
   cautionTitle = '⚠️ Caution & Action Confirmation';
@@ -57,7 +76,25 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadStations();
     this.loadRequests();
+    this.loadStationSecretaries();
+  }
+
+  loadStations(): void {
+    this.stationService.getActiveStations().subscribe({
+      next: (list) => {
+        this.stations = (list || []).map(s => ({
+          ...s,
+          name: s.name.replace(/^udsm/i, 'UDSM'),
+          code: s.code.toUpperCase()
+        }));
+        if (this.stations.length > 0 && !this.selectedDispatchStationCode) {
+          this.selectedDispatchStationCode = this.stations[0].code;
+        }
+      },
+      error: (err) => console.error('Failed to load collection stations:', err)
+    });
   }
 
   toggleSidebar(): void {
@@ -251,8 +288,26 @@ export class DusSecretaryDashboardComponent implements OnInit {
   onDispatchSelectChange(request: TranscriptPaymentRequest, newStatus: 'Pending Dispatch' | 'Dispatched' | 'Collected'): void {
     this.pendingActionType = 'UPDATE_DISPATCH';
     this.pendingActionData = { request, status: newStatus };
-    this.cautionTitle = '⚠️ Confirm Dispatch State Update';
-    this.cautionMessage = `Are you sure you want to change dispatch status to "${newStatus}" for ${request.studentName}? This will save to the database and update the student's status.`;
+
+    if (newStatus === 'Dispatched') {
+      // Auto-determine best default station for this student
+      let defaultCode = request.stationCode;
+      if (!defaultCode) {
+        const regionOrCollege = (request.postingRegion || request.postingAddress || '').toLowerCase();
+        const found = this.stations.find(s =>
+          (s.code && regionOrCollege.includes(s.code.toLowerCase())) ||
+          (s.name && s.name.toLowerCase().includes(regionOrCollege)) ||
+          (s.region && regionOrCollege.includes(s.region.toLowerCase()))
+        );
+        defaultCode = found ? found.code : (this.stations.length > 0 ? this.stations[0].code : 'UDSM-MAIN');
+      }
+      this.selectedDispatchStationCode = defaultCode;
+      this.cautionTitle = '📦 Dispatch Consignment to Station Secretary';
+      this.cautionMessage = `Select the destination DUS Station Secretary where the Certificate & Transcript for ${request.studentName} (${request.registrationNumber}) will be routed:`;
+    } else {
+      this.cautionTitle = '⚠️ Confirm Dispatch State Update';
+      this.cautionMessage = `Are you sure you want to change dispatch status to "${newStatus}" for ${request.studentName}? This will save to the database and update the student's status.`;
+    }
     this.showCautionModal = true;
   }
 
@@ -343,10 +398,23 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
   private executeUpdateDispatchStatus(request: TranscriptPaymentRequest, status: 'Pending Dispatch' | 'Dispatched' | 'Collected'): void {
     request.dispatchStatus = status;
+
+    let targetStation: CollectionStation | undefined;
     if (status === 'Dispatched') {
+      targetStation = this.stations.find(s => s.code === this.selectedDispatchStationCode);
+      if (targetStation) {
+        request.stationCode = targetStation.code;
+        request.stationName = targetStation.name;
+      }
+      request.intakeStatus = 'In-Transit';
       request.dispatchedAt = new Date().toISOString();
       this.transcriptService.markDispatched(request.id);
     } else {
+      if (status === 'Collected') {
+        request.intakeStatus = 'Collected by Student';
+      } else {
+        request.intakeStatus = 'Awaiting Intake';
+      }
       this.transcriptService.updateCollectionDetails(
         request.id,
         request.collectionMethod || 'Physical Collection',
@@ -366,14 +434,25 @@ export class DusSecretaryDashboardComponent implements OnInit {
       const token = this.authService.getToken();
       const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
-      this.http.post(url, { studentId: studentIdentifier, dispatchStatus: status }, { headers, withCredentials: true }).subscribe({
-        next: () => console.log('Dispatch status saved to PostgreSQL database.'),
+      const payload = {
+        studentId: studentIdentifier,
+        dispatchStatus: status,
+        stationCode: request.stationCode || this.selectedDispatchStationCode,
+        stationName: request.stationName || targetStation?.name,
+        intakeStatus: request.intakeStatus
+      };
+
+      this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
+        next: (res: any) => {
+          console.log('Dispatch status saved to database:', res);
+          this.loadRequests();
+        },
         error: (err) => console.error('Error saving dispatch status to database:', err)
       });
     }
 
-    this.showToast(`Dispatch status updated to "${status}" for ${request.studentName}. Saved to database.`, 'success');
-    this.loadRequests();
+    const destMsg = request.stationName ? ` routed to ${request.stationName}` : '';
+    this.showToast(`Consignment dispatch updated to "${status}"${destMsg} for ${request.studentName}.`, 'success');
   }
 
   private executeApplySignature(): void {
@@ -439,6 +518,138 @@ export class DusSecretaryDashboardComponent implements OnInit {
         this.showToast(`Education certificate verified and signed for ${request.studentName}. System alert sent.`, 'success');
         this.loadRequests();
       }
+    });
+  }
+
+  // =========================================================================
+  // STATION SECRETARY USER MANAGEMENT
+  // =========================================================================
+
+  loadStationSecretaries(): void {
+    const url = `${this.config.apiUrl}/dus-secretary/station-secretaries`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
+      next: (list) => {
+        this.stationSecretaries = list || [];
+      },
+      error: (err) => {
+        console.error('Failed to load station secretaries:', err);
+        this.stationSecretaries = [];
+      }
+    });
+  }
+
+  openAddStationSecretaryModal(): void {
+    const defaultStation = this.stations.length > 0 ? this.stations[0].code : 'COICT-HUB';
+    this.isEditingSecretary = false;
+    this.secretaryForm = {
+      id: '',
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      stationCode: defaultStation,
+      password: '',
+      active: true
+    };
+    this.showStationSecretaryModal = true;
+  }
+
+  openEditStationSecretaryModal(sec: any): void {
+    this.isEditingSecretary = true;
+    this.secretaryForm = {
+      id: sec.id,
+      fullName: sec.fullName,
+      email: sec.email,
+      phoneNumber: sec.phoneNumber || '',
+      stationCode: sec.stationCode || 'COICT-HUB',
+      password: '',
+      active: sec.active
+    };
+    this.showStationSecretaryModal = true;
+  }
+
+  closeStationSecretaryModal(): void {
+    this.showStationSecretaryModal = false;
+  }
+
+  saveStationSecretary(): void {
+    if (!this.secretaryForm.fullName || !this.secretaryForm.fullName.trim()) {
+      this.showToast('Full name is required.', 'error');
+      return;
+    }
+    if (!this.secretaryForm.email || !this.secretaryForm.email.trim()) {
+      this.showToast('Email address is required.', 'error');
+      return;
+    }
+    if (!this.secretaryForm.stationCode) {
+      this.showToast('Please select a collection station.', 'error');
+      return;
+    }
+
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    if (this.isEditingSecretary && this.secretaryForm.id) {
+      const url = `${this.config.apiUrl}/dus-secretary/station-secretaries/${this.secretaryForm.id}`;
+      const payload: any = {
+        fullName: this.secretaryForm.fullName.trim(),
+        phoneNumber: this.secretaryForm.phoneNumber ? this.secretaryForm.phoneNumber.trim() : '',
+        stationCode: this.secretaryForm.stationCode,
+        active: this.secretaryForm.active
+      };
+      if (this.secretaryForm.password && this.secretaryForm.password.trim()) {
+        payload.password = this.secretaryForm.password.trim();
+      }
+
+      this.http.put(url, payload, { headers, withCredentials: true }).subscribe({
+        next: (res: any) => {
+          this.showToast(`Station Secretary ${res.fullName || ''} updated successfully!`, 'success');
+          this.loadStationSecretaries();
+          this.closeStationSecretaryModal();
+        },
+        error: (err) => {
+          const msg = err.error?.message || 'Failed to update station secretary.';
+          this.showToast(msg, 'error');
+        }
+      });
+    } else {
+      const url = `${this.config.apiUrl}/dus-secretary/station-secretaries`;
+      const payload = {
+        fullName: this.secretaryForm.fullName.trim(),
+        email: this.secretaryForm.email.trim().toLowerCase(),
+        phoneNumber: this.secretaryForm.phoneNumber ? this.secretaryForm.phoneNumber.trim() : '',
+        stationCode: this.secretaryForm.stationCode,
+        password: this.secretaryForm.password && this.secretaryForm.password.trim() ? this.secretaryForm.password.trim() : 'UDSM@Station2026'
+      };
+
+      this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
+        next: (res: any) => {
+          this.showToast(`✅ Station Secretary ${res.fullName} created for ${res.stationName || res.stationCode}!`, 'success');
+          this.loadStationSecretaries();
+          this.closeStationSecretaryModal();
+        },
+        error: (err) => {
+          const msg = err.error?.message || 'Failed to create station secretary.';
+          this.showToast(msg, 'error');
+        }
+      });
+    }
+  }
+
+  toggleStationSecretaryStatus(sec: any): void {
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+    const url = `${this.config.apiUrl}/dus-secretary/station-secretaries/${sec.id}`;
+    const newStatus = !sec.active;
+
+    this.http.put(url, { active: newStatus }, { headers, withCredentials: true }).subscribe({
+      next: () => {
+        sec.active = newStatus;
+        this.showToast(`Station Secretary ${sec.fullName} is now ${newStatus ? 'Active' : 'Deactivated'}.`, 'success');
+      },
+      error: () => this.showToast('Failed to change secretary status.', 'error')
     });
   }
 

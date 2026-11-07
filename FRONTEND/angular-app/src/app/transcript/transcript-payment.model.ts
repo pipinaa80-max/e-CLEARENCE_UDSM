@@ -52,7 +52,7 @@ export interface TranscriptPaymentRequest {
   // Station Secretary Intake & Handover fields
   stationCode?: string;
   stationName?: string;
-  intakeStatus?: 'Awaiting Intake' | 'Received at Station' | 'In Vault' | 'Collected by Student';
+  intakeStatus?: 'Awaiting Intake' | 'In-Transit' | 'Received at Station' | 'In Vault' | 'Collected by Student';
   stationReceivedAt?: string;
   stationReceivedBy?: string;
   vaultLockerNumber?: string;
