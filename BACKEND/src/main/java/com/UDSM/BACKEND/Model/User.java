@@ -199,30 +199,32 @@ public class User implements UserDetails {
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.role == null) return List.of();
-        List<GrantedAuthority> authorities = new java.util.ArrayList<>();
+        java.util.Set<String> authorityStrings = new java.util.HashSet<>();
         String roleName = this.role.name();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
-        authorities.add(new SimpleGrantedAuthority(roleName));
+        authorityStrings.add("ROLE_" + roleName);
+        authorityStrings.add(roleName);
 
         // Canonical admin aliases
         if (this.role == ERole.ADMIN || this.role == ERole.ADMINISTRATOR || this.role == ERole.SUPERUSER) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMINISTRATOR"));
-            authorities.add(new SimpleGrantedAuthority("ROLE_SUPERUSER"));
-            authorities.add(new SimpleGrantedAuthority("ADMIN"));
-            authorities.add(new SimpleGrantedAuthority("ADMINISTRATOR"));
-            authorities.add(new SimpleGrantedAuthority("SUPERUSER"));
+            authorityStrings.add("ROLE_ADMIN");
+            authorityStrings.add("ROLE_ADMINISTRATOR");
+            authorityStrings.add("ROLE_SUPERUSER");
+            authorityStrings.add("ADMIN");
+            authorityStrings.add("ADMINISTRATOR");
+            authorityStrings.add("SUPERUSER");
         }
 
         // Directorate & DUS Secretary aliases
         if (this.role == ERole.DUS_SECRETARY || this.role == ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_DUS_SECRETARY"));
-            authorities.add(new SimpleGrantedAuthority("ROLE_DIRECTOR_OF_UNDERGRADUATE_STUDIES"));
-            authorities.add(new SimpleGrantedAuthority("DUS_SECRETARY"));
-            authorities.add(new SimpleGrantedAuthority("DIRECTOR_OF_UNDERGRADUATE_STUDIES"));
+            authorityStrings.add("ROLE_DUS_SECRETARY");
+            authorityStrings.add("ROLE_DIRECTOR_OF_UNDERGRADUATE_STUDIES");
+            authorityStrings.add("DUS_SECRETARY");
+            authorityStrings.add("DIRECTOR_OF_UNDERGRADUATE_STUDIES");
         }
 
-        return authorities;
+        return authorityStrings.stream()
+                .map(SimpleGrantedAuthority::new)
+                .toList();
     }
 
     @Override

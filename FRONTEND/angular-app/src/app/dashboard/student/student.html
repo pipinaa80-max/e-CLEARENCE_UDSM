@@ -40,6 +40,32 @@
 
   <main class="content-panel">
 
+    <!-- ACTIVE LECTURER LIABILITY / RENTAL FLAG ALERT BANNER -->
+    <div class="active-debt-banner" *ngIf="activeDebtFlag" style="margin: 0 0 24px; padding: 20px 24px; background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%); border: 1.5px solid #ef4444; border-left: 6px solid #dc2626; border-radius: 12px; box-shadow: 0 6px 20px rgba(239, 68, 68, 0.12);">
+      <div style="display: flex; align-items: flex-start; gap: 14px;">
+        <div style="font-size: 1.5rem; color: #dc2626; margin-top: 2px;">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+        </div>
+        <div style="flex: 1;">
+          <h3 style="margin: 0 0 6px; color: #991b1b; font-size: 1.1rem; font-weight: 800;">
+            Action Required: Active Lecturer Liability / Item Rental Flag
+          </h3>
+          <p style="margin: 0 0 12px; color: #7f1d1d; font-size: 0.92rem; line-height: 1.5;">
+            Your clearance process is currently blocked because lecturer <strong>{{ activeDebtFlag.lecturerName }}</strong> has recorded an outstanding liability / unreturned item (<strong>{{ activeDebtFlag.category || 'Rental' }}</strong>).
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px; background: rgba(255, 255, 255, 0.8); border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; color: #1e293b;">
+            <span>💰 <strong>Amount Owed:</strong> TSh {{ activeDebtFlag.amount | number }}</span>
+            <span>✉️ <strong>Lecturer Email:</strong> {{ activeDebtFlag.lecturerEmail || 'N/A' }}</span>
+            <span>📞 <strong>Lecturer Phone:</strong> {{ activeDebtFlag.lecturerPhone || 'N/A' }}</span>
+            <span *ngIf="activeDebtFlag.dueDate">⏰ <strong>Due Date:</strong> {{ activeDebtFlag.dueDate | date:'mediumDate' }}</span>
+          </div>
+          <p style="margin: 10px 0 0; color: #451a03; font-size: 0.88rem; font-weight: 600;">
+            📝 <strong>Reason / Details:</strong> {{ activeDebtFlag.reason }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <app-dashboard-header
       [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
       [user]="currentUser"
@@ -474,7 +500,7 @@
               class="primary-button"
               (click)="openTranscriptModal()"
             >
-              Start Transcript
+              Acquire Additional
             </button>
           </ng-container>
         </div>

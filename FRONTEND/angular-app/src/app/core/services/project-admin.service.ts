@@ -63,6 +63,14 @@ export class ProjectAdminService {
     const raw = localStorage.getItem('udsm-project-branding');
     try {
       const branding = raw ? JSON.parse(raw) as Partial<ProjectConfig['branding']> : null;
+      if (branding) {
+        if (!branding.universityName || branding.universityName.trim().toLowerCase() === 'udsm') {
+          branding.universityName = 'University of Dar es Salaam';
+        }
+        if (!branding.shortName || branding.shortName.trim().toLowerCase() === 'udsm') {
+          branding.shortName = 'University of Dar es Salaam';
+        }
+      }
       return branding
         ? { ...branding, primaryColor: normalizeUdsmBrandColor(branding.primaryColor) }
         : null;

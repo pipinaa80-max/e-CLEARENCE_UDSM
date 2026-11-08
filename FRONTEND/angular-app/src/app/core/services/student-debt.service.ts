@@ -23,7 +23,7 @@ export class StudentDebtService {
     });
   }
 
-  create(data: { registrationNumber: string; amount: number; reason: string; negotiationNotes?: string; category?: string; dueDate?: string }): Observable<StudentDebtFlag> {
+  create(data: { registrationNumber: string; studentName?: string; amount: number; reason: string; negotiationNotes?: string; category?: string; dueDate?: string }): Observable<StudentDebtFlag> {
     return this.http.post<StudentDebtFlag>(this.endpoint, data, { headers: this.headers() });
   }
 
@@ -33,6 +33,10 @@ export class StudentDebtService {
 
   listOpenForDepartment(): Observable<StudentDebtFlag[]> {
     return this.http.get<StudentDebtFlag[]>(`${this.endpoint}/department/open`, { headers: this.headers() });
+  }
+
+  listForStudent(): Observable<StudentDebtFlag[]> {
+    return this.http.get<StudentDebtFlag[]>(`${this.endpoint}/my-flags`, { headers: this.headers() });
   }
 
   private headers(): HttpHeaders {

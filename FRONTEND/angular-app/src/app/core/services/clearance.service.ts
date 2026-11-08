@@ -572,8 +572,7 @@ export class ClearanceService {
       }
 
       if (office === 'Finance') {
-        const otherApprovals = request.approvals.filter(a => a && a.office !== 'Finance');
-        return otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
+        return request.approvals.some(item => item && item.office === 'Finance');
       }
 
       if (office === 'Department') {
@@ -1092,31 +1091,35 @@ export class ClearanceService {
 
     request.approvals = existing;
 
-    // Auto-advance stage if convocation or parallel offices are already completed
-    if (request.currentStage === 'Convocation') {
-      const convocationApproved = existing.find(a => a.office === 'Convocation')?.status === 'Approved';
-      if (convocationApproved) {
-        const parallelOffices = this.getClearanceOffices(request.college);
-        const allParallelApproved = parallelOffices.every(office =>
-          existing.find(a => a.office === office)?.status === 'Approved'
-        );
-        if (allParallelApproved) {
-          request.currentStage = 'Department';
-          request.currentOffice = 'Department';
-        } else {
-          request.currentStage = 'Parallel';
-          request.currentOffice = undefined;
-        }
-      }
-    } else if (request.currentStage === 'Parallel') {
-      const parallelOffices = this.getClearanceOffices(request.college);
-      const allParallelApproved = parallelOffices.every(office =>
-        existing.find(a => a.office === office)?.status === 'Approved'
-      );
-      if (allParallelApproved) {
-        request.currentStage = 'Department';
-        request.currentOffice = 'Department';
-      }
+    // Dynamically compute correct currentStage based on actual office approval statuses
+    const getStatus = (office: ClearanceOffice | string) => existing.find(a => a.office === office)?.status || 'Pending';
+
+    const convocationApproved = getStatus('Convocation') === 'Approved';
+    const parallelOffices = this.getClearanceOffices(request.college);
+    const allParallelApproved = parallelOffices.length > 0 && parallelOffices.every(office => getStatus(office) === 'Approved');
+    const deptApproved = getStatus('Department') === 'Approved';
+    const principalApproved = getStatus('Principal') === 'Approved';
+    const financeApproved = getStatus('Finance') === 'Approved';
+
+    if (financeApproved || request.status === 'Completed') {
+      request.currentStage = 'Completed';
+      request.status = 'Completed';
+      request.currentOffice = undefined;
+    } else if (principalApproved) {
+      request.currentStage = 'Finance';
+      request.currentOffice = 'Finance';
+    } else if (deptApproved) {
+      request.currentStage = 'Principal';
+      request.currentOffice = 'Principal';
+    } else if (allParallelApproved) {
+      request.currentStage = 'Department';
+      request.currentOffice = 'Department';
+    } else if (convocationApproved) {
+      request.currentStage = 'Parallel';
+      request.currentOffice = undefined;
+    } else {
+      request.currentStage = 'Convocation';
+      request.currentOffice = undefined;
     }
 
     return request;

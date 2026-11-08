@@ -188,6 +188,9 @@ export class TranscriptPaymentComponent implements OnDestroy {
           this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully to Finance for verification.');
           this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
           this.refreshStatusWhilePending();
+          setTimeout(() => {
+            this.router.navigate(['/transcript/process']);
+          }, 400);
         } else {
           this.toastService.error('Submission Failed', 'Could not submit payment receipt. Please try again.');
         }

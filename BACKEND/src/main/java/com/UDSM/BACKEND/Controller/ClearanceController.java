@@ -31,7 +31,7 @@ public class ClearanceController {
     // =========================================================
 
     @PostMapping("/request")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'SUPERUSER', 'ADMINISTRATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse> submitClearanceRequest(
             @RequestBody ClearanceRequestDTO requestDTO,
             Authentication authentication) {
@@ -40,7 +40,7 @@ public class ClearanceController {
     }
 
     @PostMapping("/submit-finance-receipt")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'SUPERUSER', 'ADMINISTRATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse> submitFinanceReceipt(
             @RequestBody Map<String, String> payload,
             Authentication authentication) {
@@ -49,7 +49,7 @@ public class ClearanceController {
     }
 
     @GetMapping("/my-request")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'SUPERUSER', 'ADMINISTRATOR', 'ADMIN')")
     public ResponseEntity<ClearanceResponse> getMyClearanceRequest(Authentication authentication) {
         ClearanceResponse response = clearanceService.getMyClearanceRequest(authentication);
         return ResponseEntity.ok(response);

@@ -123,11 +123,10 @@
     <section class="waiting-card completed-card" *ngIf="collectionMethodSaved || isAcquired">
       <h2>Process Completed</h2>
       <p>Your transcript request has been successfully submitted and finalized.</p>
-      <div class="step-navigation">
-        <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
-        <a *ngIf="!isAcquired" routerLink="/transcript" class="approval-button" (click)="finishProcess(); $event.preventDefault();">
+      <div class="step-navigation" style="justify-content: flex-end;">
+        <button type="button" class="approval-button" (click)="finishProcess()">
           Acquire Additional
-        </a>
+        </button>
       </div>
     </section>
 

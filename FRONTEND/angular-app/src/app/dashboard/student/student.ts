@@ -14,6 +14,8 @@ import { ClearanceOffice } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ToastService } from '../../core/services/toast.service';
+import { StudentDebtService } from '../../core/services/student-debt.service';
+import { StudentDebtFlag } from '../../core/models/student-debt.model';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { environment } from '../../environments/environment';
 
@@ -45,6 +47,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly studentDebtService = inject(StudentDebtService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
@@ -56,6 +59,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
   isLoading = true;
   systemType: StudentSystemType = environment.systemType;
   userDropdownOpen = false;
+  activeDebtFlag: StudentDebtFlag | null = null;
 
   // Receipt submission after rejection
   showReceiptModal = false;
@@ -237,6 +241,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadProfilePhoto();
+    this.loadActiveStudentDebtFlag();
     this.notificationService.getStudentNotifications().subscribe();
     this.pollSubscription = timer(5000, 10000).pipe(
       switchMap(() => this.notificationService.refreshUnreadCount())
@@ -247,8 +252,21 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.pollSubscription?.unsubscribe();
   }
 
+  loadActiveStudentDebtFlag(): void {
+    const user = this.currentUser;
+    if (!user) return;
+    this.studentDebtService.listForStudent().subscribe({
+      next: (flags) => {
+        const found = (Array.isArray(flags) ? flags : []).find(f => f && f.status === 'OPEN');
+        this.activeDebtFlag = found || null;
+      },
+      error: () => {}
+    });
+  }
+
   refreshInformation(): void {
     this.loadProfilePhoto();
+    this.loadActiveStudentDebtFlag();
     this.notificationService.getStudentNotifications().subscribe();
     this.authService.getProfile().subscribe({
       next: () => {

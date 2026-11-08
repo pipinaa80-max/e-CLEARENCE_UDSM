@@ -90,11 +90,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
 
                     if (userDetails != null) {
+                        java.util.List<org.springframework.security.core.GrantedAuthority> distinctAuthorities =
+                                userDetails.getAuthorities() == null ? java.util.List.of() :
+                                        userDetails.getAuthorities().stream()
+                                                .filter(java.util.Objects::nonNull)
+                                                .map(auth -> (org.springframework.security.core.GrantedAuthority) new org.springframework.security.core.authority.SimpleGrantedAuthority(auth.getAuthority()))
+                                                .distinct()
+                                                .toList();
+
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
                                         userDetails,
                                         null,
-                                        userDetails.getAuthorities()
+                                        distinctAuthorities
                                 );
 
                         authentication.setDetails(

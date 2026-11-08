@@ -1,8 +1,5 @@
 package com.UDSM.BACKEND.dto;
 
-
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,17 +11,16 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ConvocationReceiptRequest {
 
-    @NotBlank(message = "Student ID is required")
     private String studentId;
-
+    private String studentName;
+    private String registrationNumber;
     private String controlNumber;
-
-    @NotBlank(message = "Receipt number is required")
     private String receiptNumber;
-
-    @NotBlank(message = "Payment date is required")
     private String paymentDate;
-
+    private String paymentChannel;
+    private Double amountPaid;
+    private String semester;
+    private String academicYear;
     private String fileName;
     private String fileType;
     private Long fileSize;

@@ -42,6 +42,13 @@ public class ConvocationService {
     public ApiResponse submitReceipt(ConvocationReceiptRequest request, MultipartFile file, String officerUsername) {
         log.info("📝 Submitting receipt for student: {}", request.getStudentId());
 
+        if (request.getReceiptNumber() == null || request.getReceiptNumber().isBlank()) {
+            request.setReceiptNumber("RECEIPT-" + System.currentTimeMillis());
+        }
+        if (request.getPaymentDate() == null || request.getPaymentDate().isBlank()) {
+            request.setPaymentDate(java.time.LocalDate.now().toString());
+        }
+
         validateReceiptUpload(request, file);
 
         // Check if student exists

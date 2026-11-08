@@ -18,26 +18,29 @@
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
         <span>Clearance Requests</span>
       </a>
-      <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
-        <span>Data Upload</span>
-      </a>
-      <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'">
+      <a (click)="toggleInstitutionalMenu()" [class.active]="isInstitutionalTabActive" class="dropdown-parent-btn" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v4h4V8zm0 5h-4v1h3a1 1 0 0 0 1-1v-1zm-5 1v-4H1v4a1 1 0 0 0 1 1h8zM1 8v4h9V8H1zm0-1h9V4H1v3z"/></svg>
-        <span>Institutional Dashboards</span>
+        <span>Institutional Management</span>
+        <svg [style.transform]="institutionalMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)'" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="margin-left: auto; transition: transform 0.2s;"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>
       </a>
-      <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm4 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM5.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm.5 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path d="M16 8c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306c-.584.296-1.925.864-4.181 1.234-.2.032-.352-.176-.273-.362.354-.836.674-1.95.77-2.966C.744 11.37 0 9.76 0 8c0-3.866 3.582-7 8-7s8 3.134 8 7zM8 2C4.135 2 1 4.691 1 8c0 1.483.632 2.83 1.69 3.821a.5.5 0 0 1 .132.392c-.104 1.028-.415 2.1-.8 2.91 1.733-.314 2.875-.783 3.456-1.077a.5.5 0 0 1 .425-.027c.683.27 1.428.42 2.097.42 3.865 0 7-2.691 7-6s-3.135-6-7-6z"/></svg>
-        <span>Institutional Theme</span>
-      </a>
-      <a (click)="setTab('awards')" [class.active]="activeTab === 'awards'">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.669.864 8 0 6.331.864l-1.858.282-.842 1.68-1.337 1.32L2.6 6l-.306 1.854 1.337 1.32.842 1.68 1.858.282L8 12l1.669-.864 1.858-.282.842-1.68 1.337-1.32L13.4 6l.306-1.854-1.337-1.32-.842-1.68L9.669.864zm-3.81 12.35.282 1.858L8 16l1.858-.864.282-1.858-2.28 1.072-2.001-1.136z"/></svg>
-        <span>Academic Awards</span>
-      </a>
-      <a (click)="setTab('sponsors')" [class.active]="activeTab === 'sponsors'">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1H1zm7 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M0 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V5zm3 0a2 2 0 0 1-2 2v4a2 2 0 0 1 2 2h10a2 2 0 0 1 2-2V7a2 2 0 0 1-2-2H3z"/></svg>
-        <span>Sponsors & Funding</span>
-      </a>
+
+      <div *ngIf="institutionalMenuOpen" class="submenu-container" style="padding-left: 14px; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; margin-bottom: 6px;">
+        <a (click)="setTab('upload')" [class.active]="activeTab === 'upload'" style="font-size: 13px; padding: 8px 12px; cursor: pointer;">
+          <span>Data Upload</span>
+        </a>
+        <a (click)="setTab('dashboards')" [class.active]="activeTab === 'dashboards'" style="font-size: 13px; padding: 8px 12px; cursor: pointer;">
+          <span>Institutional Dashboards</span>
+        </a>
+        <a (click)="setTab('theme')" [class.active]="activeTab === 'theme'" style="font-size: 13px; padding: 8px 12px; cursor: pointer;">
+          <span>Institutional Theme</span>
+        </a>
+        <a (click)="setTab('awards')" [class.active]="activeTab === 'awards'" style="font-size: 13px; padding: 8px 12px; cursor: pointer;">
+          <span>Academic Awards</span>
+        </a>
+        <a (click)="setTab('sponsors')" [class.active]="activeTab === 'sponsors'" style="font-size: 13px; padding: 8px 12px; cursor: pointer;">
+          <span>Sponsors &amp; Funding</span>
+        </a>
+      </div>
     </nav>
   </aside>
 

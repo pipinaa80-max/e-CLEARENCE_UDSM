@@ -473,12 +473,6 @@ export class ConvocationDashboardComponent implements OnInit {
 
   async approveRequest(request: ClearanceRequest): Promise<void> {
     this.message = '';
-
-    if (!request.convocation?.receiptSubmittedAt) {
-      this.toastService.warning('Student Receipt Missing', 'Student must submit a receipt first.');
-      return;
-    }
-
     this.isLoading = true;
 
     try {

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -6,9 +6,10 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { StudentDebtService } from '../../core/services/student-debt.service';
+import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
+import { ToastService } from '../../core/services/toast.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
-import { StudentDebtFlag } from '../../core/models/student-debt.model';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 
 @Component({
@@ -18,13 +19,13 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
   templateUrl: './finance.html',
   styleUrl: './finance.css'
 })
-export class FinanceDashboard implements OnInit, OnDestroy {
+export class FinanceDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
-  private readonly studentDebtService = inject(StudentDebtService);
+  private readonly transcriptPaymentService = inject(TranscriptPaymentService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   sidebarOpen = false;
   viewMode: 'all' | 'requests' | 'analytics' = 'all';
@@ -32,38 +33,8 @@ export class FinanceDashboard implements OnInit, OnDestroy {
   detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
-  openDebtFlagsMap = new Map<string, StudentDebtFlag>();
-  private debtFlagTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
-    this.loadOpenDebtFlags();
-    this.debtFlagTimer = setInterval(() => {
-      this.loadOpenDebtFlags();
-    }, 3000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.debtFlagTimer) clearInterval(this.debtFlagTimer);
-  }
-
-  loadOpenDebtFlags(): void {
-    this.studentDebtService.listOpenForDepartment().subscribe({
-      next: (flags) => {
-        this.openDebtFlagsMap.clear();
-        for (const f of (Array.isArray(flags) ? flags : [])) {
-          if (f && f.status === 'OPEN' && f.registrationNumber) {
-            this.openDebtFlagsMap.set(f.registrationNumber.trim().toLowerCase(), f);
-          }
-        }
-        this.cdr.detectChanges();
-      },
-      error: () => {}
-    });
-  }
-
-  getOpenDebtFlag(request: ClearanceRequest | null): StudentDebtFlag | undefined {
-    if (!request || !request.registrationNumber) return undefined;
-    return this.openDebtFlagsMap.get(request.registrationNumber.trim().toLowerCase());
   }
 
   readonly Math = Math;
@@ -105,7 +76,34 @@ export class FinanceDashboard implements OnInit, OnDestroy {
   }
 
   get requests(): ClearanceRequest[] {
-    return this.clearanceService.getRequestsForOffice('Finance');
+    const clearanceReqs = this.clearanceService.getRequestsForOffice('Finance');
+    const transcriptReqs = this.transcriptPaymentService.getAllRequests()
+      .filter((t: TranscriptPaymentRequest) => t.status === 'Receipt Submitted')
+      .map((t: TranscriptPaymentRequest) => ({
+        id: t.id,
+        studentId: t.studentId,
+        studentName: t.studentName,
+        registrationNumber: t.registrationNumber,
+        email: t.postingContactEmail || 'student@udsm.ac.tz',
+        phoneNumber: t.postingContactPhone || '—',
+        college: 'Directorate of Undergraduate Studies (DUS)',
+        department: 'Transcript Service',
+        programme: t.award || 'Transcript Request',
+        requestDate: t.requestedAt,
+        status: 'Pending',
+        currentOffice: 'Finance' as any,
+        currentStage: 'Finance' as any,
+        approvals: [
+          { office: 'Finance', status: 'Pending' }
+        ],
+        convocation: {
+          receiptFileName: t.receiptFileName,
+          receiptData: t.receiptData,
+          receiptSubmittedAt: t.receiptSubmittedAt
+        }
+      } as unknown as ClearanceRequest));
+
+    return [...transcriptReqs, ...clearanceReqs];
   }
 
   get pendingRequestCount(): number {
@@ -203,6 +201,21 @@ export class FinanceDashboard implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
+
+    const isTranscript = this.transcriptPaymentService.getAllRequests().some((t: TranscriptPaymentRequest) => t.id === request.id);
+    if (isTranscript) {
+      this.transcriptPaymentService.updateStatus(request.id, 'Paid');
+      this.notificationService.createNotification(
+        request.studentId,
+        'Transcript Payment Approved',
+        'Finance has verified and approved your transcript payment receipt. You can now upload required documents.',
+        'success'
+      );
+      this.toastService.success('Receipt Approved', 'Transcript payment receipt approved successfully by Finance.');
+      this.message = 'Transcript payment receipt approved successfully.';
+      return;
+    }
+
     if (!await this.clearanceService.approveRequest(
       request.id,
       'Finance',
@@ -216,6 +229,7 @@ export class FinanceDashboard implements OnInit, OnDestroy {
       'success'
     );
 
+    this.toastService.success('Clearance Approved', 'Student clearance approved successfully by Finance.');
     this.message = 'Clearance completed successfully.';
   }
 
@@ -231,6 +245,22 @@ export class FinanceDashboard implements OnInit, OnDestroy {
     if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
       return;
     }
+
+    const isTranscript = this.transcriptPaymentService.getAllRequests().some((t: TranscriptPaymentRequest) => t.id === this.selectedRequest?.id);
+    if (isTranscript) {
+      this.transcriptPaymentService.rejectReceipt(this.selectedRequest.id, this.rejectionComment);
+      this.notificationService.createNotification(
+        this.selectedRequest.studentId,
+        'Transcript Receipt Rejected',
+        this.rejectionComment,
+        'warning'
+      );
+      this.message = 'Transcript payment receipt returned to student.';
+      this.selectedRequest = null;
+      this.rejectionComment = '';
+      return;
+    }
+
     if (!await this.clearanceService.rejectRequest(
       this.selectedRequest.id,
       'Finance',

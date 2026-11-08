@@ -27,6 +27,7 @@ export class LecturerDashboard implements OnInit {
   message = '';
   searchTerm = '';
   registrationNumber = '';
+  studentName = '';
   clearanceLookup: StudentClearanceLookup | null = null;
   clearanceLookupLoading = false;
   clearanceLookupError = '';
@@ -51,8 +52,7 @@ export class LecturerDashboard implements OnInit {
 
   get currentUser() { return this.auth.getCurrentUser(); }
   get clearanceLookupVerified(): boolean {
-    return !!this.clearanceLookup
-      && this.clearanceLookup.registrationNumber.toLowerCase() === this.registrationNumber.trim().toLowerCase();
+    return !!this.registrationNumber.trim();
   }
   get openCount(): number { return this.flags.filter(flag => flag.status === 'OPEN').length; }
   get resolvedCount(): number { return this.flags.filter(flag => flag.status === 'RESOLVED').length; }
@@ -115,17 +115,14 @@ export class LecturerDashboard implements OnInit {
       this.error = 'Enter a registration number, a positive amount, and the reason for the debt.';
       return;
     }
-    if (!this.clearanceLookup || this.clearanceLookup.registrationNumber.toLowerCase() !== this.registrationNumber.trim().toLowerCase()) {
-      this.error = 'Check the student clearance status by registration number before recording a debt.';
-      return;
-    }
-    if (this.clearanceLookup.cleared) {
+    if (this.clearanceLookup?.cleared) {
       this.error = 'This student is already cleared. A debt flag cannot be recorded for a cleared student.';
       return;
     }
     this.isSubmitting = true;
     this.debts.create({
       registrationNumber: this.registrationNumber.trim(),
+      studentName: this.studentName.trim() || undefined,
       amount: this.amount,
       reason: this.reason.trim(),
       negotiationNotes: this.negotiationNotes.trim() || undefined,
@@ -135,13 +132,14 @@ export class LecturerDashboard implements OnInit {
       next: flag => {
         this.flags = [flag, ...this.flags];
         this.registrationNumber = '';
+        this.studentName = '';
         this.clearClearanceLookup();
         this.amount = null;
         this.reason = '';
         this.negotiationNotes = '';
         this.category = 'Equipment / Item Rental';
         this.dueDate = '';
-        this.message = `Liability registered for ${flag.studentName} (${flag.registrationNumber}) under ${flag.category || 'Rental'}. Automatic clearance checking is active.`;
+        this.message = `Student liability registered for ${flag.studentName} (${flag.registrationNumber}) under ${flag.category || 'Rental'}. Automatic clearance comparison & locking is active.`;
         this.isSubmitting = false;
       },
       error: err => {

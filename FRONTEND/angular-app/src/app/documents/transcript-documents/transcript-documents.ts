@@ -162,7 +162,7 @@ export class TranscriptDocumentsComponent implements OnInit {
     if (!user || !this.allUploaded) return;
 
     localStorage.setItem(`udsm-transcript-documents-submitted-${user.id}`, 'true');
-    this.router.navigate(['/dashboard/student']);
+    this.router.navigate(['/transcript/process']);
   }
 
   get allUploaded(): boolean {

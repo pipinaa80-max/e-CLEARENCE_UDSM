@@ -6,9 +6,6 @@
     [user]="currentUser"
     (toggleSidebar)="toggleSidebar()"
   >
-    <div header-actions>
-      <a routerLink="/dashboard/student" class="back-link">Back to Dashboard</a>
-    </div>
   </app-dashboard-header>
 
   <main class="documents-card">
@@ -31,9 +28,9 @@
     </div>
 
     <div class="step-navigation">
-      <a routerLink="/dashboard/student" class="secondary-button">Back</a>
+      <a routerLink="/dashboard" class="secondary-button">Back</a>
       <span class="completion-note" *ngIf="!allUploaded && !isSubmitted">Upload all required documents</span>
-      <button type="button" class="primary-button" *ngIf="allUploaded && !isSubmitted" (click)="submit()">Submit &amp; Return to Dashboard</button>
+      <button type="button" class="primary-button" *ngIf="allUploaded && !isSubmitted" (click)="submit()">Submit &amp; Return to Process</button>
       <span class="success-text" *ngIf="isSubmitted">✓ Documents Submitted</span>
     </div>
   </main>

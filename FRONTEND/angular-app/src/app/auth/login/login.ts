@@ -54,8 +54,8 @@ export class Login implements OnInit {
     const saved = this.projectAdminService.getSavedBranding();
     if (saved) {
       this.branding = {
-        universityName: saved.universityName || this.branding.universityName,
-        shortName: saved.shortName || this.branding.shortName,
+        universityName: (!saved.universityName || saved.universityName.toLowerCase() === 'udsm') ? 'University of Dar es Salaam' : saved.universityName,
+        shortName: (!saved.shortName || saved.shortName.toLowerCase() === 'udsm') ? 'University of Dar es Salaam' : saved.shortName,
         logoUrl: saved.logoUrl || this.branding.logoUrl
       };
     }

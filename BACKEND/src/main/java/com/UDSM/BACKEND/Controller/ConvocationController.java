@@ -26,7 +26,7 @@ public class ConvocationController {
     private final ConvocationService convocationService;
 
     @PostMapping(value = "/submit-receipt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'SUPERUSER', 'ADMINISTRATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse> submitReceipt(
             @RequestPart("receipt") @Valid ConvocationReceiptRequest request,
             @RequestPart("file") MultipartFile file,

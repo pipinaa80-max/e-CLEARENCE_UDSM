@@ -137,12 +137,11 @@ export class TranscriptProcessComponent implements OnInit {
 
   finishProcess(): void {
     const user = this.authService.getCurrentUser();
-    if (!user || this.isAcquired) return;
-
-    if (!this.generateTranscript()) return;
-
-    localStorage.setItem(`udsm-transcript-acquired-${user.id}`, 'true');
-    this.router.navigate(['/transcript']);
+    if (!user) return;
+    localStorage.removeItem(`udsm-transcript-acquired-${user.id}`);
+    localStorage.removeItem(`udsm-transcript-collection-saved-${user.id}`);
+    localStorage.removeItem(`udsm-transcript-documents-submitted-${user.id}`);
+    this.router.navigate(['/transcript/payment'], { queryParams: { additional: 'true' } });
   }
 
   generateTranscript(): boolean {

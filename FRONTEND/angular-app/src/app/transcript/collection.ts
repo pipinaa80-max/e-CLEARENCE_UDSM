@@ -180,6 +180,6 @@ export class TranscriptCollectionComponent implements OnInit {
     }
 
     this.message = `Collection preference saved successfully! Allocated to: ${method === 'Physical Collection' ? this.selectedStation?.name : 'DHL Courier Service'}.`;
-    setTimeout(() => this.router.navigate(['/dashboard/student']), 1200);
+    setTimeout(() => this.router.navigate(['/transcript/process']), 1200);
   }
 }

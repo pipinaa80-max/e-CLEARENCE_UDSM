@@ -41,6 +41,15 @@ export class AdminDashboard implements OnInit, OnDestroy {
   readonly themeColors = UDSM_BRAND_COLORS;
   themeColorDropdownOpen = false;
   activeTab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' | 'sponsors' = 'users';
+  institutionalMenuOpen = true;
+
+  toggleInstitutionalMenu(): void {
+    this.institutionalMenuOpen = !this.institutionalMenuOpen;
+  }
+
+  get isInstitutionalTabActive(): boolean {
+    return ['upload', 'dashboards', 'theme', 'awards', 'sponsors'].includes(this.activeTab);
+  }
   newAwardName: string = '';
   awardsList: string[] = [];
   editingAwardName: string | null = null;

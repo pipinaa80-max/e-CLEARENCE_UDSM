@@ -39,6 +39,9 @@
         <label>Registration Number
           <input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345">
         </label>
+        <label>Student Full Name (For Pre-registration / External Student)
+          <input name="studentName" [(ngModel)]="studentName" placeholder="e.g. John M. Doe (optional if student exists)">
+        </label>
         <div class="clearance-lookup-progress" *ngIf="clearanceLookupLoading">Checking clearance status for this registration number…</div>
         <div class="clearance-lookup-result" *ngIf="clearanceLookup" [class.cleared]="clearanceLookup.cleared" [class.not-cleared]="!clearanceLookup.cleared">
           <strong>{{ clearanceLookup.studentName }}</strong>

@@ -55,8 +55,14 @@ public class StudentDebtFlagController {
     }
 
     @GetMapping("/department/open")
-    @PreAuthorize("hasAnyRole('DEPARTMENT_OFFICER', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_OFFICER', 'FINANCE', 'FINANCE_OFFICER', 'PRINCIPAL', 'DEAN_OF_STUDENTS', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'ICT', 'USAB', 'DARUSO', 'LIBRARY', 'GAMES_COACH', 'HALL_WARDEN', 'SMART_CARD', 'WORKSHOP', 'LABORATORY', 'CONVOCATION', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DUS_SECRETARY', 'STATION_SECRETARY', 'ACADEMIC_STAFF', 'LECTURER')")
     public List<StudentDebtFlag> listOpenForDepartment(@AuthenticationPrincipal UserDetails user) {
         return debtService.listOpenForDepartment(user.getUsername());
+    }
+
+    @GetMapping("/my-flags")
+    @PreAuthorize("hasRole('STUDENT')")
+    public List<StudentDebtFlag> listForStudent(@AuthenticationPrincipal UserDetails user) {
+        return debtService.listForStudent(user.getUsername());
     }
 }

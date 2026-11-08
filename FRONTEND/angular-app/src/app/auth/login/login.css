@@ -332,21 +332,21 @@
   min-height: 50px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #005a8f 0%, #003654 100%);
+  background: var(--udsm-blue);
   color: #ffffff;
   cursor: pointer;
   font-size: 15px !important;
   font-weight: 700;
   letter-spacing: 0.01em;
-  box-shadow: 0 6px 20px rgba(0, 59, 92, 0.28);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--udsm-blue-dark) 28%, transparent);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   margin-top: 6px;
 }
 
 .btn-submit:hover {
-  background: linear-gradient(135deg, #004b77 0%, #002c44 100%);
+  background: var(--udsm-blue-dark);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 59, 92, 0.38);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 38%, transparent);
 }
 
 .btn-submit:active {

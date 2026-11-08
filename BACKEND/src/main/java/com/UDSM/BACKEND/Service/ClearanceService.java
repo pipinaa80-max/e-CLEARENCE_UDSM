@@ -306,15 +306,9 @@ public class ClearanceService {
                         }
                     }
 
-                    // Enforce that requests or receipts do NOT reach Finance until all other offices are cleared
+                    // Allow Finance to view and review requests directly without restriction
                     if ("Finance".equalsIgnoreCase(targetOffice)) {
-                        List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(cr);
-                        boolean allOtherOfficesCleared = allApprovals.stream()
-                                .filter(a -> !a.getDepartment().equalsIgnoreCase("Finance"))
-                                .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
-                        if (!allOtherOfficesCleared) {
-                            return false;
-                        }
+                        // Permitted
                     }
 
                     return true;
@@ -490,11 +484,14 @@ public class ClearanceService {
 
         if ("Finance".equalsIgnoreCase(department)) {
             List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(request);
-            boolean allOtherOfficesCleared = allApprovals.stream()
-                    .filter(a -> !a.getDepartment().equalsIgnoreCase("Finance"))
-                    .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
-            if (!allOtherOfficesCleared) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Clearance request cannot reach or be approved by Finance until all other offices are cleared.");
+            for (DepartmentApproval app : allApprovals) {
+                if (app.getStatus() != ClearanceStatus.APPROVED) {
+                    app.setStatus(ClearanceStatus.APPROVED);
+                    app.setApprovedBy(user != null ? user.getFullName() : "Auto-Approved via Finance");
+                    app.setApprovalDate(LocalDateTime.now());
+                    app.setComments("Auto-approved upon Finance endorsement");
+                    departmentApprovalRepository.save(app);
+                }
             }
         }
 

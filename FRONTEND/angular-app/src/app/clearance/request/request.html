@@ -88,15 +88,7 @@
 
           <label class="field">
             <span>College</span>
-            <select formControlName="college" (change)="onCollegeChange()">
-              <option value="" disabled>Select College</option>
-              <option *ngIf="requestForm.controls.college.value && !collegeList.includes(requestForm.controls.college.value)" [value]="requestForm.controls.college.value">
-                {{ requestForm.controls.college.value }}
-              </option>
-              <option *ngFor="let college of collegeList" [value]="college">
-                {{ college }}
-              </option>
-            </select>
+            <input type="text" formControlName="college" readonly />
           </label>
 
           <label class="field">

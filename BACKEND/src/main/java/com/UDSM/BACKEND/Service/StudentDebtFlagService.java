@@ -45,15 +45,16 @@ public class StudentDebtFlagService {
         User studentAccount = student == null
                 ? userRepository.findByRegistrationNumberIgnoreCase(normalizedRegistrationNumber).orElse(null)
                 : null;
-        if (student == null && (studentAccount == null || studentAccount.getRole() != ERole.STUDENT)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "No student record was found with that registration number.");
-        }
-        String college = student != null ? student.getCollege() : studentAccount.getCollege();
-        String department = student != null ? student.getDepartment() : studentAccount.getDepartment();
-        if (studentAccount != null && !sameProject(lecturer.getProjectId(), studentAccount.getProjectId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "This student is outside your registered project.");
-        }
+
+        String studentName = student != null ? student.getFullName()
+                : studentAccount != null ? studentAccount.getFullName()
+                : "Pre-registered Student (" + normalizedRegistrationNumber + ")";
+        String college = student != null ? student.getCollege()
+                : studentAccount != null ? studentAccount.getCollege()
+                : lecturer.getCollege() != null ? lecturer.getCollege() : "College of Information and Communication Technologies (CoICT)";
+        String department = student != null ? student.getDepartment()
+                : studentAccount != null ? studentAccount.getDepartment()
+                : lecturer.getDepartment() != null ? lecturer.getDepartment() : "Department of Computer Science & Engineering";
 
         ClearanceRequest latestRequest = clearanceRequestRepository
                 .findByStudentRegistrationNumber(normalizedRegistrationNumber).stream()
@@ -69,8 +70,8 @@ public class StudentDebtFlagService {
         String status = cleared ? "CLEARED"
                 : latestRequest == null ? "NOT_STARTED"
                 : latestRequest.getStatus();
-        return new StudentClearanceLookupResponse(student != null ? student.getRegistrationNumber() : studentAccount.getRegistrationNumber(),
-                student != null ? student.getFullName() : studentAccount.getFullName(),
+        return new StudentClearanceLookupResponse(normalizedRegistrationNumber,
+                studentName,
                 college, department, status,
                 latestRequest == null ? null : latestRequest.getCurrentStage(), cleared);
     }
@@ -83,14 +84,35 @@ public class StudentDebtFlagService {
 
     @Transactional(readOnly = true)
     public List<StudentDebtFlag> listOpenForDepartment(String username) {
-        User user = requireDepartmentOrAdminRole(username);
-        String deptCol = user.getCollege();
-        String deptName = user.getDepartment();
+        User user = requireStaffOrAdminRole(username);
+        if (user.getRole() == ERole.DEPARTMENT_OFFICER) {
+            String deptCol = user.getCollege();
+            String deptName = user.getDepartment();
+            return inProject(debtRepository.findAll(), user)
+                    .stream()
+                    .filter(flag -> "OPEN".equals(flag.getStatus()))
+                    .filter(flag -> (deptCol == null || deptCol.isBlank() || matchesScope(flag.getCollege(), deptCol))
+                            && (deptName == null || deptName.isBlank() || matchesScope(flag.getDepartment(), deptName)))
+                    .toList();
+        }
         return inProject(debtRepository.findAll(), user)
                 .stream()
                 .filter(flag -> "OPEN".equals(flag.getStatus()))
-                .filter(flag -> (deptCol == null || deptCol.isBlank() || matchesScope(flag.getCollege(), deptCol))
-                        && (deptName == null || deptName.isBlank() || matchesScope(flag.getDepartment(), deptName)))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentDebtFlag> listForStudent(String username) {
+        User student = userRepository.findByEmail(username)
+                .or(() -> userRepository.findByUsername(username))
+                .orElse(null);
+        if (student == null || student.getRegistrationNumber() == null) {
+            return List.of();
+        }
+        String regNo = student.getRegistrationNumber().trim().toLowerCase();
+        return debtRepository.findAll().stream()
+                .filter(flag -> "OPEN".equals(flag.getStatus()))
+                .filter(flag -> flag.getRegistrationNumber() != null && regNo.equalsIgnoreCase(flag.getRegistrationNumber().trim()))
                 .toList();
     }
 
@@ -100,14 +122,31 @@ public class StudentDebtFlagService {
         String registrationNumber = request.registrationNumber().trim();
         User studentAccount = userRepository.findByRegistrationNumberIgnoreCase(registrationNumber).orElse(null);
         Student studentProfile = studentRepository.findByRegistrationNumberIgnoreCase(registrationNumber).orElse(null);
-        if (studentAccount == null && studentProfile == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No student record was found with that registration number.");
-        }
+
         if (studentAccount != null && studentAccount.getRole() != ERole.STUDENT) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The registration number does not belong to a student account.");
         }
-        String studentCollege = studentAccount != null ? studentAccount.getCollege() : studentProfile.getCollege();
-        String studentDepartment = studentAccount != null ? studentAccount.getDepartment() : studentProfile.getDepartment();
+
+        String studentCollege = studentAccount != null ? studentAccount.getCollege()
+                : studentProfile != null ? studentProfile.getCollege()
+                : lecturer.getCollege() != null ? lecturer.getCollege() : "College of Information and Communication Technologies (CoICT)";
+
+        String studentDepartment = studentAccount != null ? studentAccount.getDepartment()
+                : studentProfile != null ? studentProfile.getDepartment()
+                : lecturer.getDepartment() != null ? lecturer.getDepartment() : "Department of Computer Science & Engineering";
+
+        String studentName = request.studentName() != null && !request.studentName().isBlank() ? request.studentName().trim()
+                : studentAccount != null ? studentAccount.getFullName()
+                : studentProfile != null ? studentProfile.getFullName()
+                : "Pre-registered Student (" + registrationNumber + ")";
+
+        String studentId = studentAccount != null ? studentAccount.getId()
+                : studentProfile != null ? studentProfile.getId()
+                : "prereg-" + registrationNumber.toLowerCase();
+
+        String programme = studentAccount != null ? studentAccount.getProgramme()
+                : studentProfile != null ? studentProfile.getProgramme() : "External / Pre-registered";
+
         if (studentAccount != null && !sameProject(lecturer.getProjectId(), studentAccount.getProjectId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "This student is outside your registered project.");
@@ -118,12 +157,12 @@ public class StudentDebtFlagService {
         }
 
         StudentDebtFlag flag = debtRepository.save(StudentDebtFlag.builder()
-                .studentId(studentAccount != null ? studentAccount.getId() : studentProfile.getId())
-                .registrationNumber(studentAccount != null ? studentAccount.getRegistrationNumber() : studentProfile.getRegistrationNumber())
-                .studentName(studentAccount != null ? studentAccount.getFullName() : studentProfile.getFullName())
+                .studentId(studentId)
+                .registrationNumber(registrationNumber)
+                .studentName(studentName)
                 .college(studentCollege)
                 .department(studentDepartment)
-                .programme(studentAccount != null ? studentAccount.getProgramme() : studentProfile.getProgramme())
+                .programme(programme)
                 .amount(request.amount())
                 .category(request.category() != null && !request.category().isBlank() ? request.category().trim() : "Equipment / Item Rental")
                 .dueDate(request.dueDate() != null && !request.dueDate().isBlank() ? java.time.LocalDate.parse(request.dueDate().trim()) : null)
@@ -190,14 +229,11 @@ public class StudentDebtFlagService {
         return user;
     }
 
-    private User requireDepartmentOrAdminRole(String username) {
+    private User requireStaffOrAdminRole(String username) {
         User user = userRepository.findByEmail(username)
                 .or(() -> userRepository.findByUsername(username))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User account not found."));
-        if (user.getRole() != ERole.DEPARTMENT_OFFICER
-                && user.getRole() != ERole.ADMINISTRATOR
-                && user.getRole() != ERole.ADMIN
-                && user.getRole() != ERole.SUPERUSER) {
+        if (user.getRole() == ERole.STUDENT) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account does not have access to this action.");
         }
         return user;

@@ -60,7 +60,7 @@
         </div>
       </div>
 
-      <button type="submit" [disabled]="loginForm.invalid || isLoading">
+      <button type="submit" class="btn-submit" [disabled]="loginForm.invalid || isLoading">
         <span *ngIf="!isLoading">Sign In</span>
         <span *ngIf="isLoading">Signing In...</span>
       </button>
