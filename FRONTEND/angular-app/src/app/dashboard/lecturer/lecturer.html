@@ -22,20 +22,26 @@
     <div class="notice success" *ngIf="message">{{ message }}</div>
     <div class="notice error" *ngIf="error">{{ error }}</div>
 
-    <section class="debt-stats">
-      <article><span>Open flags</span><strong>{{ openCount }}</strong></article>
-      <article><span>Resolved</span><strong>{{ resolvedCount }}</strong></article>
-      <article><span>Total debt records</span><strong>{{ flags.length }}</strong></article>
-    </section>
-
     <section class="debt-panel" id="debt-flag-form">
-      <div class="panel-heading">
+      <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
         <div>
           <h2>Register Student Liability / Rented Item</h2>
-          <p>Register a student liability or rented item (equipment, books, tools, keys, etc.). This is stored securely in the database and automatically compares and blocks clearance until resolved.</p>
+          <p>Register single or bulk student liabilities (equipment, books, tools, keys, coursework debt). Stored securely and automatically locks clearance until resolved.</p>
+        </div>
+        <div class="mode-toggle-group">
+          <button type="button" class="mode-toggle-btn" [class.active]="flagMode === 'single'" (click)="flagMode = 'single'">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
+            <span>Single Student</span>
+          </button>
+          <button type="button" class="mode-toggle-btn" [class.active]="flagMode === 'bulk'" (click)="flagMode = 'bulk'">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+            <span>Bulk Flagging (Excel/CSV)</span>
+          </button>
         </div>
       </div>
-      <form class="debt-form" (ngSubmit)="createFlag()">
+
+      <!-- SINGLE STUDENT FORM -->
+      <form class="debt-form" (ngSubmit)="createFlag()" *ngIf="flagMode === 'single'">
         <label>Registration Number
           <input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345">
         </label>
@@ -78,6 +84,42 @@
           </button>
         </div>
       </form>
+
+      <!-- BULK FLAGGING PANEL -->
+      <div class="bulk-flag-box" *ngIf="flagMode === 'bulk'">
+        <div class="bulk-template-bar">
+          <div class="bulk-template-info">
+            <strong>📥 Download Bulk Student Liability Template</strong>
+            <p>Download the standard format to prepare bulk student liability and debt records.</p>
+          </div>
+          <div class="bulk-template-actions">
+            <button type="button" class="btn-download excel" (click)="downloadFlagTemplateExcel()">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+              <span>Download Excel (.xlsx)</span>
+            </button>
+            <button type="button" class="btn-download csv" (click)="downloadFlagTemplateCsv()">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+              <span>Download CSV (.csv)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bulk-spec-box">
+          <strong>📋 Template Column Specifications:</strong>
+          <p>Columns: <code>Registration Number</code> (Required), <code>Student Name</code> (Optional), <code>Category</code> (e.g. Equipment / Item Rental), <code>Amount</code> (TZS), <code>Reason</code> (Required), <code>Due Date</code> (YYYY-MM-DD), <code>Negotiation Notes</code></p>
+        </div>
+
+        <div class="bulk-upload-dropzone">
+          <input type="file" (change)="onBulkFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.82rem;">
+          <button type="button" class="primary-button" [disabled]="!selectedBulkFile || isBulkUploading" (click)="uploadBulkFlags()">
+            <span *ngIf="!isBulkUploading">⬆ Process &amp; Flag Students in Bulk</span>
+            <span *ngIf="isBulkUploading">Processing Bulk Flags…</span>
+          </button>
+          <span *ngIf="selectedBulkFile" style="font-size: 0.8rem; color: #0284c7; font-weight: 700;">
+            ✓ {{ selectedBulkFile.name }} ({{ (selectedBulkFile.size / 1024).toFixed(1) }} KB)
+          </span>
+        </div>
+      </div>
     </section>
 
     <section class="debt-panel register-panel">

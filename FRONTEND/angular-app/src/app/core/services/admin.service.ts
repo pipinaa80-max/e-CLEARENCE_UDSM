@@ -59,9 +59,10 @@ export class AdminService {
     return this.http.get<any[]>(`${this.apiUrl}/clearance-requests`, { headers: this.getAuthHeaders() });
   }
 
-  bulkUploadUsers(file: File): Observable<any> {
+  bulkUploadUsers(file: File, uploadType: string = 'STUDENT'): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('uploadType', uploadType);
     return this.http.post<any>(`${this.apiUrl}/users/bulk-upload`, formData, { headers: this.getAuthHeaders() });
   }
 

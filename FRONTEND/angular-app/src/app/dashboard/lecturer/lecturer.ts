@@ -35,6 +35,10 @@ export class LecturerDashboard implements OnInit {
   amount: number | null = null;
   category = 'Equipment / Item Rental';
   dueDate = '';
+
+  flagMode: 'single' | 'bulk' = 'single';
+  selectedBulkFile: File | null = null;
+  isBulkUploading = false;
   readonly itemCategories = [
     'Equipment / Item Rental',
     'Library Book / Material',
@@ -171,6 +175,59 @@ export class LecturerDashboard implements OnInit {
       },
       error: err => { this.error = err?.error?.message || 'This debt record could not be resolved.'; }
     });
+  }
+
+  onBulkFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (!file) {
+      this.selectedBulkFile = null;
+      return;
+    }
+    this.selectedBulkFile = file;
+    this.message = `Selected file "${file.name}" (${(file.size / 1024).toFixed(1)} KB). Ready for bulk processing.`;
+    this.error = '';
+  }
+
+  uploadBulkFlags(): void {
+    if (!this.selectedBulkFile) return;
+    this.isBulkUploading = true;
+    this.error = '';
+    this.message = 'Processing bulk student liability flags...';
+
+    this.debts.bulkUpload(this.selectedBulkFile).subscribe({
+      next: (res) => {
+        this.isBulkUploading = false;
+        this.message = res.message || 'Successfully uploaded and processed student liability flags!';
+        this.selectedBulkFile = null;
+        this.loadFlags();
+      },
+      error: (err) => {
+        this.isBulkUploading = false;
+        this.error = 'Bulk flag upload failed: ' + (err.error?.message || err.message || 'Unknown error');
+      }
+    });
+  }
+
+  downloadFlagTemplateCsv(): void {
+    const headers = 'Registration Number,Student Name,Category,Amount,Reason,Due Date,Negotiation Notes\r\n';
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'student_debt_flag_template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  downloadFlagTemplateExcel(): void {
+    const link = document.createElement('a');
+    link.href = '/student_debt_flag_template.xlsx?t=' + Date.now();
+    link.download = 'student_debt_flag_template.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   logout(): void {

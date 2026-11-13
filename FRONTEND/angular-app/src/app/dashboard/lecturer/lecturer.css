@@ -58,5 +58,135 @@ td small { display: block; max-width: 250px; margin-top: 5px; color: #647580; wh
 .resolve-dialog h2 { margin: 0; color: var(--udsm-blue-dark); font-size: 1.05rem; }
 .resolve-dialog p { margin: 7px 0 16px; color: #647580; font-size: .8rem; }
 .resolve-dialog .form-actions { margin-top: 16px; }
+
+/* BULK FLAGGING & MODE TOGGLE */
+.mode-toggle-group {
+  display: flex;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+}
+
+.mode-toggle-btn {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #475569;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.mode-toggle-btn.active {
+  background: #00679b;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 103, 155, 0.25);
+}
+
+.bulk-flag-box {
+  margin-top: 18px;
+}
+
+.bulk-template-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #f0f7ff;
+  border: 1.5px solid #bae6fd;
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bulk-template-info strong {
+  display: block;
+  font-size: 0.84rem;
+  color: #003b5c;
+}
+
+.bulk-template-info p {
+  margin: 3px 0 0;
+  font-size: 0.76rem;
+  color: #475569;
+}
+
+.bulk-template-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-download {
+  padding: 8px 14px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #003b5c;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-download.excel {
+  border-color: #0284c7;
+  color: #0284c7;
+  background: #ffffff;
+}
+
+.btn-download.excel:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.btn-download.csv:hover {
+  background: #f1f5f9;
+}
+
+.bulk-spec-box {
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #00679b;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.bulk-spec-box strong {
+  display: block;
+  color: #003b5c;
+  font-size: 0.82rem;
+}
+
+.bulk-spec-box p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.bulk-upload-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border: 1.5px dashed #94a3b8;
+  border-radius: 8px;
+}
+
 @media (max-width: 768px) { .sidebar-overlay { position: fixed; inset: 0; z-index: 1000; display: block; background: rgba(0,0,0,.35); } .lecturer-page { display: block; } .sidebar { position: fixed !important; inset: 0 auto 0 0; z-index: 2000; width: min(260px,86vw) !important; min-height: 100vh; transform: translateX(-100%); opacity: 0; visibility: hidden; transition: transform .2s ease, opacity .2s ease, visibility .2s ease; } .lecturer-page.sidebar-open .sidebar { transform: translateX(0); opacity: 1; visibility: visible; } .content { padding: 22px 14px 40px; } .debt-stats { gap: 8px; } .debt-stats article { padding: 12px; } }
 @media (max-width: 600px) { .debt-stats { grid-template-columns: 1fr; } .debt-form { grid-template-columns: 1fr; } .wide, .form-actions { grid-column: auto; } .register-heading { align-items: stretch; flex-direction: column; } .register-search { max-width: none; } .payment-register-tools { align-items: stretch; flex-direction: column; } .debt-panel { padding: 16px; } }

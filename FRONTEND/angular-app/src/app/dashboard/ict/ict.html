@@ -41,9 +41,16 @@
     </app-dashboard-header>
 
     <div class="stats-grid">
-      <article class="stat-card"><span>Pending</span><strong>11</strong></article>
-      <article class="stat-card success"><span>Cleared</span><strong>56</strong></article>
-      <article class="stat-card danger"><span>Rejected</span><strong>3</strong></article>
+      <article class="stat-card"><span>Pending</span><strong>{{ pendingCount }}</strong></article>
+      <article class="stat-card success"><span>Cleared</span><strong>{{ clearedCount }}</strong></article>
+      <article class="stat-card danger"><span>Rejected</span><strong>{{ rejectedCount }}</strong></article>
     </div>
+
+    @if (!requests.length) {
+      <div class="empty-state" style="background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 24px; text-align: center;">
+        <h3 style="margin-top: 0; color: #0f172a;">No Active ICT Equipment Clearances</h3>
+        <p style="color: #64748b; margin-bottom: 0;">ICT clearance requests are routed when hardware loans or specialized lab equipment are registered. All student computing accounts and institutional device returns are currently in good standing.</p>
+      </div>
+    }
   </main>
 </section>

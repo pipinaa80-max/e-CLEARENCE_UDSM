@@ -76,16 +76,54 @@ public class AdminController {
     }
 
     @PostMapping("/users/bulk-upload")
-    public ResponseEntity<ApiResponse> bulkUpload(@RequestParam("file") MultipartFile file) {
-        log.info("Admin: Bulk upload initiated for file: {}", file.getOriginalFilename());
+    public ResponseEntity<ApiResponse> bulkUpload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "uploadType", required = false, defaultValue = "STUDENT") String uploadType) {
+        log.info("Admin: Bulk upload initiated for file: {}, uploadType: {}", file.getOriginalFilename(), uploadType);
         try {
-            int count = adminService.processBulkUpload(file);
-            return ResponseEntity.ok(ApiResponse.success("Successfully uploaded and processed " + count + " users."));
+            int count = adminService.processBulkUpload(file, uploadType);
+            String label = "STAFF".equalsIgnoreCase(uploadType) ? "staff members" : "students";
+            return ResponseEntity.ok(ApiResponse.success("Successfully uploaded and processed " + count + " " + label + "."));
         } catch (Exception e) {
             log.error("Bulk upload failed: ", e);
             return ResponseEntity.badRequest().body(ApiResponse.error("Bulk upload failed: " + e.getMessage()));
         }
+    }
 
+    @GetMapping("/export/template/excel")
+    public ResponseEntity<byte[]> downloadExcelTemplate(@RequestParam(value = "type", defaultValue = "STUDENT") String type) {
+        try {
+            boolean isStaff = "STAFF".equalsIgnoreCase(type);
+            byte[] bytes = isStaff
+                ? com.UDSM.BACKEND.util.ExcelDataGenerator.generateEmptyStaffTemplateExcelBytes()
+                : com.UDSM.BACKEND.util.ExcelDataGenerator.generateEmptyTemplateExcelBytes();
+            String filename = isStaff ? "staff_registration_template.xlsx" : "clearance_registration_template.xlsx";
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=" + filename)
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .body(bytes);
+        } catch (Exception e) {
+            log.error("Failed to generate Excel template: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/export/template/csv")
+    public ResponseEntity<byte[]> downloadCsvTemplate(@RequestParam(value = "type", defaultValue = "STUDENT") String type) {
+        try {
+            boolean isStaff = "STAFF".equalsIgnoreCase(type);
+            byte[] bytes = isStaff
+                ? com.UDSM.BACKEND.util.ExcelDataGenerator.generateEmptyStaffTemplateCsvBytes()
+                : com.UDSM.BACKEND.util.ExcelDataGenerator.generateEmptyTemplateCsvBytes();
+            String filename = isStaff ? "staff_registration_template.csv" : "clearance_registration_template.csv";
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=" + filename)
+                    .header("Content-Type", "text/csv; charset=UTF-8")
+                    .body(bytes);
+        } catch (Exception e) {
+            log.error("Failed to generate CSV template: ", e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/users/seed-sample-data")

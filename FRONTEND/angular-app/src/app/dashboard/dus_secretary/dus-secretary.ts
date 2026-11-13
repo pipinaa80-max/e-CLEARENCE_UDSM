@@ -31,6 +31,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   private readonly config = inject(ConfigService);
 
   sidebarOpen = false;
+  activeSection: 'verification' | 'dispatch' | 'pipeline' | 'personnel' = 'verification';
   requests: TranscriptPaymentRequest[] = [];
   stations: CollectionStation[] = [];
   selectedDispatchStationCode: string = 'UDSM-MAIN';
@@ -235,9 +236,34 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return hash;
   }
 
+  setSection(sec: 'verification' | 'dispatch' | 'pipeline' | 'personnel'): void {
+    this.activeSection = sec;
+    this.searchTerm = '';
+  }
+
   // Summary Metrics
   get totalRequests(): number {
     return this.requests.length;
+  }
+
+  get unverifiedCount(): number {
+    return this.requests.filter(r => !r.certificateVerified).length;
+  }
+
+  get verifiedCount(): number {
+    return this.requests.filter(r => !!r.certificateVerified).length;
+  }
+
+  get pendingDispatchCount(): number {
+    return this.requests.filter(r => r.certificateVerified && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected').length;
+  }
+
+  get inTransitCount(): number {
+    return this.requests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length;
+  }
+
+  get inVaultCount(): number {
+    return this.requests.filter(r => r.intakeStatus === 'Received at Station').length;
   }
 
   get physicalPending(): number {
@@ -252,13 +278,37 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return this.requests.filter(r => r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected').length;
   }
 
+  // Station pipeline overview across all stations
+  get stationPipelineStats(): any[] {
+    return this.stations.map(st => {
+      const stRequests = this.requests.filter(r =>
+        (r.stationCode && r.stationCode.toLowerCase() === st.code.toLowerCase()) ||
+        (r.stationName && r.stationName.toLowerCase().includes(st.name.toLowerCase())) ||
+        (r.postingRegion && r.postingRegion.toLowerCase() === st.region.toLowerCase())
+      );
+      return {
+        station: st,
+        inTransit: stRequests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length,
+        inVault: stRequests.filter(r => r.intakeStatus === 'Received at Station').length,
+        collected: stRequests.filter(r => r.dispatchStatus === 'Collected' || r.intakeStatus === 'Collected by Student').length,
+        total: stRequests.length
+      };
+    });
+  }
+
   // Filtered List
   get filteredRequests(): TranscriptPaymentRequest[] {
     return this.requests.filter(r => {
-      if (this.filterTab === 'PHYSICAL' && r.collectionMethod !== 'Physical Collection') return false;
-      if (this.filterTab === 'DHL' && r.collectionMethod !== 'Post by DHL') return false;
-      if (this.filterTab === 'PENDING' && (r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected')) return false;
-      if (this.filterTab === 'DISPATCHED' && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected') return false;
+      // Tab-specific filters
+      if (this.activeSection === 'verification') {
+        if (this.filterTab === 'PENDING' && r.certificateVerified) return false;
+        if (this.filterTab === 'DISPATCHED' && !r.certificateVerified) return false;
+      } else if (this.activeSection === 'dispatch') {
+        if (this.filterTab === 'PHYSICAL' && r.collectionMethod !== 'Physical Collection') return false;
+        if (this.filterTab === 'DHL' && r.collectionMethod !== 'Post by DHL') return false;
+        if (this.filterTab === 'PENDING' && (r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected')) return false;
+        if (this.filterTab === 'DISPATCHED' && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected') return false;
+      }
 
       if (this.searchTerm.trim()) {
         const q = this.searchTerm.trim().toLowerCase();

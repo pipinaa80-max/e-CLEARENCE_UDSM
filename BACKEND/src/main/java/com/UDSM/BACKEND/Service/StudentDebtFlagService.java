@@ -14,15 +14,23 @@ import com.UDSM.BACKEND.dto.CreateStudentDebtFlagRequest;
 import com.UDSM.BACKEND.dto.ResolveStudentDebtFlagRequest;
 import com.UDSM.BACKEND.dto.StudentClearanceLookupResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudentDebtFlagService {
     private final StudentDebtFlagRepository debtRepository;
     private final UserRepository userRepository;
@@ -217,6 +225,241 @@ public class StudentDebtFlagService {
                     NotificationType.CLEARANCE_UPDATE);
         }
         return resolved;
+    }
+
+    @Transactional
+    public int bulkUpload(String username, MultipartFile file) {
+        String filename = file.getOriginalFilename();
+        if (filename == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file");
+
+        try {
+            if (filename.endsWith(".csv")) {
+                return processBulkCsv(username, file);
+            } else if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
+                return processBulkExcel(username, file);
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported file format. Please upload CSV or Excel.");
+            }
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception e) {
+            log.error("Failed to process bulk student debt flags: ", e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Bulk flag upload failed: " + e.getMessage());
+        }
+    }
+
+    private int processBulkCsv(String username, MultipartFile file) throws Exception {
+        int count = 0;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+            String headerLine = br.readLine();
+            if (headerLine == null) return 0;
+
+            String[] headers = parseCsvLine(headerLine);
+            Map<String, Integer> headerMap = mapFlagHeaders(headers);
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                String[] data = parseCsvLine(line);
+                if (data.length == 0) continue;
+
+                String regNo = getVal(data, headerMap.get("reg"));
+                if (regNo.isEmpty()) continue;
+
+                String name = getVal(data, headerMap.get("name"));
+                String cat = getVal(data, headerMap.get("category"));
+                if (cat.isEmpty()) cat = "Equipment / Item Rental";
+
+                String amountStr = getVal(data, headerMap.get("amount")).replaceAll("[^0-9.]", "");
+                BigDecimal amount = BigDecimal.valueOf(10000.00);
+                if (!amountStr.isEmpty()) {
+                    try {
+                        BigDecimal parsed = new BigDecimal(amountStr);
+                        if (parsed.compareTo(BigDecimal.ZERO) > 0) {
+                            amount = parsed;
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                String reason = getVal(data, headerMap.get("reason"));
+                if (reason.isEmpty()) reason = "Outstanding liability / rented course item";
+
+                String dueDate = getVal(data, headerMap.get("dueDate"));
+                String notes = getVal(data, headerMap.get("notes"));
+
+                try {
+                    create(username, new CreateStudentDebtFlagRequest(
+                            regNo,
+                            name.isEmpty() ? null : name,
+                            reason,
+                            amount,
+                            notes.isEmpty() ? null : notes,
+                            cat,
+                            dueDate.isEmpty() ? null : dueDate
+                    ));
+                    count++;
+                } catch (Exception e) {
+                    log.warn("Failed to create flag for student {}: {}", regNo, e.getMessage());
+                }
+            }
+        }
+        return count;
+    }
+
+    private int processBulkExcel(String username, MultipartFile file) throws Exception {
+        int count = 0;
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+
+            if (!rows.hasNext()) return 0;
+            Row headerRow = rows.next();
+            List<String> headerList = new ArrayList<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                headerList.add(getCellValue(headerRow.getCell(i)));
+            }
+            Map<String, Integer> headerMap = mapFlagHeaders(headerList.toArray(new String[0]));
+
+            while (rows.hasNext()) {
+                Row row = rows.next();
+                if (row == null) continue;
+
+                int lastCellNum = row.getLastCellNum();
+                if (lastCellNum <= 0) continue;
+
+                List<String> rowList = new ArrayList<>();
+                for (int i = 0; i < Math.min(lastCellNum, 20); i++) {
+                    rowList.add(getCellValue(row.getCell(i)));
+                }
+                String[] data = rowList.toArray(new String[0]);
+
+                String regNo = getVal(data, headerMap.get("reg"));
+                if (regNo.isEmpty()) continue;
+
+                String name = getVal(data, headerMap.get("name"));
+                String cat = getVal(data, headerMap.get("category"));
+                if (cat.isEmpty()) cat = "Equipment / Item Rental";
+
+                String amountStr = getVal(data, headerMap.get("amount")).replaceAll("[^0-9.]", "");
+                BigDecimal amount = BigDecimal.valueOf(10000.00);
+                if (!amountStr.isEmpty()) {
+                    try {
+                        BigDecimal parsed = new BigDecimal(amountStr);
+                        if (parsed.compareTo(BigDecimal.ZERO) > 0) {
+                            amount = parsed;
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                String reason = getVal(data, headerMap.get("reason"));
+                if (reason.isEmpty()) reason = "Outstanding liability / rented course item";
+
+                String dueDate = getVal(data, headerMap.get("dueDate"));
+                String notes = getVal(data, headerMap.get("notes"));
+
+                try {
+                    create(username, new CreateStudentDebtFlagRequest(
+                            regNo,
+                            name.isEmpty() ? null : name,
+                            reason,
+                            amount,
+                            notes.isEmpty() ? null : notes,
+                            cat,
+                            dueDate.isEmpty() ? null : dueDate
+                    ));
+                    count++;
+                } catch (Exception e) {
+                    log.warn("Failed to create flag for student {}: {}", regNo, e.getMessage());
+                }
+            }
+        }
+        return count;
+    }
+
+    private String getVal(String[] data, Integer idx) {
+        if (idx == null || idx < 0 || idx >= data.length || data[idx] == null) return "";
+        return data[idx].trim();
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        return switch (cell.getCellType()) {
+            case STRING -> cell.getStringCellValue().trim();
+            case NUMERIC -> {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    yield cell.getLocalDateTimeCellValue().toLocalDate().toString();
+                }
+                double d = cell.getNumericCellValue();
+                if (d == (long) d) {
+                    yield String.valueOf((long) d);
+                } else {
+                    yield String.valueOf(d);
+                }
+            }
+            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            case FORMULA -> {
+                try {
+                    yield cell.getStringCellValue().trim();
+                } catch (Exception e) {
+                    try {
+                        yield String.valueOf(cell.getNumericCellValue());
+                    } catch (Exception ex) {
+                        yield "";
+                    }
+                }
+            }
+            default -> "";
+        };
+    }
+
+    private String[] parseCsvLine(String line) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                tokens.add(sb.toString().trim());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        tokens.add(sb.toString().trim());
+        return tokens.toArray(new String[0]);
+    }
+
+    private Map<String, Integer> mapFlagHeaders(String[] headers) {
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < headers.length; i++) {
+            if (headers[i] == null) continue;
+            String h = headers[i].toLowerCase().replaceAll("[^a-z0-9]", "");
+            if (h.contains("reg") || h.contains("matric") || h.contains("studentnumber") || h.equals("id") || h.contains("studentid")) {
+                map.putIfAbsent("reg", i);
+            } else if (h.contains("name") || h.contains("student")) {
+                map.putIfAbsent("name", i);
+            } else if (h.contains("cat") || h.contains("item") || h.contains("type")) {
+                map.putIfAbsent("category", i);
+            } else if (h.contains("amount") || h.contains("value") || h.contains("debt") || h.contains("cost") || h.contains("tzs") || h.contains("fee")) {
+                map.putIfAbsent("amount", i);
+            } else if (h.contains("reason") || h.contains("desc") || h.contains("liability") || h.contains("issue") || h.contains("remark")) {
+                map.putIfAbsent("reason", i);
+            } else if (h.contains("due") || h.contains("date") || h.contains("target")) {
+                map.putIfAbsent("dueDate", i);
+            } else if (h.contains("note") || h.contains("negotiat") || h.contains("comment")) {
+                map.putIfAbsent("notes", i);
+            }
+        }
+        if (!map.containsKey("reg") && headers.length > 0) map.put("reg", 0);
+        if (!map.containsKey("name") && headers.length > 1) map.put("name", 1);
+        if (!map.containsKey("category") && headers.length > 2) map.put("category", 2);
+        if (!map.containsKey("amount") && headers.length > 3) map.put("amount", 3);
+        if (!map.containsKey("reason") && headers.length > 4) map.put("reason", 4);
+        if (!map.containsKey("dueDate") && headers.length > 5) map.put("dueDate", 5);
+        if (!map.containsKey("notes") && headers.length > 6) map.put("notes", 6);
+        return map;
     }
 
     private User requireRole(String username, ERole role) {

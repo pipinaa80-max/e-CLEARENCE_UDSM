@@ -27,6 +27,7 @@ export class LaboratoryComponent {
 
   sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
+  viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
 
@@ -182,6 +183,39 @@ export class LaboratoryComponent {
 
   closeEnlargedPhoto(): void {
     this.enlargedPhotoUrl = null;
+  }
+
+  openStudentDetailsModal(request: ClearanceRequest): void {
+    this.viewingRequest = request;
+  }
+
+  closeStudentDetailsModal(): void {
+    this.viewingRequest = null;
+  }
+
+  getStudentProgramme(request: ClearanceRequest): string {
+    return request.programme || this.getStudentData(request.studentId)?.programme || '—';
+  }
+
+  getStudentDepartment(request: ClearanceRequest): string {
+    return request.department || this.getStudentData(request.studentId)?.department || '—';
+  }
+
+  getStudentCollege(request: ClearanceRequest): string {
+    return request.college || this.getStudentData(request.studentId)?.college || '—';
+  }
+
+  getStudentEmail(request: ClearanceRequest): string {
+    return request.email || this.getStudentData(request.studentId)?.email || '—';
+  }
+
+  getStudentPhone(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    return request.phoneNumber || u?.phoneNumber || u?.phone || '—';
+  }
+
+  getStudentSponsor(request: ClearanceRequest): string {
+    return request.sponsor || this.getStudentData(request.studentId)?.sponsor || 'Self';
   }
 
   async approve(request: ClearanceRequest): Promise<void> {

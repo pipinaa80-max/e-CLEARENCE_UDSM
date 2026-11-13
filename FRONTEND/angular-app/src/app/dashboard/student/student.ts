@@ -930,7 +930,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
     });
 
     // STEP 2 — SEVEN CLEARANCE OFFICES
-    let officesStatus = this.allClearanceOfficesApproved ? 'Approved' : 'Pending';
+    const anyParallelRejected = this.officeList.some(office => this.getOfficeStatus(office) === 'Rejected');
+    let officesStatus = this.allClearanceOfficesApproved
+      ? 'Approved'
+      : (anyParallelRejected ? 'Rejected' : 'Pending');
     if (
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
@@ -938,6 +941,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.status === 'Completed'
     ) {
       officesStatus = 'Approved';
+    } else if (request.status === 'Rejected' && request.revisionOffice && this.officeList.includes(request.revisionOffice as ClearanceOffice)) {
+      officesStatus = 'Rejected';
     }
     steps.push({
       number: 2,

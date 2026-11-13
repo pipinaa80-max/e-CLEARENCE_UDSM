@@ -44,14 +44,21 @@
 
     <div class="stats-grid">
       <article class="stat-card">
-        <span>Pending</span><strong>13</strong>
+        <span>Pending</span><strong>{{ pendingCount }}</strong>
       </article>
       <article class="stat-card success">
-        <span>Approved</span><strong>50</strong>
+        <span>Approved</span><strong>{{ approvedCount }}</strong>
       </article>
       <article class="stat-card danger">
-        <span>Rejected</span><strong>4</strong>
+        <span>Rejected</span><strong>{{ rejectedCount }}</strong>
       </article>
     </div>
+
+    @if (!requests.length) {
+      <div class="empty-state" style="background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 24px; text-align: center;">
+        <h3 style="margin-top: 0; color: #0f172a;">No Pending Departmental Academic Clearances</h3>
+        <p style="color: #64748b; margin-bottom: 0;">Academic project and grade clearances are conducted directly by course supervisors and lecturers. Any outstanding academic liability flags will appear here when registered.</p>
+      </div>
+    }
   </main>
 </section>

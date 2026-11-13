@@ -216,11 +216,21 @@ export class FinanceDashboard implements OnInit {
       return;
     }
 
-    if (!await this.clearanceService.approveRequest(
+    const approved = await this.clearanceService.approveRequest(
       request.id,
       'Finance',
       staff.fullName
-    )) return;
+    );
+
+    if (!approved) {
+      this.toastService.warning(
+        'Clearance Incomplete',
+        'Cannot approve: student has not yet been cleared by all preceding offices (Department, Principal, and Parallel offices).'
+      );
+      this.message = 'Cannot approve: student has not yet been cleared by all preceding offices.';
+      setTimeout(() => { this.message = ''; }, 6000);
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,

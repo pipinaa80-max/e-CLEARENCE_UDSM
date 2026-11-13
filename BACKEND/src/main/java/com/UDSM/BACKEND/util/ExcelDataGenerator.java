@@ -188,16 +188,14 @@ public class ExcelDataGenerator {
                 new File(projectRoot, "udsm_clearance_50_students_and_staff.xlsx"),
                 new File(projectRoot, "udsm_20_students_and_staff_data.xlsx"),
                 new File(projectRoot, "FRONTEND/angular-app/public/udsm_clearance_50_students_and_staff.xlsx"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.xlsx"),
-                new File(projectRoot, "FRONTEND/angular-app/public/clearance_registration_template.xlsx")
+                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.xlsx")
             );
 
             List<File> targetCsvFiles = Arrays.asList(
                 new File(projectRoot, "udsm_clearance_50_students_and_staff.csv"),
                 new File(projectRoot, "udsm_20_students_and_staff_data.csv"),
                 new File(projectRoot, "FRONTEND/angular-app/public/udsm_clearance_50_students_and_staff.csv"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.csv"),
-                new File(projectRoot, "FRONTEND/angular-app/public/clearance_registration_template.csv")
+                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.csv")
             );
 
             for (File file : targetExcelFiles) {
@@ -213,7 +211,32 @@ public class ExcelDataGenerator {
                     fos.write(csvBytes);
                 }
             }
-            log.info("Successfully exported {} backend records to Excel and CSV files.", data.length);
+
+            // Export pure empty template files without data rows (Students & Staff)
+            byte[] emptyTemplateExcel = generateEmptyTemplateExcelBytes();
+            byte[] emptyTemplateCsv = generateEmptyTemplateCsvBytes();
+            byte[] emptyStaffTemplateExcel = generateEmptyStaffTemplateExcelBytes();
+            byte[] emptyStaffTemplateCsv = generateEmptyStaffTemplateCsvBytes();
+
+            File templateExcel = new File(projectRoot, "FRONTEND/angular-app/public/clearance_registration_template.xlsx");
+            File templateCsv = new File(projectRoot, "FRONTEND/angular-app/public/clearance_registration_template.csv");
+            File staffTemplateExcel = new File(projectRoot, "FRONTEND/angular-app/public/staff_registration_template.xlsx");
+            File staffTemplateCsv = new File(projectRoot, "FRONTEND/angular-app/public/staff_registration_template.csv");
+
+            if (templateExcel.getParentFile() != null) templateExcel.getParentFile().mkdirs();
+            try (FileOutputStream fos = new FileOutputStream(templateExcel)) {
+                fos.write(emptyTemplateExcel);
+            }
+            try (FileOutputStream fos = new FileOutputStream(templateCsv)) {
+                fos.write(emptyTemplateCsv);
+            }
+            try (FileOutputStream fos = new FileOutputStream(staffTemplateExcel)) {
+                fos.write(emptyStaffTemplateExcel);
+            }
+            try (FileOutputStream fos = new FileOutputStream(staffTemplateCsv)) {
+                fos.write(emptyStaffTemplateCsv);
+            }
+            log.info("Successfully exported templates and {} backend records.", data.length);
         } catch (Exception e) {
             log.error("Error saving spreadsheets from backend: {}", e.getMessage());
         }
@@ -299,6 +322,78 @@ public class ExcelDataGenerator {
         }
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static final String[] TEMPLATE_HEADERS = {
+        "First Name", "Middle Name", "Last Name", "Email", "Role", "Registration Number", "Password", "College", "Department", "Programme", "Phone"
+    };
+
+    public static final String[] STAFF_TEMPLATE_HEADERS = {
+        "First Name", "Middle Name", "Last Name", "Email", "Role", "Staff ID (PF Number)", "Password", "College", "Department", "Phone"
+    };
+
+    /**
+     * Generates an empty registration Excel template containing only the column headers.
+     */
+    public static byte[] generateEmptyTemplateExcelBytes() throws Exception {
+        return generateEmptyTemplateExcelBytes(TEMPLATE_HEADERS, "Student_Registration_Template");
+    }
+
+    /**
+     * Generates an empty staff registration Excel template containing only the column headers.
+     */
+    public static byte[] generateEmptyStaffTemplateExcelBytes() throws Exception {
+        return generateEmptyTemplateExcelBytes(STAFF_TEMPLATE_HEADERS, "Staff_Registration_Template");
+    }
+
+    /**
+     * Helper to generate empty Excel templates for any header set.
+     */
+    public static byte[] generateEmptyTemplateExcelBytes(String[] headers, String sheetName) throws Exception {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet(sheetName);
+
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerFont.setFontHeightInPoints((short) 11);
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            Row headerRow = sheet.createRow(0);
+            headerRow.setHeightInPoints(26);
+            for (int col = 0; col < headers.length; col++) {
+                Cell cell = headerRow.createCell(col);
+                cell.setCellValue(headers[col]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            for (int col = 0; col < headers.length; col++) {
+                sheet.autoSizeColumn(col);
+            }
+
+            workbook.write(bos);
+            return bos.toByteArray();
+        }
+    }
+
+    /**
+     * Generates an empty registration CSV template containing only the column headers.
+     */
+    public static byte[] generateEmptyTemplateCsvBytes() {
+        return (String.join(",", TEMPLATE_HEADERS) + "\n").getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Generates an empty staff registration CSV template containing only the column headers.
+     */
+    public static byte[] generateEmptyStaffTemplateCsvBytes() {
+        return (String.join(",", STAFF_TEMPLATE_HEADERS) + "\n").getBytes(StandardCharsets.UTF_8);
     }
 
     /**

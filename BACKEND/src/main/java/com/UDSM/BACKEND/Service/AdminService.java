@@ -421,21 +421,27 @@ public class AdminService {
         return projectLocalStorageRepository.findByProjectIdOrderByImportedAtDesc(projectId);
     }
 
+
     @Transactional
-    public int processBulkUpload(MultipartFile file) throws Exception {
+    public int processBulkUpload(MultipartFile file, String uploadType) throws Exception {
         String filename = file.getOriginalFilename();
         if (filename == null) throw new RuntimeException("Invalid file");
 
         if (filename.endsWith(".csv")) {
-            return processCsv(file);
+            return processCsv(file, uploadType);
         } else if (filename.endsWith(".xlsx") || filename.endsWith(".xls")) {
-            return processExcel(file);
+            return processExcel(file, uploadType);
         } else {
             throw new RuntimeException("Unsupported file format. Please upload CSV or Excel.");
         }
     }
 
-    private int processCsv(MultipartFile file) throws Exception {
+    @Transactional
+    public int processBulkUpload(MultipartFile file) throws Exception {
+        return processBulkUpload(file, "STUDENT");
+    }
+
+    private int processCsv(MultipartFile file, String uploadType) throws Exception {
         int count = 0;
         try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
             BufferedReader br = new BufferedReader(reader);
@@ -455,7 +461,7 @@ public class AdminService {
                 if (request.getFirstName() == null || request.getFirstName().isEmpty()) continue;
 
                 try {
-                    saveOrUpdateUserAndStudent(request);
+                    saveOrUpdateUserAndStudent(request, uploadType);
                     count++;
                 } catch (Exception e) {
                     log.error("Error saving/updating user from CSV: {} - {}", request.getEmail(), e.getMessage());
@@ -465,7 +471,7 @@ public class AdminService {
         return count;
     }
 
-    private int processExcel(MultipartFile file) throws Exception {
+    private int processExcel(MultipartFile file, String uploadType) throws Exception {
         int count = 0;
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -496,7 +502,7 @@ public class AdminService {
                 if (request.getFirstName() == null || request.getFirstName().trim().isEmpty()) continue;
 
                 try {
-                    saveOrUpdateUserAndStudent(request);
+                    saveOrUpdateUserAndStudent(request, uploadType);
                     count++;
                 } catch (Exception e) {
                     log.error("Error saving/updating user from Excel: {} - {}", request.getEmail(), e.getMessage());
@@ -506,9 +512,52 @@ public class AdminService {
         return count;
     }
 
-    private void saveOrUpdateUserAndStudent(RegisterRequest request) {
+    private ERole resolveRole(String roleStr, String uploadType) {
+        if (roleStr == null || roleStr.trim().isEmpty()) {
+            return "STAFF".equalsIgnoreCase(uploadType) ? ERole.ACADEMIC_STAFF : ERole.STUDENT;
+        }
+        String clean = roleStr.toUpperCase().trim().replace(" ", "_").replace("-", "_");
+        if (clean.startsWith("ROLE_")) {
+            clean = clean.substring(5);
+        }
+        try {
+            return ERole.valueOf(clean);
+        } catch (IllegalArgumentException e) {
+            switch (clean) {
+                case "LIBRARY": case "LIBRARIAN": return ERole.LIBRARY_OFFICER;
+                case "FINANCE": case "BURSAR": case "ACCOUNTANT": return ERole.FINANCE_OFFICER;
+                case "ICT": case "IT": case "IT_OFFICER": return ERole.ICT_OFFICER;
+                case "DEPARTMENT": case "HOD": case "DEPARTMENT_HEAD": return ERole.DEPARTMENT_OFFICER;
+                case "CONVOCATION": return ERole.CONVOCATION_OFFICER;
+                case "USAB": return ERole.USAB_OFFICER;
+                case "DARUSO": return ERole.DARUSO_OFFICER;
+                case "SMART_CARD": case "SMARTCARD": return ERole.SMART_CARD_OFFICER;
+                case "WORKSHOP": return ERole.WORKSHOP_OFFICER;
+                case "LABORATORY": case "LAB": case "LAB_TECHNICIAN": return ERole.LABORATORY_OFFICER;
+                case "ADMIN": case "ADMINISTRATOR": return ERole.ADMINISTRATOR;
+                case "STAFF": case "ACADEMIC": case "FACULTY": case "TEACHING": return ERole.ACADEMIC_STAFF;
+                case "LECTURER": case "PROFESSOR": case "DOCTOR": return ERole.LECTURER;
+                case "DUS_SECRETARY": case "STATION_SECRETARY": case "SECRETARY": return ERole.DUS_SECRETARY;
+                case "DUS": case "DIRECTOR": return ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
+                case "DEAN": case "DEAN_OF_STUDENTS": return ERole.DEAN_OF_STUDENTS;
+                case "WARDEN": case "HALL_WARDEN": return ERole.HALL_WARDEN;
+                case "COACH": case "SPORTS": case "GAMES": return ERole.GAMES_COACH;
+                case "PRINCIPAL": return ERole.PRINCIPAL;
+                case "STUDENT": return ERole.STUDENT;
+                default:
+                    return "STAFF".equalsIgnoreCase(uploadType) ? ERole.ACADEMIC_STAFF : ERole.STUDENT;
+            }
+        }
+    }
+
+    private void saveOrUpdateUserAndStudent(RegisterRequest request, String uploadType) {
         String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
         String regNo = request.getRegistrationNumber() != null ? request.getRegistrationNumber().trim() : "";
+        ERole resolvedRole = resolveRole(request.getRole(), uploadType);
+
+        if (request.getRole() == null || request.getRole().trim().isEmpty()) {
+            request.setRole(resolvedRole.name());
+        }
 
         User user = null;
         if (!email.isEmpty()) {
@@ -533,6 +582,7 @@ public class AdminService {
         }
 
         if (user != null) {
+            user.setRole(resolvedRole);
             if (request.getFirstName() != null && !request.getFirstName().isEmpty()) user.setFirstName(request.getFirstName());
             if (request.getMiddleName() != null) user.setMiddleName(request.getMiddleName());
             if (request.getLastName() != null && !request.getLastName().isEmpty()) user.setLastName(request.getLastName());
@@ -563,7 +613,7 @@ public class AdminService {
 
             // Synchronize with Student entity if role is student
             String finalRegNo = user.getRegistrationNumber() != null ? user.getRegistrationNumber() : regNo;
-            if (user.getRole() == ERole.STUDENT || (request.getRole() != null && "STUDENT".equalsIgnoreCase(request.getRole()))) {
+            if (user.getRole() == ERole.STUDENT) {
                 Student student = null;
                 if (finalRegNo != null && !finalRegNo.isEmpty()) {
                     student = studentRepository.findByRegistrationNumber(finalRegNo).orElse(null);
@@ -591,6 +641,10 @@ public class AdminService {
                 studentRepository.save(student);
             }
         }
+    }
+
+    private void saveOrUpdateUserAndStudent(RegisterRequest request) {
+        saveOrUpdateUserAndStudent(request, "STUDENT");
     }
 
     private String[] parseCsvLine(String line) {

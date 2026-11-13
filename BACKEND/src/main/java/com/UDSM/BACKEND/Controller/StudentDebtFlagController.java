@@ -45,6 +45,25 @@ public class StudentDebtFlagController {
         return ResponseEntity.status(HttpStatus.CREATED).body(debtService.create(user.getUsername(), request));
     }
 
+    @PostMapping("/bulk-upload")
+    @PreAuthorize("hasRole('LECTURER')")
+    public ResponseEntity<com.UDSM.BACKEND.dto.ApiResponse> bulkUpload(
+            @AuthenticationPrincipal UserDetails user,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        int count = debtService.bulkUpload(user.getUsername(), file);
+        return ResponseEntity.ok(com.UDSM.BACKEND.dto.ApiResponse.success("Successfully flagged " + count + " students in bulk."));
+    }
+
+    @GetMapping("/template/csv")
+    @PreAuthorize("hasRole('LECTURER')")
+    public ResponseEntity<byte[]> downloadCsvTemplate() {
+        String headers = "Registration Number,Student Name,Category,Amount,Reason,Due Date,Negotiation Notes\n";
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=student_debt_flag_template.csv")
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .body(headers.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
     @PatchMapping("/{flagId}/resolve")
     @PreAuthorize("hasRole('LECTURER')")
     public StudentDebtFlag resolve(

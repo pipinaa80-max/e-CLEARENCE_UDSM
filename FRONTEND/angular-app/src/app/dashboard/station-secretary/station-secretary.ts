@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
@@ -13,7 +13,7 @@ import { ConfigService } from '../../core/services/config.service';
 @Component({
   selector: 'app-station-secretary-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './station-secretary.html',
   styleUrl: './station-secretary.css'
 })
@@ -91,6 +91,14 @@ export class StationSecretaryDashboardComponent implements OnInit {
     return this.currentUser?.role === 'Station Secretary';
   }
 
+  get activeStationName(): string {
+    return this.currentStation?.name || this.currentUser?.stationName || this.currentUser?.college || 'Campus Collection Hub';
+  }
+
+  get activeStationCode(): string {
+    return this.currentStation?.code || this.currentUser?.stationCode || this.selectedStationCode;
+  }
+
   ngOnInit(): void {
     this.loadStations();
     this.loadRequests();
@@ -130,6 +138,9 @@ export class StationSecretaryDashboardComponent implements OnInit {
             this.currentStation = match;
           } else {
             this.currentStation = this.stations[0];
+            if (this.isStationSecretary) {
+              this.selectedStationCode = this.currentStation.code;
+            }
           }
         }
       },
@@ -138,13 +149,15 @@ export class StationSecretaryDashboardComponent implements OnInit {
   }
 
   onStationFilterChange(code: string): void {
+    if (this.isStationSecretary) return; // Locked to assigned station for Station Secretaries
     this.selectedStationCode = code;
     this.currentStation = this.stations.find(s => s.code === code) || null;
     this.loadRequests();
   }
 
   loadRequests(): void {
-    const query = this.selectedStationCode !== 'ALL' ? `?stationCode=${encodeURIComponent(this.selectedStationCode)}` : '';
+    const stationParam = this.isStationSecretary ? this.activeStationCode : this.selectedStationCode;
+    const query = stationParam !== 'ALL' ? `?stationCode=${encodeURIComponent(stationParam)}` : '';
     const url = `${this.config.apiUrl}/dus-secretary/station/consignments${query}`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;

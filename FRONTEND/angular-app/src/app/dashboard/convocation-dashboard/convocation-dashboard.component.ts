@@ -99,8 +99,6 @@ export class ConvocationDashboardComponent implements OnInit {
       allRequests = [];
     }
 
-    this.updateStats(allRequests);
-
     const search = (this.searchTerm || '').trim().toLowerCase();
     if (search) {
       allRequests = allRequests.filter(request =>
@@ -385,57 +383,11 @@ export class ConvocationDashboardComponent implements OnInit {
     // Suppress loops by fallback flag or custom initials indicator rather than deleting full cache object
   }
 
-  issueControlNumber(request: ClearanceRequest): void {
-    this.message = '';
-
-    if (request.convocation?.controlNumber) {
-      this.toastService.info('Already Issued', 'This request already has a control number.');
-      return;
-    }
-
-    const controlNumber = 'UDSM-' + Date.now().toString().slice(-8);
-
-    this.isLoading = true;
-
-    try {
-      this.clearanceService.issueControlNumber(
-          request.id,
-          controlNumber
-      );
-
-      this.loadData();
-
-      this.notificationService.createNotification(
-          request.studentId,
-          'Control Number Issued',
-            `Convocation has issued your control number: ${controlNumber}. Use this to make your payment.`,
-          'success'
-      );
-
-          this.toastService.success('Success', `Control number ${controlNumber} issued successfully to ${this.getStudentName(request)}.`);
-
-      setTimeout(() => {
-        this.message = '';
-      }, 5000);
-
-    } catch (error: any) {
-      console.error('Issue error:', error);
-      this.toastService.error('Issue Failed', 'Failed to issue control number. Please try again.');
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
   markReceiptReceived(request: ClearanceRequest): void {
     this.message = '';
 
-    if (!request.convocation?.controlNumber) {
-      this.toastService.warning('Action Required', 'Control number must be issued first.');
-      return;
-    }
-
     const confirmMark = confirm(
-        `Confirm receipt submission for ${this.getStudentName(request)}?\n\nMake sure the student has uploaded their payment receipt.`
+        `Confirm receipt submission for ${this.getStudentName(request)}?\n\nMake sure the student has provided their payment receipt.`
     );
 
     if (!confirmMark) return;
@@ -549,7 +501,10 @@ export class ConvocationDashboardComponent implements OnInit {
     this.convocationService.approveReceipt(receiptId).subscribe({
       next: (res) => {
         this.toastService.success('Success', 'Receipt approved and clearance advanced.');
-        this.loadData();
+        this.clearanceService.fetchOfficeRequests('Convocation').subscribe({
+          next: () => this.loadData(),
+          error: () => this.loadData()
+        });
       },
       error: (err) => {
         this.toastService.error('Approval Failed', (err.error?.message || err.message));
@@ -566,7 +521,10 @@ export class ConvocationDashboardComponent implements OnInit {
     this.convocationService.rejectReceipt(receiptId, reason).subscribe({
       next: (res) => {
         this.toastService.success('Rejected', 'Receipt rejected and student notified.');
-        this.loadData();
+        this.clearanceService.fetchOfficeRequests('Convocation').subscribe({
+          next: () => this.loadData(),
+          error: () => this.loadData()
+        });
       },
       error: (err) => {
         this.toastService.error('Rejection Failed', (err.error?.message || err.message));

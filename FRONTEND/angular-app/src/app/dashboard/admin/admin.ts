@@ -1473,6 +1473,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.isError = false;
   }
 
+  uploadCategory: 'STUDENT' | 'STAFF' = 'STUDENT';
   isUploading: boolean = false;
 
   uploadFile(): void {
@@ -1485,13 +1486,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
 
     this.isUploading = true;
-    this.message = 'Uploading and processing Excel records...';
+    this.message = `Uploading and processing ${this.uploadCategory === 'STAFF' ? 'staff members' : 'students'} records...`;
     this.isError = false;
 
-    this.adminService.bulkUploadUsers(this.selectedFile).subscribe({
+    this.adminService.bulkUploadUsers(this.selectedFile, this.uploadCategory).subscribe({
       next: (res) => {
         this.isUploading = false;
-        this.message = res.message || 'Excel file successfully uploaded and processed!';
+        this.message = res.message || `${this.uploadCategory === 'STAFF' ? 'Staff members' : 'Students'} successfully uploaded and processed!`;
         this.isError = false;
         this.selectedFile = null;
 
@@ -1508,18 +1509,28 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   downloadSampleCsv(): void {
+    const isStaff = this.uploadCategory === 'STAFF';
+    const headers = isStaff
+      ? 'First Name,Middle Name,Last Name,Email,Role,Staff ID (PF Number),Password,College,Department,Phone\r\n'
+      : 'First Name,Middle Name,Last Name,Email,Role,Registration Number,Password,College,Department,Programme,Phone\r\n';
+    const filename = isStaff ? 'staff_registration_template.csv' : 'clearance_registration_template.csv';
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = '/clearance_registration_template.csv';
-    link.download = 'clearance_registration_template.csv';
+    link.href = url;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   downloadSampleExcel(): void {
+    const isStaff = this.uploadCategory === 'STAFF';
+    const filename = isStaff ? 'staff_registration_template.xlsx' : 'clearance_registration_template.xlsx';
     const link = document.createElement('a');
-    link.href = '/clearance_registration_template.xlsx';
-    link.download = 'clearance_registration_template.xlsx';
+    link.href = '/' + filename + '?t=' + Date.now();
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

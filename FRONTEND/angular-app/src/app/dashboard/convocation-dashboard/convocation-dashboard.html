@@ -49,6 +49,25 @@
       {{ message }}
     </div>
 
+    <!-- STATS METRICS -->
+    <div class="stats-grid">
+      <article class="stat-card pending">
+        <span>Awaiting Receipt</span>
+        <strong>{{ totalPending }}</strong>
+        <small>Requests awaiting student payment receipt</small>
+      </article>
+      <article class="stat-card issued">
+        <span>Receipts Received</span>
+        <strong>{{ totalIssued }}</strong>
+        <small>Receipts submitted awaiting verification</small>
+      </article>
+      <article class="stat-card completed">
+        <span>Approved</span>
+        <strong>{{ totalCompleted }}</strong>
+        <small>Cleared Convocation requests</small>
+      </article>
+    </div>
+
     <section class="dashboard-toolbar">
       <input
         type="search"
@@ -85,7 +104,7 @@
             <tr>
               <th>Student</th>
               <th>Registration No.</th>
-              <th>Ref / Control No.</th>
+              <th>Payment Ref / Transaction No.</th>
               <th>Submitted Date</th>
               <th>Status</th>
               <th>Actions</th>
