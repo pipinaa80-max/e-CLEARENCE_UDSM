@@ -381,7 +381,10 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     });
 
     const localStudentCount = localUsers.filter(u => String(u?.role || '').toUpperCase() === 'STUDENT').length;
-    this.totalRegisteredStudents = localStudentCount;
+    this.totalRegisteredStudents = Math.max(localStudentCount, localRequests.length);
+
+    // Instant local render (0ms latency for charts & graphs)
+    this.allRequests = localRequests;
 
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;

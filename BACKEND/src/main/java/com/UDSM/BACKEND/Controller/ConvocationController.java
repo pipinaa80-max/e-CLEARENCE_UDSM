@@ -29,7 +29,7 @@ public class ConvocationController {
     @PreAuthorize("hasAnyRole('STUDENT', 'SUPERUSER', 'ADMINISTRATOR', 'ADMIN')")
     public ResponseEntity<ApiResponse> submitReceipt(
             @RequestPart("receipt") @Valid ConvocationReceiptRequest request,
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         log.info("📝 Submitting convocation receipt for student: {}", request.getStudentId());

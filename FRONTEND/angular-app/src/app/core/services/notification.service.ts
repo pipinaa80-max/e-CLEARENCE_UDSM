@@ -35,20 +35,36 @@ export class NotificationService {
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
+  private lastFetchTime = 0;
+  private inFlightNotifications$: Observable<NotificationItem[]> | null = null;
+
   getStudentNotifications(): Observable<NotificationItem[]> {
-    return this.http.get<NotificationItem[]>(`${this.config.apiUrl}/notifications`, {
+    const now = Date.now();
+    // Return cached notifications instantly if loaded within 10 seconds
+    if (this.notificationsSubject.value.length > 0 && (now - this.lastFetchTime < 10000)) {
+      return of(this.notificationsSubject.value);
+    }
+    if (this.inFlightNotifications$) {
+      return this.inFlightNotifications$;
+    }
+
+    this.inFlightNotifications$ = this.http.get<NotificationItem[]>(`${this.config.apiUrl}/notifications`, {
       headers: this.getAuthHeaders()
     }).pipe(
       tap((items) => {
+        this.lastFetchTime = Date.now();
+        this.inFlightNotifications$ = null;
         const sorted = (items || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         this.notificationsSubject.next(sorted);
         this.updateUnreadCount(sorted);
       }),
       catchError((err) => {
+        this.inFlightNotifications$ = null;
         console.warn('Could not load notifications from server:', err);
         return of(this.notificationsSubject.value);
       })
     );
+    return this.inFlightNotifications$;
   }
 
   refreshUnreadCount(): Observable<number> {

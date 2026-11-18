@@ -39,7 +39,7 @@
     <p class="message" *ngIf="message">{{ message }}</p>
 
     <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
+    <section class="toolbar">
       <div class="search-box">
         <input
           type="text"
@@ -71,6 +71,7 @@
         (approve)="approve($event)"
         (reject)="openRejectForm($event)"
         (view)="openStudentDetailsModal($event)"
+        (bulkApproved)="loadData()"
       ></app-parallel-office-request-table>
     </section>
 

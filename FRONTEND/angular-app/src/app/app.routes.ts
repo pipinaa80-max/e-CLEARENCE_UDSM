@@ -6,7 +6,6 @@ import { Register } from './auth/register/register';
 import { StudentDashboard } from './dashboard/student/student';
 import { LibraryDashboard } from './dashboard/library/library';
 import { FinanceDashboard } from './dashboard/finance/finance';
-import { IctDashboard } from './dashboard/ict/ict';
 import { AcademicDashboard } from './dashboard/academic/academic';
 import { AdminDashboard } from './dashboard/admin/admin';
 import { ClearanceRequestComponent } from './clearance/request/request';
@@ -81,11 +80,6 @@ export const routes: Routes = [
     path: 'dashboard/principal',
     component: PrincipalComponent,
     canActivate: [authGuard, roleGuard(['Principal'])]
-  },
-  {
-    path: 'dashboard/ict',
-    component: IctDashboard,
-    canActivate: [authGuard, roleGuard(['ICT'])]
   },
   {
     path: 'dashboard/academic',

@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -55,33 +56,80 @@ public class ConvocationService {
         User student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
-        // Check if receipt already exists
         String projectId = ProjectScope.currentProjectId();
-        if ((projectId == null
+        Optional<ConvocationReceipt> existingOpt = projectId == null
                 ? receiptRepository.findByStudentIdAndStatus(request.getStudentId(), ClearanceStatus.PENDING)
-                : receiptRepository.findByStudentIdAndStatusAndProjectId(request.getStudentId(), ClearanceStatus.PENDING, projectId)).isPresent()) {
-            return ApiResponse.error("You already have a pending receipt submission");
+                : receiptRepository.findByStudentIdAndStatusAndProjectId(request.getStudentId(), ClearanceStatus.PENDING, projectId);
+
+        boolean hasFile = file != null && !file.isEmpty();
+        String fileUrl = hasFile ? saveFile(file, request.getStudentId()) : "N/A";
+        String fileName = hasFile ? file.getOriginalFilename() : ("Control_Number_" + request.getControlNumber() + ".txt");
+        String fileType = hasFile ? file.getContentType() : "text/plain";
+        long fileSize = hasFile ? file.getSize() : 0L;
+
+        ConvocationReceipt receipt;
+        if (existingOpt.isPresent()) {
+            receipt = existingOpt.get();
+            receipt.setControlNumber(request.getControlNumber() != null && !request.getControlNumber().isBlank() ? request.getControlNumber() : "DIRECT-PAYMENT");
+            receipt.setReceiptNumber(request.getReceiptNumber());
+            receipt.setPaymentDate(request.getPaymentDate());
+            if (hasFile) {
+                receipt.setFileName(fileName);
+                receipt.setFileUrl(fileUrl);
+                receipt.setFileType(fileType);
+                receipt.setFileSize(fileSize);
+            }
+            receipt.setSubmittedAt(LocalDateTime.now());
+        } else {
+            receipt = ConvocationReceipt.builder()
+                    .studentId(request.getStudentId())
+                    .controlNumber(request.getControlNumber() != null && !request.getControlNumber().isBlank() ? request.getControlNumber() : "DIRECT-PAYMENT")
+                    .receiptNumber(request.getReceiptNumber())
+                    .paymentDate(request.getPaymentDate())
+                    .fileName(fileName)
+                    .fileUrl(fileUrl)
+                    .fileType(fileType)
+                    .fileSize(fileSize)
+                    .status(ClearanceStatus.PENDING)
+                    .projectId(projectId)
+                    .submittedAt(LocalDateTime.now())
+                    .build();
         }
 
-        // Save file
-        String fileUrl = saveFile(file, request.getStudentId());
-
-        // Create receipt record
-        ConvocationReceipt receipt = ConvocationReceipt.builder()
-                .studentId(request.getStudentId())
-                .controlNumber(request.getControlNumber() != null && !request.getControlNumber().isBlank() ? request.getControlNumber() : "DIRECT-PAYMENT")
-                .receiptNumber(request.getReceiptNumber())
-                .paymentDate(request.getPaymentDate())
-                .fileName(file.getOriginalFilename())
-                .fileUrl(fileUrl)
-                .fileType(file.getContentType())
-                .fileSize(file.getSize())
-                .status(ClearanceStatus.PENDING)
-                .projectId(projectId)
-                .submittedAt(LocalDateTime.now())
-                .build();
-
         receiptRepository.save(receipt);
+
+        // Auto-advance clearance request stage to Parallel (Step 2) upon submitting control number / receipt
+        String studentEntityId = request.getStudentId();
+        Student studentEntity = studentRepository.findByUserId(request.getStudentId()).orElse(null);
+        if (studentEntity != null) {
+            studentEntityId = studentEntity.getId();
+        }
+
+        List<ClearanceRequest> requests = clearanceRequestRepository.findByStudentId(studentEntityId);
+        if (!requests.isEmpty()) {
+            ClearanceRequest clearanceRequest = requests.get(requests.size() - 1);
+
+            // Auto-approve Convocation stage upon control number submission!
+            DepartmentApproval convocationApproval = departmentApprovalRepository
+                    .findByClearanceRequestIdAndDepartment(clearanceRequest.getId(), "Convocation")
+                    .orElse(null);
+            if (convocationApproval != null) {
+                convocationApproval.setStatus(ClearanceStatus.APPROVED);
+                convocationApproval.setApprovedBy("System (Auto-Approved on Control Number Submission)");
+                convocationApproval.setApprovalDate(LocalDateTime.now());
+                if (request.getControlNumber() != null && !request.getControlNumber().isBlank()) {
+                    convocationApproval.setComments("Control number verified: " + request.getControlNumber());
+                } else {
+                    convocationApproval.setComments("Control number verified");
+                }
+                departmentApprovalRepository.save(convocationApproval);
+            }
+
+            clearanceRequest.setCurrentStage("Parallel");
+            clearanceRequest.setCurrentOffice("Parallel");
+            clearanceRequest.setStatus(ClearanceStatus.PENDING.name());
+            clearanceRequestRepository.save(clearanceRequest);
+        }
 
         // Send notification to student
         notificationService.sendNotification(
@@ -127,20 +175,18 @@ public class ConvocationService {
         if (request == null || request.getStudentId() == null || request.getStudentId().isBlank()) {
             throw new IllegalArgumentException("Student ID is required");
         }
-        if (request.getReceiptNumber() == null || request.getReceiptNumber().isBlank()) {
-            throw new IllegalArgumentException("Receipt number is required");
-        }
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("A payment receipt file is required");
-        }
-        if (file.getSize() > MAX_RECEIPT_SIZE) {
-            throw new IllegalArgumentException("Payment receipt must not exceed 10 MB");
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !(contentType.equals("application/pdf")
-                || contentType.equals("image/jpeg")
-                || contentType.equals("image/png"))) {
-            throw new IllegalArgumentException("Payment receipt must be a PDF, JPG, or PNG file");
+        if (file != null && !file.isEmpty()) {
+            if (file.getSize() > MAX_RECEIPT_SIZE) {
+                throw new IllegalArgumentException("Payment receipt must not exceed 10 MB");
+            }
+            String contentType = file.getContentType();
+            if (contentType != null && !(contentType.equals("application/pdf")
+                    || contentType.equals("image/jpeg")
+                    || contentType.equals("image/png")
+                    || contentType.equals("text/plain")
+                    || contentType.equals("application/octet-stream"))) {
+                throw new IllegalArgumentException("Payment receipt must be a PDF, JPG, PNG, or TXT file");
+            }
         }
     }
 

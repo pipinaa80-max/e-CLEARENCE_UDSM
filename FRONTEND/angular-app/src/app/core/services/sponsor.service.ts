@@ -29,19 +29,36 @@ export class SponsorService {
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
-  // Fetch active sponsors (public/student dropdown)
+  private cachedActiveSponsors: Sponsor[] | null = null;
+  private inFlightActiveSponsors$: Observable<Sponsor[]> | null = null;
+
+  // Fetch active sponsors (public/student dropdown) - Instant from cache
   getActiveSponsors(): Observable<Sponsor[]> {
-    return this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors`).pipe(
+    if (this.cachedActiveSponsors) {
+      return of(this.cachedActiveSponsors);
+    }
+    if (this.inFlightActiveSponsors$) {
+      return this.inFlightActiveSponsors$;
+    }
+
+    const headers = this.getAuthHeaders().set('X-Skip-Error-Toast', 'true');
+    this.inFlightActiveSponsors$ = this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors`, { headers }).pipe(
       map(items => {
         if (!items || !items.length) return this.defaultSponsors;
         return items;
       }),
-      tap(items => this.sponsorsSubject.next(items)),
+      tap(items => {
+        this.cachedActiveSponsors = items;
+        this.sponsorsSubject.next(items);
+        this.inFlightActiveSponsors$ = null;
+      }),
       catchError(err => {
+        this.inFlightActiveSponsors$ = null;
         console.warn('Could not load sponsors from backend, using defaults:', err);
         return of(this.sponsorsSubject.value);
       })
     );
+    return this.inFlightActiveSponsors$;
   }
 
   // Fetch all sponsors (for admin panel)

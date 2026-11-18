@@ -242,6 +242,16 @@ public class DocumentService {
                 throw new IllegalArgumentException("Only PDF, JPG, and PNG documents are allowed");
             }
 
+            // Verify file magic bytes / signature against extension to prevent spoofing
+            byte[] header = new byte[8];
+            int bytesRead;
+            try (java.io.InputStream is = file.getInputStream()) {
+                bytesRead = is.read(header);
+            }
+            if (bytesRead < 4 || !matchesMagicBytes(header, extension)) {
+                throw new SecurityException("File content signature does not match declared " + extension.toUpperCase() + " format");
+            }
+
             String sanitizedReg = (studentRegNumber == null ? "anon" : studentRegNumber)
                     .replaceAll("[^a-zA-Z0-9_-]", "_");
             String safeFileName = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
@@ -251,6 +261,20 @@ public class DocumentService {
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return "/uploads/" + sanitizedReg + "/" + safeFileName;
+        }
+
+        private boolean matchesMagicBytes(byte[] header, String extension) {
+            if ("pdf".equals(extension)) {
+                // %PDF
+                return header[0] == 0x25 && header[1] == 0x50 && header[2] == 0x44 && header[3] == 0x46;
+            } else if ("jpg".equals(extension) || "jpeg".equals(extension)) {
+                // 0xFF 0xD8 0xFF
+                return (header[0] & 0xFF) == 0xFF && (header[1] & 0xFF) == 0xD8 && (header[2] & 0xFF) == 0xFF;
+            } else if ("png".equals(extension)) {
+                // 0x89 P N G
+                return (header[0] & 0xFF) == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+            }
+            return false;
         }
 
         public void deleteFile(String fileUrl) {

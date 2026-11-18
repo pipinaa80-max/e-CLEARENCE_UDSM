@@ -282,6 +282,10 @@ export class WorkshopComponent {
     setTimeout(() => { this.message = ''; }, 4000);
   }
 
+  loadData(): void {
+    this.studentCache.clear();
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);

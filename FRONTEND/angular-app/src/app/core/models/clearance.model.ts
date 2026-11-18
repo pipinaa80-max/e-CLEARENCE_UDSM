@@ -13,7 +13,8 @@ export type ClearanceOffice =
     | 'Principal'
     | 'Finance'
     | 'Workshop'
-    | 'Laboratory';
+    | 'Laboratory'
+    | 'Parallel';
 
 export type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 

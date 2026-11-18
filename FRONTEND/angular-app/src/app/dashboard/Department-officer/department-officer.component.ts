@@ -75,6 +75,10 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
     debtFlagCheckError = '';
     private debtFlagRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
+    // Multi-select & Bulk Approve State
+    selectedRequestIds = new Set<string>();
+    isProcessingBulk = false;
+
     private studentCache: Map<string, any> = new Map();
 
     get currentUser() {
@@ -279,6 +283,73 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     getStudentProgramme(request: ClearanceRequest): string {
         return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
+    }
+
+    isSelectable(request: ClearanceRequest): boolean {
+        const isPending = this.getRequestOfficeStatus(request, 'Department') === 'Pending';
+        const hasDebt = this.hasOpenDebtFlag(request);
+        return isPending && !hasDebt;
+    }
+
+    get selectableRequests(): ClearanceRequest[] {
+        return this.filteredRequests.filter(r => this.isSelectable(r));
+    }
+
+    get isAllSelected(): boolean {
+        const eligible = this.selectableRequests;
+        return eligible.length > 0 && eligible.every(r => this.selectedRequestIds.has(r.id));
+    }
+
+    toggleSelectAll(): void {
+        if (this.isAllSelected) {
+            this.selectedRequestIds.clear();
+        } else {
+            this.selectableRequests.forEach(r => this.selectedRequestIds.add(r.id));
+        }
+    }
+
+    toggleSelect(request: ClearanceRequest): void {
+        if (!this.isSelectable(request)) return;
+        if (this.selectedRequestIds.has(request.id)) {
+            this.selectedRequestIds.delete(request.id);
+        } else {
+            this.selectedRequestIds.add(request.id);
+        }
+    }
+
+    async approveSelected(): Promise<void> {
+        const ids = Array.from(this.selectedRequestIds);
+        if (!ids.length) {
+            this.toastService.warning('No Students Selected', 'Please select eligible students to approve.');
+            return;
+        }
+
+        const count = ids.length;
+        if (!confirm(`Are you sure you want to approve ${count} selected student(s) at once? Flagged or rejected students are automatically excluded.`)) {
+            return;
+        }
+
+        this.isProcessingBulk = true;
+        try {
+            this.clearanceService.bulkApproveOfficeBackend(ids, 'Department', 'Bulk approved by Department Officer').subscribe({
+                next: (res) => {
+                    this.toastService.success('Bulk Approved', res?.message || `Approved ${count} students successfully.`);
+                    this.selectedRequestIds.clear();
+                    this.isProcessingBulk = false;
+                    this.clearanceService.fetchOfficeRequests('Department').subscribe({
+                        next: () => this.loadData(),
+                        error: () => this.loadData()
+                    });
+                },
+                error: (err) => {
+                    this.toastService.error('Bulk Approve Failed', err.error?.message || err.message || 'Error occurred');
+                    this.isProcessingBulk = false;
+                }
+            });
+        } catch (e: any) {
+            this.toastService.error('Error', e?.message || 'Failed to process bulk approval');
+            this.isProcessingBulk = false;
+        }
     }
 
     readonly processingRequests = new Set<string>();

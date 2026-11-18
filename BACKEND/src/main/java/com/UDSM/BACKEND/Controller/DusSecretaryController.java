@@ -19,14 +19,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/dus-secretary")
@@ -42,6 +41,7 @@ public class DusSecretaryController {
     private final CollectionStationRepository collectionStationRepository;
     private final ClearanceRequestRepository clearanceRequestRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.UDSM.BACKEND.Repository.DocumentRepository documentRepository;
 
     // =========================================================================
     // MAIN CAMPUS DUS SECRETARY ENDPOINTS
@@ -52,9 +52,9 @@ public class DusSecretaryController {
     public ResponseEntity<List<Map<String, Object>>> getStudents(@RequestParam(value = "query", required = false) String query) {
         List<Student> students;
         if (query != null && !query.isBlank()) {
-            students = studentRepository.searchStudents(query.trim(), PageRequest.of(0, 50));
+            students = studentRepository.searchStudents(query.trim(), PageRequest.of(0, 200));
         } else {
-            students = studentRepository.findAll(PageRequest.of(0, 50)).getContent();
+            students = studentRepository.findAll();
         }
 
         List<Map<String, Object>> result = students.stream().map(this::mapStudentToConsignmentResponse).toList();
@@ -207,7 +207,7 @@ public class DusSecretaryController {
                 targetUser = userRepository.findByEmail(student.getEmail().toLowerCase()).orElse(null);
             }
             String stationLabel = student.getStationName() != null ? student.getStationName() : "Collection Station";
-            String title = "🚚 Consignment Dispatched to " + stationLabel;
+            String title = " Consignment Dispatched to " + stationLabel;
             String msg = "Dear " + student.getFullName() + ",\n\n"
                     + "Your Degree Certificate & Academic Transcript have been physically dispatched from UDSM Main Campus DUS Directorate.\n\n"
                     + "Destination Collection Station: " + stationLabel
@@ -308,17 +308,38 @@ public class DusSecretaryController {
     @GetMapping("/station/consignments")
     @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
     public ResponseEntity<List<Map<String, Object>>> getStationConsignments(
-            @RequestParam(value = "stationCode", required = false) String stationCode,
+            @RequestParam(value = "stationCode", required = false) String requestedStationCode,
             @RequestParam(value = "query", required = false) String query,
-            @RequestParam(value = "status", required = false) String status) {
+            @RequestParam(value = "status", required = false) String status,
+            Authentication authentication) {
+
+        String effectiveStationCode = requestedStationCode;
+
+        // Security reinforcement: if caller is a station secretary, lock their query to their assigned station
+        if (authentication != null && authentication.getName() != null) {
+            var userOpt = userRepository.findByEmail(authentication.getName().toLowerCase());
+            if (userOpt.isPresent()) {
+                var user = userOpt.get();
+                boolean isSuperPrivileged = user.getRole() == ERole.ADMIN
+                        || user.getRole() == ERole.ADMINISTRATOR
+                        || user.getRole() == ERole.SUPERUSER
+                        || user.getRole() == ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
+                if (!isSuperPrivileged && user.getStationCode() != null && !user.getStationCode().isBlank() && !"UDSM-MAIN".equalsIgnoreCase(user.getStationCode())) {
+                    // Enforce the officer's actual assigned station code
+                    effectiveStationCode = user.getStationCode();
+                }
+            }
+        }
+
+        final String targetStation = effectiveStationCode;
 
         List<Student> students = studentRepository.findAll().stream()
                 .filter(s -> {
                     // Filter by station code if specified
-                    if (stationCode != null && !stationCode.isBlank() && !"ALL".equalsIgnoreCase(stationCode)) {
-                        boolean matchStation = stationCode.equalsIgnoreCase(s.getStationCode())
-                                || (s.getCollege() != null && s.getCollege().toLowerCase().contains(stationCode.toLowerCase()))
-                                || (s.getStationName() != null && s.getStationName().toLowerCase().contains(stationCode.toLowerCase()));
+                    if (targetStation != null && !targetStation.isBlank() && !"ALL".equalsIgnoreCase(targetStation)) {
+                        boolean matchStation = targetStation.equalsIgnoreCase(s.getStationCode())
+                                || (s.getCollege() != null && s.getCollege().toLowerCase().contains(targetStation.toLowerCase()))
+                                || (s.getStationName() != null && s.getStationName().toLowerCase().contains(targetStation.toLowerCase()));
                         if (!matchStation) return false;
                     }
                     // Filter by status if specified
@@ -555,6 +576,49 @@ public class DusSecretaryController {
         response.put("registrationNumber", student.getRegistrationNumber());
         response.put("transitIssueNotes", note);
         response.put("message", "Transit issue noted and flagged for Main Campus DUS review.");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Retrieve all academic documents uploaded for this student (Birth Certificate, O-Level, A-Level, etc.)
+     * for pre-verification review by DUS Directorate.
+     */
+    @GetMapping("/students/{studentId}/documents")
+    @PreAuthorize("hasAnyRole('DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER', 'PRINCIPAL')")
+    public ResponseEntity<List<Map<String, Object>>> getStudentTranscriptDocuments(@PathVariable String studentId) {
+        Student student = findStudentByIdentifier(studentId);
+        List<com.UDSM.BACKEND.Model.Document> docs = new ArrayList<>(documentRepository.findDocumentsByStudentOrderByDateDesc(student));
+        if (docs.isEmpty()) {
+            docs.addAll(documentRepository.findByStudentId(student.getId()));
+        }
+        if (docs.isEmpty() && student.getUser() != null) {
+            docs.addAll(documentRepository.findByStudentId(student.getUser().getId()));
+        }
+
+        Map<String, com.UDSM.BACKEND.Model.Document> uniqueDocs = new LinkedHashMap<>();
+        for (com.UDSM.BACKEND.Model.Document d : docs) {
+            if (d != null && d.getId() != null) {
+                uniqueDocs.putIfAbsent(d.getId(), d);
+            }
+        }
+
+        List<Map<String, Object>> response = uniqueDocs.values().stream().map(d -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", d.getId());
+            m.put("fileName", d.getFileName());
+            m.put("fileType", d.getFileType());
+            m.put("category", d.getCategory());
+            m.put("fileUrl", d.getFileUrl());
+            m.put("fileSize", d.getFileSize());
+            m.put("verified", d.isVerified());
+            m.put("verifiedBy", d.getVerifiedBy());
+            m.put("verifiedDate", d.getVerifiedDate() != null ? d.getVerifiedDate().toString() : null);
+            m.put("verificationComment", d.getVerificationComment());
+            m.put("uploadDate", d.getUploadDate() != null ? d.getUploadDate().toString() : null);
+            m.put("description", d.getDescription());
+            return m;
+        }).toList();
 
         return ResponseEntity.ok(response);
     }

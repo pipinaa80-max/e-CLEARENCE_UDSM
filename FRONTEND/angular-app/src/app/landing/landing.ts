@@ -60,7 +60,6 @@ export class Landing implements OnInit {
       Finance: '/dashboard/finance',
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
-      ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',

@@ -11,7 +11,6 @@ export type UserRole =
   | 'Department'
   | 'Principal'
   | 'Finance'
-  | 'ICT'
   | 'Academic Staff'
   | 'Lecturer'
   | 'Director of Undergraduate Studies'

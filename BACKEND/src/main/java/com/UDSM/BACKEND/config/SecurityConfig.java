@@ -18,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,6 +35,7 @@ public class SecurityConfig {
     private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
     private final IpBlockingFilter ipBlockingFilter;
+    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public AuthenticationManager authenticationManager(
@@ -71,12 +73,23 @@ public class SecurityConfig {
     }
 
     @Bean
+    public FilterRegistrationBean<RateLimitingFilter> rateLimitingFilterRegistration(
+            RateLimitingFilter filter
+    ) {
+        FilterRegistrationBean<RateLimitingFilter> registration =
+                new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        log.info("✅ Disabled RateLimitingFilter registration as normal servlet filter");
+        return registration;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter
     ) throws Exception {
 
-        log.info("✅ Configuring SecurityFilterChain with Honeypot & IP Filter");
+        log.info("✅ Configuring SecurityFilterChain with Honeypot, Rate Limiting & IP Filter");
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -85,6 +98,16 @@ public class SecurityConfig {
                         .contentTypeOptions(Customizer.withDefaults())
                         .frameOptions(frame -> frame.sameOrigin())
                         .xssProtection(Customizer.withDefaults())
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                                "font-src 'self' https://fonts.gstatic.com data:; " +
+                                "img-src 'self' data: blob: https:; " +
+                                "connect-src 'self' http://localhost:* http://127.0.0.1:* https:;"
+                        ))
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .permissionsPolicy(perms -> perms.policy("camera=(), microphone=(), geolocation=()"))
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -94,6 +117,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/**",
                                 "/collection-stations",
+                                "/sponsors",
                                 "/control-plane/login",
                                 "/control-plane/public/**",
                                 "/api/test",
@@ -107,6 +131,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(ipBlockingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(rateLimitingFilter, IpBlockingFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         log.info("✅ SecurityFilterChain configured successfully");

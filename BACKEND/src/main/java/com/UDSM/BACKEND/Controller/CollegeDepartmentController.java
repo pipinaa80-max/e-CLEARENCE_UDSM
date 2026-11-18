@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class CollegeDepartmentController {
     // POST /api/v1/colleges - Create independent college
     @PostMapping
     @CacheEvict(value = {"colleges", "departments"}, allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<College> createCollege(@RequestBody College college) {
         College saved = collegeRepository.save(college);
         return ResponseEntity.ok(saved);
@@ -47,6 +49,7 @@ public class CollegeDepartmentController {
     // PUT /api/v1/colleges/{id} - Update college
     @PutMapping("/{id}")
     @CacheEvict(value = {"colleges", "departments"}, allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<College> updateCollege(@PathVariable String id, @RequestBody College updated) {
         return collegeRepository.findById(id).map(existing -> {
             if (updated.getName() != null) existing.setName(updated.getName());
@@ -60,6 +63,7 @@ public class CollegeDepartmentController {
     // DELETE /api/v1/colleges/{id} - Soft delete college
     @DeleteMapping("/{id}")
     @CacheEvict(value = {"colleges", "departments"}, allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<Void> deleteCollege(@PathVariable String id) {
         return collegeRepository.findById(id).map(c -> {
             c.setIsActive(false);
@@ -84,6 +88,7 @@ public class CollegeDepartmentController {
     // POST /api/v1/colleges/{collegeId}/departments - Create department under college
     @PostMapping("/{collegeId}/departments")
     @CacheEvict(value = {"colleges", "departments"}, allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<Department> createDepartment(@PathVariable String collegeId, @RequestBody Department dept) {
         return collegeRepository.findById(collegeId).map(college -> {
             dept.setCollege(college);
@@ -95,6 +100,7 @@ public class CollegeDepartmentController {
     // PUT /api/v1/colleges/departments/{deptId} - Update department
     @PutMapping("/departments/{deptId}")
     @CacheEvict(value = {"colleges", "departments"}, allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<Department> updateDepartment(@PathVariable String deptId, @RequestBody Department updated) {
         return departmentRepository.findById(deptId).map(existing -> {
             if (updated.getName() != null) existing.setName(updated.getName());

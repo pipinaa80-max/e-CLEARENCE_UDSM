@@ -63,7 +63,6 @@ function thisRoleRedirect(role: UserRole): string {
     Finance: '/dashboard/finance',
     Workshop: '/dashboard/workshop',
     Laboratory: '/dashboard/laboratory',
-    ICT: '/dashboard/ict',
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
     'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',

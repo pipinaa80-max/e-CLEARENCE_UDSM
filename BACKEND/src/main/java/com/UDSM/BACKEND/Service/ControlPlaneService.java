@@ -612,7 +612,7 @@ public class ControlPlaneService {
     private List<Map<String, Object>> defaultDashboards() {
         String[] offices = {
             "Academic Staff", "Administrator", "Convocation", "DARUSO", "Dean of Students",
-            "Department", "Finance", "Games Coach", "Hall Warden", "ICT", "Laboratory",
+            "Department", "Finance", "Games Coach", "Hall Warden", "Laboratory",
             "Lecturer", "Library", "Principal", "Smart Card", "USAB", "Workshop"
         };
         List<Map<String, Object>> list = new ArrayList<>();

@@ -31,8 +31,15 @@ public class QRCodeController {
             @RequestParam("text") String text
     ) throws WriterException, IOException {
 
-        byte[] qrCode =
-                qrCodeService.generateQRCode(text);
+        if (text == null || text.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        // Protect against DoS by capping allowable text length for QR generation
+        if (text.length() > 1024) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        byte[] qrCode = qrCodeService.generateQRCode(text);
 
         return ResponseEntity
                 .ok()
@@ -40,24 +47,25 @@ public class QRCodeController {
                 .body(qrCode);
     }
 
-
-    @PostMapping(value = "/read", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_PLAIN_VALUE
-    )
+    @PostMapping(value = "/read", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> readQRCode(
             @RequestParam("file") MultipartFile file
     ) throws IOException {
 
         if (file == null || file.isEmpty()) {
-
             return ResponseEntity
                     .badRequest()
                     .body("QR code image is required");
         }
 
-        String result =
-                qrCodeReaderService.readQRCode(
-                        file.getBytes()
-                );
+        // Limit uploaded QR file size to 5MB to prevent memory exhaustion
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("QR code image file size must not exceed 5MB");
+        }
+
+        String result = qrCodeReaderService.readQRCode(file.getBytes());
 
         return ResponseEntity.ok(result);
     }

@@ -40,7 +40,7 @@ export class StaffRegister implements OnInit {
     }
   }
 
-  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'ICT', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
+  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
   readonly laboratoryDepartments = ['Anatomy laboratory', 'Pathology laboratory', 'Biochemistry', 'Microbiology & Immunology', 'Physiology', 'Parasitology & Entomology', 'Pharmacology'];
 
   readonly collegeDepartments: Record<string, string[]> = {
@@ -222,7 +222,6 @@ export class StaffRegister implements OnInit {
       'Smart Card': '/dashboard/smart-card',
       Department: '/department/dashboard',
       Finance: '/dashboard/finance',
-      ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',

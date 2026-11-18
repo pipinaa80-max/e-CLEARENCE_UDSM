@@ -63,6 +63,21 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Selected users deleted successfully"));
     }
 
+    @DeleteMapping("/maintenance/students/clean-orphans")
+    public ResponseEntity<ApiResponse> cleanOrphanStudents() {
+        log.info("Admin: Cleaning orphan student records");
+        int count = adminService.cleanOrphanStudents();
+        return ResponseEntity.ok(ApiResponse.success("Cleaned up " + count + " orphan student records successfully."));
+    }
+
+    @DeleteMapping("/maintenance/students/purge")
+    public ResponseEntity<ApiResponse> purgeStudents(
+            @RequestBody(required = false) List<String> registrationNumbers) {
+        log.info("Admin: Purging unwanted student data");
+        int count = adminService.purgeStudents(registrationNumbers);
+        return ResponseEntity.ok(ApiResponse.success("Successfully purged " + count + " student records and related clearance data."));
+    }
+
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<User> updateUserRole(@PathVariable String userId, @RequestParam String role) {
         log.info("Admin: Updating user role: {} to {}", userId, role);

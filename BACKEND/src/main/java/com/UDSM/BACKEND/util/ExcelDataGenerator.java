@@ -181,36 +181,6 @@ public class ExcelDataGenerator {
     public static void saveSpreadsheets(String[][] data) {
         try {
             File projectRoot = resolveProjectRoot();
-            byte[] excelBytes = generateExcelBytes(data);
-            byte[] csvBytes = generateCsvBytes(data);
-
-            List<File> targetExcelFiles = Arrays.asList(
-                new File(projectRoot, "udsm_clearance_50_students_and_staff.xlsx"),
-                new File(projectRoot, "udsm_20_students_and_staff_data.xlsx"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_clearance_50_students_and_staff.xlsx"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.xlsx")
-            );
-
-            List<File> targetCsvFiles = Arrays.asList(
-                new File(projectRoot, "udsm_clearance_50_students_and_staff.csv"),
-                new File(projectRoot, "udsm_20_students_and_staff_data.csv"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_clearance_50_students_and_staff.csv"),
-                new File(projectRoot, "FRONTEND/angular-app/public/udsm_20_students_and_staff_data.csv")
-            );
-
-            for (File file : targetExcelFiles) {
-                if (file.getParentFile() != null) file.getParentFile().mkdirs();
-                try (FileOutputStream fos = new FileOutputStream(file)) {
-                    fos.write(excelBytes);
-                }
-            }
-
-            for (File file : targetCsvFiles) {
-                if (file.getParentFile() != null) file.getParentFile().mkdirs();
-                try (FileOutputStream fos = new FileOutputStream(file)) {
-                    fos.write(csvBytes);
-                }
-            }
 
             // Export pure empty template files without data rows (Students & Staff)
             byte[] emptyTemplateExcel = generateEmptyTemplateExcelBytes();

@@ -257,16 +257,20 @@
           <p>{{ rejection.reason }}</p><small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
         </section>
 
-        <!-- Payment Receipt Review Section -->
+        <!-- Payment Control Number & Verification Review Section -->
         <div *ngIf="hasReceipt(detailsRequest)" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment Receipt (Risiti ya Malipo)</h4>
-          <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center;">
-            <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px;">
-              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge receipt" />
+          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment &amp; Written Control Number</h4>
+          <div style="background: #f8fafc; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 14px; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; background: #e0f2fe; padding: 10px 14px; border-radius: 6px;">
+              <span style="font-size: 0.85rem; color: #0369a1; font-weight: 700;">Written Control Number:</span>
+              <strong style="font-size: 1.15rem; color: #075985; letter-spacing: 0.5px;">{{ detailsRequest.convocation?.controlNumber || detailsRequest.financeReceipt?.controlNumber || detailsRequest.financeReceipt?.receiptNote || 'None Provided' }}</strong>
+            </div>
+            <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px; text-align: center;">
+              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge document" />
             </div>
             <div style="font-size: 0.85rem; color: #475569;">
-              <span>File: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
-              <span *ngIf="detailsRequest.convocation?.controlNumber"> · Control Number: <strong>{{ detailsRequest.convocation?.controlNumber }}</strong></span>
+              <span *ngIf="getReceiptFileName(detailsRequest)">Evidence Document: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
+              <span *ngIf="detailsRequest.convocation?.receiptSubmittedAt"> · Submitted At: <strong>{{ detailsRequest.convocation?.receiptSubmittedAt | date:'medium' }}</strong></span>
             </div>
           </div>
         </div>

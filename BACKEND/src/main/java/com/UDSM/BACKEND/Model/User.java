@@ -222,6 +222,16 @@ public class User implements UserDetails {
             authorityStrings.add("DIRECTOR_OF_UNDERGRADUATE_STUDIES");
         }
 
+        // Canonical officer aliases (e.g. WORKSHOP_OFFICER <-> WORKSHOP, LABORATORY_OFFICER <-> LABORATORY)
+        if (roleName.endsWith("_OFFICER")) {
+            String base = roleName.substring(0, roleName.length() - "_OFFICER".length());
+            authorityStrings.add("ROLE_" + base);
+            authorityStrings.add(base);
+        } else {
+            authorityStrings.add("ROLE_" + roleName + "_OFFICER");
+            authorityStrings.add(roleName + "_OFFICER");
+        }
+
         return authorityStrings.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();

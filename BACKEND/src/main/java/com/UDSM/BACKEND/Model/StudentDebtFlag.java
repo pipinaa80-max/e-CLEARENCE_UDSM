@@ -20,6 +20,11 @@ public class StudentDebtFlag {
     @Column(name = "student_id", nullable = false, length = 36)
     private String studentId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", insertable = false, updatable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private Student student;
+
     @Column(name = "registration_number", nullable = false, length = 50)
     private String registrationNumber;
 
@@ -56,6 +61,11 @@ public class StudentDebtFlag {
 
     @Column(name = "lecturer_id", nullable = false, length = 36)
     private String lecturerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lecturer_id", insertable = false, updatable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private User lecturer;
 
     @Column(name = "lecturer_name")
     private String lecturerName;

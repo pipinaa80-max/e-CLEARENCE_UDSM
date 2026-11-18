@@ -52,7 +52,7 @@
   <main class="content">
 
     <app-dashboard-header
-      title="HoD dashboard"
+      title="HoD Dashboard"
       [subtitle]="departmentName"
       [user]="currentUser"
       [showToggle]="true"
@@ -145,14 +145,55 @@
     </section>
 
 
+    <!-- BULK ACTIONS TOOLBAR -->
+    <div class="bulk-toolbar" *ngIf="!isLoading && selectableRequests.length > 0">
+      <div class="bulk-toolbar-info">
+        <span class="selection-text" *ngIf="selectedRequestIds.size > 0">
+          <strong>{{ selectedRequestIds.size }}</strong> student(s) selected
+        </span>
+        <span class="eligible-text" *ngIf="selectedRequestIds.size === 0">
+          {{ selectableRequests.length }} eligible student(s) ready for bulk approval (unflagged &amp; pending)
+        </span>
+      </div>
+      <button
+        type="button"
+        class="bulk-approve-action-btn"
+        [disabled]="selectedRequestIds.size === 0 || isProcessingBulk"
+        (click)="approveSelected()"
+      >
+        <i class="bi bi-check2-all"></i>
+        {{ isProcessingBulk ? 'Approving...' : 'Approve Selected (' + selectedRequestIds.size + ')' }}
+      </button>
+    </div>
+
     <!-- COMPACT REQUEST TABLE -->
     <section class="compact-table-wrap" *ngIf="!isLoading && filteredRequests.length">
       <table class="compact-request-table">
         <thead><tr>
+          <th class="select-col">
+            <input
+              type="checkbox"
+              class="header-checkbox"
+              [checked]="isAllSelected"
+              [disabled]="selectableRequests.length === 0"
+              (change)="toggleSelectAll()"
+              title="Select all eligible students"
+            />
+          </th>
           <th>Registration Number</th><th>Full Name</th><th>Email</th><th>Phone Number</th><th>Programme</th><th>Actions</th>
         </tr></thead>
         <tbody>
-          <tr *ngFor="let request of paginatedRequests">
+          <tr *ngFor="let request of paginatedRequests" [class.row-selected]="selectedRequestIds.has(request.id)" [class.row-flagged]="hasOpenDebtFlag(request)">
+            <td class="select-col">
+              <input
+                type="checkbox"
+                class="row-checkbox"
+                [checked]="selectedRequestIds.has(request.id)"
+                [disabled]="!isSelectable(request)"
+                (change)="toggleSelect(request)"
+                [title]="hasOpenDebtFlag(request) ? 'Cannot select: Student has open debt flag' : getRequestOfficeStatus(request, 'Department') !== 'Pending' ? 'Cannot select: Request already reviewed' : 'Select student'"
+              />
+            </td>
             <td>{{ getStudentRegNumber(request) }}</td>
             <td class="compact-name">{{ getStudentListName(request) }}<span class="debt-flag-indicator" *ngIf="hasOpenDebtFlag(request)">Debt flag open</span></td>
             <td>{{ getStudentEmail(request) }}</td>

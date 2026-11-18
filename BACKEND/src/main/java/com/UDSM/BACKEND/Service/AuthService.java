@@ -242,7 +242,7 @@ public class AuthService {
                 switch(roleStr) {
                     case "LIBRARY": userRole = ERole.LIBRARY_OFFICER; break;
                     case "FINANCE": userRole = ERole.FINANCE_OFFICER; break;
-                    case "ICT": userRole = ERole.ICT_OFFICER; break;
+                    case "ICT": userRole = ERole.SMART_CARD_OFFICER; break;
                     case "DEPARTMENT": userRole = ERole.DEPARTMENT_OFFICER; break;
                     case "CONVOCATION": userRole = ERole.CONVOCATION_OFFICER; break;
                     case "USAB": userRole = ERole.USAB_OFFICER; break;

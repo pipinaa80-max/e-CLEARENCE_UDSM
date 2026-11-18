@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { ConfigService } from './config.service';
 import { AuthService } from './auth.service';
 
@@ -106,14 +106,35 @@ export class CollectionStationService {
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
   }
 
-  // Get active stations for student dropdowns
+  private cachedActiveStations: CollectionStation[] | null = null;
+  private inFlightActiveStations$: Observable<CollectionStation[]> | null = null;
+
+  // Get active stations for student dropdowns (instant from cache)
   getActiveStations(): Observable<CollectionStation[]> {
+    if (this.cachedActiveStations) {
+      return of(this.cachedActiveStations);
+    }
+    if (this.inFlightActiveStations$) {
+      return this.inFlightActiveStations$;
+    }
+
     const url = `${this.config.apiUrl}/collection-stations`;
     let headers = this.getAuthHeaders() || new HttpHeaders();
     headers = headers.set('X-Skip-Error-Toast', 'true');
-    return this.http.get<CollectionStation[]>(url, { headers, withCredentials: true }).pipe(
-      catchError(() => of(this.defaultStations.filter(s => s.isActive)))
+    this.inFlightActiveStations$ = this.http.get<CollectionStation[]>(url, { headers, withCredentials: true }).pipe(
+      tap(stations => {
+        if (stations && stations.length > 0) {
+          this.cachedActiveStations = stations;
+        }
+        this.inFlightActiveStations$ = null;
+      }),
+      catchError(() => {
+        this.inFlightActiveStations$ = null;
+        this.cachedActiveStations = this.defaultStations.filter(s => s.isActive);
+        return of(this.cachedActiveStations);
+      })
     );
+    return this.inFlightActiveStations$;
   }
 
   // Get all stations for Director of Undergraduate Studies

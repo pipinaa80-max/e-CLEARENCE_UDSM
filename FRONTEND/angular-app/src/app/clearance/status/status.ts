@@ -160,14 +160,14 @@ export class ClearanceStatusComponent implements OnInit {
       );
 
       if (success) {
-        this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully! Returned to Finance for review.');
+        this.toastService.success('Control Number Submitted', 'Payment control number submitted successfully! Returned to Finance for review.');
         this.removeReceiptFile();
         this.receiptNote = '';
         this.showReceiptModal = false;
         this.loadData();
         this.notificationService.getStudentNotifications().subscribe();
       } else {
-        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+        this.receiptErrorMessage = 'Could not submit control number. Please try again.';
       }
     } catch (err: any) {
       this.receiptErrorMessage = err?.message || 'Error processing receipt file.';
@@ -711,7 +711,7 @@ export class ClearanceStatusComponent implements OnInit {
     if (!request) return false;
 
     if (request.currentStage === 'Convocation') {
-      return this.isConvocationApproved;
+      return this.isConvocationApproved || !!(request.convocation?.receiptSubmittedAt || request.convocation?.controlNumber);
     }
 
     if (request.currentStage === 'Parallel') {

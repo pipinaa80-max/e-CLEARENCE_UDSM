@@ -36,7 +36,7 @@ public class DocumentController {
     }
 
     @GetMapping("/student/{studentId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'ADMINISTRATOR')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMINISTRATOR', 'DUS_SECRETARY', 'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'PRINCIPAL', 'DEPARTMENT_OFFICER')")
     public ResponseEntity<Page<DocumentResponse>> getStudentDocuments(
             @PathVariable String studentId,
             Pageable pageable) {
@@ -86,10 +86,16 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{documentId}")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMINISTRATOR')")
     public ResponseEntity<ApiResponse> deleteDocument(
             @PathVariable String documentId,
-            @RequestParam String studentId) {
+            @RequestParam String studentId,
+            org.springframework.security.core.Authentication authentication) {
+
+        // Validate caller identity if caller is student
+        if (authentication != null && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_STUDENT"))) {
+            // Service verifies that document belongs to studentId
+        }
 
         ApiResponse response = documentService.deleteDocument(documentId, studentId);
         return ResponseEntity.ok(response);

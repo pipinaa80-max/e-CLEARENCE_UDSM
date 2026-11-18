@@ -194,6 +194,63 @@ public class AdminService {
     }
 
     @Transactional
+    public int cleanOrphanStudents() {
+        List<Student> allStudents = studentRepository.findAll();
+        int count = 0;
+        for (Student s : allStudents) {
+            boolean isOrphan = s.getUser() == null || (s.getUser().getId() != null && userRepository.findById(s.getUser().getId()).isEmpty());
+            if (isOrphan) {
+                try { notificationRepository.deleteByStudent(s); } catch (Exception ignored) {}
+                List<ClearanceRequest> reqs = clearanceRequestRepository.findByStudent(s);
+                for (ClearanceRequest r : reqs) {
+                    try { departmentApprovalRepository.deleteByClearanceRequest(r); } catch (Exception ignored) {}
+                }
+                clearanceRequestRepository.deleteAll(reqs);
+                List<Document> docs = documentRepository.findDocumentsByStudentOrderByDateDesc(s);
+                documentRepository.deleteAll(docs);
+                try { convocationReceiptRepository.deleteByStudentId(s.getId()); } catch (Exception ignored) {}
+                try {
+                    studentDebtFlagRepository.deleteByStudentId(s.getId());
+                    if (s.getRegistrationNumber() != null) {
+                        studentDebtFlagRepository.deleteByRegistrationNumber(s.getRegistrationNumber());
+                    }
+                } catch (Exception ignored) {}
+                studentRepository.delete(s);
+                count++;
+            }
+        }
+        studentRepository.flush();
+        log.info("Admin: Cleaned up {} orphan student records", count);
+        return count;
+    }
+
+    @Transactional
+    public int purgeStudents(List<String> registrationNumbers) {
+        List<User> studentsToDelete;
+        if (registrationNumbers != null && !registrationNumbers.isEmpty()) {
+            studentsToDelete = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == ERole.STUDENT)
+                    .filter(u -> u.getRegistrationNumber() != null && registrationNumbers.stream().anyMatch(r -> r.equalsIgnoreCase(u.getRegistrationNumber().trim())))
+                    .toList();
+        } else {
+            String projectId = ProjectScope.currentProjectId();
+            studentsToDelete = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == ERole.STUDENT)
+                    .filter(u -> projectId == null || projectId.equals(u.getProjectId()))
+                    .toList();
+        }
+
+        int count = 0;
+        for (User u : studentsToDelete) {
+            deleteUserEntity(u);
+            count++;
+        }
+        count += cleanOrphanStudents();
+        log.info("Admin: Purged {} student records", count);
+        return count;
+    }
+
+    @Transactional
     public User updateUserRole(String userId, String roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
@@ -232,7 +289,7 @@ public class AdminService {
                 case "ICT":
                 case "ICT OFFICER":
                 case "ICT_OFFICER":
-                    role = ERole.ICT_OFFICER;
+                    role = ERole.SMART_CARD_OFFICER;
                     break;
                 case "DEPARTMENT":
                 case "DEPARTMENT OFFICER":
@@ -526,7 +583,7 @@ public class AdminService {
             switch (clean) {
                 case "LIBRARY": case "LIBRARIAN": return ERole.LIBRARY_OFFICER;
                 case "FINANCE": case "BURSAR": case "ACCOUNTANT": return ERole.FINANCE_OFFICER;
-                case "ICT": case "IT": case "IT_OFFICER": return ERole.ICT_OFFICER;
+                case "ICT": case "IT": case "IT_OFFICER": return ERole.SMART_CARD_OFFICER;
                 case "DEPARTMENT": case "HOD": case "DEPARTMENT_HEAD": return ERole.DEPARTMENT_OFFICER;
                 case "CONVOCATION": return ERole.CONVOCATION_OFFICER;
                 case "USAB": return ERole.USAB_OFFICER;
@@ -812,7 +869,7 @@ public class AdminService {
                 else if (reg.contains("DPT")) request.setRole("DEPARTMENT");
                 else if (reg.contains("PRN") || reg.contains("PRIN")) request.setRole("PRINCIPAL");
                 else if (reg.contains("FIN") || reg.contains("BUR")) request.setRole("FINANCE");
-                else if (reg.contains("ICT")) request.setRole("ICT");
+                else if (reg.contains("ICT")) request.setRole("SMART_CARD");
                 else if (reg.contains("LEC")) request.setRole("LECTURER");
                 else if (reg.contains("DUS")) request.setRole("DUS");
                 else if (reg.contains("ADM")) request.setRole("ADMIN");

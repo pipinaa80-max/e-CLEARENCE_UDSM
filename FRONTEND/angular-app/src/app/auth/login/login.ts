@@ -114,7 +114,6 @@ export class Login implements OnInit {
       'Smart Card': '/dashboard/smart-card',
       Department: '/department/dashboard',
       Finance: '/dashboard/finance',
-      ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',

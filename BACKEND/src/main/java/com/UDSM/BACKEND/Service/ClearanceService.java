@@ -90,8 +90,8 @@ public class ClearanceService {
                 .physicalAddress(effectivePhysicalAddress)
                 .projectId(projectId)
                 .status(ClearanceStatus.PENDING.name())
-                .currentStage("Convocation")
-                .currentOffice("Convocation")
+                .currentStage("Parallel")
+                .currentOffice("Parallel")
                 .submittedAt(LocalDateTime.now())
                 .build();
 
@@ -243,17 +243,26 @@ public class ClearanceService {
                     }
                     DepartmentApproval approval = approvalOpt.get();
 
+                    if (isParallelApproval(targetOffice, cr) && approval.getStatus() == ClearanceStatus.PENDING) {
+                        List<DepartmentApproval> crApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
+                        if (!"Smart Card".equalsIgnoreCase(targetOffice)) {
+                            boolean smartCardApproved = crApprovals.stream()
+                                    .filter(a -> matchesOffice(a.getDepartment(), "Smart Card", cr))
+                                    .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                            if (!smartCardApproved) {
+                                return false;
+                            }
+                        }
+                    }
+
                     if ("Department".equalsIgnoreCase(targetOffice)
                             && approval.getStatus() == ClearanceStatus.PENDING) {
-                        List<DepartmentApproval> crApprovals = departmentApprovalRepository.findByClearanceRequest(cr);
-                        boolean convocationApproved = crApprovals.stream()
-                                .filter(a -> matchesOffice(a.getDepartment(), "Convocation", cr))
-                                .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        List<DepartmentApproval> crApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
                         boolean allParallelApproved = crApprovals.stream()
                                 .filter(a -> isParallelApproval(a, cr))
                                 .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
 
-                        if (!convocationApproved || !allParallelApproved) {
+                        if (!allParallelApproved) {
                             return false;
                         }
 
@@ -269,10 +278,23 @@ public class ClearanceService {
                             && !"Principal".equalsIgnoreCase(cr.getCurrentStage())
                             && approval.getStatus() == ClearanceStatus.PENDING) {
                         // Check if Department approval is completed for this request
-                        boolean deptApproved = departmentApprovalRepository.findByClearanceRequest(cr).stream()
+                        List<DepartmentApproval> crApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
+                        boolean deptApproved = crApprovals.stream()
                                 .filter(a -> isDepartmentApproval(a, cr))
                                 .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
                         if (!deptApproved) {
+                            return false;
+                        }
+                    }
+
+                    if ("Finance".equalsIgnoreCase(targetOffice)
+                            && !"Finance".equalsIgnoreCase(cr.getCurrentStage())
+                            && approval.getStatus() == ClearanceStatus.PENDING) {
+                        List<DepartmentApproval> crApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
+                        boolean principalApproved = crApprovals.stream()
+                                .filter(a -> matchesOffice(a.getDepartment(), "Principal", cr))
+                                .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        if (!principalApproved) {
                             return false;
                         }
                     }
@@ -482,7 +504,44 @@ public class ClearanceService {
         DepartmentApproval approval = findMatchingApproval(request, department)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department approval not found for: " + department));
 
+        List<DepartmentApproval> reqApprovals = departmentApprovalRepository.findByClearanceRequest(request);
+
+        if (isParallelApproval(department, request)) {
+            if (!"Smart Card".equalsIgnoreCase(department)) {
+                boolean smartCardApproved = reqApprovals.stream()
+                        .filter(a -> matchesOffice(a.getDepartment(), "Smart Card", request))
+                        .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                if (!smartCardApproved) {
+                    return ApiResponse.error("Smart Card approval is required first before " + department + " can approve.");
+                }
+            }
+        }
+
+        if (isDepartmentApproval(department, request)) {
+            boolean allParallelApproved = reqApprovals.stream()
+                    .filter(a -> isParallelApproval(a, request))
+                    .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+            if (!allParallelApproved) {
+                return ApiResponse.error("All parallel office approvals (including Smart Card) are required before Department clearance.");
+            }
+        }
+
+        if ("Principal".equalsIgnoreCase(department)) {
+            boolean deptApproved = reqApprovals.stream()
+                    .filter(a -> isDepartmentApproval(a, request))
+                    .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+            if (!deptApproved) {
+                return ApiResponse.error("Department approval is required before Principal clearance.");
+            }
+        }
+
         if ("Finance".equalsIgnoreCase(department)) {
+            boolean principalApproved = reqApprovals.stream()
+                    .filter(a -> matchesOffice(a.getDepartment(), "Principal", request))
+                    .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+            if (!principalApproved) {
+                return ApiResponse.error("Principal approval is required before Finance clearance.");
+            }
             List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(request);
             for (DepartmentApproval app : allApprovals) {
                 if (app.getStatus() != ClearanceStatus.APPROVED) {
@@ -817,18 +876,7 @@ public class ClearanceService {
     private void updateClearanceStage(ClearanceRequest request) {
         List<DepartmentApproval> approvals = departmentApprovalRepository.findByClearanceRequest(request);
 
-        // Convocation stage
-        Optional<DepartmentApproval> convocation = approvals.stream()
-                .filter(a -> matchesOffice(a.getDepartment(), "Convocation", request))
-                .findFirst();
-
-        if (convocation.isPresent() && convocation.get().getStatus() != ClearanceStatus.APPROVED) {
-            request.setCurrentStage("Convocation");
-            request.setCurrentOffice("Convocation");
-            return;
-        }
-
-        // Parallel stage
+        // Parallel stage (Step 2 - active automatically upon submission)
         List<DepartmentApproval> parallelApprovals = approvals.stream()
                 .filter(a -> isParallelApproval(a, request))
                 .toList();
@@ -913,7 +961,7 @@ public class ClearanceService {
             case CONVOCATION_OFFICER -> "Convocation";
             case LIBRARY_OFFICER -> "Library";
             case FINANCE_OFFICER -> "Finance";
-            case ICT_OFFICER -> "ICT";
+            case ICT_OFFICER -> "Smart Card";
             case GAMES_COACH -> "Games Coach";
             case HALL_WARDEN -> "Hall Warden";
             case USAB_OFFICER -> "USAB";
@@ -1115,6 +1163,13 @@ public class ClearanceService {
                 ? clearanceRequestRepository.findAll()
                 : clearanceRequestRepository.findByProjectId(projectId);
 
+        // High-concurrency optimization: Batch fetch all approvals in ONE query to eliminate N+1 queries
+        List<Long> reqIds = requests.stream().map(ClearanceRequest::getId).filter(Objects::nonNull).toList();
+        Map<Long, List<DepartmentApproval>> approvalsByReqId = reqIds.isEmpty() ? Map.of() :
+                departmentApprovalRepository.findByClearanceRequestIdIn(reqIds).stream()
+                        .filter(da -> da.getClearanceRequest() != null)
+                        .collect(Collectors.groupingBy(da -> da.getClearanceRequest().getId()));
+
         List<java.util.Map<String, Object>> mappedRequests = requests.stream().map(req -> {
             java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
             item.put("id", String.valueOf(req.getId()));
@@ -1132,16 +1187,17 @@ public class ClearanceService {
             item.put("currentStage", req.getCurrentStage());
             item.put("currentOffice", req.getCurrentOffice());
             item.put("requestDate", req.getSubmittedAt() != null ? req.getSubmittedAt().toString() : null);
-            List<java.util.Map<String, Object>> approvals = departmentApprovalRepository.findByClearanceRequest(req)
-                    .stream().map(app -> {
-                        java.util.Map<String, Object> a = new java.util.LinkedHashMap<>();
-                        a.put("office", app.getDepartment());
-                        a.put("status", app.getStatus() != null ? app.getStatus().name() : "PENDING");
-                        a.put("comment", app.getComments());
-                        a.put("reviewedBy", app.getApprovedBy());
-                        a.put("reviewedAt", app.getApprovalDate() != null ? app.getApprovalDate().toString() : null);
-                        return a;
-                    }).toList();
+
+            List<DepartmentApproval> reqApprovals = approvalsByReqId.getOrDefault(req.getId(), Collections.emptyList());
+            List<java.util.Map<String, Object>> approvals = reqApprovals.stream().map(app -> {
+                java.util.Map<String, Object> a = new java.util.LinkedHashMap<>();
+                a.put("office", app.getDepartment());
+                a.put("status", app.getStatus() != null ? app.getStatus().name() : "PENDING");
+                a.put("comment", app.getComments());
+                a.put("reviewedBy", app.getApprovedBy());
+                a.put("reviewedAt", app.getApprovalDate() != null ? app.getApprovalDate().toString() : null);
+                return a;
+            }).toList();
             item.put("approvals", approvals);
             return item;
         }).toList();

@@ -154,13 +154,13 @@ export class StudentDashboard implements OnInit, OnDestroy {
       );
 
       if (success) {
-        this.receiptSuccessMessage = 'Payment receipt submitted successfully! Your clearance request has returned to Finance for review.';
+        this.receiptSuccessMessage = 'Payment control number submitted successfully! Your clearance request has returned to Finance for review.';
         this.removeReceiptFile();
         this.receiptNote = '';
         this.showReceiptModal = false;
         this.notificationService.getStudentNotifications().subscribe();
       } else {
-        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+        this.receiptErrorMessage = 'Could not submit control number. Please try again.';
       }
     } catch (err: any) {
       this.receiptErrorMessage = err?.message || 'Error processing receipt file.';

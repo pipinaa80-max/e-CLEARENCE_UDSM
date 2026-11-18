@@ -165,10 +165,40 @@
         <p>{{ filterStatus === 'approved' ? 'There are currently no approved student applications for Convocation.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Convocation.' : 'There are currently no student applications awaiting Convocation approval.' }}</p>
       </div>
 
+      <div class="bulk-toolbar" *ngIf="!isLoading && selectableRequests.length > 0">
+        <div class="bulk-toolbar-info">
+          <span class="selection-text" *ngIf="selectedRequestIds.size > 0">
+            <strong>{{ selectedRequestIds.size }}</strong> student(s) selected
+          </span>
+          <span class="eligible-text" *ngIf="selectedRequestIds.size === 0">
+            {{ selectableRequests.length }} eligible student(s) ready for bulk approval (receipt submitted &amp; pending)
+          </span>
+        </div>
+        <button
+          type="button"
+          class="bulk-approve-action-btn"
+          [disabled]="selectedRequestIds.size === 0 || isProcessingBulk"
+          (click)="approveSelected()"
+        >
+          <i class="bi bi-check2-all"></i>
+          {{ isProcessingBulk ? 'Approving...' : 'Approve Selected (' + selectedRequestIds.size + ')' }}
+        </button>
+      </div>
+
       <div *ngIf="!isLoading && requests.length > 0" class="table-wrap">
         <table class="convocation-table">
           <thead>
             <tr>
+              <th class="select-col">
+                <input
+                  type="checkbox"
+                  class="header-checkbox"
+                  [checked]="isAllSelected"
+                  [disabled]="selectableRequests.length === 0"
+                  (change)="toggleSelectAll()"
+                  title="Select all eligible students"
+                />
+              </th>
               <th>Student</th>
               <th>Registration No.</th>
               <th>Programme & Academic Unit</th>
@@ -178,7 +208,17 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let request of paginatedRequests">
+            <tr *ngFor="let request of paginatedRequests" [class.row-selected]="selectedRequestIds.has(request.id)">
+              <td class="select-col">
+                <input
+                  type="checkbox"
+                  class="row-checkbox"
+                  [checked]="selectedRequestIds.has(request.id)"
+                  [disabled]="!isSelectable(request)"
+                  (change)="toggleSelect(request)"
+                  [title]="!request.convocation?.receiptSubmittedAt ? 'Cannot select: Student has not submitted payment receipt' : getRequestOfficeStatus(request, 'Convocation') !== 'Pending' ? 'Cannot select: Request already reviewed' : 'Select student'"
+                />
+              </td>
               <td>
                 <div class="student-cell-content">
                   <div class="student-avatar-sm">

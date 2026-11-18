@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,18 +25,22 @@ public class SponsorController {
 
     // GET /api/v1/sponsors - List active sponsors (for students dropdown & all users)
     @GetMapping
+    @Cacheable(value = "sponsors")
     public ResponseEntity<List<Sponsor>> getActiveSponsors() {
         return ResponseEntity.ok(sponsorRepository.findByIsActiveTrueOrderByNameAsc());
     }
 
     // GET /api/v1/sponsors/all - List all sponsors (including inactive for admin)
     @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<List<Sponsor>> getAllSponsors() {
         return ResponseEntity.ok(sponsorRepository.findAllByOrderByNameAsc());
     }
 
     // POST /api/v1/sponsors - Admin creates new sponsor
     @PostMapping
+    @CacheEvict(value = "sponsors", allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<Sponsor> createSponsor(@RequestBody Sponsor sponsor) {
         if (sponsor.getName() == null || sponsor.getName().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sponsor name is required.");
@@ -56,6 +62,8 @@ public class SponsorController {
 
     // PUT /api/v1/sponsors/{id} - Admin updates sponsor
     @PutMapping("/{id}")
+    @CacheEvict(value = "sponsors", allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<Sponsor> updateSponsor(@PathVariable String id, @RequestBody Sponsor updated) {
         return sponsorRepository.findById(id).map(existing -> {
             if (updated.getName() != null && !updated.getName().trim().isEmpty()) {
@@ -77,6 +85,8 @@ public class SponsorController {
 
     // DELETE /api/v1/sponsors/{id} - Admin deletes sponsor
     @DeleteMapping("/{id}")
+    @CacheEvict(value = "sponsors", allEntries = true)
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<Void> deleteSponsor(@PathVariable String id) {
         return sponsorRepository.findById(id).map(existing -> {
             sponsorRepository.delete(existing);

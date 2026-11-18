@@ -42,6 +42,10 @@ export class ConvocationDashboardComponent implements OnInit {
   totalIssued = 0;
   totalCompleted = 0;
 
+  // Bulk Selection State
+  selectedRequestIds = new Set<string>();
+  isProcessingBulk = false;
+
   activeTab: 'dashboard' | 'requests' = 'dashboard';
   filterStatus = 'pending';
   searchTerm = '';
@@ -381,6 +385,73 @@ export class ConvocationDashboardComponent implements OnInit {
   onImageError(request: ClearanceRequest): void {
     console.error('Image failed to load for request:', request.id);
     // Suppress loops by fallback flag or custom initials indicator rather than deleting full cache object
+  }
+
+  isSelectable(request: ClearanceRequest): boolean {
+    const isPending = this.getRequestOfficeStatus(request, 'Convocation') === 'Pending';
+    const hasReceipt = !!request.convocation?.receiptSubmittedAt;
+    return isPending && hasReceipt;
+  }
+
+  get selectableRequests(): ClearanceRequest[] {
+    return this.requests.filter(r => this.isSelectable(r));
+  }
+
+  get isAllSelected(): boolean {
+    const eligible = this.selectableRequests;
+    return eligible.length > 0 && eligible.every(r => this.selectedRequestIds.has(r.id));
+  }
+
+  toggleSelectAll(): void {
+    if (this.isAllSelected) {
+      this.selectedRequestIds.clear();
+    } else {
+      this.selectableRequests.forEach(r => this.selectedRequestIds.add(r.id));
+    }
+  }
+
+  toggleSelect(request: ClearanceRequest): void {
+    if (!this.isSelectable(request)) return;
+    if (this.selectedRequestIds.has(request.id)) {
+      this.selectedRequestIds.delete(request.id);
+    } else {
+      this.selectedRequestIds.add(request.id);
+    }
+  }
+
+  async approveSelected(): Promise<void> {
+    const ids = Array.from(this.selectedRequestIds);
+    if (!ids.length) {
+      this.toastService.warning('No Students Selected', 'Please select eligible students to approve.');
+      return;
+    }
+
+    const count = ids.length;
+    if (!confirm(`Are you sure you want to approve ${count} selected student(s) at once? Only students with submitted receipts and no flags/rejections will be approved.`)) {
+      return;
+    }
+
+    this.isProcessingBulk = true;
+    try {
+      this.clearanceService.bulkApproveOfficeBackend(ids, 'Convocation', 'Bulk approved by Convocation Officer').subscribe({
+        next: (res) => {
+          this.toastService.success('Bulk Approved', res?.message || `Approved ${count} students successfully.`);
+          this.selectedRequestIds.clear();
+          this.isProcessingBulk = false;
+          this.clearanceService.fetchOfficeRequests('Convocation').subscribe({
+            next: () => this.loadData(),
+            error: () => this.loadData()
+          });
+        },
+        error: (err) => {
+          this.toastService.error('Bulk Approve Failed', err.error?.message || err.message || 'Error occurred');
+          this.isProcessingBulk = false;
+        }
+      });
+    } catch (e: any) {
+      this.toastService.error('Error', e?.message || 'Failed to process bulk approval');
+      this.isProcessingBulk = false;
+    }
   }
 
   markReceiptReceived(request: ClearanceRequest): void {
