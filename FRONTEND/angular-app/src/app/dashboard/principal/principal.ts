@@ -28,6 +28,8 @@ export class PrincipalComponent implements OnInit {
     sidebarOpen = false;
     isLoading = false;
     message = '';
+    selectedRequestIds = new Set<string>();
+    isProcessingBulk = false;
     searchTerm = '';
     filterStatus = 'pending';
     currentPage = 1;
@@ -58,6 +60,7 @@ export class PrincipalComponent implements OnInit {
 
     onFilterChange(): void {
         this.currentPage = 1;
+        this.selectedRequestIds.clear();
         this.applyFilters();
     }
 
@@ -134,6 +137,55 @@ export class PrincipalComponent implements OnInit {
 
     getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
         return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+    }
+
+    isSelectable(request: ClearanceRequest): boolean {
+        return this.getRequestOfficeStatus(request, 'Principal') === 'Pending';
+    }
+
+    get selectableRequests(): ClearanceRequest[] {
+        return this.paginatedRequests.filter(request => this.isSelectable(request));
+    }
+
+    get isAllSelected(): boolean {
+        return this.selectableRequests.length > 0 && this.selectableRequests.every(request => this.selectedRequestIds.has(request.id));
+    }
+
+    toggleSelectAll(): void {
+        if (this.isAllSelected) {
+            this.selectableRequests.forEach(request => this.selectedRequestIds.delete(request.id));
+        } else {
+            this.selectableRequests.forEach(request => this.selectedRequestIds.add(request.id));
+        }
+    }
+
+    toggleSelect(request: ClearanceRequest): void {
+        if (!this.isSelectable(request)) return;
+        if (this.selectedRequestIds.has(request.id)) this.selectedRequestIds.delete(request.id);
+        else this.selectedRequestIds.add(request.id);
+    }
+
+    approveSelected(): void {
+        const eligibleIds = new Set(this.filteredRequests.filter(request => this.isSelectable(request)).map(request => request.id));
+        const requestIds = [...this.selectedRequestIds].filter(id => eligibleIds.has(id));
+        if (!requestIds.length || this.isProcessingBulk) return;
+
+        this.isProcessingBulk = true;
+        this.clearanceService.bulkApproveOfficeBackend(requestIds, 'Principal', 'Bulk approved by Principal').subscribe({
+            next: response => {
+                this.toastService.success('Bulk Approved', response?.message || `Approved ${requestIds.length} selected students.`);
+                this.selectedRequestIds.clear();
+                this.clearanceService.fetchOfficeRequests('Principal').subscribe({
+                    next: () => this.loadData(),
+                    error: () => this.loadData()
+                });
+                this.isProcessingBulk = false;
+            },
+            error: error => {
+                this.toastService.error('Bulk Approval Failed', error?.error?.message || error?.message || 'Unable to approve the selected requests.');
+                this.isProcessingBulk = false;
+            }
+        });
     }
 
     applyFilters(): void {
@@ -326,6 +378,7 @@ export class PrincipalComponent implements OnInit {
 
     async withdrawDecision(request: ClearanceRequest): Promise<void> {
         if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Principal')) return;
+        this.selectedRequestIds.delete(request.id);
         this.message = 'Principal decision withdrawn. The request is pending again.';
         this.loadData();
     }
@@ -342,12 +395,14 @@ export class PrincipalComponent implements OnInit {
         const staff = this.currentUser;
         if (!staff) return;
 
+        this.message = '';
         const studentName = this.getStudentName(request);
         if (!await this.clearanceService.approveRequest(request.id, 'Principal', staff.fullName)) {
             this.toastService.error('Error', 'Failed to approve request. Please try again.');
             return;
         }
 
+        this.selectedRequestIds.delete(request.id);
         this.loadData();
         this.notificationService.createNotification(
             request.studentId,
@@ -387,6 +442,7 @@ export class PrincipalComponent implements OnInit {
             return;
         }
 
+        this.selectedRequestIds.delete(this.selectedRequest.id);
         this.notificationService.createNotification(
             this.selectedRequest.studentId,
             'Principal Clearance Action Required',

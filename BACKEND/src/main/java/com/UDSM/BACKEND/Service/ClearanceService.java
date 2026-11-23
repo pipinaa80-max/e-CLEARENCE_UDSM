@@ -14,6 +14,7 @@ import com.UDSM.BACKEND.Repository.ClearanceRequestRepository;
 import com.UDSM.BACKEND.Repository.DepartmentApprovalRepository;
 import com.UDSM.BACKEND.Repository.StudentRepository;
 import com.UDSM.BACKEND.Repository.StudentDebtFlagRepository;
+import com.UDSM.BACKEND.Repository.ConvocationReceiptRepository;
 import com.UDSM.BACKEND.config.ProjectScope;
 import com.UDSM.BACKEND.Repository.UserRepository;
 import com.UDSM.BACKEND.dto.ApiResponse;
@@ -46,6 +47,7 @@ public class ClearanceService {
     private final AuditLogService auditLogService;
     private final com.UDSM.BACKEND.Repository.DepartmentRepository departmentRepository;
     private final StudentDebtFlagRepository studentDebtFlagRepository;
+    private final ConvocationReceiptRepository convocationReceiptRepository;
 
     // =========================================================
     // STUDENT CLEARANCE SUBMISSION
@@ -1012,6 +1014,16 @@ public class ClearanceService {
         String roomNumber = student != null ? student.getRoomNumber() : null;
         String photo = student != null ? student.getPhoto() : null;
         String sponsor = student != null ? ("HELBS".equalsIgnoreCase(student.getSponsor()) ? "HESLB" : student.getSponsor()) : null;
+        String controlNumber = null;
+        if (student != null && student.getUser() != null) {
+            String projectId = request.getProjectId();
+            List<ConvocationReceipt> receipts = projectId == null
+                    ? convocationReceiptRepository.findByStudentIdOrderBySubmittedAtDesc(student.getUser().getId())
+                    : convocationReceiptRepository.findByStudentIdAndProjectIdOrderBySubmittedAtDesc(student.getUser().getId(), projectId);
+            if (!receipts.isEmpty()) {
+                controlNumber = receipts.get(0).getControlNumber();
+            }
+        }
 
         return ClearanceResponse.builder()
                 .requestId(String.valueOf(request.getId()))
@@ -1032,6 +1044,7 @@ public class ClearanceService {
                 .roomNumber(roomNumber)
                 .sponsor(sponsor)
                 .photo(photo)
+                .controlNumber(controlNumber)
                 .status(ClearanceStatus.valueOf(request.getStatus()))
                 .currentStage(request.getCurrentStage())
                 .currentOffice(request.getCurrentOffice())

@@ -39,7 +39,7 @@ public class ConvocationController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('FINANCE_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ConvocationReceiptResponse> getPendingReceipts(
             @AuthenticationPrincipal UserDetails userDetails) {
 
@@ -50,7 +50,7 @@ public class ConvocationController {
     }
 
     @PostMapping("/approve/{receiptId}")
-    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('FINANCE_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> approveReceipt(
             @PathVariable String receiptId,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -62,7 +62,7 @@ public class ConvocationController {
     }
 
     @PostMapping("/reject/{receiptId}")
-    @PreAuthorize("hasAnyRole('CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('FINANCE_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> rejectReceipt(
             @PathVariable String receiptId,
             @RequestParam String reason,
@@ -79,7 +79,7 @@ public class ConvocationController {
     }
 
     @GetMapping("/status/{studentId}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'CONVOCATION_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'FINANCE_OFFICER', 'ADMINISTRATOR', 'SUPERUSER')")
     public ResponseEntity<ApiResponse> getReceiptStatus(@PathVariable String studentId) {
         log.info("📊 Getting receipt status for student: {}", studentId);
         return ResponseEntity.ok(convocationService.getReceiptStatus(studentId));

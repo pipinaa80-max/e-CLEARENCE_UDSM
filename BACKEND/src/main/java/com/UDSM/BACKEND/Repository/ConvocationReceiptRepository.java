@@ -20,6 +20,8 @@ public interface ConvocationReceiptRepository extends JpaRepository<ConvocationR
 
     List<ConvocationReceipt> findByStudentIdOrderBySubmittedAtDesc(String studentId);
 
+    List<ConvocationReceipt> findByStudentIdAndProjectIdOrderBySubmittedAtDesc(String studentId, String projectId);
+
     List<ConvocationReceipt> findByStudentId(String studentId);
 
     void deleteByStudentId(String studentId);

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -19,7 +19,7 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
   templateUrl: './finance.html',
   styleUrl: './finance.css'
 })
-export class FinanceDashboard implements OnInit {
+export class FinanceDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
@@ -28,20 +28,44 @@ export class FinanceDashboard implements OnInit {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'analytics' = 'all';
+  viewMode: 'all' | 'requests' | 'analytics' | 'transcript-payments' = 'all';
   selectedRequest: ClearanceRequest | null = null;
   detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  isTranscriptPaymentsLoading = false;
+  private transcriptRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
+    if (!this.isOfficer) return;
+    this.isTranscriptPaymentsLoading = true;
+    void this.refreshTranscriptPayments(true).finally(() => {
+      this.isTranscriptPaymentsLoading = false;
+    });
+    this.transcriptRefreshTimer = setInterval(() => {
+      void this.refreshTranscriptPayments(false);
+    }, 10000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.transcriptRefreshTimer) clearInterval(this.transcriptRefreshTimer);
+  }
+
+  private async refreshTranscriptPayments(showError: boolean): Promise<void> {
+    try {
+      await this.transcriptPaymentService.refreshFinanceControlNumberRequests();
+    } catch {
+      if (showError) {
+        this.toastService.error('Transcript Payments Unavailable', 'Could not securely load transcript payment requests from the server.');
+      }
+    }
   }
 
   readonly Math = Math;
   selectedAnalyticsYear: string = 'all';
   selectedAnalyticsGender: string = 'all';
 
-  setViewMode(mode: 'all' | 'requests' | 'analytics'): void {
+  setViewMode(mode: 'all' | 'requests' | 'analytics' | 'transcript-payments'): void {
     this.viewMode = mode;
   }
 
@@ -76,36 +100,41 @@ export class FinanceDashboard implements OnInit {
   }
 
   get requests(): ClearanceRequest[] {
-    const clearanceReqs = this.clearanceService.getRequestsForOffice('Finance');
-    const transcriptReqs = this.transcriptPaymentService.getAllRequests()
-      .filter((t: TranscriptPaymentRequest) => t.status === 'Receipt Submitted')
-      .map((t: TranscriptPaymentRequest) => ({
-        id: t.id,
-        studentId: t.studentId,
-        studentName: t.studentName,
-        registrationNumber: t.registrationNumber,
-        email: t.postingContactEmail || 'student@udsm.ac.tz',
-        phoneNumber: t.postingContactPhone || '—',
-        college: 'Directorate of Undergraduate Studies (DUS)',
-        department: 'Transcript Service',
-        programme: t.award || 'Transcript Request',
-        requestDate: t.requestedAt,
-        status: 'Pending',
-        currentOffice: 'Finance' as any,
-        currentStage: 'Finance' as any,
-        approvals: [
-          { office: 'Finance', status: 'Pending' }
-        ],
-        convocation: {
-          receiptFileName: t.receiptFileName,
-          receiptData: t.receiptData,
-          receiptSubmittedAt: t.receiptSubmittedAt
-        }
-      } as unknown as ClearanceRequest));
-
-    return [...transcriptReqs, ...clearanceReqs];
+    return this.clearanceService.getRequestsForOffice('Finance').filter(request => {
+      const financeStatus = this.getRequestOfficeStatus(request, 'Finance');
+      return request.currentStage === 'Finance' || financeStatus !== 'Pending';
+    });
   }
 
+  get transcriptPaymentRequests(): TranscriptPaymentRequest[] {
+    let list = this.transcriptPaymentService.getAllRequests().filter(request => request.serverManaged &&
+      (request.status === 'Receipt Submitted' || request.status === 'Paid' || request.status === 'Receipt Rejected'));
+    const batches = new Map<string, TranscriptPaymentRequest>();
+    for (const request of list) {
+      const batchKey = request.paymentBatchId || `${request.studentId}:${request.submittedControlNumber || request.controlNumber || request.id}`;
+      if (!batches.has(batchKey)) batches.set(batchKey, request);
+    }
+    list = Array.from(batches.values());
+    const term = this.searchTerm.trim().toLowerCase();
+    if (term) list = list.filter(request => request.registrationNumber.toLowerCase().includes(term) ||
+      (request.submittedControlNumber || '').toLowerCase().includes(term) || request.studentName.toLowerCase().includes(term));
+    if (this.filterStatus === 'pending') list = list.filter(request => request.status === 'Receipt Submitted');
+    else if (this.filterStatus === 'approved') list = list.filter(request => request.status === 'Paid');
+    else if (this.filterStatus === 'rejected') list = list.filter(request => request.status === 'Receipt Rejected');
+    return list;
+  }
+
+  transcriptAsClearanceRequest(request: TranscriptPaymentRequest): ClearanceRequest {
+    return {
+      id: request.id, studentId: request.studentId, studentName: request.studentName,
+      registrationNumber: request.registrationNumber, email: request.postingContactEmail || 'student@udsm.ac.tz',
+      phoneNumber: request.postingContactPhone || '—', college: 'Directorate of Undergraduate Studies (DUS)',
+      department: 'Transcript Service', programme: request.award || 'Transcript Request', requestDate: request.requestedAt,
+      status: 'Pending', currentOffice: 'Finance' as any, currentStage: 'Finance' as any,
+      approvals: [{ office: 'Finance', status: 'Pending' }],
+      convocation: { submittedControlNumber: request.submittedControlNumber, controlNumber: request.controlNumber }
+    } as unknown as ClearanceRequest;
+  }
   get pendingRequestCount(): number {
     return this.requests.filter(request =>
       this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
@@ -120,7 +149,8 @@ export class FinanceDashboard implements OnInit {
       list = list.filter(r =>
         (r.studentName || '').toLowerCase().includes(s) ||
         (r.registrationNumber || '').toLowerCase().includes(s) ||
-        r.programme.toLowerCase().includes(s)
+        (r.programme || '').toLowerCase().includes(s) ||
+        this.getSubmittedControlNumber(r).toLowerCase().includes(s)
       );
     }
 
@@ -197,22 +227,31 @@ export class FinanceDashboard implements OnInit {
   async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
-    if (!staff) {
+    if (!staff || !this.isOfficer) {
       this.router.navigate(['/login']);
       return;
     }
 
-    const isTranscript = this.transcriptPaymentService.getAllRequests().some((t: TranscriptPaymentRequest) => t.id === request.id);
-    if (isTranscript) {
-      this.transcriptPaymentService.updateStatus(request.id, 'Paid');
+    const transcriptRequest = this.transcriptPaymentService.getAllRequests().find((t: TranscriptPaymentRequest) => t.id === request.id);
+    if (transcriptRequest) {
+      if (!transcriptRequest.serverManaged) {
+        this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
+        return;
+      }
+      try {
+        await this.transcriptPaymentService.approveControlNumberRequest(request.id);
+      } catch {
+        this.toastService.error('Approval Failed', 'Finance could not approve this request. Refresh the list and try again.');
+        return;
+      }
       this.notificationService.createNotification(
         request.studentId,
         'Transcript Payment Approved',
-        'Finance has verified and approved your transcript payment receipt. You can now upload required documents.',
+        'Finance has verified and approved your transcript payment control number. You can continue with your transcript request.',
         'success'
       );
-      this.toastService.success('Receipt Approved', 'Transcript payment receipt approved successfully by Finance.');
-      this.message = 'Transcript payment receipt approved successfully.';
+      this.toastService.success('Payment Approved', 'Transcript payment control number approved successfully by Finance.');
+      this.message = 'Transcript payment control number approved successfully.';
       return;
     }
 
@@ -244,6 +283,7 @@ export class FinanceDashboard implements OnInit {
   }
 
   openRejectForm(request: ClearanceRequest): void {
+    if (!this.isOfficer) return;
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
@@ -252,20 +292,30 @@ export class FinanceDashboard implements OnInit {
   async reject(): Promise<void> {
     const staff = this.currentUser;
 
-    if (!staff || !this.selectedRequest || !this.rejectionComment.trim()) {
+    if (!staff || !this.isOfficer || !this.selectedRequest || this.rejectionComment.trim().length < 5) {
       return;
     }
 
-    const isTranscript = this.transcriptPaymentService.getAllRequests().some((t: TranscriptPaymentRequest) => t.id === this.selectedRequest?.id);
-    if (isTranscript) {
-      this.transcriptPaymentService.rejectReceipt(this.selectedRequest.id, this.rejectionComment);
+    const transcriptRequest = this.transcriptPaymentService.getAllRequests().find((t: TranscriptPaymentRequest) => t.id === this.selectedRequest?.id);
+    if (transcriptRequest) {
+      if (!transcriptRequest.serverManaged) {
+        this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
+        this.selectedRequest = null;
+        return;
+      }
+      try {
+        await this.transcriptPaymentService.rejectControlNumberRequest(this.selectedRequest.id, this.rejectionComment.trim());
+      } catch {
+        this.toastService.error('Rejection Failed', 'Finance could not reject this request. Refresh the list and try again.');
+        return;
+      }
       this.notificationService.createNotification(
         this.selectedRequest.studentId,
-        'Transcript Receipt Rejected',
+        'Transcript Control Number Rejected',
         this.rejectionComment,
         'warning'
       );
-      this.message = 'Transcript payment receipt returned to student.';
+      this.message = 'Transcript payment control number returned to student.';
       this.selectedRequest = null;
       this.rejectionComment = '';
       return;
@@ -434,7 +484,14 @@ export class FinanceDashboard implements OnInit {
   }
 
   hasReceipt(request: ClearanceRequest): boolean {
-    return !!(request.convocation?.receiptData || request.convocation?.receiptFileName || request.convocation?.receiptSubmittedAt);
+    return !!(this.getSubmittedControlNumber(request) || request.convocation?.receiptData || request.convocation?.receiptFileName || request.convocation?.receiptSubmittedAt);
+  }
+
+  getSubmittedControlNumber(request: ClearanceRequest): string {
+    return request.convocation?.submittedControlNumber ||
+      (request.convocation?.receiptSubmittedAt
+        ? request.convocation.controlNumber || request.financeReceipt?.controlNumber || ''
+        : '');
   }
 
   getReceiptImage(request: ClearanceRequest): string | null {

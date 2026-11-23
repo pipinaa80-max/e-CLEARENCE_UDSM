@@ -1,6 +1,5 @@
 export type UserRole =
   | 'Student'
-  | 'Convocation'
   | 'Games Coach'
   | 'Hall Warden'
   | 'USAB'

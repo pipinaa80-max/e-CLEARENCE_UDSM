@@ -45,7 +45,7 @@
     </app-dashboard-header>
 
     <!-- MESSAGE -->
-    <p class="message" *ngIf="message">{{ message }}</p>
+    <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
     <!-- HALLS DIRECTORY BOARD (Shown in 'halls') -->
     <section class="dashboard-board" id="halls-section" *ngIf="viewMode === 'halls'">

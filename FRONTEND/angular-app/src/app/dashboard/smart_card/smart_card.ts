@@ -127,6 +127,7 @@ export class SmartCardComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -495,7 +496,11 @@ export class SmartCardComponent {
       request.id,
       'Smart Card',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Smart Card approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Smart Card clearance approved',
@@ -503,6 +508,7 @@ export class SmartCardComponent {
       'success'
     );
     this.toastService.success('Approved', `Smart Card clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Smart Card clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -511,6 +517,7 @@ export class SmartCardComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -527,7 +534,11 @@ export class SmartCardComponent {
       'Smart Card',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Smart Card return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Smart Card action required',
@@ -536,6 +547,7 @@ export class SmartCardComponent {
     );
 
     this.toastService.warning('Returned', `Smart Card clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified regarding physical ID surrender or loss fee payment.';
     this.selectedRequest = null;
     this.rejectionComment = '';

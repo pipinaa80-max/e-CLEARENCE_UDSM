@@ -81,6 +81,7 @@ export class UsabComponent {
   selectedRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   // Analytics Filters & Interaction State
   readonly Math = Math;
@@ -235,6 +236,7 @@ export class UsabComponent {
     this.loadHostels();
     this.closeHostelModal();
     this.toastService.success('Success', `Hostel "${name}" details saved and updated throughout the system.`);
+    this.messageState = 'success';
     this.message = `Hostel details for "${name}" updated successfully.`;
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -407,7 +409,11 @@ export class UsabComponent {
       request.id,
       'USAB',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'USAB approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,
@@ -417,6 +423,7 @@ export class UsabComponent {
     );
 
     this.toastService.success('Approved', `USAB clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Student clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -425,6 +432,7 @@ export class UsabComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -442,7 +450,11 @@ export class UsabComponent {
       'USAB',
       staff.fullName,
       this.rejectionComment.trim()
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The USAB return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
@@ -452,6 +464,7 @@ export class UsabComponent {
     );
 
     this.toastService.warning('Returned', `USAB clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified about the required action.';
     this.selectedRequest = null;
     this.rejectionComment = '';

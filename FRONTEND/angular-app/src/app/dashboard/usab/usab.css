@@ -30,6 +30,30 @@
   gap: 22px;
 }
 
+/* Status feedback shared by parallel office dashboards. */
+.message {
+  width: 100%;
+  margin: 0;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  border: 1px solid #cfe5d7;
+  border-left: 3px solid #27804a;
+  border-radius: 8px;
+  background: #f0f8f2;
+  color: #185b34;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  box-shadow: 0 2px 8px rgba(0, 37, 62, .06);
+}
+
+.message.error-message {
+  border-color: #f2c5c5;
+  border-left-color: #c73535;
+  background: #fff0f0;
+  color: #9f2525;
+}
+
 /* HEADER BADGES */
 .header-badges {
   display: flex;

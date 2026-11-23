@@ -80,6 +80,10 @@ public class ConvocationService {
                 receipt.setFileSize(fileSize);
             }
             receipt.setSubmittedAt(LocalDateTime.now());
+            receipt.setStatus(ClearanceStatus.APPROVED);
+            receipt.setApprovedBy("System (Control Number Submission)");
+            receipt.setApprovedAt(LocalDateTime.now());
+            receipt.setComments("Convocation was auto-approved on submission; Finance reviews the control number at final clearance.");
         } else {
             receipt = ConvocationReceipt.builder()
                     .studentId(request.getStudentId())
@@ -90,7 +94,10 @@ public class ConvocationService {
                     .fileUrl(fileUrl)
                     .fileType(fileType)
                     .fileSize(fileSize)
-                    .status(ClearanceStatus.PENDING)
+                    .status(ClearanceStatus.APPROVED)
+                    .approvedBy("System (Control Number Submission)")
+                    .approvedAt(LocalDateTime.now())
+                    .comments("Convocation was auto-approved on submission; Finance reviews the control number at final clearance.")
                     .projectId(projectId)
                     .submittedAt(LocalDateTime.now())
                     .build();
@@ -118,9 +125,9 @@ public class ConvocationService {
                 convocationApproval.setApprovedBy("System (Auto-Approved on Control Number Submission)");
                 convocationApproval.setApprovalDate(LocalDateTime.now());
                 if (request.getControlNumber() != null && !request.getControlNumber().isBlank()) {
-                    convocationApproval.setComments("Control number verified: " + request.getControlNumber());
+                convocationApproval.setComments("Control number submitted; Finance review is pending: " + request.getControlNumber());
                 } else {
-                    convocationApproval.setComments("Control number verified");
+                    convocationApproval.setComments("Control number submitted; Finance review is pending");
                 }
                 departmentApprovalRepository.save(convocationApproval);
             }
@@ -135,7 +142,7 @@ public class ConvocationService {
         notificationService.sendNotification(
                 student,
                 "Receipt Submitted",
-                "Your Convocation payment receipt has been submitted and is pending verification.",
+                "Your control number has been submitted. Convocation is complete automatically; Finance will review it at final clearance.",
                 NotificationType.CLEARANCE_UPDATE
         );
 
@@ -147,7 +154,7 @@ public class ConvocationService {
                 "SUCCESS"
         );
 
-        return ApiResponse.success("Receipt submitted successfully. Waiting for verification.");
+        return ApiResponse.success("Control number submitted. Convocation is complete automatically, and Finance will review it at final clearance.");
     }
 
     public ConvocationReceiptResponse getPendingReceipts() {

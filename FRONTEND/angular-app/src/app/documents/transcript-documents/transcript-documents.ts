@@ -6,6 +6,7 @@ import { DocumentService } from '../../core/services/document.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-transcript-documents',
@@ -33,77 +34,48 @@ export class TranscriptDocumentsComponent implements OnInit {
   message = '';
   uploading = '';
   paymentId = '';
+  submitted = false;
+  loading = true;
 
   get currentUser() {
     return this.authService.getCurrentUser();
   }
 
   get isSubmitted(): boolean {
-    const user = this.currentUser;
-    return !!user && localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    return this.submitted;
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const user = this.currentUser;
-    const payment = user
-      ? this.paymentService.getStudentRequests(user.id).at(-1)
-      : null;
-
     if (!user || user.role !== 'Student') {
       this.router.navigate(['/login']);
       return;
     }
 
-    if (!payment || payment.status !== 'Paid') {
-      this.router.navigate(['/dashboard/student']);
-      return;
-    }
-
-    this.paymentId = payment.id;
-    const savedCats = this.getLocalCategories(user.id, this.paymentId);
-    for (const category of this.requiredDocuments) {
-      this.uploaded[category] = savedCats.has(category.toLowerCase());
-    }
-
-    this.documentService.getDocumentCategories(user.id).subscribe({
-      next: categories => {
-        const uploadedCategories = new Set(
-          categories.map(category => String(category).trim().toLowerCase())
-        );
-        for (const category of this.requiredDocuments) {
-          if (uploadedCategories.has(category.toLowerCase()) || savedCats.has(category.toLowerCase())) {
-            this.uploaded[category] = true;
-          }
-        }
-        if (this.allUploaded) {
-          localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
-        }
-        this.changeDetector.detectChanges();
-      },
-      error: () => {
-        this.changeDetector.detectChanges();
-      }
-    });
-  }
-
-  private getLocalCategories(userId: string, paymentId: string): Set<string> {
     try {
-      const raw = localStorage.getItem(`udsm-transcript-doc-cats-${userId}-${paymentId}`);
-      if (!raw) return new Set();
-      return new Set((JSON.parse(raw) as string[]).map(s => s.toLowerCase()));
+      await this.paymentService.refreshStudentControlNumberRequests();
+      const payment = this.paymentService.getStudentRequests(user.id)
+        .filter(request => request.serverManaged && request.status === 'Paid')
+        .at(-1);
+      if (!payment?.paymentBatchId) {
+        this.router.navigate(['/dashboard/student']);
+        return;
+      }
+      this.paymentId = payment.paymentBatchId;
+      const categories = await firstValueFrom(this.documentService.getTranscriptDocumentCategories(this.paymentId));
+      const uploadedCategories = new Set(categories.map(category => String(category).trim().toLowerCase()));
+      for (const category of this.requiredDocuments) this.uploaded[category] = uploadedCategories.has(category.toLowerCase());
+      this.loading = false;
+      this.changeDetector.detectChanges();
     } catch {
-      return new Set();
+      this.loading = false;
+      this.message = 'Unable to verify payment approval and previously uploaded documents. Refresh and try again.';
+      this.changeDetector.detectChanges();
     }
-  }
-
-  private saveLocalCategory(userId: string, paymentId: string, category: string): void {
-    const set = this.getLocalCategories(userId, paymentId);
-    set.add(category.toLowerCase());
-    localStorage.setItem(`udsm-transcript-doc-cats-${userId}-${paymentId}`, JSON.stringify(Array.from(set)));
   }
 
   onFileSelected(category: string, event: Event): void {
-    if (this.isSubmitted) return;
+    if (this.isSubmitted || this.loading) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
 
@@ -117,7 +89,7 @@ export class TranscriptDocumentsComponent implements OnInit {
   }
 
   upload(category: string): void {
-    if (this.isSubmitted) return;
+    if (this.isSubmitted || this.loading || !this.paymentId || this.uploading) return;
     const user = this.currentUser;
     const file = this.selectedFiles[category];
     if (!user || !file) {
@@ -135,34 +107,38 @@ export class TranscriptDocumentsComponent implements OnInit {
     }, file).subscribe({
       next: () => {
         this.uploaded[category] = true;
-        this.saveLocalCategory(user.id, this.paymentId, category);
-        if (this.allUploaded) {
-          localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
-        }
         this.uploading = '';
         this.toastService.success('Upload Success', `${category} uploaded successfully.`);
         this.changeDetector.detectChanges();
       },
       error: () => {
-        // Persist locally if backend is unreachable so local workflow continues cleanly
-        this.uploaded[category] = true;
-        this.saveLocalCategory(user.id, this.paymentId, category);
-        if (this.allUploaded) {
-          localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
-        }
         this.uploading = '';
-        this.toastService.success('Upload Success', `${category} uploaded successfully.`);
+        this.toastService.error('Upload Failed', 'The document was not saved. Check your connection and try again.');
         this.changeDetector.detectChanges();
       }
     });
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
     const user = this.currentUser;
-    if (!user || !this.allUploaded) return;
-
-    localStorage.setItem(`udsm-transcript-documents-submitted-${user.id}`, 'true');
-    this.router.navigate(['/transcript/process']);
+    if (!user || !this.allUploaded || !this.paymentId || this.loading) return;
+    this.loading = true;
+    try {
+      const complete = await firstValueFrom(this.documentService.hasRequiredTranscriptDocuments(this.paymentId));
+      if (!complete) {
+        this.message = 'The server could not confirm all required documents. Please check each upload.';
+        return;
+      }
+      localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
+      localStorage.setItem(`udsm-transcript-documents-submitted-${user.id}`, 'true');
+      this.submitted = true;
+      this.router.navigate(['/transcript/process']);
+    } catch {
+      this.message = 'Unable to verify your documents. Please try again.';
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
+    }
   }
 
   get allUploaded(): boolean {

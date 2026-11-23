@@ -32,7 +32,6 @@ import { SmartCardComponent } from './dashboard/smart_card/smart_card';
 import { PrincipalComponent } from './dashboard/principal/principal';
 import { WorkshopComponent } from './dashboard/workshop/workshop';
 import { LaboratoryComponent } from './dashboard/laboratory/laboratory';
-import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import { DepartmentOfficerComponent } from "./dashboard/Department-officer/department-officer.component";
 import { LecturerDashboard } from './dashboard/lecturer/lecturer';
@@ -176,7 +175,7 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
   // Clearance Approval Offices
-  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Convocation', 'Student'])] },
+  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Student'])] },
   { path: 'games_coach', component: GamesCoachComponent, canActivate: [authGuard, roleGuard(['Games Coach'])] },
   { path: 'hall_warden', component: HallWardenComponent, canActivate: [authGuard, roleGuard(['Hall Warden'])] },
   { path: 'usab', component: UsabComponent, canActivate: [authGuard, roleGuard(['USAB'])] },
@@ -190,7 +189,7 @@ export const routes: Routes = [
   { path: 'dashboard/department', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
   { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
 
-  // Convocation Staff Routes
-  { path: 'convocation/dashboard', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] },
-  { path: 'convocation/requests', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] }
+  // Legacy Convocation staff URLs now open the Finance dashboard.
+  { path: 'convocation/dashboard', redirectTo: 'dashboard/finance', pathMatch: 'full' },
+  { path: 'convocation/requests', redirectTo: 'dashboard/finance', pathMatch: 'full' }
 ];

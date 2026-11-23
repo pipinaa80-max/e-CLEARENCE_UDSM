@@ -60,8 +60,6 @@ export class NotificationListComponent implements OnInit {
         return '/dashboard/academic';
       case 'Lecturer':
         return '/dashboard/lecturer';
-      case 'Convocation':
-        return '/convocation/dashboard';
       case 'Games Coach':
         return '/dashboard/games-coach';
       case 'Hall Warden':

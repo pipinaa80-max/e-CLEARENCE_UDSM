@@ -38,6 +38,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DocumentService {
 
+    private static final String TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX = "Transcript document for payment request ";
+    private static final List<String> REQUIRED_TRANSCRIPT_DOCUMENTS = List.of(
+            "Birth Certificate", "O-Level Certificate", "A-Level Certificate"
+    );
+
     private final DocumentRepository documentRepository;
     private final StudentRepository studentRepository;
     private final FileStorageService fileStorageService;
@@ -53,9 +58,14 @@ public class DocumentService {
             String studentId = student.getId();
             String projectId = ProjectScope.currentProjectId();
 
-            // Check if document already exists
-            if ((projectId == null && documentRepository.existsByStudentIdAndFileType(studentId, documentDTO.getFileType()))
-                    || (projectId != null && documentRepository.existsByStudentIdAndFileTypeAndProjectId(studentId, documentDTO.getFileType(), projectId))) {
+            String transcriptPaymentId = transcriptPaymentId(documentDTO.getDescription());
+            boolean alreadyExists = transcriptPaymentId != null
+                    ? getStudentDocuments(studentId).stream().anyMatch(existing ->
+                            documentDTO.getFileType().equals(existing.getFileType()) &&
+                                    (TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX + transcriptPaymentId).equals(existing.getDescription()))
+                    : ((projectId == null && documentRepository.existsByStudentIdAndFileType(studentId, documentDTO.getFileType()))
+                    || (projectId != null && documentRepository.existsByStudentIdAndFileTypeAndProjectId(studentId, documentDTO.getFileType(), projectId)));
+            if (alreadyExists) {
                 return ApiResponse.error(documentDTO.getFileType() + " has already been uploaded.");
             }
 
@@ -151,6 +161,32 @@ public class DocumentService {
                 .stream()
                 .map(Document::getFileType)
                 .collect(Collectors.toList());
+    }
+
+    public boolean hasRequiredTranscriptDocuments(String studentUserId, String paymentRequestId) {
+        Student student = findStudent(studentUserId);
+        String expectedDescription = TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX + paymentRequestId;
+        Set<String> uploaded = getStudentDocuments(student.getId()).stream()
+                .filter(document -> expectedDescription.equals(document.getDescription()))
+                .map(Document::getFileType)
+                .collect(Collectors.toSet());
+        return uploaded.containsAll(REQUIRED_TRANSCRIPT_DOCUMENTS);
+    }
+
+    public List<String> getTranscriptDocumentCategories(String studentUserId, String paymentRequestId) {
+        Student student = findStudent(studentUserId);
+        String expectedDescription = TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX + paymentRequestId;
+        return getStudentDocuments(student.getId()).stream()
+                .filter(document -> expectedDescription.equals(document.getDescription()))
+                .map(Document::getFileType)
+                .distinct()
+                .toList();
+    }
+
+    private String transcriptPaymentId(String description) {
+        if (description == null || !description.startsWith(TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX)) return null;
+        String id = description.substring(TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX.length()).trim();
+        return id.isBlank() ? null : id;
     }
 
     @Transactional

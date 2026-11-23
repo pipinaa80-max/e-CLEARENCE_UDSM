@@ -95,8 +95,8 @@ export class AuthService {
     const roleString = String(current || '').trim().toUpperCase();
     const map: Record<string, UserRole> = {
       STUDENT: 'Student',
-      CONVOCATION_OFFICER: 'Convocation',
-      CONVOCATION: 'Convocation',
+      CONVOCATION_OFFICER: 'Finance',
+      CONVOCATION: 'Finance',
       GAMES_COACH: 'Games Coach',
       'GAMES COACH': 'Games Coach',
       HALL_WARDEN: 'Hall Warden',

@@ -108,6 +108,12 @@ export class ClearanceService {
       roomNumber: res.roomNumber || '',
       sponsor: res.sponsor || '',
       photo: res.photo || '',
+      convocation: res.convocation || ((res.controlNumber || res.control_number)
+        ? {
+            controlNumber: res.controlNumber || res.control_number,
+            submittedControlNumber: res.controlNumber || res.control_number
+          }
+        : undefined),
       requestDate: res.requestDate ? (typeof res.requestDate === 'string' ? res.requestDate : new Date(res.requestDate).toISOString()) : new Date().toISOString(),
       status: mapOverallStatus(res.status),
       currentOffice: res.currentOffice as ClearanceOffice,
@@ -159,7 +165,14 @@ export class ClearanceService {
           }
         }
 
-        map.set(inc.id, { ...curr, ...inc, approvals: mergedApprovals });
+        map.set(inc.id, {
+          ...curr,
+          ...inc,
+          convocation: curr.convocation || inc.convocation
+            ? { ...(curr.convocation ?? {}), ...(inc.convocation ?? {}) }
+            : undefined,
+          approvals: mergedApprovals
+        });
       } else {
         map.set(inc.id, inc);
       }
@@ -771,17 +784,18 @@ export class ClearanceService {
       return;
     }
 
-    const writtenControlNumber = (controlNumberInput?.trim() || request.convocation?.controlNumber || '').trim();
+    const writtenControlNumber = controlNumberInput?.trim() || '';
 
     request.convocation = {
       ...(request.convocation ?? {}),
       controlNumber: writtenControlNumber || request.convocation?.controlNumber,
+      submittedControlNumber: writtenControlNumber || request.convocation?.submittedControlNumber,
       receiptFileName: writtenControlNumber ? `Control Number: ${writtenControlNumber}` : 'Payment Control Number / Receipt',
       receiptData: receiptData || writtenControlNumber,
       receiptSubmittedAt: new Date().toISOString()
     };
 
-    // Route to Finance for payment & control number audit/verification
+    // Finance is the only manual reviewer; submitting the control number completes Convocation automatically.
     const existingFinance = request.approvals.find(a => a.office === 'Finance');
     if (existingFinance) {
       request.approvals = request.approvals.map(a => a.office === 'Finance' ? { ...a, status: 'Pending', comment: writtenControlNumber ? `Payment Control Number: ${writtenControlNumber}` : a.comment } : a);
@@ -793,27 +807,32 @@ export class ClearanceService {
       });
     }
 
-    // Auto-approve Convocation office in frontend data model upon control number submission
-    request.approvals = request.approvals.map(a =>
-      a.office === 'Convocation'
-        ? { ...a, status: 'Approved', comment: writtenControlNumber ? `Control Number Verified: ${writtenControlNumber}` : 'Approved upon Control Number submission' }
-        : a
-    );
+    const convocationApproval = request.approvals.find(a => a.office === 'Convocation');
+    if (convocationApproval) {
+      convocationApproval.status = 'Approved';
+      convocationApproval.comment = writtenControlNumber
+        ? `Control Number Submitted: ${writtenControlNumber}; final review is assigned to Finance.`
+        : 'Convocation auto-approved upon control number submission; final review is assigned to Finance.';
+    }
 
-    // Automatically unlock Step 2 (Parallel) upon control number submission
     request.currentStage = 'Parallel';
     request.currentOffice = 'Parallel';
 
     this.save(request);
   }
 
-  submitFinanceReceiptAfterRejection(requestId: string, receiptData: string, fileName: string, note?: string): boolean {
+  submitFinanceReceiptAfterRejection(requestId: string, _receiptData: string, _fileName: string, note?: string): boolean {
     const request = this.getRequest(requestId);
     if (!request) return false;
 
-    const controlNum = note?.trim() || request.convocation?.controlNumber;
+    const controlNum = note?.trim();
+    const financeApproval = request.approvals.find(approval => approval.office === 'Finance');
+    if (!controlNum || !/^[A-Za-z0-9-]{4,40}$/.test(controlNum) ||
+        request.status !== 'Rejected' || request.currentStage !== 'Finance' || financeApproval?.status !== 'Rejected') {
+      return false;
+    }
 
-    request.approvals = request.approvals.map(a => a.office === 'Finance' ? { ...a, status: 'Pending', comment: note || a.comment } : a);
+    request.approvals = request.approvals.map(a => a.office === 'Finance' ? { ...a, status: 'Pending', comment: `Control number resubmitted: ${controlNum}` } : a);
     request.status = 'Pending';
     request.currentStage = 'Finance';
     request.currentOffice = 'Finance';
@@ -821,18 +840,19 @@ export class ClearanceService {
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      controlNumber: controlNum || request.convocation?.controlNumber,
-      receiptData: receiptData || controlNum || '',
-      receiptFileName: fileName || (controlNum ? `Control Number: ${controlNum}` : 'Payment Control Number'),
+      submittedControlNumber: controlNum,
+      controlNumber: controlNum,
+      receiptData: '',
+      receiptFileName: `Control Number: ${controlNum}`,
       receiptSubmittedAt: new Date().toISOString()
     };
 
     request.financeReceipt = {
       controlNumber: controlNum,
-      receiptFileName: fileName || (controlNum ? `Control Number: ${controlNum}` : 'Payment Control Number'),
-      receiptData: receiptData || controlNum || '',
+      receiptFileName: `Control Number: ${controlNum}`,
+      receiptData: '',
       receiptSubmittedAt: new Date().toISOString(),
-      receiptNote: note || ''
+      receiptNote: ''
     };
 
     this.save(request);

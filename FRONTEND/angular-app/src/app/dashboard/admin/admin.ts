@@ -81,7 +81,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
     'Principal',
     'Library',
     'Finance',
-    'Convocation',
     'Games Coach',
     'Hall Warden',
     'USAB',
@@ -528,7 +527,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     if (r.includes('LIBRARY')) return 'Library Services';
     if (r.includes('FINANCE')) return 'Bursar & Treasury';
     if (r.includes('ICT')) return 'Centre for Information and Communication Technology';
-    if (r.includes('CONVOCATION')) return 'Convocation Relations';
+    if (r.includes('CONVOCATION')) return 'Finance';
     if (r.includes('GAMES') || r.includes('COACH')) return 'Sports and Games Department';
     if (r.includes('HALL') || r.includes('WARDEN') || r.includes('USAB')) return 'Accommodation Bureau (USAB)';
     if (r.includes('DARUSO')) return 'DARUSO Student Union';
@@ -868,7 +867,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
   private readonly defaultProjectDashboards: ProjectDashboard[] = [
     { id: 'academic-staff', name: 'Academic Staff', description: 'Academic Staff clearance office', enabled: true },
     { id: 'administrator', name: 'Administrator', description: 'Administrator clearance office', enabled: true },
-    { id: 'convocation', name: 'Convocation', description: 'Convocation clearance office', enabled: true },
     { id: 'daruso', name: 'DARUSO', description: 'DARUSO clearance office', enabled: true },
     { id: 'dean-of-students', name: 'Dean of Students', description: 'Dean of Students clearance office', enabled: true },
     { id: 'department', name: 'Department', description: 'Department clearance office', enabled: true },

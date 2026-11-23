@@ -47,7 +47,6 @@ export class Landing implements OnInit {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
-      Convocation: '/convocation/dashboard',
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',

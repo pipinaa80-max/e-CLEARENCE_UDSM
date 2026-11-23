@@ -150,6 +150,7 @@ export class DarusoComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
   readonly processingRequests = new Set<string>();
 
   searchTerm = '';
@@ -339,6 +340,7 @@ export class DarusoComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+		this.messageState = 'success';
   }
 
 	async approve(request: ClearanceRequest): Promise<void> {
@@ -353,6 +355,7 @@ export class DarusoComponent {
 		try {
 			const approved = await this.clearanceService.approveRequest(request.id, 'DARUSO', staff.fullName);
 			if (!approved) {
+				this.messageState = 'error';
 				this.message = 'This request could not be approved. It may have already been reviewed.';
 				return;
 			}
@@ -362,10 +365,12 @@ export class DarusoComponent {
 				'DARUSO has approved your clearance request.',
 				'success'
 			);
+			this.messageState = 'success';
 			this.message = 'Student clearance was approved successfully.';
 			this.keepCurrentPageInRange();
 		} catch (error) {
 			console.error('Error approving DARUSO clearance request:', error);
+			this.messageState = 'error';
 			this.message = 'The request could not be approved. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);
@@ -407,6 +412,7 @@ export class DarusoComponent {
 				this.rejectionComment
 			);
 			if (!rejected) {
+				this.messageState = 'error';
 				this.message = 'This request could not be rejected. It may have already been reviewed.';
 				return;
 			}
@@ -416,12 +422,14 @@ export class DarusoComponent {
 				this.rejectionComment,
 				'warning'
 			);
+			this.messageState = 'success';
 			this.message = 'The student has been notified about the required action.';
 			this.selectedRequest = null;
 			this.rejectionComment = '';
 			this.keepCurrentPageInRange();
 		} catch (error) {
 			console.error('Error rejecting DARUSO clearance request:', error);
+			this.messageState = 'error';
 			this.message = 'The request could not be rejected. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);

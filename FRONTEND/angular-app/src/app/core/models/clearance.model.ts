@@ -37,6 +37,7 @@ export interface ClearanceRejectionRecord {
 
 export interface ConvocationPayment {
   controlNumber?: string;
+  submittedControlNumber?: string;
   controlNumberRequestedAt?: string;
   controlNumberIssuedAt?: string;
   receiptFileName?: string;

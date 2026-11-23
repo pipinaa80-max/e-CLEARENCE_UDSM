@@ -30,6 +30,7 @@ export class WorkshopComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -230,7 +231,11 @@ export class WorkshopComponent {
       request.id,
       'Workshop',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Workshop approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,
@@ -240,6 +245,7 @@ export class WorkshopComponent {
     );
 
     this.toastService.success('Approved', `Workshop clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Student clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -248,6 +254,7 @@ export class WorkshopComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -265,7 +272,11 @@ export class WorkshopComponent {
       'Workshop',
       staff.fullName,
       this.rejectionComment.trim()
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Workshop return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
@@ -275,6 +286,7 @@ export class WorkshopComponent {
     );
 
     this.toastService.warning('Returned', `Workshop clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified about the required action.';
 
     this.selectedRequest = null;

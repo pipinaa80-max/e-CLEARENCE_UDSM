@@ -40,7 +40,7 @@ export class StaffRegister implements OnInit {
     }
   }
 
-  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
+  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
   readonly laboratoryDepartments = ['Anatomy laboratory', 'Pathology laboratory', 'Biochemistry', 'Microbiology & Immunology', 'Physiology', 'Parasitology & Entomology', 'Pharmacology'];
 
   readonly collegeDepartments: Record<string, string[]> = {
@@ -212,7 +212,6 @@ export class StaffRegister implements OnInit {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
-      Convocation: '/convocation/dashboard',  // Redirects to the dashboard
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',

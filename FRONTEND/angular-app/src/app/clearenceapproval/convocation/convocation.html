@@ -1,6 +1,5 @@
 <section
   class="convocation-page"
-  *ngIf="!isOfficer"
 >
 
   <div class="convocation-wrapper">
@@ -154,7 +153,7 @@
             class="primary-button"
             [disabled]="isLoading || !hasControlNumber"
           >
-            {{ isLoading ? 'Submitting Control Number...' : '📤 Submit Control Number & Proceed to Step 2 →' }}
+            {{ isLoading ? 'Submitting Control Number...' : 'Submit Control Number and Proceed to Step 2' }}
           </button>
         </form>
       </section>

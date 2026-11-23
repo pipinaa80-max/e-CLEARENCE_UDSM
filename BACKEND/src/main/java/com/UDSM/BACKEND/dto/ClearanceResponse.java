@@ -83,6 +83,13 @@ public class ClearanceResponse {
 
     private String sponsor;
     private String photo;
+    @JsonProperty("control_number")
+    private String controlNumber;
+
+    @JsonProperty("controlNumber")
+    public String getControlNumberCamel() {
+        return controlNumber;
+    }
 
     private ClearanceStatus status;
 

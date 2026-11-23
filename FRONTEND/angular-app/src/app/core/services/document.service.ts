@@ -100,6 +100,18 @@ export class DocumentService {
     return this.http.get<boolean>(`${this.baseUrl}/student/${studentId}/has-required`);
   }
 
+  getTranscriptDocumentCategories(paymentId: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/transcript/${encodeURIComponent(paymentId)}/categories`, {
+      headers: this.authHeaders
+    });
+  }
+
+  hasRequiredTranscriptDocuments(paymentId: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.baseUrl}/transcript/${encodeURIComponent(paymentId)}/has-required`, {
+      headers: this.authHeaders
+    });
+  }
+
   verifyDocument(documentId: string, officerId: string, verified: boolean, comment?: string): Observable<any> {
     let params = new HttpParams()
         .set('officerId', officerId)

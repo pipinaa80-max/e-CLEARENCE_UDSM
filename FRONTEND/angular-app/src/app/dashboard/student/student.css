@@ -1343,6 +1343,172 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Keep transcript progress readable as one clear status flow. */
+.dashboard-clearance-stepper-card:has(.transcript-process-path) {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.dashboard-clearance-stepper-card:has(.transcript-process-path) .current-stage {
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  background: #f3f7fb;
+}
+
+.dashboard-clearance-stepper-card:has(.transcript-process-path) .current-stage strong {
+  color: #123b5d;
+  text-align: right;
+}
+
+.dashboard-clearance-stepper-card:has(.transcript-process-path) .transcript-process-path {
+  margin: 4px 0 20px;
+  padding: 8px 0 12px;
+  overflow: visible;
+}
+
+.transcript-payment-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0 18px;
+  padding: 15px 18px;
+  border: 1px solid #d7e4ef;
+  border-radius: 12px;
+  background: #f7fafc;
+  color: #334155;
+}
+
+.transcript-payment-notice.notice-pending {
+  border-color: #f1d99b;
+  background: #fffbeb;
+}
+
+.transcript-payment-notice .notice-mark {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4edf5;
+  color: #174b70;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.notice-pending .notice-mark {
+  background: #fef0c7;
+  color: #9a6700;
+}
+
+.transcript-payment-notice .notice-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.transcript-payment-notice strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #26384a;
+  font-size: 0.92rem;
+}
+
+.transcript-payment-notice p {
+  margin: 0;
+  color: #526273;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.notice-status {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff1c2;
+  color: #805b00;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.transcript-stepper-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.transcript-stepper-action > a,
+.transcript-stepper-action > button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .current-stage {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .current-stage strong {
+    text-align: left;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .transcript-process-path {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding-left: 4px;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .process-step {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    min-width: 0;
+    padding: 0;
+    text-align: left;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .step-content {
+    margin-top: 0;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .step-content small {
+    min-height: 0;
+  }
+
+  .dashboard-clearance-stepper-card:has(.transcript-process-path) .step-line {
+    top: 32px;
+    left: 17px;
+    width: 2px;
+    height: calc(100% + 14px);
+  }
+
+  .transcript-payment-notice {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 13px;
+  }
+
+  .notice-status {
+    margin-left: 46px;
+  }
+
+  .transcript-stepper-action {
+    justify-content: stretch;
+  }
+
+  .transcript-stepper-action > a,
+  .transcript-stepper-action > button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 .final-status {
   display: inline-flex;
   align-items: center;
@@ -2182,10 +2348,10 @@
   margin-bottom: 14px;
 }
 
-/* Copies & Pricing Container */
+/* Fixed transcript fee */
 .copies-pricing-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -2195,76 +2361,10 @@
   align-items: center;
 }
 
-.copies-picker-column .modal-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #475569;
-  margin-bottom: 8px;
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.copies-picker-column .stepper-actions {
-  display: inline-flex;
-  align-items: center;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.copies-picker-column .stepper-btn {
-  width: 36px;
-  height: 36px;
-  background: #ffffff;
-  border: none;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1e293b;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-}
-
-.copies-picker-column .stepper-btn:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #0066a1;
-}
-
-.copies-picker-column .stepper-btn:disabled {
-  color: #94a3b8;
-  cursor: not-allowed;
-  background: #f8fafc;
-}
-
-.copies-picker-column .stepper-input {
-  width: 44px;
-  height: 36px;
-  border: none;
-  border-left: 1px solid #e2e8f0;
-  border-right: 1px solid #e2e8f0;
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0f172a;
-  outline: none;
-  background: transparent;
-}
-
-.copies-picker-column .stepper-input::-webkit-outer-spin-button,
-.copies-picker-column .stepper-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
 .fee-summary-column {
-  text-align: right;
-  border-left: 1px solid #e2e8f0;
-  padding-left: 16px;
+  text-align: left;
+  border-left: 0;
+  padding-left: 0;
 }
 
 .fee-summary-label {
@@ -2937,3 +3037,28 @@
 }
 
 
+.transcript-control-number-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.transcript-control-number-input:focus {
+  outline: 3px solid rgba(0, 103, 155, .15);
+  border-color: #00679b;
+}
+.transcript-control-number-help {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}

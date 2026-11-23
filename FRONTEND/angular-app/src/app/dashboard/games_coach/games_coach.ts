@@ -128,6 +128,7 @@ export class GamesCoachComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -499,7 +500,11 @@ export class GamesCoachComponent {
       request.id,
       'Games Coach',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Games Coach approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Games Coach clearance approved',
@@ -507,6 +512,7 @@ export class GamesCoachComponent {
       'success'
     );
     this.toastService.success('Approved', `Games Coach clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Games Coach clearance approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -515,6 +521,7 @@ export class GamesCoachComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -531,7 +538,11 @@ export class GamesCoachComponent {
       'Games Coach',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Games Coach return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Games Coach action required',
@@ -540,6 +551,7 @@ export class GamesCoachComponent {
     );
 
     this.toastService.warning('Returned', `Games Coach clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified regarding unreturned sports gear or action required.';
     this.selectedRequest = null;
     this.rejectionComment = '';

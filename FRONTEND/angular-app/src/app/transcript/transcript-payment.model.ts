@@ -18,6 +18,9 @@ export interface TranscriptPaymentRequest {
   attemptNumber: number;
   status: TranscriptPaymentStatus;
   controlNumber?: string;
+  submittedControlNumber?: string;
+  paymentBatchId?: string;
+  serverManaged?: boolean;
   receiptFileName?: string;
   receiptData?: string;
   receiptStorageId?: string;

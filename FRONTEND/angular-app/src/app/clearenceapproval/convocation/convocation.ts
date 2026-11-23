@@ -67,24 +67,7 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // OFFICER CHECK - Redirect staff to dashboard
-  // =====================================================
-
-  get isOfficer(): boolean {
-    return this.currentUser?.role === 'Convocation';
-  }
-
-  // =====================================================
-  // INIT - Redirect Convocation staff to dashboard
-  // =====================================================
-
   ngOnInit(): void {
-    if (this.isOfficer) {
-      console.log('Convocation staff detected - redirecting to dashboard');
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     this.loadData();
   }
 
@@ -199,11 +182,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   loadData(): void {
-    if (this.isOfficer) {
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     const user = this.currentUser;
     if (user && user.role === 'Student') {
       const requests = this.clearanceService.getStudentRequests(user.id);
@@ -218,11 +196,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   refreshData(): void {
-    if (this.isOfficer) {
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     this.loadData();
     this.message = 'Data refreshed successfully.';
 

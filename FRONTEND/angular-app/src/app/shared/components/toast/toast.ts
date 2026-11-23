@@ -33,17 +33,18 @@ import { ToastService, ToastMessage } from '../../../core/services/toast.service
   styles: [`
     .toast-container {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: 16px;
+      right: 16px;
       z-index: 9999;
       display: flex;
       flex-direction: column;
       gap: 10px;
       pointer-events: none;
+      width: min(320px, calc(100vw - 32px));
     }
     .toast-item {
       pointer-events: auto;
-      width: 320px;
+      width: 100%;
       padding: 15px;
       border-radius: 8px;
       background: white;
