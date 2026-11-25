@@ -4,12 +4,16 @@ import { Observable, of, tap, map, catchError, timeout, throwError } from 'rxjs'
 import { UserRole } from '../models/user.model';
 import { StorageService } from './storage.service';
 import { SubdomainService } from './subdomain.service';
+import { ConfigService } from './config.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly config = inject(ConfigService);
   private readonly storage = new StorageService();
-  private readonly apiUrl = 'http://localhost:8080/api/v1/auth';
+  private get apiUrl(): string {
+    return `${this.config.apiUrl}/auth`;
+  }
   private readonly currentUserKey = 'udsm-current-user';
   private readonly tokenKey = 'udsm-auth-token';
 
@@ -30,7 +34,7 @@ export class AuthService {
 
   login(identifier: string, password: string): Observable<any> {
     const normalized = identifier.trim();
-    const isControlPlaneAccount = normalized.toLowerCase().endsWith('@admin.local');
+    const isControlPlaneAccount = normalized.toLowerCase().endsWith('@admin.local') || normalized.toLowerCase().includes('project.admin');
     // Only control-plane accounts need a fallback request after the main login fails.
     const headers = isControlPlaneAccount
       ? new HttpHeaders({ 'X-Skip-Error-Toast': 'true' })
@@ -65,7 +69,7 @@ export class AuthService {
   }
 
   private loginWithSuperuserBackend(email: string, password: string): Observable<any> {
-    return this.http.post<any>('http://localhost:8080/api/v1/control-plane/login', { email, password }).pipe(
+    return this.http.post<any>(`${this.config.superuserApiUrl}/login`, { email, password }).pipe(
       map(response => {
         const admin = response.user ?? {};
         const user = {
@@ -95,8 +99,8 @@ export class AuthService {
     const roleString = String(current || '').trim().toUpperCase();
     const map: Record<string, UserRole> = {
       STUDENT: 'Student',
-      CONVOCATION_OFFICER: 'Convocation',
-      CONVOCATION: 'Convocation',
+      CONVOCATION_OFFICER: 'Finance',
+      CONVOCATION: 'Finance',
       GAMES_COACH: 'Games Coach',
       'GAMES COACH': 'Games Coach',
       HALL_WARDEN: 'Hall Warden',
@@ -111,13 +115,13 @@ export class AuthService {
       'DEAN OF STUDENTS': 'Dean of Students',
       SMART_CARD_OFFICER: 'Smart Card',
       'SMART CARD': 'Smart Card',
+      ICT_OFFICER: 'Smart Card',
+      ICT: 'Smart Card',
       WORKSHOP_OFFICER: 'Workshop',
       WORKSHOP: 'Workshop',
       PRINCIPAL: 'Principal',
       FINANCE_OFFICER: 'Finance',
       FINANCE: 'Finance',
-      ICT_OFFICER: 'ICT',
-      ICT: 'ICT',
       DEPARTMENT_OFFICER: 'Department',
       DEPARTMENT: 'Department',
       LABORATORY_OFFICER: 'Laboratory',
@@ -317,6 +321,10 @@ export class AuthService {
     this.cachedUser = null;
     this.storage.remove(this.currentUserKey);
     this.storage.remove(this.tokenKey);
+    this.storage.remove('udsm-clearance-requests');
+    this.storage.remove('udsm-clearance-drafts');
+    this.storage.remove('udsm-notifications');
+    this.storage.remove('udsm-unread-notifications');
   }
 
   private getAuthHeaders(): HttpHeaders {

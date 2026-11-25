@@ -1,0 +1,74 @@
+/**
+ * UDSM e-Clearance - System Role Definitions & Helpers
+ * Corresponds to ERole enum in Spring Boot backend.
+ */
+
+const ROLES = {
+  SUPERUSER: 'SUPERUSER',
+  ADMINISTRATOR: 'ADMINISTRATOR',
+  ADMIN: 'ADMIN',
+  STUDENT: 'STUDENT',
+  CONVOCATION_OFFICER: 'CONVOCATION_OFFICER',
+  GAMES_COACH: 'GAMES_COACH',
+  HALL_WARDEN: 'HALL_WARDEN',
+  USAB_OFFICER: 'USAB_OFFICER',
+  DARUSO_OFFICER: 'DARUSO_OFFICER',
+  LIBRARY_OFFICER: 'LIBRARY_OFFICER',
+  DEAN_OF_STUDENTS: 'DEAN_OF_STUDENTS',
+  SMART_CARD_OFFICER: 'SMART_CARD_OFFICER',
+  WORKSHOP_OFFICER: 'WORKSHOP_OFFICER',
+  LABORATORY_OFFICER: 'LABORATORY_OFFICER',
+  LECTURER: 'LECTURER',
+  DEPARTMENT_OFFICER: 'DEPARTMENT_OFFICER',
+  PRINCIPAL: 'PRINCIPAL',
+  FINANCE_OFFICER: 'FINANCE_OFFICER',
+  ACADEMIC_STAFF: 'ACADEMIC_STAFF',
+  DIRECTOR_OF_UNDERGRADUATE_STUDIES: 'DIRECTOR_OF_UNDERGRADUATE_STUDIES',
+  DUS_SECRETARY: 'DUS_SECRETARY'
+};
+
+const ALL_ROLES = Object.values(ROLES);
+
+/**
+ * Normalizes input role strings (including human-readable aliases from frontend UI)
+ * to standard canonical ROLES enum values.
+ */
+function normalizeRole(roleInput) {
+  if (!roleInput || typeof roleInput !== 'string') return ROLES.STUDENT;
+
+  const normalized = roleInput.toUpperCase().trim().replace(/[\s-]+/g, '_');
+
+  // Strip ROLE_ prefix if present
+  const clean = normalized.startsWith('ROLE_') ? normalized.substring(5) : normalized;
+
+  if (ROLES[clean]) {
+    return ROLES[clean];
+  }
+
+  // Common UI aliases
+  const aliasMap = {
+    FINANCE: ROLES.FINANCE_OFFICER,
+    CONVOCATION: ROLES.CONVOCATION_OFFICER,
+    LIBRARY: ROLES.LIBRARY_OFFICER,
+    DEPARTMENT: ROLES.DEPARTMENT_OFFICER,
+    USAB: ROLES.USAB_OFFICER,
+    DARUSO: ROLES.DARUSO_OFFICER,
+    SMART_CARD: ROLES.SMART_CARD_OFFICER,
+    WORKSHOP: ROLES.WORKSHOP_OFFICER,
+    LABORATORY: ROLES.LABORATORY_OFFICER,
+    DEAN: ROLES.DEAN_OF_STUDENTS,
+    GAMES: ROLES.GAMES_COACH,
+    WARDEN: ROLES.HALL_WARDEN,
+    DUS: ROLES.DIRECTOR_OF_UNDERGRADUATE_STUDIES,
+    DIRECTOR_OF_UNDEGRADUATE_STUDIES: ROLES.DIRECTOR_OF_UNDERGRADUATE_STUDIES,
+    STATION_SECRETARY: ROLES.DUS_SECRETARY
+  };
+
+  return aliasMap[clean] || ROLES.STUDENT;
+}
+
+module.exports = {
+  ROLES,
+  ALL_ROLES,
+  normalizeRole
+};

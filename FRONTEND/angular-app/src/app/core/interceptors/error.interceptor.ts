@@ -10,7 +10,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  return next(req).pipe(
+  const skipToast = req.headers.has('X-Skip-Error-Toast');
+  const outgoingReq = skipToast
+    ? req.clone({ headers: req.headers.delete('X-Skip-Error-Toast') })
+    : req;
+
+  return next(outgoingReq).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMessage = 'An unexpected error occurred';
       let errorTitle = 'Error';
@@ -54,9 +59,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         errorMessage = 'A server-side error occurred. Our team has been notified.';
       }
 
-      // Skip toast if requested via header
-      const skipToast = req.headers.has('X-Skip-Error-Toast');
-
+      // Skip toast if requested via header (captured before stripping header)
       if (!skipToast) {
         // Run inside setTimeout to ensure it doesn't block the request cycle
         // and is visible even if multiple errors happen fast.

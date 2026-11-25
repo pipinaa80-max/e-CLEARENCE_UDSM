@@ -1,19 +1,31 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-  <aside class="sidebar">
-
-    <div class="brand">
-      <a routerLink="/">
-        <img
-          src="/udsm-logo.png"
-          alt="Institutional Logo"
-        />
-      </a>
-      <div>
-        <strong>DEAN OF STUDENTS</strong>
-        <small>Clearance Workspace</small>
+  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard/dean-of-students" (click)="closeSidebar()">
+          <img
+            src="/udsm-logo.png"
+            (error)="onLogoError($event)"
+            alt="Institutional Logo"
+          />
+        </a>
+        <div class="brand-text">
+          <strong>DEAN OF STUDENTS</strong>
+          <small>Clearance Workspace</small>
+        </div>
       </div>
-
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <nav>
@@ -21,14 +33,12 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'requests'"
-        (click)="setViewMode('requests')"
+        (click)="setViewMode('requests'); closeSidebar()"
       >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
         <span>Pending Requests ({{ pendingRequestCount }})</span>
       </button>
-
     </nav>
-
   </aside>
 
 
@@ -45,91 +55,51 @@
 
     <p
       class="message"
+      [class.error-message]="messageState === 'error'"
       *ngIf="message"
     >
       {{ message }}
     </p>
 
   <ng-container *ngIf="viewMode === 'requests'">
-    <!-- FILTER BAR -->
+    <section class="dashboard-board">
+      <header class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge" aria-hidden="true"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications and approve or return requests for Dean of Students clearance.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Search student, registration number or programme..." aria-label="Search requests" />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter by status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </header>
 
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
+      <div class="board-body board-table-body">
+        <section class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Dean of Students.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Dean of Students.' : 'There are currently no student applications awaiting Dean of Students approval.' }}</p>
+        </section>
 
-      <div class="search-box">
-
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
-
-      </div>
-
-
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-
-        <option value="Pending">
-          Pending
-        </option>
-
-        <option value="Approved">
-          Approved
-        </option>
-
-        <option value="Rejected">
-          Rejected
-        </option>
-
-      </select>
-
-    </section>
-
-
-    <section
-      class="empty-state"
-      *ngIf="!filteredRequests.length"
-    >
-
-      <div class="empty-icon">
-        <i class="bi bi-inbox-fill"></i>
-      </div>
-
-      <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}
-      </h2>
-
-      <p>
-        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Dean of Students.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Dean of Students.' : 'There are currently no student applications awaiting Dean of Students approval.' }}
-      </p>
-
-    </section>
-
-
-    <section class="compact-table-wrap" *ngIf="filteredRequests.length">
-      <table class="compact-request-table">
-        <thead><tr>
-          <th>Registration Number</th><th>Full Name</th><th>Email</th><th>Phone Number</th><th>Programme</th><th>Actions</th>
-        </tr></thead>
-        <tbody>
-          <tr *ngFor="let request of paginatedRequests">
-            <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="compact-name">{{ getStudentListName(request) }}</td>
-            <td>{{ getStudentEmail(request) }}</td>
-            <td>{{ getStudentPhone(request) }}</td>
-            <td>{{ request.programme || '—' }}</td>
-            <td><div class="compact-actions">
-              <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
-              <ng-container *ngIf="getRequestOfficeStatus(request, 'Dean of Students') === 'Pending'; else deanReviewed">
-                <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
-                <button type="button" class="approve-button" (click)="approve(request)">Approve</button>
-              </ng-container>
-              <ng-template #deanReviewed><span class="compact-status">{{ getRequestOfficeStatus(request, 'Dean of Students') }}</span></ng-template>
-            </div></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'Dean of Students'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="detailsRequest = $event"
+            (bulkApproved)="loadData()"
+          ></app-parallel-office-request-table>
+        </div>
 
     <div class="pagination" *ngIf="totalPages > 1">
       <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
@@ -142,6 +112,8 @@
         Next &rarr;
       </button>
     </div>
+      </div>
+    </section>
   </ng-container>
 
 

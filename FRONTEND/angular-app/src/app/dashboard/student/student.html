@@ -11,27 +11,93 @@
        SIDEBAR
   ========================== -->
 
-  <aside class="sidebar">
-    <div class="brand">
-      <a routerLink="/">
-        <img src="/udsm-logo.png" alt="Institutional Logo" />
-      </a>
-      <div>
-        <strong>STUDENT PORTAL</strong>
-        <small>University of Dar es Salaam</small>
+  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
+        </a>
+        <div class="brand-text">
+          <strong>STUDENT PORTAL</strong>
+          <small>University of Dar es Salaam</small>
+        </div>
       </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
-    <nav>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">MAIN</div>
+
       <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+        <i class="bi bi-grid-1x2-fill"></i>
         <span>Dashboard</span>
       </a>
+
+      <div class="nav-section-label">CLEARANCE</div>
+
+      <a routerLink="/clearance/request" routerLinkActive="active" (click)="closeSidebar()">
+        <i class="bi bi-file-earmark-plus-fill"></i>
+        <span>Clearance Request</span>
+      </a>
+
       <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
+        <i class="bi bi-clipboard2-check-fill"></i>
         <span>Clearance Process</span>
       </a>
+
+      <a routerLink="/clearance/history" routerLinkActive="active" (click)="closeSidebar()">
+        <i class="bi bi-clock-history"></i>
+        <span>Clearance History</span>
+      </a>
+
+      <div class="nav-section-label">DOCUMENTS</div>
+
+      <a routerLink="/documents" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
+        <i class="bi bi-folder2-open"></i>
+        <span>My Documents</span>
+      </a>
+
+      <a routerLink="/documents/upload" routerLinkActive="active" (click)="closeSidebar()">
+        <i class="bi bi-cloud-arrow-up-fill"></i>
+        <span>Upload Document</span>
+      </a>
+
+      <ng-container *ngIf="isTranscriptSystem">
+        <div class="nav-section-label">TRANSCRIPT</div>
+        <a routerLink="/transcript" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-mortarboard-fill"></i>
+          <span>Transcript Process</span>
+        </a>
+      </ng-container>
+
+      <div class="nav-section-label">ACCOUNT</div>
+
+      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
+        <i class="bi bi-bell-fill"></i>
+        <span>Notifications</span>
+        <span class="notification-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
+      </a>
+
+      <a routerLink="/profile" routerLinkActive="active" (click)="closeSidebar()">
+        <i class="bi bi-person-badge-fill"></i>
+        <span>My Profile</span>
+      </a>
     </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" class="sidebar-logout-btn" (click)="logout()" title="Sign Out">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Sign Out</span>
+      </button>
+    </div>
   </aside>
 
   <!-- =========================
@@ -210,25 +276,20 @@
         </article>
       </section>
 
-      <!-- RECEIPT REPORTED UNDER REVIEW BANNER -->
-      <section
-        *ngIf="hasReportedReceiptUnderReview"
-        class="waiting-card resubmitted-receipt-banner"
-      >
+      <!-- PAYMENT CONTROL NUMBER UNDER REVIEW -->
+      <section *ngIf="hasReportedReceiptUnderReview" class="waiting-card resubmitted-receipt-banner">
         <div class="receipt-banner-content">
-          <div class="receipt-banner-icon">🧾</div>
+          <div class="receipt-banner-icon" aria-hidden="true"></div>
           <div>
-            <h2>Payment Receipt Submitted · Under Finance Review</h2>
-            <p>Your payment receipt was submitted on <strong>{{ currentRequest.financeReceipt?.receiptSubmittedAt | date:'medium' }}</strong>. Your clearance application has returned to the Finance Office as a resubmission and is currently under review.</p>
+            <h2>Payment Control Number Submitted · Under Finance Review</h2>
+            <p>Your payment control number was submitted on <strong>{{ currentRequest.financeReceipt?.receiptSubmittedAt | date:'medium' }}</strong>. Your clearance application has returned to Finance for verification.</p>
             <div class="receipt-meta-tags" *ngIf="currentRequest.financeReceipt">
-              <span class="meta-tag">📄 {{ currentRequest.financeReceipt.receiptFileName || 'Payment_Receipt.jpg' }}</span>
-              <span class="meta-tag" *ngIf="currentRequest.financeReceipt.receiptNote">💬 Note: "{{ currentRequest.financeReceipt.receiptNote }}"</span>
+              <span class="meta-tag">Control number: {{ currentRequest.financeReceipt.controlNumber || 'Submitted' }}</span>
               <span class="meta-tag status-pill">Status: Pending Verification</span>
             </div>
           </div>
         </div>
       </section>
-
       <!-- REJECTION / CORRECTION REQUIRED ACTION CARD -->
       <section
         *ngIf="currentRequest.status === 'Rejected' || rejectedOffices > 0"
@@ -252,22 +313,23 @@
 
         <div class="revision-actions" style="margin-top: 16px;">
           <button
+            *ngIf="currentRequest.currentStage === 'Finance' && rejectedOfficeName === 'Finance'"
             type="button"
             class="approval-button correct-resubmit-btn"
             (click)="openReceiptModal()"
           >
-            Correct and Submit Receipt
+            Resubmit Control Number
           </button>
         </div>
       </section>
 
-      <!-- RECEIPT SUBMISSION PANEL (MODAL OVERLAY) -->
+      <!-- CONTROL NUMBER / PAYMENT SUBMISSION PANEL (MODAL OVERLAY) -->
       <div class="receipt-modal-backdrop" *ngIf="showReceiptModal" (click)="closeReceiptModal()">
         <div class="receipt-modal-card" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle" (click)="$event.stopPropagation()">
           <div class="receipt-modal-header">
             <div>
-              <h3 id="receiptModalTitle">Submit Payment Receipt</h3>
-              <p>Attach your payment receipt (Risiti ya Malipo) to return your clearance request to Finance.</p>
+              <h3 id="receiptModalTitle">Submit Payment Control Number</h3>
+              <p>Submit your written control number (Namba ya Malipo) to return your clearance request to Finance for review.</p>
             </div>
             <button type="button" class="modal-close-btn" (click)="closeReceiptModal()" aria-label="Close">✕</button>
           </div>
@@ -278,69 +340,34 @@
           </div>
 
           <div *ngIf="receiptErrorMessage" class="receipt-alert error">
-            ⚠️ {{ receiptErrorMessage }}
+            {{ receiptErrorMessage }}
           </div>
 
-          <!-- DROPZONE / FILE SELECTOR -->
-          <input
-            #receiptFileInput
-            type="file"
-            (change)="onReceiptFileSelected($event)"
-            accept="image/png,image/jpeg,image/jpg,application/pdf"
-            style="display: none;"
-          />
-
-          <div
-            class="receipt-dropzone"
-            [class.has-file]="!!selectedReceiptFile"
-            (click)="receiptFileInput.click()"
-          >
-            <ng-container *ngIf="!selectedReceiptFile">
-              <div class="dropzone-prompt">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <strong>Click or Drag Payment Receipt Here</strong>
-                <small>Supports JPG, PNG, or PDF (Max 10MB)</small>
-              </div>
-            </ng-container>
-
-            <ng-container *ngIf="selectedReceiptFile">
-              <div class="file-preview-card" (click)="$event.stopPropagation()">
-                <div class="preview-thumb" *ngIf="receiptPreviewUrl">
-                  <img [src]="receiptPreviewUrl" alt="Receipt preview" />
-                </div>
-                <div class="preview-thumb pdf" *ngIf="!receiptPreviewUrl">
-                  <span>PDF</span>
-                </div>
-                <div class="preview-info">
-                  <strong>{{ receiptFileName }}</strong>
-                  <small>{{ receiptFileSizeText }}</small>
-                </div>
-                <button type="button" class="remove-file-btn" (click)="removeReceiptFile()" title="Remove file">✕</button>
-              </div>
-            </ng-container>
-          </div>
-
-          <!-- OPTIONAL NOTE / REFERENCE -->
-          <div class="receipt-note-field">
-            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 5px;">Payment Reference / Remarks (Optional)</label>
+          <!-- WRITTEN CONTROL NUMBER FIELD (PRIMARY) -->
+          <div class="receipt-note-field" style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #003b5c; margin-bottom: 5px;">
+              Written Control Number <span style="color: #dc2626;">*</span>
+            </label>
             <input
               type="text"
               [(ngModel)]="receiptNote"
-              placeholder="e.g. GePG Control Number, Bank Deposit Slip #..."
+              placeholder="e.g. 991234567890 or GePG Control Number..."
+              style="width: 100%; padding: 12px 14px; font-size: 1rem; font-weight: 600; border: 1.5px solid #0284c7; border-radius: 8px; box-sizing: border-box;"
             />
+            <small style="display: block; color: #64748b; font-size: 0.78rem; margin-top: 4px;">Enter the written Government/University payment control number.</small>
           </div>
 
-          <div class="receipt-modal-actions">
+          <div class="receipt-modal-actions" style="margin-top: 18px;">
             <button type="button" class="cancel-modal-btn" (click)="closeReceiptModal()">
               Cancel
             </button>
             <button
               type="button"
               class="approval-button receipt-submit-btn"
-              [disabled]="(!selectedReceiptFile && !receiptNote.trim()) || isSubmittingReceipt"
+              [disabled]="!receiptNote.trim() || isSubmittingReceipt"
               (click)="submitRejectionReceipt()"
             >
-              {{ isSubmittingReceipt ? 'Submitting Receipt...' : '📤 Submit Receipt to Finance' }}
+              {{ isSubmittingReceipt ? 'Submitting to Finance...' : 'Submit Control Number to Finance' }}
             </button>
           </div>
         </div>
@@ -350,11 +377,11 @@
         *ngIf="currentRequest.currentStage === 'Convocation'"
         class="waiting-card"
       >
-        <h2>Step 1: Convocation</h2>
-        <p>Upload your Convocation payment receipt to complete Step 1 clearance.</p>
+        <h2>Step 1: Convocation &amp; Payment</h2>
+        <p>Submit your payment control number to complete Step 1 clearance.</p>
         <div class="step-navigation">
           <a routerLink="/convocation" class="approval-button">
-            Submit Convocation Receipt
+            Submit Payment Control Number
           </a>
         </div>
       </section>
@@ -447,28 +474,35 @@
           </article>
         </section>
 
-        <div class="transcript-stepper-action" style="margin-top: 24px; display: flex; justify-content: flex-end; align-items: center; gap: 16px;">
+        <div *ngIf="!transcriptStatusLoaded" class="transcript-payment-notice notice-loading" role="status">
+          <span class="notice-mark" aria-hidden="true">…</span>
+          <p>{{ transcriptStatusLoadError || 'Verifying transcript payment status…' }}</p>
+        </div>
+
+        <div *ngIf="clearanceTranscriptRequest?.status === 'Receipt Submitted'" class="transcript-payment-notice notice-pending" role="status">
+          <span class="notice-mark" aria-hidden="true">i</span>
+          <div class="notice-copy">
+            <strong>Payment submitted for verification</strong>
+            <p>Control number <b>{{ clearanceTranscriptRequest?.submittedControlNumber }}</b> is awaiting review by the Finance Office. You can continue when verification is complete.</p>
+          </div>
+          <span class="notice-status">Pending review</span>
+        </div>
+
+        <div class="transcript-stepper-action">
           <!-- NOT STARTED OR RECEIPT REJECTED -->
           <ng-container *ngIf="!clearanceTranscriptRequest || clearanceTranscriptRequest.status === 'Receipt Rejected' || clearanceTranscriptRequest.status === 'Awaiting Payment'">
             <p *ngIf="clearanceTranscriptRequest?.status === 'Receipt Rejected'" style="margin: 0; margin-right: auto; color: #b91c1c; font-size: 0.9rem;">
-              Receipt returned by Finance: {{ clearanceTranscriptRequest?.rejectionReason || 'Please upload a valid payment receipt.' }}
+              Control number returned by Finance: {{ clearanceTranscriptRequest?.rejectionReason || 'Please check and resubmit the correct payment control number.' }}
             </p>
             <button
               type="button"
               class="primary-button"
+              [disabled]="!transcriptStatusLoaded"
               (click)="openTranscriptModal()"
             >
               Start Transcript
             </button>
           </ng-container>
-
-          <!-- SUBMITTED: NORMAL MESSAGE AWAITING FINANCE APPROVAL -->
-          <p
-            *ngIf="clearanceTranscriptRequest?.status === 'Receipt Submitted'"
-            style="margin: 0; width: 100%; color: #475569; font-size: 0.92rem; font-weight: 500; text-align: right;"
-          >
-            Your payment receipt has been submitted and is awaiting approval from the Finance Office.
-          </p>
 
           <!-- APPROVED BY FINANCE: CONTINUE TO UPLOAD CERTIFICATES (STEP 2) -->
           <a
@@ -540,112 +574,32 @@
       ✓ {{ transcriptSuccessMessage }}
     </div>
 
-    <!-- COPIES & FEE SUMMARY -->
+    <!-- REQUIRED FEE -->
     <div class="copies-pricing-container">
-      <div class="copies-picker-column">
-        <label class="modal-label">Number of Copies <span class="required-indicator">*</span></label>
-        <div class="stepper-actions">
-          <button type="button" class="stepper-btn" (click)="decrementCopies()" [disabled]="transcriptCopies <= 1" aria-label="Decrease copies">-</button>
-          <input
-            type="number"
-            class="stepper-input"
-            [(ngModel)]="transcriptCopies"
-            (change)="onCopiesCountChange()"
-            min="1"
-            max="10"
-          />
-          <button type="button" class="stepper-btn" (click)="incrementCopies()" [disabled]="transcriptCopies >= 10" aria-label="Increase copies">+</button>
-        </div>
-      </div>
-
       <div class="fee-summary-column">
-        <span class="fee-summary-label">Payable Fee</span>
-        <div class="fee-summary-amount">{{ getEstimatedTranscriptCost() | number }} <small>TZS</small></div>
-        <span class="fee-summary-rate">1st copy: 15,000 TZS<span *ngIf="transcriptCopies > 1"> &bull; +5,000 each</span></span>
+        <span class="fee-summary-label">Required Transcript Fee</span>
+        <div class="fee-summary-amount">15,000 <small>TZS</small></div>
+        <span class="fee-summary-rate">Payment of TZS 15,000 is required to continue.</span>
       </div>
     </div>
 
-    <!-- MULTI-RECEIPT UPLOAD SECTION -->
+    <!-- CONTROL NUMBER SUBMISSION -->
     <div class="modal-input-section">
-      <div class="section-label-with-hint">
-        <label class="modal-label">
-          <span>Upload Payment Receipt(s) (Risiti ya Malipo)</span>
-          <span class="required-indicator">*</span>
-        </label>
-        <span class="hint-pill" *ngIf="transcriptCopies === 1">Upload 1 receipt (1 copy)</span>
-        <span class="hint-pill" *ngIf="transcriptCopies > 1">Upload up to {{ transcriptCopies }} receipts ({{ uploadedTranscriptReceipts.length }}/{{ transcriptCopies }})</span>
-      </div>
-
-      <!-- Hidden file input: only multiple if transcriptCopies > 1 -->
+      <label class="modal-label" for="transcriptPaymentControlNumber">
+        Payment Control Number <span class="required-indicator">*</span>
+      </label>
       <input
-        #transcriptFilesInput
-        type="file"
-        [multiple]="transcriptCopies > 1"
-        (change)="onTranscriptReceiptsSelected($event)"
-        accept="image/png,image/jpeg,image/jpg,application/pdf"
-        style="display: none;"
+        id="transcriptPaymentControlNumber"
+        type="text"
+        [(ngModel)]="transcriptPaymentNote"
+        maxlength="40"
+        autocomplete="off"
+        inputmode="text"
+        placeholder="Enter the control number shown on your payment receipt"
+        class="transcript-control-number-input"
       />
-
-      <!-- Dropzone -->
-      <div
-        class="multi-receipt-dropzone"
-        [class.dropzone-disabled]="uploadedTranscriptReceipts.length >= transcriptCopies"
-        (click)="triggerReceiptUpload(transcriptFilesInput)"
-      >
-        <div class="dropzone-inner">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          <strong *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
-            {{ transcriptCopies === 1 ? 'Click or Drag & Drop Receipt Here' : 'Click or Drag & Drop Receipts Here' }}
-          </strong>
-          <strong *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
-            ✓ All {{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Receipt' : 'Receipts' }} Attached
-          </strong>
-          <small *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
-            PNG, JPG, or PDF files &bull; Max 10MB each
-            <span *ngIf="transcriptCopies > 1"> &bull; Max {{ transcriptCopies }} receipts (1 per copy)</span>
-          </small>
-          <small *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
-            {{ transcriptCopies }} of {{ transcriptCopies }} receipts attached. Increase number of copies above to upload more.
-          </small>
-        </div>
-      </div>
-
-      <!-- Uploaded Receipts Preview List -->
-      <div class="uploaded-receipts-container" *ngIf="uploadedTranscriptReceipts.length > 0">
-        <div class="receipts-list-bar">
-          <span>Attached Receipts ({{ uploadedTranscriptReceipts.length }} of {{ transcriptCopies }})</span>
-          <button
-            type="button"
-            class="btn-attach-another"
-            *ngIf="uploadedTranscriptReceipts.length < transcriptCopies"
-            (click)="triggerReceiptUpload(transcriptFilesInput)"
-          >
-            + Attach Another Receipt
-          </button>
-        </div>
-
-        <div class="receipt-chips-list">
-          <div class="receipt-chip-item" *ngFor="let item of uploadedTranscriptReceipts; let idx = index">
-            <div class="receipt-thumb-box" *ngIf="item.previewUrl">
-              <img [src]="item.previewUrl" alt="Receipt preview" />
-            </div>
-            <div class="receipt-thumb-box pdf" *ngIf="!item.previewUrl">
-              <span>PDF</span>
-            </div>
-            <div class="receipt-chip-info">
-              <strong class="receipt-chip-title" [title]="item.fileName">{{ item.fileName }}</strong>
-              <small>{{ item.sizeText }} &bull; Receipt #{{ idx + 1 }}</small>
-            </div>
-            <button type="button" class="btn-remove-chip" (click)="removeTranscriptReceipt(idx)" title="Remove receipt">
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
+      <small class="transcript-control-number-help">Finance will verify this number before you can continue to Step 2.</small>
     </div>
-
     <!-- MODAL FOOTER ACTIONS -->
     <div class="modal-footer-actions">
       <button type="button" class="btn-modal-cancel" (click)="closeTranscriptModal()">
@@ -654,11 +608,11 @@
       <button
         type="button"
         class="btn-modal-submit"
-        [disabled]="uploadedTranscriptReceipts.length === 0 || isSubmittingTranscript"
+        [disabled]="!transcriptPaymentNote.trim() || isSubmittingTranscript"
         (click)="submitTranscriptRequest()"
       >
         <span *ngIf="!isSubmittingTranscript">
-          Submit Request ({{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Copy' : 'Copies' }})
+          Submit Control Number
         </span>
         <span *ngIf="isSubmittingTranscript">
           Submitting...

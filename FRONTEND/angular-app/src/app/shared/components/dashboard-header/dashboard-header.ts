@@ -23,7 +23,7 @@ import { NotificationService } from '../../../core/services/notification.service
 
         <div class="header-titles">
           <span class="eyebrow" *ngIf="eyebrow">{{ eyebrow }}</span>
-          <h2 *ngIf="title">{{ title }}</h2>
+          <h2 *ngIf="title">{{ formattedTitle }}</h2>
           <p *ngIf="subtitle">{{ subtitle }}</p>
           <ng-content select="[header-titles]"></ng-content>
         </div>
@@ -40,8 +40,8 @@ import { NotificationService } from '../../../core/services/notification.service
             <span class="user-name">{{ user.fullName || 'User' }}</span>
           </div>
           <div class="avatar-circle">
-            <img *ngIf="user.photo || user.profilePhoto" [src]="user.photo || user.profilePhoto" [alt]="user.fullName">
-            <span *ngIf="!user.photo && !user.profilePhoto">{{ (user.fullName || 'U').charAt(0) }}</span>
+            <img *ngIf="avatarUrl && !imageLoadFailed" [src]="avatarUrl" [alt]="user.fullName" (error)="imageLoadFailed = true">
+            <span *ngIf="!avatarUrl || imageLoadFailed">{{ (user.fullName || 'U').charAt(0).toUpperCase() }}</span>
           </div>
 
           <!-- INTERACTIVE PROFILE DROPDOWN CARD MATCHING SCREENSHOT -->
@@ -116,7 +116,7 @@ import { NotificationService } from '../../../core/services/notification.service
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 991px) {
       .sidebar-toggle-btn {
         display: flex !important;
       }
@@ -365,6 +365,11 @@ export class DashboardHeaderComponent implements OnInit {
   @Input() showProfileInfo = true;
   @Input() showToggle = true;
 
+  get formattedTitle(): string {
+    if (!this.title) return '';
+    return this.title.replace(/\bdashboard\b/g, 'Dashboard');
+  }
+
   @Output() toggleSidebar = new EventEmitter<void>();
 
   private readonly authService = inject(AuthService);
@@ -373,6 +378,20 @@ export class DashboardHeaderComponent implements OnInit {
 
   showProfileCard = false;
   unreadCount = 0;
+  imageLoadFailed = false;
+
+  get avatarUrl(): string | null {
+    if (!this.user) return null;
+    const photo = this.user.photo || this.user.profilePhoto || this.user.profileImageUrl;
+    if (!photo) return null;
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
+    }
+    if (photo.length > 50) {
+      return 'data:image/jpeg;base64,' + photo;
+    }
+    return photo;
+  }
 
   ngOnInit(): void {
     this.loadUnreadCount();

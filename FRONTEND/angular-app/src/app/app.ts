@@ -19,20 +19,28 @@ export class App {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly currentYear = new Date().getFullYear();
-  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', backgroundUrl: '/background.png', primaryColor: '#0864af', fontFamily: 'Segoe UI', footerLinks: [] };
+  branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', backgroundUrl: '/background.png', primaryColor: '#0864af', fontFamily: 'Roboto', footerLinks: [] };
   private brandingObserver?: MutationObserver;
   private debounceTimer?: any;
+  private brandingLoaded = false;
+  private readonly failedBrandLogoUrls = new Set<string>();
 
   constructor() {
     const saved = this.projectAdminService.getSavedBranding();
     if (saved) this.applyBranding(saved);
 
     this.refreshBranding();
-    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => this.refreshBranding());
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
+      if (!this.brandingLoaded) {
+        this.refreshBranding();
+      }
+    });
     window.addEventListener('project-branding-updated', (event: Event) => {
       const customEvent = event as CustomEvent<{ branding?: Partial<ProjectConfig['branding']> }>; 
       if (customEvent.detail?.branding) this.applyBranding(customEvent.detail.branding);
+      this.refreshBranding(true);
     });
+    window.addEventListener('error', this.handleBrandLogoError, true);
 
     this.brandingObserver = new MutationObserver(() => {
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
@@ -41,16 +49,21 @@ export class App {
     this.brandingObserver.observe(document.body, { childList: true, subtree: true });
   }
 
-  private refreshBranding(): void {
+  private refreshBranding(force: boolean = false): void {
+    if (this.brandingLoaded && !force) {
+      return;
+    }
     const saved = this.projectAdminService.getSavedBranding();
 
     if (this.authService.getToken()) {
       this.projectAdminService.getMyBranding().subscribe({
         next: (branding) => {
+          this.brandingLoaded = true;
           this.projectAdminService.setSavedBranding(branding);
           this.applyBranding(branding);
         },
         error: () => {
+          this.brandingLoaded = true;
           if (saved) this.applyBranding(saved);
         }
       });
@@ -61,16 +74,19 @@ export class App {
       Boolean(saved.logoUrl || saved.backgroundUrl) ||
       (saved.primaryColor && normalizeUdsmBrandColor(saved.primaryColor) !== DEFAULT_UDSM_BRAND_COLOR)
     )) {
+      this.brandingLoaded = true;
       this.applyBranding(saved);
       return;
     }
 
     this.projectAdminService.getPublicBranding().subscribe({
       next: (config) => {
+        this.brandingLoaded = true;
         this.projectAdminService.setSavedBranding(config);
         this.applyBranding(config);
       },
       error: () => {
+        this.brandingLoaded = true;
         if (saved) this.applyBranding(saved);
       }
     });
@@ -97,7 +113,7 @@ export class App {
     }
 
     if (this.branding.backgroundUrl === '' || !this.branding.backgroundUrl) {
-      root.style.setProperty('--app-bg-url', 'url("/background_image.png")');
+      root.style.setProperty('--app-bg-url', 'url("/background.png")');
       root.style.setProperty('--hero-gradient', 'linear-gradient(rgba(5, 63, 112, 0.65), rgba(5, 63, 112, 0.7))');
     } else if (this.branding.backgroundUrl.toLowerCase() === 'none') {
       root.style.setProperty('--app-bg-url', 'none');
@@ -119,9 +135,11 @@ export class App {
 
     const defaultLogo = '/udsm-logo.png';
     const currentLogo = this.branding.logoUrl ? normalizeBrandAssetUrl(this.branding.logoUrl, defaultLogo) : defaultLogo;
+    const displayedLogo = this.failedBrandLogoUrls.has(currentLogo) ? defaultLogo : currentLogo;
 
     // Skip DOM tree walk if using default UDSM branding to preserve performance
-    if (currentName === targetName && currentShortName === targetShortName && currentLogo === defaultLogo) {
+    const isDefaultShortName = currentShortName === targetShortName || currentShortName === 'Clearance';
+    if (currentName === targetName && isDefaultShortName && currentLogo === defaultLogo) {
       return;
     }
 
@@ -134,7 +152,7 @@ export class App {
         document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
           .forEach(image => {
             const currentUrl = normalizeBrandAssetUrl(image.getAttribute('src'), '');
-            if (currentUrl !== currentLogo) image.setAttribute('src', currentLogo);
+            if (currentUrl !== displayedLogo) image.setAttribute('src', displayedLogo);
           });
       }
 
@@ -169,5 +187,26 @@ export class App {
         this.brandingObserver.observe(document.body, { childList: true, subtree: true });
       }
     }
+  }
+
+  private readonly handleBrandLogoError = (event: Event): void => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || !this.isBrandLogo(image)) return;
+
+    const failedUrl = normalizeBrandAssetUrl(image.getAttribute('src'), '');
+    const defaultLogo = '/udsm-logo.png';
+    if (!failedUrl || failedUrl === defaultLogo) return;
+
+    this.failedBrandLogoUrls.add(failedUrl);
+    document.querySelectorAll<HTMLImageElement>('img[src*="udsm-logo"], img[src*="logo"], img[alt*="Logo"], img[alt*="logo"], img[alt*="Crest"], img[alt*="UDSM"], .brand img, .brand-logo, .header-logo, .nav-logo, .hero-logo')
+      .forEach(candidate => {
+        if (this.isBrandLogo(candidate) && normalizeBrandAssetUrl(candidate.getAttribute('src'), '') === failedUrl) {
+          candidate.setAttribute('src', defaultLogo);
+        }
+      });
+  };
+
+  private isBrandLogo(image: HTMLImageElement): boolean {
+    return image.matches('.brand-logo, .brand-badge, .header-logo, .nav-logo, .hero-logo, [alt*="Logo"], [alt*="logo"], [alt*="Crest"], [alt*="UDSM"]');
   }
 }

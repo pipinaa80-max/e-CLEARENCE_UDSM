@@ -46,6 +46,11 @@ export class ConvocationComponent implements OnInit {
     file: [null as File | null]
   });
 
+  get hasControlNumber(): boolean {
+    const val = this.form.controls.controlNumber.value;
+    return !!val && val.trim().length > 0;
+  }
+
   selectedFileName = '';
   selectedFile: File | null = null;
   message = '';
@@ -62,24 +67,7 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // OFFICER CHECK - Redirect staff to dashboard
-  // =====================================================
-
-  get isOfficer(): boolean {
-    return this.currentUser?.role === 'Convocation';
-  }
-
-  // =====================================================
-  // INIT - Redirect Convocation staff to dashboard
-  // =====================================================
-
   ngOnInit(): void {
-    if (this.isOfficer) {
-      console.log('Convocation staff detected - redirecting to dashboard');
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     this.loadData();
   }
 
@@ -194,11 +182,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   loadData(): void {
-    if (this.isOfficer) {
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     const user = this.currentUser;
     if (user && user.role === 'Student') {
       const requests = this.clearanceService.getStudentRequests(user.id);
@@ -213,11 +196,6 @@ export class ConvocationComponent implements OnInit {
   // =====================================================
 
   refreshData(): void {
-    if (this.isOfficer) {
-      this.router.navigate(['/convocation/dashboard']);
-      return;
-    }
-
     this.loadData();
     this.message = 'Data refreshed successfully.';
 
@@ -273,7 +251,7 @@ export class ConvocationComponent implements OnInit {
   }
 
   // =====================================================
-  // SUBMIT RECEIPT - Student only
+  // SUBMIT WRITTEN CONTROL NUMBER - Student only
   // =====================================================
 
   submit(): void {
@@ -282,43 +260,70 @@ export class ConvocationComponent implements OnInit {
 
     const user = this.currentUser;
     const req = this.studentRequest;
+    const controlNum = this.form.controls.controlNumber.value?.trim();
 
-    if (!user || !req || !this.selectedFile) {
-      this.toastService.warning('File Required', 'Please select a receipt file first.');
+    if (!user || !req) {
+      this.toastService.warning('Request Required', 'No active clearance request found.');
       this.isLoading = false;
       return;
     }
 
-    const receiptData = (this.form.controls.file.value as unknown as string) || 'Demo Receipt File';
+    if (!controlNum) {
+      this.toastService.warning('Control Number Required', 'Please enter your written payment control number.');
+      this.isLoading = false;
+      return;
+    }
+
+    const receiptData = (this.form.controls.file.value as unknown as string) || `Control Number: ${controlNum}`;
 
     const completeLocalSubmission = () => {
-      this.clearanceService.submitConvocationReceipt(req.id, receiptData);
+      this.clearanceService.submitConvocationReceipt(req.id, receiptData, controlNum);
       this.notificationService.createNotification(
         user.id,
-        'Payment receipt submitted',
-        'Your payment receipt has been submitted to Convocation for verification.',
+        'Payment Control Number Submitted',
+        `Your payment control number (${controlNum}) has been submitted. Proceeding to Step 2 clearance.`,
         'success'
       );
-      this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully.');
-      this.message = 'Payment receipt submitted successfully. Redirecting to status...';
+      this.toastService.success('Control Number Submitted', 'Control number submitted! Proceeding to Step 2 (Parallel Offices).');
+      this.message = 'Control number submitted successfully. Proceeding to Step 2...';
       this.isLoading = false;
       this.loadData();
-      setTimeout(() => this.router.navigate(['/clearance/status']), 1200);
+      this.router.navigate(['/clearance/status']);
     };
 
-    this.convocationService.submitReceipt({
-      studentId: user.id,
-      receiptNumber: `RECEIPT-${Date.now().toString().slice(-6)}`,
-      paymentDate: new Date().toISOString().slice(0, 10)
-    }, this.selectedFile).subscribe({
-      next: () => {
-        completeLocalSubmission();
-      },
-      error: (error) => {
-        console.warn('Backend unavailable, proceeding with local receipt registration:', error);
-        completeLocalSubmission();
-      }
-    });
+    if (this.selectedFile) {
+      this.convocationService.submitReceipt({
+        studentId: user.id,
+        controlNumber: controlNum,
+        receiptNumber: `CN-${controlNum}`,
+        paymentDate: new Date().toISOString().slice(0, 10)
+      }, this.selectedFile).subscribe({
+        next: () => {
+          completeLocalSubmission();
+        },
+        error: (error) => {
+          console.warn('Backend unavailable, proceeding with local registration:', error);
+          completeLocalSubmission();
+        }
+      });
+    } else {
+      // Create lightweight blob for control number submission without requiring a physical file
+      const controlFile = new File([`Payment Control Number: ${controlNum}\nStudent: ${user.fullName || user.username}\nDate: ${new Date().toISOString()}`], `Control_Number_${controlNum}.txt`, { type: 'text/plain' });
+      this.convocationService.submitReceipt({
+        studentId: user.id,
+        controlNumber: controlNum,
+        receiptNumber: `CN-${controlNum}`,
+        paymentDate: new Date().toISOString().slice(0, 10)
+      }, controlFile).subscribe({
+        next: () => {
+          completeLocalSubmission();
+        },
+        error: (error) => {
+          console.warn('Backend upload unavailable, proceeding with registered control number:', error);
+          completeLocalSubmission();
+        }
+      });
+    }
   }
 
   // =====================================================

@@ -53,11 +53,19 @@ export class Login implements OnInit {
 
     const saved = this.projectAdminService.getSavedBranding();
     if (saved) {
+      const validLogo = (saved.logoUrl && saved.logoUrl.trim() !== '' && saved.logoUrl.toLowerCase() !== 'none') ? saved.logoUrl : '/udsm-logo.png';
       this.branding = {
         universityName: (!saved.universityName || saved.universityName.toLowerCase() === 'udsm') ? 'University of Dar es Salaam' : saved.universityName,
         shortName: (!saved.shortName || saved.shortName.toLowerCase() === 'udsm') ? 'University of Dar es Salaam' : saved.shortName,
-        logoUrl: saved.logoUrl || this.branding.logoUrl
+        logoUrl: validLogo
       };
+    }
+  }
+
+  onLogoError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = '/udsm-logo.png';
     }
   }
 
@@ -104,7 +112,6 @@ export class Login implements OnInit {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
-      Convocation: '/convocation/dashboard',
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',
@@ -114,7 +121,6 @@ export class Login implements OnInit {
       'Smart Card': '/dashboard/smart-card',
       Department: '/department/dashboard',
       Finance: '/dashboard/finance',
-      ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',

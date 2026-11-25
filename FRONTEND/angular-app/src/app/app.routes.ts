@@ -6,7 +6,6 @@ import { Register } from './auth/register/register';
 import { StudentDashboard } from './dashboard/student/student';
 import { LibraryDashboard } from './dashboard/library/library';
 import { FinanceDashboard } from './dashboard/finance/finance';
-import { IctDashboard } from './dashboard/ict/ict';
 import { AcademicDashboard } from './dashboard/academic/academic';
 import { AdminDashboard } from './dashboard/admin/admin';
 import { ClearanceRequestComponent } from './clearance/request/request';
@@ -14,7 +13,9 @@ import { ClearanceStatusComponent } from './clearance/status/status';
 import { ClearanceConfirmationComponent } from './clearance/confirmation/confirmation';
 import { ClearanceHistoryComponent } from './clearance/history/history';
 import { ClearanceReportComponent } from './clearance/report/report';
+import { CertificateVerifyComponent } from './clearance/verify/verify';
 import { DocumentsListComponent } from './documents/documents-list/documents-list';
+import { DocumentUploadComponent } from './documents/upload/upload';
 import { NotificationListComponent } from './notifications/notifications';
 import { ProfileComponent } from './profile/profile';
 import { Landing } from './landing/landing';
@@ -33,7 +34,6 @@ import { SmartCardComponent } from './dashboard/smart_card/smart_card';
 import { PrincipalComponent } from './dashboard/principal/principal';
 import { WorkshopComponent } from './dashboard/workshop/workshop';
 import { LaboratoryComponent } from './dashboard/laboratory/laboratory';
-import { ConvocationDashboardComponent } from './dashboard/convocation-dashboard/convocation-dashboard.component';
 import { DepartmentReviewComponent } from './dashboard/department-review/department-review.component';
 import { DepartmentOfficerComponent } from "./dashboard/Department-officer/department-officer.component";
 import { LecturerDashboard } from './dashboard/lecturer/lecturer';
@@ -58,6 +58,7 @@ export const routes: Routes = [
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password', component: ResetPassword },
   { path: 'verify-email', component: VerifyEmail },
+  { path: 'verify/:code', component: CertificateVerifyComponent },
 
   // Student Dashboard
   {
@@ -81,11 +82,6 @@ export const routes: Routes = [
     path: 'dashboard/principal',
     component: PrincipalComponent,
     canActivate: [authGuard, roleGuard(['Principal'])]
-  },
-  {
-    path: 'dashboard/ict',
-    component: IctDashboard,
-    canActivate: [authGuard, roleGuard(['ICT'])]
   },
   {
     path: 'dashboard/academic',
@@ -178,11 +174,12 @@ export const routes: Routes = [
 
   // Documents & Notifications
   { path: 'documents', component: DocumentsListComponent, canActivate: [authGuard] },
+  { path: 'documents/upload', component: DocumentUploadComponent, canActivate: [authGuard] },
   { path: 'notifications', component: NotificationListComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
   // Clearance Approval Offices
-  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Convocation', 'Student'])] },
+  { path: 'convocation', component: ConvocationComponent, canActivate: [authGuard, roleGuard(['Student'])] },
   { path: 'games_coach', component: GamesCoachComponent, canActivate: [authGuard, roleGuard(['Games Coach'])] },
   { path: 'hall_warden', component: HallWardenComponent, canActivate: [authGuard, roleGuard(['Hall Warden'])] },
   { path: 'usab', component: UsabComponent, canActivate: [authGuard, roleGuard(['USAB'])] },
@@ -196,7 +193,7 @@ export const routes: Routes = [
   { path: 'dashboard/department', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
   { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
 
-  // Convocation Staff Routes
-  { path: 'convocation/dashboard', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] },
-  { path: 'convocation/requests', component: ConvocationDashboardComponent, canActivate: [authGuard, roleGuard(['Convocation'])] }
+  // Legacy Convocation staff URLs now open the Finance dashboard.
+  { path: 'convocation/dashboard', redirectTo: 'dashboard/finance', pathMatch: 'full' },
+  { path: 'convocation/requests', redirectTo: 'dashboard/finance', pathMatch: 'full' }
 ];

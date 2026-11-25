@@ -1,6 +1,6 @@
 // src/app/dashboard/daruso/daruso.ts
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -135,12 +135,16 @@ const DEFAULT_GUILDS: GuildChapterItem[] = [
   templateUrl: './daruso.html',
   styleUrl: './daruso.css'
 })
-export class DarusoComponent {
+export class DarusoComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('DARUSO').subscribe();
+  }
 
   readonly Math = Math;
   sidebarOpen = false;
@@ -150,6 +154,7 @@ export class DarusoComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
   readonly processingRequests = new Set<string>();
 
   searchTerm = '';
@@ -339,6 +344,7 @@ export class DarusoComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+		this.messageState = 'success';
   }
 
 	async approve(request: ClearanceRequest): Promise<void> {
@@ -353,6 +359,7 @@ export class DarusoComponent {
 		try {
 			const approved = await this.clearanceService.approveRequest(request.id, 'DARUSO', staff.fullName);
 			if (!approved) {
+				this.messageState = 'error';
 				this.message = 'This request could not be approved. It may have already been reviewed.';
 				return;
 			}
@@ -362,10 +369,12 @@ export class DarusoComponent {
 				'DARUSO has approved your clearance request.',
 				'success'
 			);
+			this.messageState = 'success';
 			this.message = 'Student clearance was approved successfully.';
 			this.keepCurrentPageInRange();
 		} catch (error) {
 			console.error('Error approving DARUSO clearance request:', error);
+			this.messageState = 'error';
 			this.message = 'The request could not be approved. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);
@@ -407,6 +416,7 @@ export class DarusoComponent {
 				this.rejectionComment
 			);
 			if (!rejected) {
+				this.messageState = 'error';
 				this.message = 'This request could not be rejected. It may have already been reviewed.';
 				return;
 			}
@@ -416,12 +426,14 @@ export class DarusoComponent {
 				this.rejectionComment,
 				'warning'
 			);
+			this.messageState = 'success';
 			this.message = 'The student has been notified about the required action.';
 			this.selectedRequest = null;
 			this.rejectionComment = '';
 			this.keepCurrentPageInRange();
 		} catch (error) {
 			console.error('Error rejecting DARUSO clearance request:', error);
+			this.messageState = 'error';
 			this.message = 'The request could not be rejected. Please try again.';
 		} finally {
 			this.processingRequests.delete(request.id);
@@ -434,6 +446,17 @@ export class DarusoComponent {
 
   closeSidebar(): void {
     this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
   }
 
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {

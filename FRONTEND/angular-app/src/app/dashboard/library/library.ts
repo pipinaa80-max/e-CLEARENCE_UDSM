@@ -1,6 +1,6 @@
 // src/app/dashboard/library/library.ts
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -112,12 +112,16 @@ const DEFAULT_SECTIONS: LibrarySectionItem[] = [
   templateUrl: './library.html',
   styleUrl: './library.css'
 })
-export class LibraryDashboard {
+export class LibraryDashboard implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Library').subscribe();
+  }
 
   readonly Math = Math;
   sidebarOpen = false;
@@ -128,6 +132,7 @@ export class LibraryDashboard {
   approveConfirmRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -328,6 +333,21 @@ export class LibraryDashboard {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
     return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
   }
@@ -507,14 +527,19 @@ export class LibraryDashboard {
       request.id,
       'Library',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Library approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Library clearance approved',
       'The Library has verified your book returns and approved your clearance.',
       'success'
     );
-    this.message = `✅ Library clearance approved successfully for ${studentName}.`;
+    this.messageState = 'success';
+    this.message = `Library clearance approved successfully for ${studentName}.`;
     this.toastService.success('Approved', `Library clearance approved for ${studentName}.`);
 
     setTimeout(() => { this.message = ''; }, 5000);
@@ -524,6 +549,7 @@ export class LibraryDashboard {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -540,7 +566,11 @@ export class LibraryDashboard {
       'Library',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Library return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Library action required',
@@ -548,7 +578,8 @@ export class LibraryDashboard {
       'warning'
     );
 
-    this.message = `✅ Student ${studentName} has been notified regarding: "${this.rejectionComment.trim()}".`;
+    this.messageState = 'success';
+    this.message = `Student ${studentName} has been notified regarding: "${this.rejectionComment.trim()}".`;
     this.toastService.warning('Returned', `Library request returned for ${studentName}.`);
     this.selectedRequest = null;
     this.rejectionComment = '';

@@ -78,43 +78,27 @@
         <div class="fields-grid">
           <label class="field">
             <span>Full Name</span>
-            <input type="text" formControlName="studentName" readonly />
+            <input type="text" formControlName="studentName" class="readonly-field" readonly aria-readonly="true" title="Name is imported from your student record and cannot be changed here." />
           </label>
 
           <label class="field">
             <span>Registration Number</span>
-            <input type="text" formControlName="registrationNumber" readonly />
+            <input type="text" formControlName="registrationNumber" class="readonly-field" readonly aria-readonly="true" title="Registration number is imported from your student record and cannot be changed here." />
           </label>
 
           <label class="field">
             <span>College</span>
-            <input type="text" formControlName="college" readonly />
+            <input type="text" formControlName="college" class="readonly-field" readonly aria-readonly="true" title="College is imported from your student record and cannot be changed here." />
           </label>
 
           <label class="field">
             <span>Department</span>
-            <select formControlName="department" (change)="onDepartmentChange()" [disabled]="!requestForm.controls.college.value">
-              <option value="" disabled>Select Department</option>
-              <option *ngIf="requestForm.controls.department.value && !departments.includes(requestForm.controls.department.value)" [value]="requestForm.controls.department.value">
-                {{ requestForm.controls.department.value }}
-              </option>
-              <option *ngFor="let department of departments" [value]="department">
-                {{ department }}
-              </option>
-            </select>
+            <input type="text" formControlName="department" class="readonly-field" readonly aria-readonly="true" title="Department is imported from your student record and cannot be changed here." />
           </label>
 
           <label class="field full-width">
             <span>Programme</span>
-            <select formControlName="programme" [disabled]="!requestForm.controls.department.value && !requestForm.controls.programme.value">
-              <option value="" disabled>Select Programme</option>
-              <option *ngIf="requestForm.controls.programme.value && !programmeOptions.includes(requestForm.controls.programme.value)" [value]="requestForm.controls.programme.value">
-                {{ requestForm.controls.programme.value }}
-              </option>
-              <option *ngFor="let programme of programmeOptions" [value]="programme">
-                {{ programme }}
-              </option>
-            </select>
+            <input type="text" formControlName="programme" class="readonly-field" readonly aria-readonly="true" title="Programme is imported from your student record and cannot be changed here." />
           </label>
         </div>
       </section>
@@ -221,7 +205,7 @@
           <label class="field full-width">
             <span>Residence Evidence Document</span>
             <input type="file" accept="image/*,.pdf" (change)="onResidenceEvidenceSelected($event)" />
-            <small class="field-hint" *ngIf="!requestForm.controls.residenceEvidence.value">Upload a document or photo showing proof of your non-hostel residence (JPG, PNG, PDF).</small>
+            <small class="field-hint residence-evidence-hint" *ngIf="!requestForm.controls.residenceEvidence.value">Upload a document or photo showing proof of your non-hostel residence (JPG, PNG, PDF).</small>
             <small class="field-hint" *ngIf="requestForm.controls.residenceEvidence.value">✓ Document uploaded successfully</small>
           </label>
         </div>
@@ -236,31 +220,6 @@
               </option>
             </select>
           </label>
-        </div>
-      </section>
-
-      <!-- STEP 04 — PASSPORT PHOTO -->
-      <section class="form-section">
-        <div class="section-heading">
-          <span>Step 04</span>
-          <h2>Passport Photo</h2>
-          <p>Upload your passport photo in JPG format. Any size is accepted.</p>
-        </div>
-
-        <div class="photo-upload">
-          <!-- PREVIEW -->
-          <div class="photo-preview" *ngIf="photoPreview">
-            <img [src]="photoPreview" alt="Passport photo preview" />
-          </div>
-
-          <!-- UPLOAD -->
-          <div class="photo-input">
-            <label for="passport-photo">
-              Select Passport Photo
-            </label>
-            <input id="passport-photo" type="file" accept=".jpg,.jpeg" (change)="onPhotoSelected($event)" />
-            <small>JPG format only. Any size accepted.</small>
-          </div>
         </div>
       </section>
 

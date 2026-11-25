@@ -28,8 +28,8 @@ export class TranscriptPaymentComponent implements OnDestroy {
   message = '';
   isSubmitting = false;
   isPreparingAdditionalCopy = false;
-  transcriptCount = 1;
-  selectedFile: File | null = null;
+  enteredControlNumber = '';
+  statusVerified = false;
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
@@ -47,19 +47,20 @@ export class TranscriptPaymentComponent implements OnDestroy {
   get isTranscriptPaid(): boolean {
     const user = this.authService.getCurrentUser();
     if (!user) return false;
-    const requests = this.paymentService.getStudentRequests(user.id);
+    const requests = this.paymentService.getStudentRequests(user.id).filter(request => request.serverManaged);
     return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
   get hasApproval(): boolean {
     const user = this.authService.getCurrentUser();
-    return !!user && localStorage.getItem(`udsm-transcript-decision-${user.id}`) === 'Approved';
+    return this.statusVerified && !!user && this.paymentService.getStudentRequests(user.id)
+      .some(request => request.serverManaged && request.status === 'Paid');
   }
 
   get isFirstRequest(): boolean {
     const user = this.authService.getCurrentUser();
     if (!user) return false;
-    const requests = this.paymentService.getStudentRequests(user.id);
+    const requests = this.paymentService.getStudentRequests(user.id).filter(request => request.serverManaged);
 
     if (this.request) {
       return this.request.attemptNumber === 1;
@@ -73,10 +74,7 @@ export class TranscriptPaymentComponent implements OnDestroy {
   }
 
   get nextRequestAmount(): number {
-    if (this.isFirstRequest) {
-      return 15000;
-    }
-    return this.transcriptCount * 5000;
+    return 15000;
   }
 
   ngOnInit(): void {
@@ -86,7 +84,7 @@ export class TranscriptPaymentComponent implements OnDestroy {
       return;
     }
 
-    const lastRequest = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
+    const lastRequest = this.paymentService.getStudentRequests(user.id).filter(item => item.serverManaged).at(-1) ?? null;
     const startAdditionalCopy = this.route.snapshot.queryParamMap.get('additional') === 'true';
 
     if (startAdditionalCopy && lastRequest?.status === 'Paid') {
@@ -96,28 +94,17 @@ export class TranscriptPaymentComponent implements OnDestroy {
       this.request = lastRequest;
     }
 
+    void this.paymentService.refreshStudentControlNumberRequests().then(() => {
+      const latest = this.paymentService.getStudentRequests(user.id).filter(item => item.serverManaged).at(-1) ?? null;
+      if (latest) this.request = latest;
+      this.statusVerified = true;
+      this.refreshStatusWhilePending();
+    }).catch(() => {
+      this.statusVerified = false;
+      this.toastService.error('Transcript Status Unavailable', 'Could not verify your transcript payment status. Refresh the page and try again.');
+    });
+
     this.refreshStatusWhilePending();
-  }
-
-  constructor() {
-    if (!this.hasApproval) {
-      this.router.navigate(['/transcript']);
-    }
-  }
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] || null;
-    this.message = '';
-
-    if (file && file.size > 2 * 1024 * 1024) {
-      this.toastService.warning('File Too Large', 'This file is too large for the system to process. Please upload a smaller photo or compressed document (Max 2MB).');
-      this.selectedFile = null;
-      input.value = '';
-      return;
-    }
-
-    this.selectedFile = file;
   }
 
   private refreshStatusWhilePending(): void {
@@ -126,16 +113,13 @@ export class TranscriptPaymentComponent implements OnDestroy {
     this.statusRefreshTimer = setInterval(() => {
       const user = this.authService.getCurrentUser();
       if (!user || !this.request) return;
-
-      const latestRequest = this.paymentService.getStudentRequests(user.id)
-        .find(item => item.id === this.request?.id);
-      if (latestRequest) {
-        this.request = latestRequest;
-      }
-
-      if (this.request?.status !== 'Receipt Submitted') {
-        this.clearStatusRefreshTimer();
-      }
+      void this.paymentService.refreshStudentControlNumberRequests().then(() => {
+        const latestRequest = this.paymentService.getStudentRequests(user.id)
+          .filter(item => item.serverManaged)
+          .find(item => item.paymentBatchId === this.request?.paymentBatchId);
+        if (latestRequest) this.request = latestRequest;
+        if (this.request?.status !== 'Receipt Submitted') this.clearStatusRefreshTimer();
+      }).catch(() => {});
     }, 5000);
   }
 
@@ -149,105 +133,33 @@ export class TranscriptPaymentComponent implements OnDestroy {
     this.clearStatusRefreshTimer();
   }
 
-  submitReceipt(): void {
+  async submitControlNumber(): Promise<void> {
     const user = this.authService.getCurrentUser();
-    if (!user || !this.selectedFile) return;
+    const controlNumber = this.enteredControlNumber.trim();
+    if (!user || !controlNumber) return;
 
     this.isSubmitting = true;
     this.message = '';
-
-    const reader = new FileReader();
-
-    reader.onload = async () => {
-      try {
-        const rawBase64 = reader.result as string;
-        const compressedBase64 = await this.compressImage(rawBase64);
-
-        if (!this.request) {
-          const savedDetails = JSON.parse(
-            localStorage.getItem(`udsm-transcript-request-${user.id}`) || '{}'
-          );
-
-          this.request = this.paymentService.createRequest({
-            studentId: user.id,
-            studentName: `${savedDetails.surname || ''} ${savedDetails.otherNames || ''}`.trim() || user.fullName,
-            registrationNumber: savedDetails.registrationNumber || user.registrationNumber,
-            award: savedDetails.award || 'Transcript Request',
-            graduationYear: savedDetails.graduationYear || new Date().getFullYear().toString(),
-            transcriptCount: this.transcriptCount
-          });
-        }
-
-        const submitted = this.paymentService.submitReceipt(
-          this.request.id,
-          this.selectedFile!.name,
-          compressedBase64
-        );
-
-        if (submitted) {
-          this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully to Finance for verification.');
-          this.request = this.paymentService.getStudentRequests(user.id).at(-1) ?? null;
-          this.refreshStatusWhilePending();
-          setTimeout(() => {
-            this.router.navigate(['/transcript/process']);
-          }, 400);
-        } else {
-          this.toastService.error('Submission Failed', 'Could not submit payment receipt. Please try again.');
-        }
-      } catch (error) {
-        console.error('Submission failed:', error);
-        this.toastService.error('Submission Failed', 'The receipt file is too large. Please use a smaller photo or screenshot.');
-      } finally {
-        this.selectedFile = null;
-        this.isSubmitting = false;
+    try {
+      const submittedRequests = await this.paymentService.submitControlNumberBatch(controlNumber);
+      this.request = submittedRequests.at(-1) ?? null;
+      if (this.request) {
+        localStorage.removeItem(`udsm-transcript-documents-submitted-${this.request.studentId}`);
+        localStorage.removeItem(`udsm-transcript-acquired-${this.request.studentId}`);
+        this.toastService.success('Control Number Submitted', 'Your payment control number was submitted to Finance for verification.');
+        this.enteredControlNumber = '';
+        this.request = this.paymentService.getStudentRequests(user.id).filter(item => item.serverManaged).at(-1) ?? null;
+        this.refreshStatusWhilePending();
+        setTimeout(() => this.router.navigate(['/transcript/process']), 400);
+      } else {
+        this.toastService.error('Submission Failed', 'Could not submit the control number. Please try again.');
       }
-    };
-
-    reader.onerror = () => {
-      this.toastService.error('Read Error', 'Unable to read the receipt file.');
-      this.selectedFile = null;
+    } catch (error) {
+      console.error('Submission failed:', error);
+      this.toastService.error('Submission Failed', 'Could not submit the control number. Please try again.');
+    } finally {
       this.isSubmitting = false;
-    };
-
-    reader.readAsDataURL(this.selectedFile);
-  }
-
-  private compressImage(base64Str: string, maxWidth = 800, maxHeight = 800, quality = 0.65): Promise<string> {
-    return new Promise((resolve) => {
-      if (!base64Str || !base64Str.startsWith('data:image')) {
-        resolve(base64Str);
-        return;
-      }
-      const img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth || height > maxHeight) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        } else {
-          resolve(base64Str);
-        }
-      };
-      img.onerror = () => resolve(base64Str);
-    });
+    }
   }
 
   isPrinted(requestId?: string): boolean {

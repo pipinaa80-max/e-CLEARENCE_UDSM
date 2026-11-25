@@ -1,15 +1,28 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="brand">
-      <a routerLink="/">
-        <img src="/udsm-logo.png" alt="Institutional Logo" />
-      </a>
-      <div>
-        <strong>SMART CARD</strong>
-        <small>Clearance Workspace</small>
+  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard/smart-card" (click)="closeSidebar()">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
+        </a>
+        <div class="brand-text">
+          <strong>SMART CARD</strong>
+          <small>Clearance Workspace</small>
+        </div>
       </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <nav>
@@ -17,7 +30,7 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'requests'"
-        (click)="setViewMode('requests')"
+        (click)="setViewMode('requests'); closeSidebar()"
       >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
         <span>Clearance Requests ({{ pendingRequestCount }})</span>
@@ -26,7 +39,7 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'stations'"
-        (click)="setViewMode('stations')"
+        (click)="setViewMode('stations'); closeSidebar()"
       >
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v1h14V4a1 1 0 0 0-1-1H2zm13 4H1v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z"/><path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-1z"/></svg>
         <span>Card Stations ({{ stations.length }})</span>
@@ -45,7 +58,7 @@
     </app-dashboard-header>
 
     <!-- MESSAGE -->
-    <p class="message" *ngIf="message">{{ message }}</p>
+    <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
     <!-- STATIONS DIRECTORY BOARD (Shown in 'stations') -->
     <section class="dashboard-board" id="stations-section" *ngIf="viewMode === 'stations'">

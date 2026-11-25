@@ -1,6 +1,6 @@
 // src/app/dashboard/hall_warden/hall_warden.ts
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -134,12 +134,16 @@ const DEFAULT_HALLS: HallDirectoryItem[] = [
   templateUrl: './hall_warden.html',
   styleUrl: './hall_warden.css'
 })
-export class HallWardenComponent {
+export class HallWardenComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Hall Warden').subscribe();
+  }
 
   readonly Math = Math;
   sidebarOpen = false;
@@ -149,6 +153,7 @@ export class HallWardenComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -349,6 +354,21 @@ export class HallWardenComponent {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
     return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
   }
@@ -523,7 +543,11 @@ export class HallWardenComponent {
       request.id,
       'Hall Warden',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Hall Warden approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Hall Warden clearance approved',
@@ -531,6 +555,7 @@ export class HallWardenComponent {
       'success'
     );
     this.toastService.success('Approved', `Hall Warden clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Hall Warden clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -539,6 +564,7 @@ export class HallWardenComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -555,7 +581,11 @@ export class HallWardenComponent {
       'Hall Warden',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Hall Warden return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Hall Warden action required',
@@ -564,6 +594,7 @@ export class HallWardenComponent {
     );
 
     this.toastService.warning('Returned', `Hall Warden clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified regarding room inspection or key surrender.';
     this.selectedRequest = null;
     this.rejectionComment = '';

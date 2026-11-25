@@ -4,15 +4,26 @@
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar" [class.open]="sidebarOpen">
-    <div class="brand">
-      <a routerLink="/">
-        <img src="/udsm-logo.png" alt="Institutional Logo" />
-      </a>
-      <div>
-        <strong>PRINCIPAL</strong>
-        <small>{{ collegeName }}</small>
+  <aside class="sidebar" [class.open]="sidebarOpen" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard/principal" (click)="closeSidebar()">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
+        </a>
+        <div class="brand-text">
+          <strong>PRINCIPAL</strong>
+          <small>{{ collegeName }}</small>
+        </div>
       </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <nav>
@@ -32,7 +43,7 @@
   <!-- MAIN CONTENT -->
   <main class="content">
     <app-dashboard-header
-      title="Principal dashboard"
+      title="Principal Dashboard"
       subtitle="Collegiate student clearance"
       [user]="currentUser"
       [showToggle]="true"
@@ -95,11 +106,22 @@
         </p>
       </section>
 
+      <div class="bulk-actions-toolbar" *ngIf="!isLoading && selectableRequests.length">
+        <div class="bulk-info">
+          <span class="selection-count" *ngIf="selectedRequestIds.size > 0"><strong>{{ selectedRequestIds.size }}</strong> student(s) selected</span>
+          <span class="eligible-count" *ngIf="selectedRequestIds.size === 0">Select pending students to approve together</span>
+        </div>
+        <button type="button" class="bulk-approve-btn" [disabled]="!selectedRequestIds.size || isProcessingBulk" (click)="approveSelected()">
+          {{ isProcessingBulk ? 'Approving...' : 'Approve Selected (' + selectedRequestIds.size + ')' }}
+        </button>
+      </div>
+
       <!-- COMPACT REQUEST TABLE -->
       <section class="compact-table-wrap" *ngIf="!isLoading && filteredRequests.length">
         <table class="compact-request-table">
           <thead>
             <tr>
+              <th class="select-col"><input type="checkbox" class="header-checkbox" aria-label="Select all pending requests on this page" [checked]="isAllSelected" [disabled]="!selectableRequests.length || isProcessingBulk" (change)="toggleSelectAll()" /></th>
               <th>Registration Number</th>
               <th>Full Name</th>
               <th>Email</th>
@@ -109,7 +131,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let request of paginatedRequests">
+            <tr *ngFor="let request of paginatedRequests" [class.row-selected]="selectedRequestIds.has(request.id)">
+              <td class="select-col"><input type="checkbox" class="row-checkbox" [attr.aria-label]="'Select ' + getStudentName(request)" [checked]="selectedRequestIds.has(request.id)" [disabled]="!isSelectable(request) || isProcessingBulk" (change)="toggleSelect(request)" /></td>
               <td>{{ getStudentRegNumber(request) }}</td>
               <td class="compact-name">{{ getStudentListName(request) }}</td>
               <td>{{ getStudentEmail(request) }}</td>
@@ -124,6 +147,7 @@
                   </ng-container>
                   <ng-template #reviewedStatus>
                     <span class="compact-status">{{ getRequestOfficeStatus(request, 'Principal') }}</span>
+                    <button type="button" class="withdraw-button" (click)="withdrawDecision(request)">Withdraw</button>
                   </ng-template>
                 </div>
               </td>

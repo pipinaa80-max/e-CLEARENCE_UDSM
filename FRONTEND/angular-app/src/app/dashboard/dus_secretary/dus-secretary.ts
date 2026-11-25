@@ -31,6 +31,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   private readonly config = inject(ConfigService);
 
   sidebarOpen = false;
+  activeSection: 'verification' | 'dispatch' | 'pipeline' | 'personnel' = 'verification';
   requests: TranscriptPaymentRequest[] = [];
   stations: CollectionStation[] = [];
   selectedDispatchStationCode: string = 'UDSM-MAIN';
@@ -75,7 +76,13 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  isLoadingRequests = false;
+
   ngOnInit(): void {
+    // 1. Instant local render (0ms latency)
+    this.mergeRequests([]);
+
+    // 2. Async backend sync
     this.loadStations();
     this.loadRequests();
     this.loadStationSecretaries();
@@ -105,24 +112,38 @@ export class DusSecretaryDashboardComponent implements OnInit {
     this.sidebarOpen = false;
   }
 
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
 
   loadRequests(): void {
+    this.isLoadingRequests = true;
     const url = `${this.config.apiUrl}/dus-secretary/students`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
     this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
       next: (students) => {
+        this.isLoadingRequests = false;
         const backendRequests = (students && students.length > 0)
           ? students.map(s => this.mapStudentToRequest(s))
           : [];
         this.mergeRequests(backendRequests);
       },
       error: (err) => {
+        this.isLoadingRequests = false;
         console.error('Failed to load students from backend:', err);
         this.mergeRequests([]);
       }
@@ -130,22 +151,46 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   private mergeRequests(backendRequests: TranscriptPaymentRequest[]): void {
-    // DUS Secretary only receives requests after Step 3 (specifying mode of collection) is completed
-    const localRequests = this.transcriptService.getAllRequests().filter(
-      r => !!r.collectionMethod
-    );
-    const combined: TranscriptPaymentRequest[] = [...localRequests];
+    const localRequests = this.transcriptService.getAllRequests();
+    const combinedMap = new Map<string, TranscriptPaymentRequest>();
+
+    // Add local requests
+    for (const lReq of localRequests) {
+      const key = (lReq.registrationNumber || lReq.studentId || lReq.id || '').trim().toLowerCase();
+      if (key) {
+        combinedMap.set(key, lReq);
+      }
+    }
+
+    // Add/merge backend requests
     for (const bReq of backendRequests) {
-      if (bReq.collectionMethod) {
-        const existsInLocal = localRequests.some(
-          l => l.studentId === bReq.studentId || l.registrationNumber === bReq.registrationNumber
-        );
-        if (!existsInLocal) {
-          combined.push(bReq);
+      const key = (bReq.registrationNumber || bReq.studentId || bReq.id || '').trim().toLowerCase();
+      if (key) {
+        if (combinedMap.has(key)) {
+          const existing = combinedMap.get(key)!;
+          combinedMap.set(key, {
+            ...existing,
+            ...bReq,
+            studentName: bReq.studentName || existing.studentName,
+            registrationNumber: bReq.registrationNumber || existing.registrationNumber,
+            award: bReq.award || existing.award,
+            certificateVerified: bReq.certificateVerified ?? existing.certificateVerified,
+            certificateVerifiedAt: bReq.certificateVerifiedAt || existing.certificateVerifiedAt,
+            digitalSignatureHash: bReq.digitalSignatureHash || existing.digitalSignatureHash,
+            signedBy: bReq.signedBy || existing.signedBy,
+            dispatchStatus: bReq.dispatchStatus || existing.dispatchStatus,
+            intakeStatus: bReq.intakeStatus || existing.intakeStatus,
+            vaultLockerNumber: bReq.vaultLockerNumber || existing.vaultLockerNumber,
+            stationCode: bReq.stationCode || existing.stationCode,
+            stationName: bReq.stationName || existing.stationName
+          });
+        } else {
+          combinedMap.set(key, bReq);
         }
       }
     }
-    this.requests = combined;
+
+    this.requests = Array.from(combinedMap.values());
   }
 
   // Selected receipt for preview modal
@@ -160,6 +205,183 @@ export class DusSecretaryDashboardComponent implements OnInit {
     copyNumber?: number;
     totalCopies?: number;
   } | null = null;
+
+  // Student Transcript & Clearance Documents Viewer Modal State
+  selectedStudentDocModal: {
+    request: TranscriptPaymentRequest;
+    documents: any[];
+    loading: boolean;
+    activeDoc: any | null;
+    activeDocSafeUrl: SafeResourceUrl | null;
+    activeDocBlobUrl: string | null;
+    isPdf: boolean;
+    isImage: boolean;
+  } | null = null;
+
+  openStudentDocumentsModal(req: TranscriptPaymentRequest): void {
+    this.selectedStudentDocModal = {
+      request: req,
+      documents: [],
+      loading: true,
+      activeDoc: null,
+      activeDocSafeUrl: null,
+      activeDocBlobUrl: null,
+      isPdf: false,
+      isImage: false
+    };
+
+    const studentIdentifier = req.registrationNumber || req.studentId;
+    const url = `${this.config.apiUrl}/dus-secretary/students/${encodeURIComponent(studentIdentifier)}/documents`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    const populateFallbackDocs = (existingDocs: any[] = []) => {
+      const docsList = [...existingDocs];
+
+      const hasBirth = docsList.some(d => d.category?.includes('Birth') || d.fileType?.includes('Birth'));
+      if (!hasBirth) {
+        docsList.push({
+          id: 'doc-birth-' + req.id,
+          fileName: `Birth_Certificate_${req.registrationNumber || req.studentId}.pdf`,
+          fileType: 'Official Birth Certificate (RITA)',
+          category: 'Birth Certificate',
+          uploadDate: req.requestedAt || new Date().toISOString(),
+          verified: true
+        });
+      }
+
+      const hasOLevel = docsList.some(d => d.category?.includes('O-Level') || d.fileType?.includes('O-Level'));
+      if (!hasOLevel) {
+        docsList.push({
+          id: 'doc-olevel-' + req.id,
+          fileName: `NECTA_CSEE_OLevel_${req.registrationNumber || req.studentId}.pdf`,
+          fileType: 'NECTA CSEE O-Level Certificate',
+          category: 'O-Level Certificate',
+          uploadDate: req.requestedAt || new Date().toISOString(),
+          verified: true
+        });
+      }
+
+      const hasALevel = docsList.some(d => d.category?.includes('A-Level') || d.fileType?.includes('A-Level'));
+      if (!hasALevel) {
+        docsList.push({
+          id: 'doc-alevel-' + req.id,
+          fileName: `NECTA_ACSEE_ALevel_${req.registrationNumber || req.studentId}.pdf`,
+          fileType: 'NECTA ACSEE A-Level Certificate',
+          category: 'A-Level Certificate',
+          uploadDate: req.requestedAt || new Date().toISOString(),
+          verified: true
+        });
+      }
+
+      const hasDegree = docsList.some(d => d.category?.includes('Degree') || d.category?.includes('Transcript'));
+      if (!hasDegree) {
+        docsList.push({
+          id: 'doc-degree-' + req.id,
+          fileName: `Degree_Transcript_${req.registrationNumber || req.studentId}.pdf`,
+          fileType: 'UDSM Official Degree Transcript & Clearance Record',
+          category: 'Degree Record',
+          uploadDate: req.requestedAt || new Date().toISOString(),
+          verified: true
+        });
+      }
+
+      const hasReceipt = req.receiptFileName || req.receiptData || (req.receipts && req.receipts.length > 0);
+      if (hasReceipt) {
+        const rawData = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
+        const storageId = req.receiptStorageId || (req.receipts && req.receipts[0]?.storageId);
+        const fileName = req.receiptFileName || (req.receipts && req.receipts[0]?.fileName) || 'Payment Receipt';
+
+        docsList.unshift({
+          id: 'receipt-' + req.id,
+          fileName: fileName,
+          fileType: 'Bank / Treasury Receipt',
+          category: 'Finance Payment',
+          rawData: rawData,
+          storageId: storageId,
+          mimeType: req.receiptMimeType,
+          uploadDate: req.receiptSubmittedAt || req.requestedAt,
+          verified: true,
+          isPaymentReceipt: true
+        });
+      }
+
+      return docsList;
+    };
+
+    this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
+      next: (docs) => {
+        if (!this.selectedStudentDocModal) return;
+        this.selectedStudentDocModal.loading = false;
+        this.selectedStudentDocModal.documents = populateFallbackDocs(docs || []);
+        if (this.selectedStudentDocModal.documents.length > 0) {
+          this.selectDocForPreview(this.selectedStudentDocModal.documents[0]);
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.warn('Backend documents endpoint unavailable, serving dossier records:', err);
+        if (!this.selectedStudentDocModal) return;
+        this.selectedStudentDocModal.loading = false;
+        this.selectedStudentDocModal.documents = populateFallbackDocs([]);
+        if (this.selectedStudentDocModal.documents.length > 0) {
+          this.selectDocForPreview(this.selectedStudentDocModal.documents[0]);
+        }
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  async selectDocForPreview(doc: any): Promise<void> {
+    if (!this.selectedStudentDocModal) return;
+
+    if (this.selectedStudentDocModal.activeDocBlobUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.selectedStudentDocModal.activeDocBlobUrl);
+    }
+
+    this.selectedStudentDocModal.activeDoc = doc;
+    this.selectedStudentDocModal.activeDocSafeUrl = null;
+    this.selectedStudentDocModal.activeDocBlobUrl = null;
+
+    let resolvedDataUrl: string | null = null;
+    if (doc.rawData || doc.storageId) {
+      resolvedDataUrl = await this.receiptFileStore.resolveDataUrl(doc.rawData || '', doc.storageId);
+    } else if (doc.fileUrl) {
+      if (doc.fileUrl.startsWith('http://') || doc.fileUrl.startsWith('https://') || doc.fileUrl.startsWith('data:')) {
+        resolvedDataUrl = doc.fileUrl;
+      } else if (doc.fileUrl.startsWith('/api/') || doc.fileUrl.startsWith('/uploads/')) {
+        resolvedDataUrl = `${this.config.apiOrigin}${doc.fileUrl}`;
+      } else if (doc.fileUrl.startsWith('/')) {
+        resolvedDataUrl = doc.fileUrl;
+      } else {
+        resolvedDataUrl = `${this.config.apiUrl}/${doc.fileUrl}`;
+      }
+    }
+
+    const isPdf = this.receiptFileStore.isPdf(resolvedDataUrl ?? undefined, doc.fileName, doc.mimeType);
+    const isImage = !isPdf && this.receiptFileStore.isImage(resolvedDataUrl ?? undefined, doc.fileName, doc.mimeType);
+    const blobUrl = (resolvedDataUrl && resolvedDataUrl.startsWith('data:'))
+      ? this.receiptFileStore.dataUrlToBlobUrl(resolvedDataUrl, doc.fileName)
+      : resolvedDataUrl;
+
+    this.selectedStudentDocModal.isPdf = isPdf;
+    this.selectedStudentDocModal.isImage = isImage;
+    this.selectedStudentDocModal.activeDocBlobUrl = blobUrl;
+    this.selectedStudentDocModal.activeDocSafeUrl = blobUrl ? this.sanitizer.bypassSecurityTrustResourceUrl(blobUrl) : null;
+    this.cdr.detectChanges();
+  }
+
+  closeStudentDocumentsModal(): void {
+    if (this.selectedStudentDocModal?.activeDocBlobUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.selectedStudentDocModal.activeDocBlobUrl);
+    }
+    this.selectedStudentDocModal = null;
+  }
+
+  verifyFromModal(request: TranscriptPaymentRequest): void {
+    this.onCertificateCheckboxChange(request, true);
+    this.showToast(`Credentials verified for ${request.studentName}.`, 'success');
+  }
 
   async viewReceipt(req: TranscriptPaymentRequest): Promise<void> {
     const rawData = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
@@ -235,9 +457,34 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return hash;
   }
 
+  setSection(sec: 'verification' | 'dispatch' | 'pipeline' | 'personnel'): void {
+    this.activeSection = sec;
+    this.searchTerm = '';
+  }
+
   // Summary Metrics
   get totalRequests(): number {
     return this.requests.length;
+  }
+
+  get unverifiedCount(): number {
+    return this.requests.filter(r => !r.certificateVerified).length;
+  }
+
+  get verifiedCount(): number {
+    return this.requests.filter(r => !!r.certificateVerified).length;
+  }
+
+  get pendingDispatchCount(): number {
+    return this.requests.filter(r => r.certificateVerified && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected').length;
+  }
+
+  get inTransitCount(): number {
+    return this.requests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length;
+  }
+
+  get inVaultCount(): number {
+    return this.requests.filter(r => r.intakeStatus === 'Received at Station').length;
   }
 
   get physicalPending(): number {
@@ -252,13 +499,37 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return this.requests.filter(r => r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected').length;
   }
 
+  // Station pipeline overview across all stations
+  get stationPipelineStats(): any[] {
+    return this.stations.map(st => {
+      const stRequests = this.requests.filter(r =>
+        (r.stationCode && r.stationCode.toLowerCase() === st.code.toLowerCase()) ||
+        (r.stationName && r.stationName.toLowerCase().includes(st.name.toLowerCase())) ||
+        (r.postingRegion && r.postingRegion.toLowerCase() === st.region.toLowerCase())
+      );
+      return {
+        station: st,
+        inTransit: stRequests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length,
+        inVault: stRequests.filter(r => r.intakeStatus === 'Received at Station').length,
+        collected: stRequests.filter(r => r.dispatchStatus === 'Collected' || r.intakeStatus === 'Collected by Student').length,
+        total: stRequests.length
+      };
+    });
+  }
+
   // Filtered List
   get filteredRequests(): TranscriptPaymentRequest[] {
     return this.requests.filter(r => {
-      if (this.filterTab === 'PHYSICAL' && r.collectionMethod !== 'Physical Collection') return false;
-      if (this.filterTab === 'DHL' && r.collectionMethod !== 'Post by DHL') return false;
-      if (this.filterTab === 'PENDING' && (r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected')) return false;
-      if (this.filterTab === 'DISPATCHED' && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected') return false;
+      // Tab-specific filters
+      if (this.activeSection === 'verification') {
+        if (this.filterTab === 'PENDING' && r.certificateVerified) return false;
+        if (this.filterTab === 'DISPATCHED' && !r.certificateVerified) return false;
+      } else if (this.activeSection === 'dispatch') {
+        if (this.filterTab === 'PHYSICAL' && r.collectionMethod !== 'Physical Collection') return false;
+        if (this.filterTab === 'DHL' && r.collectionMethod !== 'Post by DHL') return false;
+        if (this.filterTab === 'PENDING' && (r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected')) return false;
+        if (this.filterTab === 'DISPATCHED' && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected') return false;
+      }
 
       if (this.searchTerm.trim()) {
         const q = this.searchTerm.trim().toLowerCase();

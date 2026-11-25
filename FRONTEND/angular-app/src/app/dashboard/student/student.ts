@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Subscription, timer } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { filter, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
@@ -18,6 +18,7 @@ import { StudentDebtService } from '../../core/services/student-debt.service';
 import { StudentDebtFlag } from '../../core/models/student-debt.model';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { environment } from '../../environments/environment';
+import { DocumentService } from '../../core/services/document.service';
 
 type StudentSystemType = 'clearance' | 'transcript';
 
@@ -49,6 +50,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
   private readonly notificationService = inject(NotificationService);
   private readonly studentDebtService = inject(StudentDebtService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly documentService = inject(DocumentService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private pollSubscription?: Subscription;
@@ -61,12 +63,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
   userDropdownOpen = false;
   activeDebtFlag: StudentDebtFlag | null = null;
 
-  // Receipt submission after rejection
+  // Control number resubmission after rejection
   showReceiptModal = false;
-  selectedReceiptFile: File | null = null;
-  receiptPreviewUrl: string | null = null;
-  receiptFileName: string = '';
-  receiptFileSizeText: string = '';
   receiptNote: string = '';
   isSubmittingReceipt = false;
   receiptSuccessMessage = '';
@@ -81,52 +79,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.showReceiptModal = false;
   }
 
-  onReceiptFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      this.receiptErrorMessage = 'Receipt file must be an image (PNG, JPG) or PDF document.';
-      input.value = '';
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      this.receiptErrorMessage = 'Receipt file size must be less than 10MB.';
-      input.value = '';
-      return;
-    }
-
-    this.selectedReceiptFile = file;
-    this.receiptFileName = file.name;
-    const sizeKb = Math.round(file.size / 1024);
-    this.receiptFileSizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
-    this.receiptErrorMessage = '';
-    this.receiptSuccessMessage = '';
-
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        this.receiptPreviewUrl = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-    } else {
-      this.receiptPreviewUrl = null;
-    }
-  }
-
-  removeReceiptFile(): void {
-    this.selectedReceiptFile = null;
-    this.receiptPreviewUrl = null;
-    this.receiptFileName = '';
-    this.receiptFileSizeText = '';
-    this.receiptErrorMessage = '';
-  }
-
   async submitRejectionReceipt(): Promise<void> {
-    if (!this.selectedReceiptFile && !this.receiptNote?.trim()) {
-      this.receiptErrorMessage = 'Please choose a payment receipt file or enter your payment reference / control number.';
+    const controlNumber = this.receiptNote.trim();
+    if (!/^[A-Za-z0-9-]{4,40}$/.test(controlNumber)) {
+      this.receiptErrorMessage = 'Enter a valid payment control number (4 to 40 letters, numbers, or hyphens).';
       return;
     }
 
@@ -140,67 +96,26 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.receiptSuccessMessage = '';
 
     try {
-      let base64Data = '';
-      if (this.selectedReceiptFile) {
-        base64Data = await this.readFileAsDataUrl(this.selectedReceiptFile);
-      }
-      const fileName = this.selectedReceiptFile ? this.receiptFileName : ('Payment_Reference_' + Date.now() + '.txt');
-
       const success = this.clearanceService.submitFinanceReceiptAfterRejection(
         this.currentRequest.id,
-        base64Data,
-        fileName,
-        this.receiptNote
+        '',
+        `Payment_Control_Number_${controlNumber}.txt`,
+        controlNumber
       );
 
       if (success) {
-        this.receiptSuccessMessage = 'Payment receipt submitted successfully! Your clearance request has returned to Finance for review.';
-        this.removeReceiptFile();
+        this.receiptSuccessMessage = 'Payment control number submitted successfully! Your clearance request has returned to Finance for review.';
         this.receiptNote = '';
         this.showReceiptModal = false;
         this.notificationService.getStudentNotifications().subscribe();
       } else {
-        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+        this.receiptErrorMessage = 'Could not submit control number. Please try again.';
       }
     } catch (err: any) {
-      this.receiptErrorMessage = err?.message || 'Error processing receipt file.';
+      this.receiptErrorMessage = err?.message || 'Unable to submit the control number.';
     } finally {
       this.isSubmittingReceipt = false;
     }
-  }
-
-  private readFileAsDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        if (file.type.startsWith('image/')) {
-          const img = new Image();
-          img.onload = () => {
-            const maxDim = 1200;
-            if (img.width > maxDim || img.height > maxDim) {
-              const scale = maxDim / Math.max(img.width, img.height);
-              const canvas = document.createElement('canvas');
-              canvas.width = Math.round(img.width * scale);
-              canvas.height = Math.round(img.height * scale);
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.85));
-                return;
-              }
-            }
-            resolve(result);
-          };
-          img.onerror = () => resolve(result);
-          img.src = result;
-        } else {
-          resolve(result);
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
   }
 
   get hasReportedReceiptUnderReview(): boolean {
@@ -239,13 +154,59 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.userDropdownOpen = false;
   }
 
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      this.notificationService.refreshUnreadCount().subscribe();
+    }
+  }
+
   ngOnInit(): void {
     this.loadProfilePhoto();
     this.loadActiveStudentDebtFlag();
+    this.clearanceService.fetchMyRequest().subscribe();
+    if (this.currentUser?.role === 'Student') {
+      void this.transcriptService.refreshStudentControlNumberRequests().then(() => {
+        this.transcriptStatusLoaded = true;
+        this.refreshTranscriptDocumentsStatus();
+      }).catch(() => {
+        this.transcriptStatusLoadError = 'Transcript payment status could not be verified. Refresh the page or contact support.';
+      });
+    }
     this.notificationService.getStudentNotifications().subscribe();
-    this.pollSubscription = timer(5000, 10000).pipe(
-      switchMap(() => this.notificationService.refreshUnreadCount())
+    this.pollSubscription = timer(5000, 15000).pipe(
+      filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
+      switchMap(() => {
+        this.refreshTranscriptPaymentStatus();
+        return this.notificationService.refreshUnreadCount();
+      })
     ).subscribe();
+  }
+
+  private refreshTranscriptPaymentStatus(): void {
+    const user = this.currentUser;
+    if (!user || !this.transcriptStatusLoaded) return;
+    const hasPendingVerification = this.transcriptService.getStudentRequests(user.id)
+      .some(request => request.serverManaged && request.status === 'Receipt Submitted');
+    if (hasPendingVerification) {
+      void this.transcriptService.refreshStudentControlNumberRequests().then(() => {
+        this.refreshTranscriptDocumentsStatus();
+      }).catch(() => {});
+    } else {
+      this.refreshTranscriptDocumentsStatus();
+    }
+  }
+
+  private refreshTranscriptDocumentsStatus(): void {
+    const request = this.clearanceTranscriptRequest;
+    if (!request?.serverManaged || request.status !== 'Paid' || !request.paymentBatchId) {
+      this.transcriptDocumentsVerified = false;
+      return;
+    }
+    this.documentService.hasRequiredTranscriptDocuments(request.paymentBatchId).subscribe({
+      next: complete => this.transcriptDocumentsVerified = complete,
+      error: () => this.transcriptDocumentsVerified = false
+    });
   }
 
   ngOnDestroy(): void {
@@ -516,7 +477,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const user = this.currentUser;
     if (!user || typeof localStorage === 'undefined') return false;
 
-    const firstRequest = this.transcriptService.getStudentRequests(user.id)
+    const firstRequest = this.transcriptService.getStudentRequests(user.id).filter(request => request.serverManaged)
       .find(request => request.attemptNumber === 1);
     return localStorage.getItem(`udsm-transcript-acquired-${user.id}`) === 'true' ||
       !!firstRequest?.collectionMethod;
@@ -534,7 +495,6 @@ export class StudentDashboard implements OnInit, OnDestroy {
   // IN-DASHBOARD TRANSCRIPT REQUEST & MULTI-RECEIPT MODAL
   // =====================================================
   showTranscriptModal = false;
-  transcriptCopies = 1;
   transcriptCollectionMethod: 'Physical Collection' | 'Post by DHL' = 'Physical Collection';
   transcriptRegion = 'Dar es Salaam';
   transcriptWard = '';
@@ -545,120 +505,30 @@ export class StudentDashboard implements OnInit, OnDestroy {
   isSubmittingTranscript = false;
   transcriptErrorMessage = '';
   transcriptSuccessMessage = '';
-
-  uploadedTranscriptReceipts: {
-    file: File;
-    fileName: string;
-    previewUrl: string | null;
-    sizeText: string;
-    receiptData: string;
-  }[] = [];
+  transcriptStatusLoaded = false;
+  transcriptStatusLoadError = '';
+  transcriptDocumentsVerified = false;
 
   openTranscriptModal(): void {
+    if (!this.transcriptStatusLoaded) {
+      this.transcriptErrorMessage = this.transcriptStatusLoadError || 'Checking your transcript payment status. Please wait.';
+      return;
+    }
     const user = this.currentUser;
     if (user && typeof localStorage !== 'undefined') {
       localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
     }
     this.showTranscriptModal = true;
+    this.transcriptPaymentNote = '';
     this.transcriptErrorMessage = '';
     this.transcriptSuccessMessage = '';
   }
 
   closeTranscriptModal(): void {
     this.showTranscriptModal = false;
+    this.transcriptPaymentNote = '';
     this.transcriptErrorMessage = '';
     this.transcriptSuccessMessage = '';
-  }
-
-  triggerReceiptUpload(input: HTMLInputElement): void {
-    if (this.uploadedTranscriptReceipts.length >= this.transcriptCopies) {
-      this.transcriptErrorMessage = `You selected ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}. Increase the number of copies above if you wish to upload more receipts.`;
-      return;
-    }
-    this.transcriptErrorMessage = '';
-    input.click();
-  }
-
-  incrementCopies(): void {
-    if (this.transcriptCopies < 10) {
-      this.transcriptCopies++;
-      this.transcriptErrorMessage = '';
-    }
-  }
-
-  decrementCopies(): void {
-    if (this.transcriptCopies > 1) {
-      this.transcriptCopies--;
-      if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
-        this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
-      }
-      this.transcriptErrorMessage = '';
-    }
-  }
-
-  onCopiesCountChange(): void {
-    if (!this.transcriptCopies || this.transcriptCopies < 1) {
-      this.transcriptCopies = 1;
-    } else if (this.transcriptCopies > 10) {
-      this.transcriptCopies = 10;
-    }
-    if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
-      this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
-    }
-    this.transcriptErrorMessage = '';
-  }
-
-  getEstimatedTranscriptCost(): number {
-    const copies = Math.max(1, Math.floor(this.transcriptCopies || 1));
-    return 15000 + (copies - 1) * 5000;
-  }
-
-  async onTranscriptReceiptsSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    if (!input.files || input.files.length === 0) return;
-
-    this.transcriptErrorMessage = '';
-    const availableSlots = Math.max(0, this.transcriptCopies - this.uploadedTranscriptReceipts.length);
-    if (availableSlots <= 0) {
-      this.transcriptErrorMessage = `Maximum limit of ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'receipt' : 'receipts'} reached for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
-      input.value = '';
-      return;
-    }
-
-    const allFiles: File[] = Array.from(input.files);
-    if (allFiles.length > availableSlots) {
-      this.transcriptErrorMessage = `You selected ${allFiles.length} files, but only ${availableSlots} more ${availableSlots === 1 ? 'receipt is' : 'receipts are'} allowed for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
-    }
-
-    const files: File[] = allFiles.slice(0, availableSlots);
-    for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        this.transcriptErrorMessage = `File ${file.name} exceeds 10MB limit.`;
-        continue;
-      }
-      const sizeText = file.size > 1024 * 1024
-        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-        : `${Math.round(file.size / 1024)} KB`;
-
-      try {
-        const receiptData = await this.readFileAsDataUrl(file);
-        const isImage = file.type.startsWith('image/');
-        this.uploadedTranscriptReceipts.push({
-          file,
-          fileName: file.name,
-          previewUrl: isImage ? receiptData : null,
-          sizeText,
-          receiptData
-        });
-      } catch {
-        this.transcriptErrorMessage = `Failed to process ${file.name}.`;
-      }
-    }
-    input.value = '';
-  }
-
-  removeTranscriptReceipt(index: number): void {
-    this.uploadedTranscriptReceipts.splice(index, 1);
   }
 
   async submitTranscriptRequest(): Promise<void> {
@@ -668,62 +538,46 @@ export class StudentDashboard implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.uploadedTranscriptReceipts || this.uploadedTranscriptReceipts.length === 0) {
-      this.transcriptErrorMessage = 'Please upload your payment receipt(s) before submitting.';
+    const controlNumber = this.transcriptPaymentNote.trim();
+    if (!/^[A-Za-z0-9-]{4,40}$/.test(controlNumber)) {
+      this.transcriptErrorMessage = 'Enter a valid payment control number (4 to 40 letters, numbers, or hyphens).';
       return;
     }
 
     this.isSubmittingTranscript = true;
     this.transcriptErrorMessage = '';
 
-    const receiptsPayload = this.uploadedTranscriptReceipts.map(r => ({
-      fileName: r.fileName,
-      receiptData: r.receiptData,
-      sizeText: r.sizeText
-    }));
-
     try {
+      const copyRequests = await this.transcriptService.submitControlNumberBatch(controlNumber);
+      const verifiedStudentId = copyRequests[0]?.studentId;
+      if (!verifiedStudentId) throw new Error('The server did not confirm the student identity.');
+
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(`udsm-transcript-process-started-${user.id}`, 'true');
-        localStorage.removeItem(`udsm-transcript-documents-submitted-${user.id}`);
-        localStorage.removeItem(`udsm-transcript-acquired-${user.id}`);
+        localStorage.setItem(`udsm-transcript-process-started-${verifiedStudentId}`, 'true');
+        localStorage.removeItem(`udsm-transcript-documents-submitted-${verifiedStudentId}`);
+        localStorage.removeItem(`udsm-transcript-acquired-${verifiedStudentId}`);
       }
 
-      const copyRequests = await this.transcriptService.createMultipleCopyRequestsAsync({
-        studentId: user.id,
-        studentName: user.fullName,
-        registrationNumber: user.registrationNumber || user.id,
-        award: user.programme || 'Degree Certificate & Transcript',
-        graduationYear: '2024',
-        totalCopies: this.transcriptCopies,
-        // collectionMethod is NOT set here - it is chosen in Step 3
-        receipts: receiptsPayload,
-        receiptNote: this.transcriptPaymentNote,
-        postingContactPhone: user.phoneNumber || '',
-        postingContactEmail: user.email
-      });
-
       this.notificationService.createNotification(
-        user.id,
-        'Payment Receipt Submitted to Finance',
-        `Your payment receipt for ${copyRequests.length} transcript ${copyRequests.length === 1 ? 'copy' : 'copies'} has been submitted to the Finance Office and is awaiting approval.`,
+        verifiedStudentId,
+        'Transcript Payment Submitted',
+        'Your TZS 15,000 transcript fee control number has been submitted to Finance for verification.',
         'CLEARANCE_UPDATE' as any
       );
 
       this.isSubmittingTranscript = false;
-      this.uploadedTranscriptReceipts = [];
       this.transcriptPaymentNote = '';
       this.closeTranscriptModal();
     } catch {
       this.isSubmittingTranscript = false;
-      this.transcriptErrorMessage = 'Unable to submit payment receipt. Please try again.';
+      this.transcriptErrorMessage = 'Unable to submit the control number. Please verify it and try again.';
     }
   }
 
   get submittedTranscriptCopies(): TranscriptPaymentRequest[] {
     const user = this.currentUser;
     if (!user) return [];
-    return this.transcriptService.getStudentRequests(user.id);
+    return this.transcriptService.getStudentRequests(user.id).filter(request => request.serverManaged);
   }
 
   get hasSubmittedTranscriptRequests(): boolean {
@@ -925,12 +779,15 @@ export class StudentDashboard implements OnInit, OnDestroy {
       number: 1,
       label: 'Convocation',
       office: 'Convocation',
-      detail: 'Submit your payment receipt for Convocation verification.',
+      detail: 'Submit your payment control number for Finance verification.',
       status: convocationStatus
     });
 
     // STEP 2 — SEVEN CLEARANCE OFFICES
-    let officesStatus = this.allClearanceOfficesApproved ? 'Approved' : 'Pending';
+    const anyParallelRejected = this.officeList.some(office => this.getOfficeStatus(office) === 'Rejected');
+    let officesStatus = this.allClearanceOfficesApproved
+      ? 'Approved'
+      : (anyParallelRejected ? 'Rejected' : 'Pending');
     if (
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
@@ -938,6 +795,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.status === 'Completed'
     ) {
       officesStatus = 'Approved';
+    } else if (request.status === 'Rejected' && request.revisionOffice && this.officeList.includes(request.revisionOffice as ClearanceOffice)) {
+      officesStatus = 'Rejected';
     }
     steps.push({
       number: 2,
@@ -1061,14 +920,14 @@ export class StudentDashboard implements OnInit, OnDestroy {
   get currentTranscriptRequest(): TranscriptPaymentRequest | null {
     const user = this.currentUser;
     if (!user) return null;
-    const requests = this.transcriptService.getStudentRequests(user.id);
+    const requests = this.transcriptService.getStudentRequests(user.id).filter(request => request.serverManaged);
     return requests.length > 0 ? requests[requests.length - 1] : null;
   }
 
   get clearanceTranscriptRequest(): TranscriptPaymentRequest | null {
     const user = this.currentUser;
     if (!user) return null;
-    const requests = this.transcriptService.getStudentRequests(user.id);
+    const requests = this.transcriptService.getStudentRequests(user.id).filter(request => request.serverManaged);
     return requests.at(-1) ?? null;
   }
 
@@ -1076,7 +935,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const user = this.currentUser;
     const req = this.clearanceTranscriptRequest;
     if (!user || !req || req.status !== 'Paid') return false;
-    return localStorage.getItem(`udsm-transcript-documents-submitted-${user.id}`) === 'true';
+    return this.transcriptDocumentsVerified;
   }
 
   get transcriptProcessStageLabel(): string {
@@ -1095,7 +954,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     if (request?.status === 'Receipt Submitted') {
       return 'Step 1: Waiting for Finance Approval';
     }
-    return 'Step 1: Transcript Payment & Receipt';
+      return 'Step 1: Transcript Payment Control Number';
   }
 
   get transcriptProcessSteps(): TranscriptDashboardStep[] {
@@ -1114,10 +973,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
         number: 1,
         label: 'Transcript Payment',
         detail: paymentStatus === 'Receipt Submitted'
-          ? 'Receipt submitted — awaiting Finance Office approval.'
+          ? 'Control number submitted; awaiting Finance verification.'
           : paymentStatus === 'Paid'
             ? 'Payment verified & approved by Finance.'
-            : 'Upload and submit official payment receipt(s).',
+            : 'Enter the payment control number shown on your receipt.',
         status: paymentStepStatus
       },
       {
@@ -1149,7 +1008,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
   get isTranscriptPaid(): boolean {
     const user = this.currentUser;
     if (!user) return false;
-    const requests = this.transcriptService.getStudentRequests(user.id);
+    const requests = this.transcriptService.getStudentRequests(user.id).filter(request => request.serverManaged);
     return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
   }
 
@@ -1157,7 +1016,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const req = this.currentTranscriptRequest;
     if (!req) return 0;
 
-    // Steps: 1. Requested, 2. Control Number Issued, 3. Receipt Submitted, 4. Paid
+    // Steps: 1. Requested, 2. Control Number Issued, 3. Control Number Submitted, 4. Paid
     if (req.status === 'Paid') return 4;
     if (req.status === 'Receipt Submitted') return 3;
     if (req.status === 'Awaiting Payment') return 2;
@@ -1173,7 +1032,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     const steps = [
       { name: 'Application', note: 'Request submitted', status: 'Pending' },
       { name: 'Control Number', note: 'Finance issues code', status: 'Pending' },
-      { name: 'Payment', note: 'Upload your receipt', status: 'Pending' },
+      { name: 'Payment', note: 'Submit your control number', status: 'Pending' },
       { name: 'Verification', note: 'Final approval', status: 'Pending' }
     ];
 
@@ -1223,5 +1082,15 @@ export class StudentDashboard implements OnInit, OnDestroy {
   onImageError(): void {
     this.profilePhoto = null;
     this.photoLoadFailed = true;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (!img) return;
+    if (img.src.includes('udsm-logo.png')) {
+      img.src = '/udsm-logo.jpg';
+    } else if (img.src.includes('udsm-logo.jpg')) {
+      img.src = 'assets/udsm-logo.png';
+    }
   }
 }

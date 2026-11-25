@@ -1,7 +1,7 @@
 <!-- department-review.html - Fixed all status comparisons -->
 <section class="review-page">
     <app-dashboard-header
-      title="HOD review"
+      title="HoD review"
       [subtitle]="departmentName"
       [user]="currentUser"
       [showToggle]="true"
@@ -42,6 +42,27 @@
                     {{ request.status }}
                 </span>
             </div>
+        </section>
+
+        <!-- ACTION BAR FOR HOD REVIEW -->
+        <section class="review-actions-bar" *ngIf="isPendingDepartment">
+            <button
+              type="button"
+              class="btn-action btn-reject"
+              (click)="openRejectModal()"
+              [disabled]="isProcessing"
+            >
+              <i class="bi bi-x-lg"></i> Return / Reject Request
+            </button>
+            <button
+              type="button"
+              class="btn-action btn-approve"
+              (click)="approve()"
+              [disabled]="isProcessing || !!openDebtFlag"
+              [title]="openDebtFlag ? 'Disabled until student resolves lecturer liability' : 'Approve clearance'"
+            >
+              <i class="bi bi-check-lg"></i> Approve Department Clearance
+            </button>
         </section>
 
         <!-- LECTURER FLAG / RENTED ITEM LIABILITY DETAILS -->
@@ -189,6 +210,31 @@
             </ng-template>
         </section>
 
+    </div>
+
+    <!-- REJECTION MODAL -->
+    <div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <h3>Return Clearance Request</h3>
+            <p>Please enter the specific reason why this clearance request is being returned to the student.</p>
+            <textarea
+                class="modal-textarea"
+                aria-label="Rejection reason"
+                [(ngModel)]="rejectionComment"
+                placeholder="Enter rejection reason or required student action..."
+            ></textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn-action btn-cancel" (click)="closeRejectModal()">Cancel</button>
+                <button
+                    type="button"
+                    class="btn-action btn-reject"
+                    (click)="reject()"
+                    [disabled]="!rejectionComment.trim() || isProcessing"
+                >
+                    Confirm Rejection
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- ENLARGED PHOTO MODAL -->

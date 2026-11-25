@@ -1,6 +1,5 @@
 export type UserRole =
   | 'Student'
-  | 'Convocation'
   | 'Games Coach'
   | 'Hall Warden'
   | 'USAB'
@@ -11,7 +10,6 @@ export type UserRole =
   | 'Department'
   | 'Principal'
   | 'Finance'
-  | 'ICT'
   | 'Academic Staff'
   | 'Lecturer'
   | 'Director of Undergraduate Studies'

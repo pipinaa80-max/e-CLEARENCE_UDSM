@@ -1,5 +1,5 @@
 // department-officer.component.ts
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -75,6 +75,10 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
     debtFlagCheckError = '';
     private debtFlagRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
+    // Multi-select & Bulk Approve State
+    selectedRequestIds = new Set<string>();
+    isProcessingBulk = false;
+
     private studentCache: Map<string, any> = new Map();
 
     get currentUser() {
@@ -91,26 +95,38 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
         ).length;
     }
 
-    ngOnInit(): void {
-        this.clearanceService.fetchOfficeRequests('Department').subscribe({
-            next: () => this.loadData(),
-            error: () => this.loadData()
-        });
-        this.loadData();
-        this.debtFlagRefreshTimer = setInterval(() => {
+    @HostListener('document:visibilitychange')
+    onVisibilityChange(): void {
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
             this.loadOpenDebtFlags();
             this.clearanceService.fetchOfficeRequests('Department').subscribe({
-                next: () => this.loadData(),
+                next: () => this.loadData(false),
                 error: () => {}
             });
-        }, 3000);
+        }
+    }
+
+    ngOnInit(): void {
+        this.clearanceService.fetchOfficeRequests('Department').subscribe({
+            next: () => this.loadData(true),
+            error: () => this.loadData(true)
+        });
+        this.loadData(true);
+        this.debtFlagRefreshTimer = setInterval(() => {
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+            this.loadOpenDebtFlags();
+            this.clearanceService.fetchOfficeRequests('Department').subscribe({
+                next: () => this.loadData(false),
+                error: () => {}
+            });
+        }, 30000);
     }
 
     ngOnDestroy(): void {
         if (this.debtFlagRefreshTimer) clearInterval(this.debtFlagRefreshTimer);
     }
 
-    loadData(): void {
+    loadData(refreshDebts: boolean = true): void {
         this.isLoading = true;
         this.studentCache.clear();
 
@@ -121,7 +137,9 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.loadOpenDebtFlags();
+        if (refreshDebts) {
+            this.loadOpenDebtFlags();
+        }
 
         const departmentRequests = this.clearanceService.getRequestsForOffice(
             'Department',
@@ -281,6 +299,73 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
         return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
     }
 
+    isSelectable(request: ClearanceRequest): boolean {
+        const isPending = this.getRequestOfficeStatus(request, 'Department') === 'Pending';
+        const hasDebt = this.hasOpenDebtFlag(request);
+        return isPending && !hasDebt;
+    }
+
+    get selectableRequests(): ClearanceRequest[] {
+        return this.filteredRequests.filter(r => this.isSelectable(r));
+    }
+
+    get isAllSelected(): boolean {
+        const eligible = this.selectableRequests;
+        return eligible.length > 0 && eligible.every(r => this.selectedRequestIds.has(r.id));
+    }
+
+    toggleSelectAll(): void {
+        if (this.isAllSelected) {
+            this.selectedRequestIds.clear();
+        } else {
+            this.selectableRequests.forEach(r => this.selectedRequestIds.add(r.id));
+        }
+    }
+
+    toggleSelect(request: ClearanceRequest): void {
+        if (!this.isSelectable(request)) return;
+        if (this.selectedRequestIds.has(request.id)) {
+            this.selectedRequestIds.delete(request.id);
+        } else {
+            this.selectedRequestIds.add(request.id);
+        }
+    }
+
+    async approveSelected(): Promise<void> {
+        const ids = Array.from(this.selectedRequestIds);
+        if (!ids.length) {
+            this.toastService.warning('No Students Selected', 'Please select eligible students to approve.');
+            return;
+        }
+
+        const count = ids.length;
+        if (!confirm(`Are you sure you want to approve ${count} selected student(s) at once? Flagged or rejected students are automatically excluded.`)) {
+            return;
+        }
+
+        this.isProcessingBulk = true;
+        try {
+            this.clearanceService.bulkApproveOfficeBackend(ids, 'Department', 'Bulk approved by Department Officer').subscribe({
+                next: (res) => {
+                    this.toastService.success('Bulk Approved', res?.message || `Approved ${count} students successfully.`);
+                    this.selectedRequestIds.clear();
+                    this.isProcessingBulk = false;
+                    this.clearanceService.fetchOfficeRequests('Department').subscribe({
+                        next: () => this.loadData(),
+                        error: () => this.loadData()
+                    });
+                },
+                error: (err) => {
+                    this.toastService.error('Bulk Approve Failed', err.error?.message || err.message || 'Error occurred');
+                    this.isProcessingBulk = false;
+                }
+            });
+        } catch (e: any) {
+            this.toastService.error('Error', e?.message || 'Failed to process bulk approval');
+            this.isProcessingBulk = false;
+        }
+    }
+
     readonly processingRequests = new Set<string>();
 
     async approveRequest(request: ClearanceRequest): Promise<void> {
@@ -392,6 +477,17 @@ export class DepartmentOfficerComponent implements OnInit, OnDestroy {
 
     closeSidebar(): void {
         this.sidebarOpen = false;
+    }
+
+    onLogoError(event: Event): void {
+        const img = event.target as HTMLImageElement;
+        if (img && !img.dataset['fallback']) {
+            img.dataset['fallback'] = '1';
+            img.src = '/udsm-logo.jpg';
+        } else if (img && img.dataset['fallback'] === '1') {
+            img.dataset['fallback'] = '2';
+            img.src = 'assets/udsm-logo.png';
+        }
     }
 
     logout(): void {

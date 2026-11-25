@@ -35,6 +35,21 @@ export class DepartmentStatusComponent {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   get isOfficer(): boolean {
     return this.currentUser?.role === 'Department';
   }

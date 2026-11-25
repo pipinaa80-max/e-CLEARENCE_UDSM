@@ -381,35 +381,56 @@
   align-items: center;
   justify-content: center;
 
-  min-height: 44px;
+  min-height: 46px;
+  min-width: 280px;
 
   margin-top: 18px;
 
-  padding: 0 22px;
+  padding: 0 24px;
 
   border: none;
 
-  border-radius: var(--radius-control);
+  border-radius: 9px;
 
   background: var(--udsm-blue);
 
   color: #ffffff;
 
-  font-size: 0.76rem;
+  font-size: 0.9rem;
 
   font-weight: 800;
 
   cursor: pointer;
 
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0, 59, 92, 0.18);
+
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.primary-button:hover {
+.primary-button:hover:not(:disabled) {
   background: var(--udsm-blue-dark);
 
+  box-shadow: 0 5px 12px rgba(0, 59, 92, 0.24);
+
   transform: translateY(-1px);
+}
+
+.primary-button:focus-visible {
+  outline: 3px solid rgba(0, 103, 155, 0.28);
+  outline-offset: 3px;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+@media (max-width: 520px) {
+  .primary-button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 
@@ -514,20 +535,34 @@
   align-items: center;
   justify-content: center;
   width: fit-content;
-  margin: 32px auto 0;
-  padding: 10px 20px;
+  min-height: 40px;
+  margin: 24px auto 0;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
   color: #475569;
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 750;
   text-decoration: none;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .status-link:hover {
-  color: var(--udsm-blue);
-  background: var(--surface-soft);
+  color: #ffffff;
+  border-color: var(--udsm-blue-dark);
+  background: var(--udsm-blue-dark);
+  box-shadow: 0 4px 10px rgba(0, 59, 92, 0.22);
   transform: translateY(-1px);
+}
+
+.status-link:hover::before {
+  color: #ffffff;
+}
+
+.status-link:focus-visible {
+  outline: 3px solid rgba(0, 103, 155, 0.24);
+  outline-offset: 2px;
 }
 
 .status-link::before {

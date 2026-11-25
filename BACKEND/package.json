@@ -1,0 +1,46 @@
+{
+  "name": "udsm-eclearance-backend",
+  "version": "1.0.0",
+  "description": "UDSM e-Clearance Node.js/Express Backend",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback",
+    "migrate:status": "knex migrate:status",
+    "seed:run": "knex seed:run",
+    "test:db": "node --test tests/database/db.test.js",
+    "test:auth": "node --test tests/auth/auth.test.js",
+    "test:clearance": "node --test tests/clearance/clearance.test.js",
+    "test:phase4": "node --test tests/phase4/phase4.test.js",
+    "test:notification": "node --test tests/notification/notification.test.js",
+    "test": "node --test --test-concurrency=1 tests/database/db.test.js tests/auth/auth.test.js tests/clearance/clearance.test.js tests/phase4/phase4.test.js tests/notification/notification.test.js",
+    "test:all": "node --test --test-concurrency=1 tests/database/db.test.js tests/auth/auth.test.js tests/clearance/clearance.test.js tests/phase4/phase4.test.js tests/notification/notification.test.js tests/admin/admin.test.js tests/admin/adminBulk.test.js tests/auditFixes/auditFixes.test.js tests/controlPlane/controlPlane.test.js tests/dusSecretary/dusSecretary.test.js tests/email/email.test.js tests/improvements/githubMainImprovements.test.js tests/qr/qr.test.js tests/reference/referenceRegistries.test.js tests/sponsor/sponsor.test.js tests/sponsor/sponsor.unit.test.js tests/transcriptPayment/transcriptPayment.test.js tests/uploads/angularUploads.test.js tests/wave2/authAndDocuments.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jpeg-js": "^0.4.4",
+    "jsonwebtoken": "^9.0.2",
+    "jsqr": "^1.4.0",
+    "knex": "^3.1.0",
+    "multer": "^2.5.0",
+    "mysql2": "^3.11.0",
+    "nodemailer": "^10.6.0",
+    "pdfkit": "^0.20.2",
+    "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}

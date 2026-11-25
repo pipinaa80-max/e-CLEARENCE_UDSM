@@ -9,6 +9,9 @@
     "test": "node ./node_modules/@angular/cli/bin/ng.js test"
   },
   "private": true,
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0"
+  },
   "packageManager": "npm@11.12.1",
   "dependencies": {
     "@angular/common": "^21.2.20",

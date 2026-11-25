@@ -1,6 +1,6 @@
 // src/app/games-coach/games-coach.ts
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -113,12 +113,16 @@ const DEFAULT_FACILITIES: SportsFacility[] = [
   templateUrl: './games_coach.html',
   styleUrl: './games_coach.css'
 })
-export class GamesCoachComponent {
+export class GamesCoachComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Games Coach').subscribe();
+  }
 
   readonly Math = Math;
   sidebarOpen = false;
@@ -128,6 +132,7 @@ export class GamesCoachComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -327,6 +332,21 @@ export class GamesCoachComponent {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
     return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
   }
@@ -499,7 +519,11 @@ export class GamesCoachComponent {
       request.id,
       'Games Coach',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Games Coach approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Games Coach clearance approved',
@@ -507,6 +531,7 @@ export class GamesCoachComponent {
       'success'
     );
     this.toastService.success('Approved', `Games Coach clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Games Coach clearance approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -515,6 +540,7 @@ export class GamesCoachComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -531,7 +557,11 @@ export class GamesCoachComponent {
       'Games Coach',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Games Coach return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Games Coach action required',
@@ -540,6 +570,7 @@ export class GamesCoachComponent {
     );
 
     this.toastService.warning('Returned', `Games Coach clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified regarding unreturned sports gear or action required.';
     this.selectedRequest = null;
     this.rejectionComment = '';

@@ -1,16 +1,158 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { StorageService } from './storage.service';
 import { ReceiptFileStoreService } from './receipt-file-store.service';
+import { ConfigService } from './config.service';
 import {
   TranscriptPaymentRequest,
   TranscriptPaymentStatus
 } from '../../transcript/transcript-payment.model';
 
+interface TranscriptPaymentBackendRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
+  registrationNumber: string;
+  copies: number;
+  amountTzs: number;
+  controlNumber: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string | null;
+  submittedAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
+  collectionMethod?: 'Physical Collection' | 'Post by DHL' | null;
+  collectionAddress?: string | null;
+  postingRegion?: string | null;
+  postingWard?: string | null;
+  postingPoBox?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TranscriptPaymentService {
   private readonly storage = new StorageService();
   private readonly receiptFileStore = inject(ReceiptFileStoreService);
+  private readonly http = inject(HttpClient);
+  private readonly config = inject(ConfigService);
   private readonly requestKey = 'udsm-transcript-payment-requests';
+
+  private get authHeaders(): HttpHeaders {
+    const token = this.storage.get<string>('udsm-auth-token') ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('udsm-auth-token') : null);
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token.replace(/^"|"$/g, '').trim()}` }) : new HttpHeaders();
+  }
+
+  async submitControlNumberBatch(controlNumber: string): Promise<TranscriptPaymentRequest[]> {
+    const response = await firstValueFrom(this.http.post<TranscriptPaymentBackendRecord>(
+      `${this.config.apiUrl}/transcript-payments`,
+      { controlNumber },
+      { headers: this.authHeaders }
+    ));
+    return this.cacheBackendRecord(response);
+  }
+
+  async refreshStudentControlNumberRequests(): Promise<void> {
+    const responses = await firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
+      `${this.config.apiUrl}/transcript-payments/mine`, { headers: this.authHeaders }
+    ));
+    this.replaceServerManagedRecords(responses || []);
+  }
+
+  async refreshFinanceControlNumberRequests(): Promise<void> {
+    const responses = await firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
+      `${this.config.apiUrl}/transcript-payments/finance?status=ALL`, { headers: this.authHeaders }
+    ));
+    this.replaceServerManagedRecords(responses || []);
+  }
+
+  async approveControlNumberRequest(requestId: string): Promise<TranscriptPaymentRequest[]> {
+    const response = await firstValueFrom(this.http.post<TranscriptPaymentBackendRecord>(
+      `${this.config.apiUrl}/transcript-payments/${encodeURIComponent(requestId)}/approve`, {},
+      { headers: this.authHeaders }
+    ));
+    return this.cacheBackendRecord(response);
+  }
+
+  async rejectControlNumberRequest(requestId: string, reason: string): Promise<TranscriptPaymentRequest[]> {
+    const response = await firstValueFrom(this.http.post<TranscriptPaymentBackendRecord>(
+      `${this.config.apiUrl}/transcript-payments/${encodeURIComponent(requestId)}/reject`, { reason },
+      { headers: this.authHeaders }
+    ));
+    return this.cacheBackendRecord(response);
+  }
+
+  async saveCollectionPreference(requestId: string, details: {
+    collectionMethod: 'Physical Collection' | 'Post by DHL';
+    collectionAddress: string;
+    postingRegion?: string;
+    postingWard?: string;
+    postingPoBox?: string;
+    contactPhone?: string;
+    contactEmail?: string;
+  }): Promise<TranscriptPaymentRequest[]> {
+    const response = await firstValueFrom(this.http.put<TranscriptPaymentBackendRecord>(
+      `${this.config.apiUrl}/transcript-payments/${encodeURIComponent(requestId)}/collection`, details,
+      { headers: this.authHeaders }
+    ));
+    return this.cacheBackendRecord(response);
+  }
+
+  private replaceServerManagedRecords(records: TranscriptPaymentBackendRecord[]): void {
+    const all = this.getAllRequests().filter(request => !request.serverManaged);
+    for (const record of records) all.push(...this.expandBackendRecord(record));
+    this.storage.save(this.requestKey, all);
+  }
+
+  private cacheBackendRecord(record: TranscriptPaymentBackendRecord): TranscriptPaymentRequest[] {
+    const all = this.getAllRequests().filter(request =>
+      !request.serverManaged || request.paymentBatchId !== record.id
+    );
+    const expanded = this.expandBackendRecord(record);
+    this.storage.save(this.requestKey, [...all, ...expanded]);
+    return expanded;
+  }
+
+  private expandBackendRecord(record: TranscriptPaymentBackendRecord): TranscriptPaymentRequest[] {
+    const copies = Math.max(1, Math.min(10, Math.floor(record.copies || 1)));
+    const status: TranscriptPaymentStatus = record.status === 'APPROVED' ? 'Paid'
+      : record.status === 'REJECTED' ? 'Receipt Rejected' : 'Receipt Submitted';
+    return Array.from({ length: copies }, (_, index) => ({
+      id: index === 0 ? record.id : `${record.id}-copy-${index + 1}`,
+      paymentBatchId: record.id,
+      serverManaged: true,
+      studentId: record.studentId,
+      studentName: record.studentName,
+      registrationNumber: record.registrationNumber,
+      award: 'Degree Certificate & Transcript',
+      graduationYear: '',
+      transcriptCount: 1,
+      copyNumber: index + 1,
+      totalCopies: copies,
+      amount: index === 0 ? Math.max(0, record.amountTzs - (copies - 1) * 5000) : 5000,
+      currency: 'TZS',
+      attemptNumber: index + 1,
+      status,
+      controlNumber: record.controlNumber,
+      submittedControlNumber: record.controlNumber,
+      rejectionReason: record.rejectionReason || undefined,
+      requestedAt: record.submittedAt,
+      receiptSubmittedAt: record.submittedAt,
+      controlNumberIssuedAt: record.submittedAt,
+      certificateVerified: status === 'Paid',
+      signedBy: record.reviewedBy || undefined,
+      signedAt: record.reviewedAt || undefined,
+      collectionMethod: record.collectionMethod || undefined,
+      postingAddress: record.collectionAddress || undefined,
+      postingRegion: record.postingRegion || undefined,
+      postingWard: record.postingWard || undefined,
+      postingPoBox: record.postingPoBox || undefined,
+      postingContactPhone: record.contactPhone || undefined,
+      postingContactEmail: record.contactEmail || undefined
+    }));
+  }
 
   getAllRequests(): TranscriptPaymentRequest[] {
     const requests = this.storage.get<TranscriptPaymentRequest[]>(this.requestKey) ?? [];
@@ -255,18 +397,17 @@ export class TranscriptPaymentService {
   rejectReceipt(requestId: string, reason: string): boolean {
     const all = this.getAllRequests();
     const request = all.find(item => item.id === requestId);
-    if (!request || request.status !== 'Receipt Submitted') {
+    if (!request || request.status !== 'Receipt Submitted' || reason.trim().length < 5) {
       return false;
     }
 
     all.forEach(item => {
-      if (item.studentId === request.studentId && item.status === 'Receipt Submitted') {
+      if (this.isSamePaymentBatch(item, request) && item.status === 'Receipt Submitted') {
         item.status = 'Receipt Rejected';
         item.rejectionReason = reason;
       }
     });
-    this.storage.save(this.requestKey, all);
-    return true;
+    return this.storage.save(this.requestKey, all);
   }
 
   submitReceipt(requestId: string, fileName: string, receiptData: string): boolean {
@@ -299,19 +440,53 @@ export class TranscriptPaymentService {
     return true;
   }
 
+  submitControlNumber(requestId: string, controlNumber: string): boolean {
+    const all = this.getAllRequests();
+    const request = all.find(item => item.id === requestId);
+    const normalizedControlNumber = controlNumber.trim();
+    if (!request || !/^[A-Za-z0-9-]{4,40}$/.test(normalizedControlNumber) ||
+        !['Awaiting Payment', 'Receipt Rejected'].includes(request.status)) return false;
+    if (all.some(item => !this.isSamePaymentBatch(item, request) &&
+      item.submittedControlNumber?.toLowerCase() === normalizedControlNumber.toLowerCase() &&
+      item.status !== 'Receipt Rejected')) return false;
+
+    request.submittedControlNumber = normalizedControlNumber;
+    request.receiptSubmittedAt = new Date().toISOString();
+    request.status = 'Receipt Submitted';
+
+    all.forEach(item => {
+      if (this.isSamePaymentBatch(item, request) && (item.status === 'Awaiting Payment' || item.status === 'Receipt Rejected')) {
+        item.submittedControlNumber = normalizedControlNumber;
+        item.receiptSubmittedAt = request.receiptSubmittedAt;
+        item.status = 'Receipt Submitted';
+      }
+    });
+
+    return this.storage.save(this.requestKey, all);
+  }
+
   updateStatus(requestId: string, status: TranscriptPaymentStatus): boolean {
     const all = this.getAllRequests();
     const request = all.find(item => item.id === requestId);
     if (!request) return false;
+    if (request.status !== 'Receipt Submitted' || !['Paid', 'Receipt Rejected'].includes(status)) return false;
     request.status = status;
-    // Update all matching batch copy requests for the same student
+    // Apply a Finance decision only to copies submitted under the same payment number.
     all.forEach(item => {
-      if (item.studentId === request.studentId && (item.status === 'Receipt Submitted' || status === 'Paid')) {
+      if (this.isSamePaymentBatch(item, request) && item.status === 'Receipt Submitted') {
         item.status = status;
       }
     });
-    this.storage.save(this.requestKey, all);
-    return true;
+    return this.storage.save(this.requestKey, all);
+  }
+
+  private isSamePaymentBatch(left: TranscriptPaymentRequest, right: TranscriptPaymentRequest): boolean {
+    if (left.id === right.id) return true;
+    if (left.paymentBatchId || right.paymentBatchId) return !!left.paymentBatchId && left.paymentBatchId === right.paymentBatchId;
+    if (left.studentId !== right.studentId) return false;
+    const leftPaymentNumber = left.submittedControlNumber || left.controlNumber;
+    const rightPaymentNumber = right.submittedControlNumber || right.controlNumber;
+    return !!leftPaymentNumber && leftPaymentNumber === rightPaymentNumber;
   }
 
   updateVerificationStatus(requestId: string, verified: boolean): boolean {

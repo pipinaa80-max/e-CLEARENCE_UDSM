@@ -93,11 +93,27 @@ export class DocumentService {
   }
 
   getMissingDocuments(studentId: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.baseUrl}/student/${studentId}/missing`);
+    return this.http.get<string[]>(`${this.baseUrl}/student/${studentId}/missing`, {
+      headers: this.authHeaders
+    });
   }
 
   hasRequiredDocuments(studentId: string): Observable<boolean> {
-    return this.http.get<boolean>(`${this.baseUrl}/student/${studentId}/has-required`);
+    return this.http.get<boolean>(`${this.baseUrl}/student/${studentId}/has-required`, {
+      headers: this.authHeaders
+    });
+  }
+
+  getTranscriptDocumentCategories(paymentId: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/transcript/${encodeURIComponent(paymentId)}/categories`, {
+      headers: this.authHeaders
+    });
+  }
+
+  hasRequiredTranscriptDocuments(paymentId: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.baseUrl}/transcript/${encodeURIComponent(paymentId)}/has-required`, {
+      headers: this.authHeaders
+    });
   }
 
   verifyDocument(documentId: string, officerId: string, verified: boolean, comment?: string): Observable<any> {
@@ -109,15 +125,23 @@ export class DocumentService {
       params = params.set('comment', comment);
     }
 
-    return this.http.put(`${this.baseUrl}/verify/${documentId}`, null, { params });
+    return this.http.put(`${this.baseUrl}/verify/${documentId}`, null, {
+      params,
+      headers: this.authHeaders
+    });
   }
 
   getVerificationStatus(studentId: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/student/${studentId}/verification-status`);
+    return this.http.get(`${this.baseUrl}/student/${studentId}/verification-status`, {
+      headers: this.authHeaders
+    });
   }
 
   deleteDocument(documentId: string, studentId: string): Observable<any> {
     const params = new HttpParams().set('studentId', studentId);
-    return this.http.delete(`${this.baseUrl}/${documentId}`, { params });
+    return this.http.delete(`${this.baseUrl}/${documentId}`, {
+      params,
+      headers: this.authHeaders
+    });
   }
 }

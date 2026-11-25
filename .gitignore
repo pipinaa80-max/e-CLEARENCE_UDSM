@@ -2,16 +2,35 @@
 logs/
 *.log
 *.log.*
-BACKEND/logs/
+backend/logs/
 
-# Build artifacts
-target/
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Build artifacts & Dependencies
 dist/
 .angular/
 node_modules/
-FRONTEND/angular-app/dist/
-FRONTEND/angular-app/.angular/
-FRONTEND/angular-app/node_modules/
+coverage/
+frontend/angular-app/dist/
+frontend/angular-app/.angular/
+frontend/angular-app/node_modules/
+backend/node_modules/
+
+# Uploads (keep directory structure only)
+uploads/
+backend/uploads/*
+!backend/uploads/convocation/
+!backend/uploads/private-documents/
+backend/uploads/convocation/*
+!backend/uploads/convocation/.gitkeep
+backend/uploads/private-documents/*
+!backend/uploads/private-documents/.gitkeep
 
 # IDE files
 .idea/
@@ -26,5 +45,4 @@ Thumbs.db
 
 # Other
 .artifacts/
-uploads/
-BACKEND/uploads/
+deploy/*.zip

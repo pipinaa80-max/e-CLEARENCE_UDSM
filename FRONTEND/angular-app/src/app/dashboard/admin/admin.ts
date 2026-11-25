@@ -81,8 +81,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
     'Principal',
     'Library',
     'Finance',
-    'ICT',
-    'Convocation',
     'Games Coach',
     'Hall Warden',
     'USAB',
@@ -529,7 +527,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     if (r.includes('LIBRARY')) return 'Library Services';
     if (r.includes('FINANCE')) return 'Bursar & Treasury';
     if (r.includes('ICT')) return 'Centre for Information and Communication Technology';
-    if (r.includes('CONVOCATION')) return 'Convocation Relations';
+    if (r.includes('CONVOCATION')) return 'Finance';
     if (r.includes('GAMES') || r.includes('COACH')) return 'Sports and Games Department';
     if (r.includes('HALL') || r.includes('WARDEN') || r.includes('USAB')) return 'Accommodation Bureau (USAB)';
     if (r.includes('DARUSO')) return 'DARUSO Student Union';
@@ -869,14 +867,12 @@ export class AdminDashboard implements OnInit, OnDestroy {
   private readonly defaultProjectDashboards: ProjectDashboard[] = [
     { id: 'academic-staff', name: 'Academic Staff', description: 'Academic Staff clearance office', enabled: true },
     { id: 'administrator', name: 'Administrator', description: 'Administrator clearance office', enabled: true },
-    { id: 'convocation', name: 'Convocation', description: 'Convocation clearance office', enabled: true },
     { id: 'daruso', name: 'DARUSO', description: 'DARUSO clearance office', enabled: true },
     { id: 'dean-of-students', name: 'Dean of Students', description: 'Dean of Students clearance office', enabled: true },
     { id: 'department', name: 'Department', description: 'Department clearance office', enabled: true },
     { id: 'finance', name: 'Finance', description: 'Finance clearance office', enabled: true },
     { id: 'games-coach', name: 'Games Coach', description: 'Games Coach clearance office', enabled: true },
     { id: 'hall-warden', name: 'Hall Warden', description: 'Hall Warden clearance office', enabled: true },
-    { id: 'ict', name: 'ICT', description: 'ICT clearance office', enabled: true },
     { id: 'laboratory', name: 'Laboratory', description: 'Laboratory clearance office', enabled: true },
     { id: 'library', name: 'Library', description: 'Library clearance office', enabled: true },
     { id: 'principal', name: 'Principal', description: 'Principal clearance office', enabled: true },
@@ -938,6 +934,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   setTab(tab: 'users' | 'clearance' | 'upload' | 'dashboards' | 'theme' | 'awards' | 'sponsors'): void {
     this.activeTab = tab;
+    this.closeSidebar();
     this.message = '';
     if (tab === 'users') {
       this.applyUserFiltersAndPagination();
@@ -1332,6 +1329,21 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
@@ -1473,6 +1485,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.isError = false;
   }
 
+  uploadCategory: 'STUDENT' | 'STAFF' = 'STUDENT';
   isUploading: boolean = false;
 
   uploadFile(): void {
@@ -1485,13 +1498,13 @@ export class AdminDashboard implements OnInit, OnDestroy {
     }
 
     this.isUploading = true;
-    this.message = 'Uploading and processing Excel records...';
+    this.message = `Uploading and processing ${this.uploadCategory === 'STAFF' ? 'staff members' : 'students'} records...`;
     this.isError = false;
 
-    this.adminService.bulkUploadUsers(this.selectedFile).subscribe({
+    this.adminService.bulkUploadUsers(this.selectedFile, this.uploadCategory).subscribe({
       next: (res) => {
         this.isUploading = false;
-        this.message = res.message || 'Excel file successfully uploaded and processed!';
+        this.message = res.message || `${this.uploadCategory === 'STAFF' ? 'Staff members' : 'Students'} successfully uploaded and processed!`;
         this.isError = false;
         this.selectedFile = null;
 
@@ -1508,18 +1521,28 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   downloadSampleCsv(): void {
+    const isStaff = this.uploadCategory === 'STAFF';
+    const headers = isStaff
+      ? 'First Name,Middle Name,Last Name,Email,Role,Staff ID (PF Number),Password,College,Department,Phone\r\n'
+      : 'First Name,Middle Name,Last Name,Email,Role,Registration Number,Password,College,Department,Programme,Phone\r\n';
+    const filename = isStaff ? 'staff_registration_template.csv' : 'clearance_registration_template.csv';
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = '/clearance_registration_template.csv';
-    link.download = 'clearance_registration_template.csv';
+    link.href = url;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   downloadSampleExcel(): void {
+    const isStaff = this.uploadCategory === 'STAFF';
+    const filename = isStaff ? 'staff_registration_template.xlsx' : 'clearance_registration_template.xlsx';
     const link = document.createElement('a');
-    link.href = '/clearance_registration_template.xlsx';
-    link.download = 'clearance_registration_template.xlsx';
+    link.href = '/' + filename + '?t=' + Date.now();
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -27,6 +27,12 @@ export class StudentDebtService {
     return this.http.post<StudentDebtFlag>(this.endpoint, data, { headers: this.headers() });
   }
 
+  bulkUpload(file: File): Observable<{ success: boolean; message: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<{ success: boolean; message: string }>(`${this.endpoint}/bulk-upload`, formData, { headers: this.headers() });
+  }
+
   resolve(id: string, resolutionNote: string): Observable<StudentDebtFlag> {
     return this.http.patch<StudentDebtFlag>(`${this.endpoint}/${encodeURIComponent(id)}/resolve`, { resolutionNote }, { headers: this.headers() });
   }

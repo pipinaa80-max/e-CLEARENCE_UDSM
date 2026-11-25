@@ -1,104 +1,111 @@
-// clearance.service.ts
-import { Injectable } from '@angular/core';
-import { Observable, map, catchError, throwError } from 'rxjs';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import {StorageService} from "../../core/services/storage.service";
-import {ConfigService} from "../../core/services/config.service";
+import { Component, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 
-export interface ClearanceRequestDTO {
-  registrationNumber: string;
-  studentName: string;
-  email?: string;
-  phoneNumber?: string;
-  programme: string;
-  faculty: string;
-  department: string;
-  yearOfStudy: string;
-  academicYear: string;
-  semester: string;
-  reason: string;
-  comments?: string;
-  clearanceType: 'FINAL_YEAR_CLEARANCE' | 'SEMESTER_CLEARANCE' | 'GRADUATION_CLEARANCE' | 'DEPARTMENT_TRANSFER' | 'OTHER';
-  selectedDepartments?: string[];
-  allDepartments?: boolean;
-  documents?: any[];
-  hasSupportingDocuments?: boolean;
-  additionalInfo?: any;
-}
+import { AuthService } from '../../core/services/auth.service';
+import { DocumentService } from '../../core/services/document.service';
+import { ToastService } from '../../core/services/toast.service';
 
-@Injectable({ providedIn: 'root' })
-export class ClearanceService {
-  private readonly storage = new StorageService();
-  private readonly draftKey = 'udsm-clearance-drafts';
-  private readonly requestKey = 'udsm-clearance-requests';
+@Component({
+  selector: 'app-document-upload',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  templateUrl: './upload.html',
+  styleUrl: './upload.css'
+})
+export class DocumentUploadComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly documentService = inject(DocumentService);
+  private readonly toastService = inject(ToastService);
+  private readonly router = inject(Router);
 
-  constructor(
-      private http: HttpClient,
-      private configService: ConfigService
-  ) {}
+  readonly categories = [
+    'Identity Document',
+    'Academic Transcript',
+    'Student ID Card',
+    'Payment Receipt'
+  ];
 
-  private get baseUrl(): string {
-    return `${this.configService.apiUrl}/clearance`;
+  missingCategories = [...this.categories];
+  readonly identityHelp = 'National ID (NIDA) or Passport or Voter ID';
+
+  selectedFile: File | null = null;
+  isSubmitting = false;
+
+  uploadForm = this.fb.group({
+    category: ['', Validators.required]
+  });
+
+  ngOnInit(): void {
+    this.loadUploadedDocuments();
   }
 
-  // Draft methods
-  saveDraft(studentId: string, clearanceType: string, remarks: string, academicProfile?: any): void {
-    const drafts = this.storage.get<Record<string, any>>(this.draftKey) ?? {};
-    drafts[studentId] = { clearanceType, remarks, academicProfile };
-    this.storage.save(this.draftKey, drafts);
+  loadUploadedDocuments(): void {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    this.documentService.getStudentDocuments(user.id).subscribe({
+      next: (response) => {
+        const uploaded = (response?.content || []).map(d => d.category);
+        this.missingCategories = this.categories.filter(c => !uploaded.includes(c));
+        if (this.missingCategories.length > 0 && !this.uploadForm.value.category) {
+          this.uploadForm.patchValue({ category: this.missingCategories[0] });
+        }
+      },
+      error: () => {
+        // Fallback to initial missing categories
+      }
+    });
   }
 
-  getDraft(studentId: string): any | null {
-    return (this.storage.get<Record<string, any>>(this.draftKey) ?? {})[studentId] ?? null;
-  }
-
-  clearDraft(studentId: string): void {
-    const drafts = this.storage.get<Record<string, any>>(this.draftKey) ?? {};
-    delete drafts[studentId];
-    this.storage.save(this.draftKey, drafts);
-  }
-
-  // Create request with backend
-  createRequest(request: any): Observable<any> {
-    const dto: ClearanceRequestDTO = {
-      registrationNumber: request.studentId,
-      studentName: request.studentName || 'Student',
-      programme: request.programme || '',
-      faculty: request.college || '',
-      department: request.department || '',
-      yearOfStudy: '3',
-      academicYear: '2024/2025',
-      semester: '1',
-      reason: request.remarks || 'Clearance request',
-      comments: request.remarks,
-      clearanceType: this.mapClearanceType(request.clearanceType),
-      selectedDepartments: ['Library', 'Finance', 'Academic Affairs', 'ICT Division'],
-      allDepartments: false,
-      hasSupportingDocuments: false
-    };
-
-    return this.http.post(`${this.baseUrl}/request`, dto).pipe(
-        catchError(this.handleError)
-    );
-  }
-
-  private mapClearanceType(type: string): any {
-    const map: Record<string, string> = {
-      'Graduation Clearance': 'GRADUATION_CLEARANCE',
-      'Semester Clearance': 'SEMESTER_CLEARANCE',
-      'Final Year Clearance': 'FINAL_YEAR_CLEARANCE',
-      'Department Transfer': 'DEPARTMENT_TRANSFER'
-    };
-    return map[type] || 'OTHER';
-  }
-
-  private handleError(error: any): Observable<never> {
-    let errorMessage = 'An error occurred while processing your request.';
-    if (error.error?.message) {
-      errorMessage = error.error.message;
-    } else if (error.message) {
-      errorMessage = error.message;
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      this.selectedFile = input.files[0];
     }
-    return throwError(() => new Error(errorMessage));
+  }
+
+  submit(): void {
+    const category = this.uploadForm.value.category;
+    if (!category || !this.selectedFile) {
+      this.toastService.warning('Validation', 'Please select a document category and choose a file to upload.');
+      return;
+    }
+
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      this.toastService.error('Auth', 'You must be logged in to upload documents.');
+      return;
+    }
+
+    this.isSubmitting = true;
+
+    this.documentService.uploadDocument(
+      {
+        studentId: user.id,
+        fileName: this.selectedFile.name,
+        fileType: this.selectedFile.type,
+        fileSize: this.selectedFile.size,
+        description: category
+      },
+      this.selectedFile
+    ).subscribe({
+      next: (doc) => {
+        this.isSubmitting = false;
+        this.toastService.success('Uploaded', `${category} uploaded successfully.`);
+        this.selectedFile = null;
+        this.loadUploadedDocuments();
+        if (this.missingCategories.length <= 1) {
+          this.router.navigate(['/documents']);
+        }
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        const msg = err.error?.message || err.message || 'Failed to upload document.';
+        this.toastService.error('Upload Error', msg);
+      }
+    });
   }
 }

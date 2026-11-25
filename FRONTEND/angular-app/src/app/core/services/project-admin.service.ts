@@ -94,11 +94,15 @@ export class ProjectAdminService {
   }
 
   getPublicBranding(): Observable<ProjectConfig['branding']> {
-    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/public/branding`);
+    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/public/branding`, {
+      headers: new HttpHeaders({ 'X-Skip-Error-Toast': 'true' })
+    });
   }
 
   getMyBranding(): Observable<ProjectConfig['branding']> {
-    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/branding/current`, { headers: this.headers() });
+    return this.http.get<ProjectConfig['branding']>(`${this.apiUrl}/branding/current`, {
+      headers: this.headers().set('X-Skip-Error-Toast', 'true')
+    });
   }
 
   createDashboard(data: Pick<ProjectDashboard, 'id' | 'name' | 'description'>): Observable<ProjectDashboard> {

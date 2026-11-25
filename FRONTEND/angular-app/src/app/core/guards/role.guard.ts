@@ -50,7 +50,6 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 function thisRoleRedirect(role: UserRole): string {
   const map: Record<UserRole, string> = {
     Student: '/dashboard',
-    Convocation: '/convocation/dashboard',
     'Games Coach': '/dashboard/games-coach',
     'Hall Warden': '/dashboard/hall-warden',
     USAB: '/dashboard/usab',
@@ -63,7 +62,6 @@ function thisRoleRedirect(role: UserRole): string {
     Finance: '/dashboard/finance',
     Workshop: '/dashboard/workshop',
     Laboratory: '/dashboard/laboratory',
-    ICT: '/dashboard/ict',
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
     'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',

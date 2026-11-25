@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { ConfigService } from './config.service';
 import { NotificationItem, NotificationType } from '../models/notification.model';
 import { StorageService } from './storage.service';
@@ -18,6 +18,9 @@ export class NotificationService {
 
   private readonly unreadCountSubject = new BehaviorSubject<number>(0);
   public readonly unreadCount$ = this.unreadCountSubject.asObservable();
+
+  private refreshUnreadInFlight$: Observable<number> | null = null;
+  private notificationsInFlight$: Observable<NotificationItem[]> | null = null;
 
   constructor() {
     // Permanently purge any stale mock notifications stored in localStorage
@@ -36,7 +39,11 @@ export class NotificationService {
   }
 
   getStudentNotifications(): Observable<NotificationItem[]> {
-    return this.http.get<NotificationItem[]>(`${this.config.apiUrl}/notifications`, {
+    if (this.notificationsInFlight$) {
+      return this.notificationsInFlight$;
+    }
+
+    this.notificationsInFlight$ = this.http.get<NotificationItem[]>(`${this.config.apiUrl}/notifications`, {
       headers: this.getAuthHeaders()
     }).pipe(
       tap((items) => {
@@ -47,12 +54,22 @@ export class NotificationService {
       catchError((err) => {
         console.warn('Could not load notifications from server:', err);
         return of(this.notificationsSubject.value);
-      })
+      }),
+      finalize(() => {
+        this.notificationsInFlight$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    return this.notificationsInFlight$;
   }
 
   refreshUnreadCount(): Observable<number> {
-    return this.http.get<{ unreadCount: number }>(`${this.config.apiUrl}/notifications/unread-count`, {
+    if (this.refreshUnreadInFlight$) {
+      return this.refreshUnreadInFlight$;
+    }
+
+    this.refreshUnreadInFlight$ = this.http.get<{ unreadCount: number }>(`${this.config.apiUrl}/notifications/unread-count`, {
       headers: this.getAuthHeaders()
     }).pipe(
       map(res => res?.unreadCount ?? 0),
@@ -61,8 +78,14 @@ export class NotificationService {
         const count = this.notificationsSubject.value.filter(n => !n.read).length;
         this.unreadCountSubject.next(count);
         return of(count);
-      })
+      }),
+      finalize(() => {
+        this.refreshUnreadInFlight$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    return this.refreshUnreadInFlight$;
   }
 
   get unreadCount(): number {
@@ -161,6 +184,20 @@ export class NotificationService {
 
   markAsRead(notificationId: string): void {
     this.markStudentNotificationRead(notificationId).subscribe();
+  }
+
+  clearCache(): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(this.key);
+      }
+    } catch {
+      // Ignore
+    }
+    this.notificationsSubject.next([]);
+    this.unreadCountSubject.next(0);
+    this.refreshUnreadInFlight$ = null;
+    this.notificationsInFlight$ = null;
   }
 
   markAllAsRead(userId?: string): void {

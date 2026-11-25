@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,17 +18,23 @@ import { ParallelOfficeRequestTableComponent } from '../../shared/components/par
   templateUrl: './workshop.html',
   styleUrl: './workshop.css'
 })
-export class WorkshopComponent {
+export class WorkshopComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Workshop').subscribe();
+  }
+
   sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
+  viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -184,6 +190,39 @@ export class WorkshopComponent {
     this.enlargedPhotoUrl = null;
   }
 
+  openStudentDetailsModal(request: ClearanceRequest): void {
+    this.viewingRequest = request;
+  }
+
+  closeStudentDetailsModal(): void {
+    this.viewingRequest = null;
+  }
+
+  getStudentProgramme(request: ClearanceRequest): string {
+    return request.programme || this.getStudentData(request.studentId)?.programme || '—';
+  }
+
+  getStudentDepartment(request: ClearanceRequest): string {
+    return request.department || this.getStudentData(request.studentId)?.department || '—';
+  }
+
+  getStudentCollege(request: ClearanceRequest): string {
+    return request.college || this.getStudentData(request.studentId)?.college || '—';
+  }
+
+  getStudentEmail(request: ClearanceRequest): string {
+    return request.email || this.getStudentData(request.studentId)?.email || '—';
+  }
+
+  getStudentPhone(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    return request.phoneNumber || u?.phoneNumber || u?.phone || '—';
+  }
+
+  getStudentSponsor(request: ClearanceRequest): string {
+    return request.sponsor || this.getStudentData(request.studentId)?.sponsor || 'Self';
+  }
+
   async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
@@ -196,7 +235,11 @@ export class WorkshopComponent {
       request.id,
       'Workshop',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Workshop approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,
@@ -206,6 +249,7 @@ export class WorkshopComponent {
     );
 
     this.toastService.success('Approved', `Workshop clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Student clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -214,6 +258,7 @@ export class WorkshopComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -231,7 +276,11 @@ export class WorkshopComponent {
       'Workshop',
       staff.fullName,
       this.rejectionComment.trim()
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Workshop return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
@@ -241,11 +290,16 @@ export class WorkshopComponent {
     );
 
     this.toastService.warning('Returned', `Workshop clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified about the required action.';
 
     this.selectedRequest = null;
     this.rejectionComment = '';
     setTimeout(() => { this.message = ''; }, 4000);
+  }
+
+  loadData(): void {
+    this.studentCache.clear();
   }
 
   logout(): void {

@@ -7,6 +7,16 @@ import { AuthService } from './auth.service';
 
 TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
 
+if (typeof localStorage === 'undefined') {
+  const store = new Map<string, string>();
+  (globalThis as any).localStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, val: string) => store.set(key, String(val)),
+    removeItem: (key: string) => store.delete(key),
+    clear: () => store.clear()
+  };
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;

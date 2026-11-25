@@ -36,54 +36,129 @@
     </app-dashboard-header>
 
     <!-- MESSAGE -->
-    <p class="message" *ngIf="message">{{ message }}</p>
+    <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
-        />
+    <!-- PARALLEL CLEARANCE REQUESTS BOARD -->
+    <section class="dashboard-board" id="requests-section">
+      <div class="board-header">
+        <div class="board-title-group">
+          <div class="board-icon-badge"></div>
+          <div>
+            <h2>Student Clearance Applications</h2>
+            <p>Review student applications and verify workshop tools and equipment clearance.</p>
+          </div>
+        </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Search student, registration number or programme..." aria-label="Search requests" />
+          </div>
+          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
       </div>
-
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="Pending">Pending</option>
-        <option value="Approved">Approved</option>
-        <option value="Rejected">Rejected</option>
-      </select>
+      <div class="board-body board-table-body">
+        <div class="board-empty-state" *ngIf="!filteredRequests.length">
+          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
+          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
+          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Workshop.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Workshop.' : 'There are currently no student applications awaiting Workshop approval.' }}</p>
+        </div>
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <app-parallel-office-request-table
+            [requests]="paginatedRequests"
+            [office]="'Workshop'"
+            (approve)="approve($event)"
+            (reject)="openRejectForm($event)"
+            (view)="openStudentDetailsModal($event)"
+            (bulkApproved)="loadData()"
+          ></app-parallel-office-request-table>
+        </div>
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">&larr; Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong></span>
+          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">Next &rarr;</button>
+        </div>
+      </div>
     </section>
+    <!-- STUDENT DETAILS MODAL -->
+    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
+      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
+        <header class="hostel-modal-header">
+          <div class="modal-student-header">
+            <div class="student-avatar-wrap">
+              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" alt="Student Photo" />
+              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
+            </div>
+            <div>
+              <h3>{{ getStudentName(viewingRequest) }}</h3>
+              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
+            </div>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
+        </header>
 
-    <!-- EMPTY STATE -->
-    <section class="empty-state" *ngIf="!filteredRequests.length">
-      <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-      <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-      <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Workshop.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Workshop.' : 'There are currently no student applications awaiting Workshop approval.' }}</p>
+        <div class="student-modal-body">
+          <div class="detail-section highlight-box">
+            <div class="section-badge-title">
+              <h4>{{ workshopName }} Clearance Status</h4>
+            </div>
+            <div class="residence-status-pill hostel">
+              <strong>Status:</strong> {{ getRequestOfficeStatus(viewingRequest, 'Workshop') }}
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Academic &amp; Department Information</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">College / Unit</span>
+                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Programme</span>
+                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Sponsor</span>
+                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Contact Details</h4>
+            <div class="details-grid-2">
+              <div class="detail-item">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="student-modal-footer">
+          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">Close</button>
+          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'Workshop') === 'Pending'">
+            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
+              <i class="bi bi-x-lg"></i> Reject
+            </button>
+            <button type="button" class="approve-button" (click)="approve(viewingRequest); closeStudentDetailsModal()">
+              <i class="bi bi-check-lg"></i> Approve
+            </button>
+          </div>
+        </footer>
+      </div>
     </section>
-
-    <!-- REQUEST LIST -->
-    <section class="request-list" *ngIf="filteredRequests.length">
-      <app-parallel-office-request-table
-        [requests]="paginatedRequests"
-        [office]="'Workshop'"
-        (approve)="approve($event)"
-        (reject)="openRejectForm($event)"
-      ></app-parallel-office-request-table>
-    </section>
-
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
 
     <!-- REJECTION MODAL -->
     <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">

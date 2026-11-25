@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 
 import {
   ApprovalStatus,
@@ -25,8 +25,17 @@ export class ClearanceService {
   private readonly requestKey = 'udsm-clearance-requests';
   private readonly draftKey = 'udsm-clearance-drafts';
 
-  private readonly lastOfficeFetchTime: Record<string, number> = {};
-  private readonly lastStudentFetchTime: Record<string, number> = {};
+  private myRequestInFlight$: Observable<ClearanceRequest | null> | null = null;
+  private officeRequestsInFlight = new Map<string, Observable<ClearanceRequest[]>>();
+
+  clearCache(): void {
+    this.storage.remove(this.requestKey);
+    this.storage.remove(this.draftKey);
+    this.myRequestInFlight$ = null;
+    if (this.officeRequestsInFlight) {
+      this.officeRequestsInFlight.clear();
+    }
+  }
 
   /*
    * These seven offices work independently.
@@ -103,6 +112,12 @@ export class ClearanceService {
       roomNumber: res.roomNumber || '',
       sponsor: res.sponsor || '',
       photo: res.photo || '',
+      convocation: res.convocation || ((res.controlNumber || res.control_number)
+        ? {
+            controlNumber: res.controlNumber || res.control_number,
+            submittedControlNumber: res.controlNumber || res.control_number
+          }
+        : undefined),
       requestDate: res.requestDate ? (typeof res.requestDate === 'string' ? res.requestDate : new Date(res.requestDate).toISOString()) : new Date().toISOString(),
       status: mapOverallStatus(res.status),
       currentOffice: res.currentOffice as ClearanceOffice,
@@ -154,7 +169,14 @@ export class ClearanceService {
           }
         }
 
-        map.set(inc.id, { ...curr, ...inc, approvals: mergedApprovals });
+        map.set(inc.id, {
+          ...curr,
+          ...inc,
+          convocation: curr.convocation || inc.convocation
+            ? { ...(curr.convocation ?? {}), ...(inc.convocation ?? {}) }
+            : undefined,
+          approvals: mergedApprovals
+        });
       } else {
         map.set(inc.id, inc);
       }
@@ -165,13 +187,20 @@ export class ClearanceService {
   }
 
   fetchOfficeRequests(office: ClearanceOffice, status?: string): Observable<ClearanceRequest[]> {
+    const cacheKey = `${office}_${status || ''}`;
+    const inFlightMap = this.officeRequestsInFlight || (this.officeRequestsInFlight = new Map());
+    const inFlight = inFlightMap.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
     const headers = this.getAuthHeaders();
     let url = `${this.config.apiUrl}/clearance/office/requests?office=${encodeURIComponent(office)}`;
     if (status) {
       url += `&status=${encodeURIComponent(status)}`;
     }
 
-    return this.http.get<any[]>(url, { headers }).pipe(
+    const obs$ = this.http.get<any[]>(url, { headers }).pipe(
       map(responses => {
         const mapped = (responses || []).map(r => this.mapBackendResponseToClearanceRequest(r));
         this.mergeRequestsIntoStorage(mapped);
@@ -180,13 +209,24 @@ export class ClearanceService {
       catchError(err => {
         console.warn(`Could not fetch backend requests for ${office}:`, err);
         return of(this.getRequestsForOffice(office));
-      })
+      }),
+      finalize(() => {
+        (this.officeRequestsInFlight || inFlightMap).delete(cacheKey);
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    inFlightMap.set(cacheKey, obs$);
+    return obs$;
   }
 
-  fetchMyRequest(): Observable<ClearanceRequest | null> {
+  fetchMyRequest(force: boolean = false): Observable<ClearanceRequest | null> {
+    if (this.myRequestInFlight$ && !force) {
+      return this.myRequestInFlight$;
+    }
+
     const headers = this.getAuthHeaders();
-    return this.http.get<any>(`${this.config.apiUrl}/clearance/my-request`, { headers }).pipe(
+    this.myRequestInFlight$ = this.http.get<any>(`${this.config.apiUrl}/clearance/my-request`, { headers }).pipe(
       map(response => {
         if (!response) return null;
         const mapped = this.mapBackendResponseToClearanceRequest(response);
@@ -196,14 +236,29 @@ export class ClearanceService {
       catchError(err => {
         console.warn('Could not fetch student clearance request from backend:', err);
         return of(null);
-      })
+      }),
+      finalize(() => {
+        this.myRequestInFlight$ = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
+
+    return this.myRequestInFlight$;
   }
 
   approveOfficeBackend(requestId: string, office: ClearanceOffice, comments: string = 'Approved'): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.post<any>(`${this.config.apiUrl}/clearance/office/approve`, {
       requestId,
+      office,
+      comments
+    }, { headers });
+  }
+
+  bulkApproveOfficeBackend(requestIds: string[], office: ClearanceOffice, comments: string = 'Approved in bulk'): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.post<any>(`${this.config.apiUrl}/clearance/office/bulk-approve`, {
+      requestIds,
       office,
       comments
     }, { headers });
@@ -247,7 +302,7 @@ export class ClearanceService {
     college: string;
     department: string;
     academicYear: string;
-    hall: string;
+    hall?: string;
     wing?: string;
     block?: string;
     roomNumber?: string;
@@ -477,18 +532,10 @@ export class ClearanceService {
   }
 
   // =====================================================
-  // GET STUDENT REQUESTS (AUTO-SYNC WITH BACKEND)
+  // GET STUDENT REQUESTS (READ FROM LOCAL CACHE)
   // =====================================================
 
   getStudentRequests(studentId: string): ClearanceRequest[] {
-    const now = Date.now();
-    if (!this.lastStudentFetchTime[studentId] || (now - this.lastStudentFetchTime[studentId] > 2000)) {
-      this.lastStudentFetchTime[studentId] = now;
-      this.fetchMyRequest().subscribe({
-        next: () => {},
-        error: () => {}
-      });
-    }
     const authUser = this.storage.get<any>('udsm-auth-user');
     const userReg = authUser?.registrationNumber?.trim()?.toLowerCase();
     const userEmail = authUser?.email?.trim()?.toLowerCase();
@@ -544,7 +591,7 @@ export class ClearanceService {
   }
 
   // =====================================================
-  // GET REQUESTS FOR OFFICE (AUTO-SYNC WITH BACKEND)
+  // GET REQUESTS FOR OFFICE (READ FROM LOCAL CACHE)
   // =====================================================
 
   getRequestsForOffice(
@@ -552,16 +599,6 @@ export class ClearanceService {
       college?: string,
       department?: string
   ): ClearanceRequest[] {
-    const now = Date.now();
-    const cacheKey = `${office}_${college || ''}_${department || ''}`;
-    if (!this.lastOfficeFetchTime[cacheKey] || (now - this.lastOfficeFetchTime[cacheKey] > 2000)) {
-      this.lastOfficeFetchTime[cacheKey] = now;
-      this.fetchOfficeRequests(office).subscribe({
-        next: () => {},
-        error: () => {}
-      });
-    }
-
     return this.getAllRequests().filter(request => {
       if (!request || !request.approvals || !Array.isArray(request.approvals)) {
         return false;
@@ -718,41 +755,86 @@ export class ClearanceService {
   // STEP 1 - STUDENT SUBMITS PAYMENT RECEIPT
   // =====================================================
 
-  submitConvocationReceipt(requestId: string, receiptData: string): void {
+  submitConvocationReceipt(requestId: string, receiptData: string, controlNumberInput?: string): void {
     const request = this.getRequest(requestId);
 
     if (!request) {
       return;
     }
 
-    if (request.currentStage !== 'Convocation') {
-      return;
-    }
+    const writtenControlNumber = controlNumberInput?.trim() || '';
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      receiptFileName: 'Payment Receipt',
-      receiptData: receiptData,
+      controlNumber: writtenControlNumber || request.convocation?.controlNumber,
+      submittedControlNumber: writtenControlNumber || request.convocation?.submittedControlNumber,
+      receiptFileName: writtenControlNumber ? `Control Number: ${writtenControlNumber}` : 'Payment Control Number / Receipt',
+      receiptData: receiptData || writtenControlNumber,
       receiptSubmittedAt: new Date().toISOString()
     };
+
+    // Finance is the only manual reviewer; submitting the control number completes Convocation automatically.
+    const existingFinance = request.approvals.find(a => a.office === 'Finance');
+    if (existingFinance) {
+      request.approvals = request.approvals.map(a =>
+        a.office === 'Finance'
+          ? { ...a, status: 'Pending', comment: writtenControlNumber ? `Payment Control Number: ${writtenControlNumber}` : a.comment }
+          : a
+      );
+    } else {
+      request.approvals.push({
+        office: 'Finance',
+        status: 'Pending',
+        comment: writtenControlNumber ? `Payment Control Number: ${writtenControlNumber}` : 'Payment Control Number submitted'
+      });
+    }
+
+    const convocationApproval = request.approvals.find(a => a.office === 'Convocation');
+    if (convocationApproval) {
+      convocationApproval.status = 'Approved';
+      convocationApproval.comment = writtenControlNumber
+        ? `Control Number Submitted: ${writtenControlNumber}; final review is assigned to Finance.`
+        : 'Convocation auto-approved upon control number submission; final review is assigned to Finance.';
+    }
+
+    request.currentStage = 'Parallel';
+    request.currentOffice = 'Parallel';
 
     this.save(request);
   }
 
-  submitFinanceReceiptAfterRejection(requestId: string, receiptData: string, fileName: string, note?: string): boolean {
+  submitFinanceReceiptAfterRejection(requestId: string, _receiptData: string, _fileName: string, note?: string): boolean {
     const request = this.getRequest(requestId);
     if (!request) return false;
 
-    request.approvals = request.approvals.map(a => a.office === 'Finance' ? { ...a, status: 'Pending', comment: note || a.comment } : a);
+    const controlNum = note?.trim();
+    const financeApproval = request.approvals.find(approval => approval.office === 'Finance');
+    if (!controlNum || !/^[A-Za-z0-9-]{4,40}$/.test(controlNum) ||
+        request.status !== 'Rejected' || request.currentStage !== 'Finance' || financeApproval?.status !== 'Rejected') {
+      return false;
+    }
+
+    request.approvals = request.approvals.map(a => a.office === 'Finance' ? { ...a, status: 'Pending', comment: `Control number resubmitted: ${controlNum}` } : a);
     request.status = 'Pending';
     request.currentStage = 'Finance';
     request.currentOffice = 'Finance';
+    request.resubmittedWithReceipt = true;
 
     request.convocation = {
       ...(request.convocation ?? {}),
-      receiptData: receiptData,
-      receiptFileName: fileName,
+      submittedControlNumber: controlNum,
+      controlNumber: controlNum,
+      receiptData: '',
+      receiptFileName: `Control Number: ${controlNum}`,
       receiptSubmittedAt: new Date().toISOString()
+    };
+
+    request.financeReceipt = {
+      controlNumber: controlNum,
+      receiptFileName: `Control Number: ${controlNum}`,
+      receiptData: '',
+      receiptSubmittedAt: new Date().toISOString(),
+      receiptNote: ''
     };
 
     this.save(request);

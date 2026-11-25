@@ -9,6 +9,7 @@ import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
 interface AnalyticsBar {
   label: string;
@@ -19,7 +20,7 @@ interface AnalyticsBar {
 @Component({
   selector: 'app-dean-of-students',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
   templateUrl: './dean_of_students.html',
   styleUrl: './dean_of_students.css'
 })
@@ -35,6 +36,7 @@ export class DeanOfStudentsComponent implements OnInit {
   detailsRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
   isLoading = false;
   pendingRequests: ClearanceRequest[] = [];
   allRequests: ClearanceRequest[] = [];
@@ -77,6 +79,21 @@ export class DeanOfStudentsComponent implements OnInit {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
   }
 
   setViewMode(mode: 'requests' | 'analytics'): void {
@@ -154,6 +171,10 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Dean of Students').subscribe({
+      next: () => this.loadData(),
+      error: () => this.loadData()
+    });
     this.loadData();
   }
 
@@ -454,6 +475,7 @@ export class DeanOfStudentsComponent implements OnInit {
       );
 
       if (!approved) {
+        this.messageState = 'error';
         this.message = 'This request could not be approved in its current state. Refresh the dashboard and try again.';
         return;
       }
@@ -468,7 +490,8 @@ export class DeanOfStudentsComponent implements OnInit {
           'success'
       );
 
-      this.message = `✅ Student ${this.getStudentName(request)} was approved successfully.`;
+      this.messageState = 'success';
+      this.message = `Student ${this.getStudentName(request)} was approved successfully.`;
 
       setTimeout(() => {
         this.message = '';
@@ -476,7 +499,8 @@ export class DeanOfStudentsComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Approval error:', error);
-      this.message = '❌ Failed to approve request. Please try again.';
+      this.messageState = 'error';
+      this.message = 'Failed to approve request. Please try again.';
     } finally {
       this.isLoading = false;
     }
@@ -490,6 +514,7 @@ export class DeanOfStudentsComponent implements OnInit {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   // =====================================================
@@ -514,7 +539,11 @@ export class DeanOfStudentsComponent implements OnInit {
           'Dean of Students',
           staff.fullName || 'Dean of Students',
           this.rejectionComment
-      )) return;
+      )) {
+        this.messageState = 'error';
+        this.message = 'This request could not be returned. Refresh the dashboard and try again.';
+        return;
+      }
 
       // Reload data
       this.loadData();
@@ -526,7 +555,8 @@ export class DeanOfStudentsComponent implements OnInit {
           'warning'
       );
 
-      this.message = `✅ Student ${this.getStudentName(request)} has been notified about the required action.`;
+      this.messageState = 'success';
+      this.message = `Student ${this.getStudentName(request)} has been notified about the required action.`;
 
       this.selectedRequest = null;
       this.rejectionComment = '';
@@ -537,7 +567,8 @@ export class DeanOfStudentsComponent implements OnInit {
 
     } catch (error: any) {
       console.error('Rejection error:', error);
-      this.message = '❌ Failed to reject request. Please try again.';
+      this.messageState = 'error';
+      this.message = 'Failed to reject request. Please try again.';
     } finally {
       this.isLoading = false;
     }
@@ -557,12 +588,13 @@ export class DeanOfStudentsComponent implements OnInit {
   // =====================================================
 
   refreshData(): void {
-    this.message = '🔄 Refreshing data...';
+    this.messageState = 'success';
+    this.message = 'Refreshing data...';
     // Clear cache
     this.studentCache.clear();
     this.loadData();
     setTimeout(() => {
-      this.message = '✅ Data refreshed successfully.';
+      this.message = 'Data refreshed successfully.';
       setTimeout(() => {
         this.message = '';
       }, 3000);

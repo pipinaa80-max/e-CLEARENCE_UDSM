@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
+import { CertificateService } from '../../core/services/certificate.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 
@@ -42,6 +43,7 @@ export class ClearanceStatusComponent implements OnInit {
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
+  private readonly certificateService = inject(CertificateService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
@@ -160,14 +162,14 @@ export class ClearanceStatusComponent implements OnInit {
       );
 
       if (success) {
-        this.toastService.success('Receipt Submitted', 'Payment receipt submitted successfully! Returned to Finance for review.');
+        this.toastService.success('Control Number Submitted', 'Payment control number submitted successfully! Returned to Finance for review.');
         this.removeReceiptFile();
         this.receiptNote = '';
         this.showReceiptModal = false;
         this.loadData();
         this.notificationService.getStudentNotifications().subscribe();
       } else {
-        this.receiptErrorMessage = 'Could not submit receipt. Please try again.';
+        this.receiptErrorMessage = 'Could not submit control number. Please try again.';
       }
     } catch (err: any) {
       this.receiptErrorMessage = err?.message || 'Error processing receipt file.';
@@ -711,7 +713,7 @@ export class ClearanceStatusComponent implements OnInit {
     if (!request) return false;
 
     if (request.currentStage === 'Convocation') {
-      return this.isConvocationApproved;
+      return this.isConvocationApproved || !!(request.convocation?.receiptSubmittedAt || request.convocation?.controlNumber);
     }
 
     if (request.currentStage === 'Parallel') {
@@ -895,8 +897,23 @@ export class ClearanceStatusComponent implements OnInit {
   loadData(): void {
     const user = this.authService.getCurrentUser();
     if (user) {
-      this.clearanceService.getStudentRequests(user.id);
+      this.clearanceService.fetchMyRequest().subscribe({
+        next: () => this.checkAndAutoAdvanceStage(),
+        error: () => {}
+      });
     }
+  }
+
+  downloadCertificate(): void {
+    this.certificateService.downloadMyCertificate().subscribe({
+      next: () => {
+        this.toastService.success('Downloaded', 'Clearance certificate downloaded successfully.');
+      },
+      error: (err) => {
+        const msg = err.error?.message || err.message || 'Unable to download certificate.';
+        this.toastService.error('Download Failed', msg);
+      }
+    });
   }
 
   goBack(): void {

@@ -22,6 +22,11 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
+                "glob": ".htaccess",
+                "input": "public",
+                "output": "."
+              },
+              {
                 "glob": "**/*",
                 "input": "public",
                 "output": "."
@@ -29,12 +34,14 @@
               {
                 "glob": "**/*",
                 "input": "public",
-                "output": "public"
+                "output": "public",
+                "ignore": [".htaccess", "config.js"]
               },
               {
                 "glob": "**/*",
                 "input": "public",
-                "output": "assets"
+                "output": "assets",
+                "ignore": [".htaccess", "config.js"]
               }
             ],
             "styles": [
@@ -44,16 +51,51 @@
             "optimization": {
               "fonts": false
             }
-          }
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/app/environments/environment.ts",
+                  "with": "src/app/environments/environment.prod.ts"
+                }
+              ],
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true
+                },
+                "fonts": false
+              },
+              "sourceMap": false,
+              "extractLicenses": true
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "angular-app:build",
             "proxyConfig": "proxy.conf.json",
             "hmr": true,
             "liveReload": true
-          }
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "angular-app:build:production"
+            },
+            "development": {
+              "buildTarget": "angular-app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }

@@ -19,7 +19,7 @@ export class Landing implements OnInit {
     universityName: 'University of Dar es Salaam',
     shortName: 'Clearance',
     logoUrl: '/udsm-logo.png',
-    backgroundUrl: '/background_image.png',
+    backgroundUrl: '/background.png',
     primaryColor: '#0864af',
     fontFamily: 'Segoe UI',
     footerLinks: []
@@ -44,10 +44,16 @@ export class Landing implements OnInit {
     this.router.navigate(['/login']);
   }
 
+  onLogoError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = '/udsm-logo.png';
+    }
+  }
+
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
-      Convocation: '/convocation/dashboard',
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',
@@ -60,7 +66,6 @@ export class Landing implements OnInit {
       Finance: '/dashboard/finance',
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
-      ICT: '/dashboard/ict',
       'Academic Staff': '/dashboard/academic',
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',

@@ -74,9 +74,29 @@
 .field > span { color: #000; font-size: 13px; font-weight: 800; }
 .field input, .field select, .field textarea { width: 100%; box-sizing: border-box; padding: 13px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff; color: #000; font: inherit; font-size: 14px; font-weight: 500; outline: none; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: #00679b; box-shadow: 0 0 0 3px rgba(0, 103, 155, .1); }
-.field input:read-only { background: #f8fafc; color: #475569; cursor: not-allowed; }
+.field input:read-only,
+.field input.readonly-field {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: not-allowed;
+}
+.field input:read-only:focus,
+.field input.readonly-field:focus {
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+.field select:disabled {
+  border-color: #cbd5e1;
+  background-color: #f1f5f9;
+  color: #475569;
+  cursor: not-allowed;
+  opacity: 1;
+}
 .field-hint { margin-top: 5px; color: #176b37; font-size: 12px; font-weight: 600; }
+.residence-evidence-hint { color: #36566a; font-weight: 500; }
 .field-error { margin-top: 5px; color: #c73535; font-size: 12px; font-weight: 600; }
+.sponsor-row .field > span { color: #003b5c; }
 
 .photo-upload { display: flex; align-items: center; gap: 24px; padding: 10px 0; }
 .photo-preview { width: 120px; height: 120px; flex-shrink: 0; border: 1px solid #ccd8de; border-radius: 10px; background: #f8fafc; overflow: hidden; }
@@ -86,11 +106,35 @@
 .photo-input input { display: none; }
 .photo-input small { display: block; margin-top: 10px; color: #68757d; }
 
-.confirmation-section { padding-top: 40px; }
-.confirmation { display: flex; align-items: center; gap: 14px; color: #24323a; font-size: 14px; line-height: 1.5; cursor: pointer; }
-.confirmation input { margin-top: 0; width: 18px; height: 18px; accent-color: #00679b; cursor: pointer; }
+.confirmation-section { padding: 20px 0 8px; }
+.confirmation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #c9dce9;
+  border-radius: 10px;
+  background: #f8fbfd;
+  color: #29434f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+.confirmation:hover { border-color: #7aaec7; background: #f1f8fb; }
+.confirmation:focus-within { border-color: #00679b; box-shadow: 0 0 0 3px rgba(0, 103, 155, .12); }
+.confirmation input {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #00679b;
+  cursor: pointer;
+}
 
-.request-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid #e5eaed; }
+.request-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 16px; border-top: 1px solid #e5eaed; }
 .cancel-button { min-height: 46px; padding: 0 24px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .cancel-button:hover { background: #f8fafc; }
 .submit-button { min-height: 46px; padding: 0 28px; border: none; border-radius: 8px; background: #00679b; color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: background .2s ease; }

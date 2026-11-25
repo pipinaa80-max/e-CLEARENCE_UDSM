@@ -50,8 +50,6 @@ export class NotificationListComponent implements OnInit {
         return '/dashboard/admin';
       case 'Finance':
         return '/dashboard/finance';
-      case 'ICT':
-        return '/dashboard/ict';
       case 'Library':
         return '/dashboard/library';
       case 'Department':
@@ -62,8 +60,6 @@ export class NotificationListComponent implements OnInit {
         return '/dashboard/academic';
       case 'Lecturer':
         return '/dashboard/lecturer';
-      case 'Convocation':
-        return '/convocation/dashboard';
       case 'Games Coach':
         return '/dashboard/games-coach';
       case 'Hall Warden':

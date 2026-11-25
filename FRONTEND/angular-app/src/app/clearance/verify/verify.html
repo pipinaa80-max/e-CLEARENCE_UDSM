@@ -1,0 +1,76 @@
+<section class="verify-page">
+  <div class="verify-card">
+    <header class="verify-header">
+      <div class="logo-box">
+        <img src="/udsm-logo.png" alt="University of Dar es Salaam Crest" class="verify-logo" />
+      </div>
+      <h1>University of Dar es Salaam</h1>
+      <p class="subtitle">Official Electronic Clearance Verification Portal</p>
+    </header>
+
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Verifying certificate authenticity with institutional records...</p>
+    </div>
+
+    <div *ngIf="!isLoading && result" class="verification-content">
+      <!-- VALID CERTIFICATE -->
+      <div *ngIf="result.valid" class="badge-card valid-badge">
+        <div class="badge-icon">✅</div>
+        <h2>OFFICIAL CLEARANCE CERTIFICATE VERIFIED</h2>
+        <p class="badge-desc">This electronic clearance certificate is authentic, fully approved, and officially recorded in the UDSM institutional clearance register.</p>
+
+        <div class="details-table">
+          <div class="detail-row">
+            <span class="label">Certificate Number:</span>
+            <span class="value font-mono">{{ result.certificateNumber }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Student Name:</span>
+            <span class="value font-bold">{{ result.student?.fullName }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Registration Number:</span>
+            <span class="value font-mono">{{ result.student?.registrationNumber }}</span>
+          </div>
+          <div class="detail-row" *ngIf="result.student?.programme">
+            <span class="label">Academic Programme:</span>
+            <span class="value">{{ result.student?.programme }}</span>
+          </div>
+          <div class="detail-row" *ngIf="result.student?.college">
+            <span class="label">College / Faculty:</span>
+            <span class="value">{{ result.student?.college }}</span>
+          </div>
+          <div class="detail-row" *ngIf="result.student?.department">
+            <span class="label">Department:</span>
+            <span class="value">{{ result.student?.department }}</span>
+          </div>
+          <div class="detail-row" *ngIf="result.issuedAt">
+            <span class="label">Issue Date:</span>
+            <span class="value">{{ result.issuedAt | date:'medium' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Status:</span>
+            <span class="value status-pill approved">{{ result.status || 'VALID' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVALID / REVOKED CERTIFICATE -->
+      <div *ngIf="!result.valid" class="badge-card invalid-badge">
+        <div class="badge-icon">⚠️</div>
+        <h2>CERTIFICATE INVALID OR REVOKED</h2>
+        <p class="badge-desc">
+          {{ result.error || result.message || 'No active, authentic clearance certificate matches this verification code.' }}
+        </p>
+        <p class="warning-note">
+          If you believe this is an error, please contact the Directorate of Undergraduate Studies (DUS) or the Office of the Registrar.
+        </p>
+      </div>
+    </div>
+
+    <footer class="verify-footer">
+      <a routerLink="/login" class="back-link">Return to Portal Home</a>
+    </footer>
+  </div>
+</section>

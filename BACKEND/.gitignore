@@ -1,33 +1,29 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Dependencies & Build
+node_modules/
+dist/
+coverage/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# Environment & Secrets
+.env
+.env.*
+!.env.example
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
+# Logs
+logs/
+*.log
+*.log.*
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Uploaded runtime files (keep folder structure)
+uploads/*
+!uploads/convocation/
+!uploads/private-documents/
+uploads/convocation/*
+!uploads/convocation/.gitkeep
+uploads/private-documents/*
+!uploads/private-documents/.gitkeep
 
-### VS Code ###
+# IDE & OS
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -82,6 +82,18 @@
   min-width: 0;
   padding: 32px 38px 60px;
   box-sizing: border-box;
+  align-items: stretch !important;
+}
+
+/* The shared staff layout caps and centers every direct child at 1080px.
+   Finance is a data workspace, so let its header, filters, and tables use the
+   full column beside the sidebar instead of leaving a large empty gutter. */
+.office-page > .content > * {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  align-self: stretch;
 }
 
 /* MESSAGES */
@@ -229,6 +241,21 @@
 .compact-request-table tbody tr:last-child td { border-bottom: 0; }
 .compact-request-table tbody tr:hover { background: #f8fafc; }
 .compact-request-table .compact-name { color: #132d3a; font-weight: 700; }
+.finance-control-number {
+  display: inline-block;
+  max-width: 190px;
+  overflow: hidden;
+  padding: 5px 8px;
+  border: 1px solid #d7e5ed;
+  border-radius: 6px;
+  background: #f4f9fc;
+  color: #075985;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
 
 .name-cell-wrap {
   display: flex;
@@ -909,4 +936,19 @@
   .compact-details-card { padding: 18px; }
   .compact-details-grid { grid-template-columns: 1fr; }
   .receipt-pdf-frame iframe { height: 340px; }
+}
+.transcript-payment-section { margin-top: 18px; padding: 20px; border: 1px solid #dce3e8; border-radius: 12px; background: #fff; box-shadow: 0 4px 18px rgba(0, 0, 0, .05); }
+.transcript-payment-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+.transcript-payment-heading h2 { margin: 0; color: #003b5c; font-size: 20px; }
+.transcript-payment-heading p { margin: 5px 0 0; color: #64748b; font-size: 13px; }
+.transcript-payment-filters { display: flex; align-items: center; gap: 10px; }
+.transcript-payment-filters input, .transcript-payment-filters select { min-height: 40px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #1e293b; font: inherit; font-size: 13px; }
+.transcript-payment-filters input { width: min(320px, 45vw); }
+.transcript-payment-table th:last-child, .transcript-payment-table td:last-child { text-align: right; }
+.transcript-payment-table .compact-actions { justify-content: flex-end; }
+@media (max-width: 700px) {
+  .transcript-payment-section { padding: 14px; }
+  .transcript-payment-heading { align-items: stretch; flex-direction: column; }
+  .transcript-payment-filters { width: 100%; }
+  .transcript-payment-filters input { width: 100%; min-width: 0; }
 }

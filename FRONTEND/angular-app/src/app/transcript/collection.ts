@@ -6,6 +6,8 @@ import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { CollectionStationService, CollectionStation } from '../core/services/collection-station.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { DocumentService } from '../core/services/document.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-transcript-collection',
@@ -18,6 +20,7 @@ export class TranscriptCollectionComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly paymentService = inject(TranscriptPaymentService);
+  private readonly documentService = inject(DocumentService);
   private readonly stationService = inject(CollectionStationService);
   private readonly router = inject(Router);
 
@@ -25,6 +28,7 @@ export class TranscriptCollectionComponent implements OnInit {
   message = '';
   stations: CollectionStation[] = [];
   selectedStation: CollectionStation | null = null;
+  loading = true;
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
@@ -43,7 +47,7 @@ export class TranscriptCollectionComponent implements OnInit {
     const user = this.authService.getCurrentUser();
     if (!user) return false;
     const requests = this.paymentService.getStudentRequests(user.id);
-    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
+    return requests.some(r => r.serverManaged && r.attemptNumber === 1 && r.status === 'Paid');
   }
 
   form = this.fb.nonNullable.group({
@@ -59,7 +63,9 @@ export class TranscriptCollectionComponent implements OnInit {
 
   get request() {
     const user = this.authService.getCurrentUser();
-    return user ? this.paymentService.getStudentRequests(user.id).at(-1) ?? null : null;
+    return user ? this.paymentService.getStudentRequests(user.id)
+      .filter(request => request.serverManaged && request.status === 'Paid')
+      .at(-1) ?? null : null;
   }
 
   get isPost(): boolean {
@@ -86,23 +92,36 @@ export class TranscriptCollectionComponent implements OnInit {
       return;
     }
 
-    if (!this.request || this.request.status !== 'Paid') {
-      this.router.navigate(['/dashboard/student']);
-      return;
-    }
-
-    this.form.patchValue({
-      collectionMethod: (this.request.collectionMethod as any === 'Post' ? 'Post by DHL' : this.request.collectionMethod) ?? '',
-      postingRegion: this.request.postingRegion ?? '',
-      postingWard: this.request.postingWard ?? '',
-      postingPoBox: this.request.postingPoBox ?? '',
-      postingContactPhone: this.request.postingContactPhone ?? (user.phoneNumber || user.phone || ''),
-      postingContactEmail: this.request.postingContactEmail ?? (user.email || ''),
-      postingAddress: this.request.postingAddress ?? ''
-    });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user || user.role !== 'Student') {
+      this.router.navigate(['/login']);
+      return;
+    }
+    try {
+      await this.paymentService.refreshStudentControlNumberRequests();
+      const request = this.request;
+      if (!request?.paymentBatchId || !await firstValueFrom(this.documentService.hasRequiredTranscriptDocuments(request.paymentBatchId))) {
+        this.router.navigate(['/dashboard/student']);
+        return;
+      }
+      this.form.patchValue({
+        collectionMethod: (request.collectionMethod as any === 'Post' ? 'Post by DHL' : request.collectionMethod) ?? '',
+        postingRegion: request.postingRegion ?? '',
+        postingWard: request.postingWard ?? '',
+        postingPoBox: request.postingPoBox ?? '',
+        postingContactPhone: request.postingContactPhone ?? (user.phoneNumber || user.phone || ''),
+        postingContactEmail: request.postingContactEmail ?? (user.email || ''),
+        postingAddress: request.postingAddress ?? ''
+      });
+      this.loading = false;
+    } catch {
+      this.message = 'Unable to verify payment approval and required documents. Refresh and try again.';
+      this.loading = false;
+      return;
+    }
     this.stationService.getActiveStations().subscribe({
       next: (list) => {
         this.stations = list;
@@ -133,7 +152,11 @@ export class TranscriptCollectionComponent implements OnInit {
     }
   }
 
-  save(): void {
+  async save(): Promise<void> {
+    if (this.loading || !this.request?.paymentBatchId) {
+      this.message = 'Payment approval and required documents must be verified before continuing.';
+      return;
+    }
     this.message = '';
     const val = this.form.getRawValue();
     const method = val.collectionMethod;
@@ -165,19 +188,29 @@ export class TranscriptCollectionComponent implements OnInit {
       ? val.postingRegion.trim()
       : (this.selectedStation?.region || 'Dar es Salaam');
 
-    if (!this.request || !this.paymentService.updateCollectionDetails(
-      this.request.id,
-      method,
-      fullSummaryAddress,
-      region,
-      val.postingWard.trim(),
-      val.postingPoBox.trim(),
-      val.postingContactPhone.trim(),
-      val.postingContactEmail.trim()
-    )) {
+    const requestId = this.request?.paymentBatchId;
+    if (!requestId) {
       this.message = 'Unable to save your collection preference.';
       return;
     }
+
+    this.loading = true;
+    try {
+      await this.paymentService.saveCollectionPreference(requestId, {
+        collectionMethod: method,
+        collectionAddress: fullSummaryAddress,
+        postingRegion: region,
+        postingWard: val.postingWard.trim(),
+        postingPoBox: val.postingPoBox.trim(),
+        contactPhone: val.postingContactPhone.trim(),
+        contactEmail: val.postingContactEmail.trim()
+      });
+    } catch {
+      this.message = 'Unable to save your collection preference. Confirm your documents and try again.';
+      this.loading = false;
+      return;
+    }
+    this.loading = false;
 
     this.message = `Collection preference saved successfully! Allocated to: ${method === 'Physical Collection' ? this.selectedStation?.name : 'DHL Courier Service'}.`;
     setTimeout(() => this.router.navigate(['/transcript/process']), 1200);

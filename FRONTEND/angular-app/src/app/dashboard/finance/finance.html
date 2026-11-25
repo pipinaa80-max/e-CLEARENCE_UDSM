@@ -3,18 +3,39 @@
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <div class="brand">
-      <img src="/udsm-logo.png" alt="Institutional Logo" />
-
-      <div>
-        <strong>FINANCE</strong>
-        <small>Clearance Workspace</small>
+  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard/finance" (click)="closeSidebar()">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
+        </a>
+        <div class="brand-text">
+          <strong>FINANCE</strong>
+          <small>Clearance Workspace</small>
+        </div>
       </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <nav>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'transcript-payments'"
+        (click)="closeSidebar(); setViewMode('transcript-payments')"
+        style="width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; color: #ccd8de; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;"
+      >
+        <span>Transcript Payment Verification</span>
+      </button>
+
       <button
         type="button"
         class="nav-tab-btn"
@@ -170,13 +191,13 @@
 
 
     <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="requests.length || searchTerm">
+    <section class="toolbar" *ngIf="viewMode === 'requests' && (requests.length || searchTerm)">
       <div class="search-box">
         <input
           type="text"
           [(ngModel)]="searchTerm"
           (ngModelChange)="onFilterChange()"
-          placeholder="Search student, registration number or programme..."
+          placeholder="Search name, registration number or control number..."
         />
       </div>
 
@@ -189,15 +210,16 @@
 
 
     <!-- COMPACT REQUEST TABLE -->
-    <section class="compact-table-wrap" *ngIf="filteredRequests.length">
+    <section class="compact-table-wrap" *ngIf="viewMode === 'requests' && filteredRequests.length">
       <table class="compact-request-table">
         <thead><tr>
-          <th>Registration Number</th><th>Full Name</th><th>Type</th><th>Email</th><th>Actions</th>
+          <th>Registration Number</th><th>Full Name</th><th>Control Number</th><th>Type</th><th>Email</th><th>Actions</th>
         </tr></thead>
         <tbody>
           <tr *ngFor="let request of paginatedRequests">
             <td>{{ getStudentRegNumber(request) }}</td>
             <td class="compact-name">{{ getStudentListName(request) }}</td>
+            <td><code class="finance-control-number">{{ getSubmittedControlNumber(request) || 'Not provided' }}</code></td>
             <td>
               <span class="type-badge" [style.background]="hasReceipt(request) ? '#e0f2fe' : '#f1f5f9'" [style.color]="hasReceipt(request) ? '#0369a1' : '#475569'" style="padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800;">
                 {{ hasReceipt(request) ? 'Receipt' : 'Other' }}
@@ -205,7 +227,7 @@
             </td>
             <td>{{ getStudentEmail(request) }}</td>
             <td><div class="compact-actions">
-              <button type="button" class="compact-view" (click)="detailsRequest = request">View</button>
+              <button type="button" class="compact-view" (click)="detailsRequest = request">View Details</button>
               <ng-container *ngIf="getRequestOfficeStatus(request, 'Finance') === 'Pending'; else financeReviewed">
                 <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
                 <button type="button" class="approve-button" (click)="approve(request)">Approve</button>
@@ -217,11 +239,49 @@
       </table>
     </section>
 
-    <div class="pagination" *ngIf="totalPages > 1">
+    <div class="pagination" *ngIf="viewMode === 'requests' && totalPages > 1">
       <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">&larr; Previous</button>
       <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong></span>
       <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">Next &rarr;</button>
     </div>
+
+    <section class="transcript-payment-section" *ngIf="viewMode === 'transcript-payments'">
+      <div class="transcript-payment-heading">
+        <div>
+          <h2>Transcript Payment Verification</h2>
+          <p>Verify each student submitted control number, then approve or reject the request.</p>
+        </div>
+        <div class="transcript-payment-filters">
+          <input type="search" [(ngModel)]="searchTerm" placeholder="Search registration or control number" />
+          <select [(ngModel)]="filterStatus">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+      <div class="compact-table-wrap" *ngIf="transcriptPaymentRequests.length; else noTranscriptPayments">
+        <table class="compact-request-table transcript-payment-table">
+          <thead><tr><th>Registration Number</th><th>Control Number</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let request of transcriptPaymentRequests">
+              <td>{{ request.registrationNumber }}</td>
+              <td><code class="finance-control-number">{{ request.submittedControlNumber || 'Not provided' }}</code></td>
+              <td>
+                <div class="compact-actions" *ngIf="request.status === 'Receipt Submitted'; else transcriptReviewed">
+                  <button type="button" class="reject-button" (click)="openRejectForm(transcriptAsClearanceRequest(request))">Reject</button>
+                  <button type="button" class="approve-button" (click)="approve(transcriptAsClearanceRequest(request))">Approve</button>
+                </div>
+                <ng-template #transcriptReviewed><span class="compact-status">{{ request.status === 'Paid' ? 'Approved' : 'Rejected' }}</span></ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noTranscriptPayments>
+        <div class="empty-state"><h2>No transcript payment requests</h2><p>Submitted transcript control numbers will appear here for Finance review.</p></div>
+      </ng-template>
+    </section>
 
     <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
       <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
@@ -243,7 +303,7 @@
           <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
           <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
           <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
-          <div><dt>Convocation Approval</dt><dd>{{ getRequestOfficeStatus(detailsRequest, 'Convocation') }}</dd></div>
+          <div><dt>Control Number</dt><dd>{{ getSubmittedControlNumber(detailsRequest) || 'Not provided' }}</dd></div>
           <div><dt>Address</dt><dd>{{ detailsRequest.physicalAddress || detailsRequest.address || '—' }}</dd></div>
           <div><dt>Residence</dt><dd>{{ detailsRequest.residenceType || '—' }}</dd></div>
           <div><dt>Hall / Room</dt><dd>{{ detailsRequest.hall || '—' }} {{ detailsRequest.roomNumber || '' }}</dd></div>
@@ -257,16 +317,20 @@
           <p>{{ rejection.reason }}</p><small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
         </section>
 
-        <!-- Payment Receipt Review Section -->
+        <!-- Payment Control Number & Verification Review Section -->
         <div *ngIf="hasReceipt(detailsRequest)" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment Receipt (Risiti ya Malipo)</h4>
-          <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 14px; text-align: center;">
-            <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px;">
-              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge receipt" />
+          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment &amp; Written Control Number</h4>
+          <div style="background: #f8fafc; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 14px; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; background: #e0f2fe; padding: 10px 14px; border-radius: 6px;">
+              <span style="font-size: 0.85rem; color: #0369a1; font-weight: 700;">Written Control Number:</span>
+              <strong style="font-size: 1.15rem; color: #075985; letter-spacing: 0.5px;">{{ getSubmittedControlNumber(detailsRequest) || 'None Provided' }}</strong>
+            </div>
+            <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px; text-align: center;">
+              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge document" />
             </div>
             <div style="font-size: 0.85rem; color: #475569;">
-              <span>File: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
-              <span *ngIf="detailsRequest.convocation?.controlNumber"> · Control Number: <strong>{{ detailsRequest.convocation?.controlNumber }}</strong></span>
+              <span *ngIf="getReceiptFileName(detailsRequest)">Evidence Document: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
+              <span *ngIf="detailsRequest.convocation?.receiptSubmittedAt"> · Submitted At: <strong>{{ detailsRequest.convocation?.receiptSubmittedAt | date:'medium' }}</strong></span>
             </div>
           </div>
         </div>
@@ -275,7 +339,7 @@
     <!-- EMPTY STATE -->
     <section
       class="empty-state"
-      *ngIf="!filteredRequests.length"
+      *ngIf="viewMode === 'requests' && !filteredRequests.length"
     >
 
       <div class="empty-icon">
@@ -337,7 +401,7 @@
             type="button"
             class="return-button"
             (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
+            [disabled]="rejectionComment.trim().length < 5"
           >
             Submit Reason
           </button>

@@ -1,6 +1,6 @@
 // src/app/dashboard/smart_card/smart_card.ts
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -112,12 +112,16 @@ const DEFAULT_STATIONS: CardStationItem[] = [
   templateUrl: './smart_card.html',
   styleUrl: './smart_card.css'
 })
-export class SmartCardComponent {
+export class SmartCardComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Smart Card').subscribe();
+  }
 
   readonly Math = Math;
   sidebarOpen = false;
@@ -127,6 +131,7 @@ export class SmartCardComponent {
   viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -327,6 +332,21 @@ export class SmartCardComponent {
     this.sidebarOpen = !this.sidebarOpen;
   }
 
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
     return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
   }
@@ -495,7 +515,11 @@ export class SmartCardComponent {
       request.id,
       'Smart Card',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Smart Card approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       request.studentId,
       'Smart Card clearance approved',
@@ -503,6 +527,7 @@ export class SmartCardComponent {
       'success'
     );
     this.toastService.success('Approved', `Smart Card clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Smart Card clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -511,6 +536,7 @@ export class SmartCardComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -527,7 +553,11 @@ export class SmartCardComponent {
       'Smart Card',
       staff.fullName,
       this.rejectionComment
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Smart Card return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
       'Smart Card action required',
@@ -536,6 +566,7 @@ export class SmartCardComponent {
     );
 
     this.toastService.warning('Returned', `Smart Card clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified regarding physical ID surrender or loss fee payment.';
     this.selectedRequest = null;
     this.rejectionComment = '';

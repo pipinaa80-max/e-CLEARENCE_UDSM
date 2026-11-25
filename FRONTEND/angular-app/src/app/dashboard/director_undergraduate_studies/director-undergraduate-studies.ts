@@ -338,6 +338,17 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     this.sidebarOpen = false;
   }
 
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
+  }
+
   setTab(tab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations'): void {
     this.activeTab = tab;
     this.closeSidebar();
@@ -381,16 +392,20 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     });
 
     const localStudentCount = localUsers.filter(u => String(u?.role || '').toUpperCase() === 'STUDENT').length;
-    this.totalRegisteredStudents = localStudentCount;
+    this.totalRegisteredStudents = Math.max(localStudentCount, localRequests.length);
+
+    // Instant local render (0ms latency for charts & graphs)
+    this.allRequests = localRequests;
 
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
     this.http.get<any>(`${this.config.apiUrl}/clearance/analytics-summary`, headers ? { headers } : {}).subscribe({
       next: (summary) => {
-        const backendRequests: ClearanceRequest[] = Array.isArray(summary?.requests)
-          ? summary.requests.map((r: any) => this.normalizeBackendRequest(r))
-          : [];
+        const rawRequests = Array.isArray(summary?.requests)
+          ? summary.requests
+          : (Array.isArray(summary?.requestList) ? summary.requestList : []);
+        const backendRequests: ClearanceRequest[] = rawRequests.map((r: any) => this.normalizeBackendRequest(r));
         this.allRequests = this.mergeRequests(localRequests, backendRequests);
         if (summary?.registeredStudentsByYear && typeof summary.registeredStudentsByYear === 'object') {
           this.backendRegisteredStudentsByYear = summary.registeredStudentsByYear;

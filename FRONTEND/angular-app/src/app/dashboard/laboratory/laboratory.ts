@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -18,17 +18,23 @@ import { ParallelOfficeRequestTableComponent } from '../../shared/components/par
   templateUrl: './laboratory.html',
   styleUrl: './laboratory.css'
 })
-export class LaboratoryComponent {
+export class LaboratoryComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
+  ngOnInit(): void {
+    this.clearanceService.fetchOfficeRequests('Laboratory').subscribe();
+  }
+
   sidebarOpen = false;
   selectedRequest: ClearanceRequest | null = null;
+  viewingRequest: ClearanceRequest | null = null;
   rejectionComment = '';
   message = '';
+  messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
   filterStatus = 'Pending';
@@ -68,6 +74,21 @@ export class LaboratoryComponent {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    } else if (img && img.dataset['fallback'] === '1') {
+      img.dataset['fallback'] = '2';
+      img.src = 'assets/udsm-logo.png';
+    }
   }
 
   getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
@@ -184,6 +205,39 @@ export class LaboratoryComponent {
     this.enlargedPhotoUrl = null;
   }
 
+  openStudentDetailsModal(request: ClearanceRequest): void {
+    this.viewingRequest = request;
+  }
+
+  closeStudentDetailsModal(): void {
+    this.viewingRequest = null;
+  }
+
+  getStudentProgramme(request: ClearanceRequest): string {
+    return request.programme || this.getStudentData(request.studentId)?.programme || '—';
+  }
+
+  getStudentDepartment(request: ClearanceRequest): string {
+    return request.department || this.getStudentData(request.studentId)?.department || '—';
+  }
+
+  getStudentCollege(request: ClearanceRequest): string {
+    return request.college || this.getStudentData(request.studentId)?.college || '—';
+  }
+
+  getStudentEmail(request: ClearanceRequest): string {
+    return request.email || this.getStudentData(request.studentId)?.email || '—';
+  }
+
+  getStudentPhone(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    return request.phoneNumber || u?.phoneNumber || u?.phone || '—';
+  }
+
+  getStudentSponsor(request: ClearanceRequest): string {
+    return request.sponsor || this.getStudentData(request.studentId)?.sponsor || 'Self';
+  }
+
   async approve(request: ClearanceRequest): Promise<void> {
     const staff = this.currentUser;
 
@@ -196,7 +250,11 @@ export class LaboratoryComponent {
       request.id,
       'Laboratory',
       staff.fullName
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'Laboratory approval could not be completed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       request.studentId,
@@ -206,6 +264,7 @@ export class LaboratoryComponent {
     );
 
     this.toastService.success('Approved', `Laboratory clearance approved for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'Student clearance was approved successfully.';
     setTimeout(() => { this.message = ''; }, 4000);
   }
@@ -214,6 +273,7 @@ export class LaboratoryComponent {
     this.selectedRequest = request;
     this.rejectionComment = '';
     this.message = '';
+    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
@@ -231,7 +291,11 @@ export class LaboratoryComponent {
       'Laboratory',
       staff.fullName,
       this.rejectionComment.trim()
-    )) return;
+    )) {
+      this.messageState = 'error';
+      this.message = 'The Laboratory return could not be processed. Refresh the dashboard and try again.';
+      return;
+    }
 
     this.notificationService.createNotification(
       this.selectedRequest.studentId,
@@ -241,6 +305,7 @@ export class LaboratoryComponent {
     );
 
     this.toastService.warning('Returned', `Laboratory clearance request returned for ${studentName}.`);
+    this.messageState = 'success';
     this.message = 'The student has been notified about the required action.';
 
     this.selectedRequest = null;

@@ -31,7 +31,7 @@
     <app-dashboard-header
       eyebrow="TRANSCRIPT SERVICE"
       [title]="isStandaloneMode ? 'Acquire More Transcript' : 'Transcript Payment'"
-      subtitle="Complete your transcript payment and submit your receipt for Finance verification."
+      subtitle="Enter your payment control number for Finance verification."
       [user]="null"
       (toggleSidebar)="toggleSidebar()"
     >
@@ -43,47 +43,38 @@
     <div class="transcript-payment-wrapper" *ngIf="hasApproval; else noApproval">
       <div class="payment-card">
         <span class="section-kicker">{{ isStandaloneMode ? 'New Request' : 'Step 1' }}</span>
-        <h1>{{ isStandaloneMode ? 'Acquire Copies' : 'Transcript Payment' }}</h1>
+        <h1>{{ isStandaloneMode ? 'Additional Transcript Request' : 'Transcript Payment' }}</h1>
 
-        <!-- RECEIPT SUBMISSION FORM (When starting new request or Awaiting Payment / Receipt Rejected) -->
+        <!-- CONTROL NUMBER SUBMISSION FORM -->
         <ng-container *ngIf="!request || request.status === 'Awaiting Payment' || request.status === 'Pending Control Number' || request.status === 'Receipt Rejected'">
           <section class="payment-step">
-            <h2>Payment &amp; Receipt Submission</h2>
+            <h2>Payment Control Number</h2>
 
-            <p *ngIf="!isStandaloneMode">
-              This is your first transcript request. The amount is fixed at <strong>TSh 15,000</strong>.
-            </p>
-            <p *ngIf="isStandaloneMode">
-              Amount for {{ transcriptCount }} transcript{{ transcriptCount === 1 ? '' : 's' }}: <strong>TSh {{ nextRequestAmount | number }}</strong>.
-            </p>
+            <p>The required transcript fee is fixed at <strong>TSh 15,000</strong> for this request.</p>
 
             <div *ngIf="request && request.status === 'Receipt Rejected'" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 14px; border-radius: 8px; margin: 14px 0; font-size: 0.9rem;">
-              <strong>Receipt Returned by Finance:</strong> {{ request.rejectionReason || 'Please upload a clear and valid payment receipt.' }}
+              <strong>Control Number Returned by Finance:</strong> {{ request.rejectionReason || 'Please check and enter the correct payment control number.' }}
             </div>
 
             <p style="margin-top: 12px; color: #475569; font-size: 0.9rem; line-height: 1.5;">
               <ng-container *ngIf="isStandaloneMode; else firstRequestPaymentInstructions">
-                Pay <strong>TSh 5,000</strong> in ARIS.3, then upload a clear photo or PDF of your payment receipt (risiti) below for <strong>Finance</strong> verification.
+                Pay <strong>TSh 15,000</strong> in ARIS.3, then enter the payment control number below for <strong>Finance</strong> verification.
               </ng-container>
               <ng-template #firstRequestPaymentInstructions>
-                Pay <strong>TSh {{ (request?.amount || nextRequestAmount) | number }}</strong> to the University Bank Account / M-Pesa / TigoPesa / AirtelMoney, then upload a clear photo or PDF of your payment receipt (risiti) below for <strong>Finance</strong> verification.
+                Pay <strong>TSh 15,000</strong> to the University Bank Account / M-Pesa / TigoPesa / AirtelMoney, then enter the payment control number below for <strong>Finance</strong> verification.
               </ng-template>
             </p>
 
-            <label class="receipt-upload" style="margin-top: 16px; display: block;">
-              <span>Upload payment receipt (risiti / proof of payment) *</span>
-              <input type="file" accept="image/*,application/pdf" (change)="onFileSelected($event)" />
+            <label class="control-number-field">
+              <span>Payment control number shown on your receipt *</span>
+              <input type="text" name="paymentControlNumber" [(ngModel)]="enteredControlNumber" required autocomplete="off" placeholder="Enter the control number shown on your payment receipt" />
             </label>
 
-            <div *ngIf="selectedFile" style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;">
-              <p style="margin: 0; color: #00679b; font-weight: 700;">Selected File: {{ selectedFile.name }}</p>
-              <button type="button" class="primary-button" (click)="submitReceipt()" [disabled]="isSubmitting">
-                {{ isSubmitting ? 'Submitting to Finance...' : 'Submit Payment Receipt to Finance' }}
-              </button>
-            </div>
-
-            <div style="display: flex; gap: 12px; margin-top: 24px; align-items: center; flex-wrap: wrap;" *ngIf="!selectedFile">
+            <div style="display: flex; gap: 12px; margin-top: 20px; align-items: center; flex-wrap: wrap;">
               <a routerLink="/dashboard" class="back-button">Back to Dashboard</a>
+              <button type="button" class="primary-button" (click)="submitControlNumber()" [disabled]="isSubmitting || !enteredControlNumber.trim()">
+                {{ isSubmitting ? 'Submitting to Finance...' : 'Submit Control Number' }}
+              </button>
             </div>
           </section>
         </ng-container>
@@ -91,15 +82,15 @@
         <!-- RECEIPT SUBMITTED STATE (Waiting for Finance Approval) -->
         <ng-container *ngIf="request && request.status === 'Receipt Submitted'">
           <section class="payment-step success-step">
-            <h2>Receipt Submitted to Finance</h2>
+            <h2>Control Number Submitted to Finance</h2>
             <div class="payment-summary" style="margin: 16px 0;">
               <div><span>Request Number</span><strong>#{{ request.attemptNumber }}</strong></div>
-              <div><span>Copies &amp; Amount</span><strong>{{ request.transcriptCount }} Copy (TSh {{ request.amount | number }})</strong></div>
+              <div><span>Required Fee</span><strong>TSh 15,000</strong></div>
               <div><span>Status</span><strong style="color: #d97706;">Awaiting Finance Verification</strong></div>
             </div>
 
             <p style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
-              Your payment receipt for Request #{{ request.attemptNumber }} has been sent to <strong>Finance</strong> for verification. Please allow time for Finance officers to review and confirm your payment.
+              Control number <strong>{{ request.submittedControlNumber || request.controlNumber }}</strong> for Request #{{ request.attemptNumber }} has been sent to <strong>Finance</strong> for verification. Please allow time for Finance officers to review and confirm your payment.
             </p>
 
             <div class="step-navigation" style="margin-top: 20px; gap: 12px; display: flex;">
@@ -114,12 +105,12 @@
             <h2>Payment Verified &amp; Approved</h2>
             <div class="payment-summary" style="margin: 16px 0;">
               <div><span>Request Number</span><strong>#{{ request.attemptNumber }}</strong></div>
-              <div><span>Copies &amp; Amount</span><strong>{{ request.transcriptCount }} Copy (TSh {{ request.amount | number }})</strong></div>
+              <div><span>Required Fee</span><strong>TSh 15,000</strong></div>
               <div><span>Status</span><strong style="color: #16a34a;">✔ Paid &amp; Verified</strong></div>
             </div>
 
             <p style="color: #166534; font-size: 0.95rem;">
-              Finance has verified and approved your transcript payment receipt.
+              Finance has verified and approved your transcript payment control number.
             </p>
 
             <div class="step-navigation" style="margin-top: 20px; gap: 10px; display: flex; flex-wrap: wrap;">

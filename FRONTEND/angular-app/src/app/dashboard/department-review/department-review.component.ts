@@ -1,10 +1,12 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { ToastService } from '../../core/services/toast.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { StudentDebtService } from '../../core/services/student-debt.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
 import { StudentDebtFlag } from '../../core/models/student-debt.model';
@@ -13,7 +15,7 @@ import { DashboardHeaderComponent } from '../../shared/components/dashboard-head
 @Component({
     selector: 'app-department-review',
     standalone: true,
-    imports: [CommonModule, DashboardHeaderComponent],
+    imports: [CommonModule, FormsModule, DashboardHeaderComponent],
     templateUrl: './department-review.html',
     styleUrl: './department-review.css'
 })
@@ -21,6 +23,7 @@ export class DepartmentReviewComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly clearanceService = inject(ClearanceService);
     private readonly toastService = inject(ToastService);
+    private readonly notificationService = inject(NotificationService);
     private readonly studentDebtService = inject(StudentDebtService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
@@ -31,6 +34,9 @@ export class DepartmentReviewComponent implements OnInit {
     request: ClearanceRequest | null = null;
     studentData: any = null;
     isLoading = false;
+    isProcessing = false;
+    showRejectModal = false;
+    rejectionComment = '';
     selectedTab: 'profile' | 'approvals' = 'profile';
     openDebtFlag: StudentDebtFlag | null = null;
 
@@ -184,5 +190,97 @@ export class DepartmentReviewComponent implements OnInit {
 
     closeSidebar(): void {
         this.sidebarOpen = false;
+    }
+
+    get isPendingDepartment(): boolean {
+        return this.request?.approvals?.find(a => a.office === 'Department')?.status === 'Pending' || false;
+    }
+
+    async approve(): Promise<void> {
+        if (!this.request) return;
+        if (this.openDebtFlag) {
+            this.toastService.warning('Debt Flag Open', 'Department verification is disabled until the Lecturer resolves the student debt flag.');
+            return;
+        }
+
+        const staff = this.currentUser;
+        if (!staff) {
+            this.router.navigate(['/login']);
+            return;
+        }
+
+        this.isProcessing = true;
+        const studentName = this.getStudentName();
+        const approved = await this.clearanceService.approveRequest(
+            this.request.id,
+            'Department',
+            staff.fullName || 'Department Officer'
+        );
+
+        this.isProcessing = false;
+        if (!approved) {
+            this.toastService.error('Action Failed', 'This request could not be approved.');
+            return;
+        }
+
+        this.notificationService.createNotification(
+            this.request.studentId,
+            'Department clearance approved',
+            'Your department has approved your clearance request. It has been forwarded to the Principal.',
+            'success'
+        );
+
+        this.toastService.success('Approved', `Department clearance approved for ${studentName}.`);
+        this.router.navigate(['/department/dashboard']);
+    }
+
+    openRejectModal(): void {
+        this.showRejectModal = true;
+        this.rejectionComment = '';
+    }
+
+    closeRejectModal(): void {
+        this.showRejectModal = false;
+        this.rejectionComment = '';
+    }
+
+    async reject(): Promise<void> {
+        if (!this.request) return;
+        if (!this.rejectionComment.trim()) {
+            this.toastService.warning('Comment Required', 'Please provide a reason for returning the request.');
+            return;
+        }
+
+        const staff = this.currentUser;
+        if (!staff) {
+            this.router.navigate(['/login']);
+            return;
+        }
+
+        this.isProcessing = true;
+        const studentName = this.getStudentName();
+        const rejected = await this.clearanceService.rejectRequest(
+            this.request.id,
+            'Department',
+            staff.fullName || 'Department Officer',
+            this.rejectionComment.trim()
+        );
+
+        this.isProcessing = false;
+        if (!rejected) {
+            this.toastService.error('Action Failed', 'This request could not be returned.');
+            return;
+        }
+
+        this.notificationService.createNotification(
+            this.request.studentId,
+            'Department action required',
+            this.rejectionComment.trim(),
+            'warning'
+        );
+
+        this.toastService.warning('Returned', `Department clearance returned for ${studentName}.`);
+        this.closeRejectModal();
+        this.router.navigate(['/department/dashboard']);
     }
 }

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { ConfigService } from './config.service';
 import { StorageService } from './storage.service';
 import { Sponsor } from '../models/sponsor.model';
@@ -13,6 +13,9 @@ export class SponsorService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
   private readonly storage = new StorageService();
+
+  private activeSponsorsInFlight$: Observable<Sponsor[]> | null = null;
+  private allSponsorsInFlight$: Observable<Sponsor[]> | null = null;
 
   private readonly defaultSponsors: Sponsor[] = [
     { name: 'HESLB', code: 'HESLB', description: 'Higher Education Students\' Loans Board', isActive: true },
@@ -29,9 +32,13 @@ export class SponsorService {
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
-  // Fetch active sponsors (public/student dropdown)
+  // Fetch active sponsors (public/student dropdown) with in-flight deduplication
   getActiveSponsors(): Observable<Sponsor[]> {
-    return this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors`).pipe(
+    if (this.activeSponsorsInFlight$) {
+      return this.activeSponsorsInFlight$;
+    }
+
+    this.activeSponsorsInFlight$ = this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors`).pipe(
       map(items => {
         if (!items || !items.length) return this.defaultSponsors;
         return items;
@@ -40,13 +47,23 @@ export class SponsorService {
       catchError(err => {
         console.warn('Could not load sponsors from backend, using defaults:', err);
         return of(this.sponsorsSubject.value);
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
+      finalize(() => {
+        this.activeSponsorsInFlight$ = null;
       })
     );
+
+    return this.activeSponsorsInFlight$;
   }
 
-  // Fetch all sponsors (for admin panel)
+  // Fetch all sponsors (for admin panel) with in-flight deduplication
   getAllSponsors(): Observable<Sponsor[]> {
-    return this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors/all`, {
+    if (this.allSponsorsInFlight$) {
+      return this.allSponsorsInFlight$;
+    }
+
+    this.allSponsorsInFlight$ = this.http.get<Sponsor[]>(`${this.config.apiUrl}/sponsors/all`, {
       headers: this.getAuthHeaders()
     }).pipe(
       map(items => {
@@ -56,8 +73,14 @@ export class SponsorService {
       catchError(err => {
         console.warn('Could not load all sponsors, falling back to active list:', err);
         return of(this.sponsorsSubject.value);
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
+      finalize(() => {
+        this.allSponsorsInFlight$ = null;
       })
     );
+
+    return this.allSponsorsInFlight$;
   }
 
   // Create new sponsor
