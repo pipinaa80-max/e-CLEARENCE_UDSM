@@ -71,6 +71,13 @@ public class User implements UserDetails {
     @Column(name = "year_of_study")
     private String yearOfStudy;
 
+    @Column(name = "award")
+    private String award;
+
+    @Column(name = "is_postgraduate")
+    @JsonProperty("isPostgraduate")
+    private Boolean isPostgraduate;
+
     // ========== CONTACT FIELDS ==========
     @Column(name = "phone_number")
     private String phoneNumber;
@@ -214,12 +221,22 @@ public class User implements UserDetails {
             authorityStrings.add("SUPERUSER");
         }
 
-        // Directorate & DUS Secretary aliases
+        // Directorate & DUS Examination Office / Secretary aliases
         if (this.role == ERole.DUS_SECRETARY || this.role == ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES) {
             authorityStrings.add("ROLE_DUS_SECRETARY");
             authorityStrings.add("ROLE_DIRECTOR_OF_UNDERGRADUATE_STUDIES");
             authorityStrings.add("DUS_SECRETARY");
             authorityStrings.add("DIRECTOR_OF_UNDERGRADUATE_STUDIES");
+            authorityStrings.add("ROLE_DUS_EXAMINATION_OFFICE");
+            authorityStrings.add("DUS_EXAMINATION_OFFICE");
+        }
+
+        // Directorate of Postgraduate Studies (DPGS)
+        if (this.role == ERole.DIRECTOR_OF_POSTGRADUATE_STUDIES) {
+            authorityStrings.add("ROLE_DIRECTOR_OF_POSTGRADUATE_STUDIES");
+            authorityStrings.add("DIRECTOR_OF_POSTGRADUATE_STUDIES");
+            authorityStrings.add("ROLE_DPGS");
+            authorityStrings.add("DPGS");
         }
 
         // Canonical officer aliases (e.g. WORKSHOP_OFFICER <-> WORKSHOP, LABORATORY_OFFICER <-> LABORATORY)

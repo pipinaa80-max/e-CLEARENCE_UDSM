@@ -38,6 +38,7 @@ import { LecturerDashboard } from './dashboard/lecturer/lecturer';
 import { DirectorUndergraduateStudiesDashboard } from './dashboard/director_undergraduate_studies/director-undergraduate-studies';
 import { DusSecretaryDashboardComponent } from './dashboard/dus_secretary/dus-secretary';
 import { StationSecretaryDashboardComponent } from './dashboard/station-secretary/station-secretary';
+import { SupervisorDashboardComponent } from './dashboard/supervisor/supervisor.component';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -93,7 +94,12 @@ export const routes: Routes = [
   {
     path: 'dashboard/director-undergraduate-studies',
     component: DirectorUndergraduateStudiesDashboard,
-    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies'])]
+    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/director-postgraduate-studies',
+    component: DirectorUndergraduateStudiesDashboard,
+    canActivate: [authGuard, roleGuard(['Director of Postgraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/admin',
@@ -141,18 +147,38 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Laboratory'])]
   },
   {
+    path: 'dashboard/dus-examination-office',
+    component: DusSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
     path: 'dashboard/dus-secretary',
     component: DusSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/station-secretary',
     component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/campus-dus-secretary', component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/supervisor',
+    component: SupervisorDashboardComponent,
+    canActivate: [authGuard, roleGuard(['Supervisor', 'Administrator'])]
+  },
+  {
+    path: 'supervisor/dashboard',
+    redirectTo: 'dashboard/supervisor',
+    pathMatch: 'full'
+  },
+  {
+    path: 'supervisor',
+    redirectTo: 'dashboard/supervisor',
+    pathMatch: 'full'
   },
 
   // Clearance Routes

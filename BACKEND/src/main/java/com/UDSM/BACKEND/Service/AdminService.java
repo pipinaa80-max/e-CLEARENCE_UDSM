@@ -343,6 +343,15 @@ public class AdminService {
                 case "DUS":
                     role = ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
                     break;
+                case "DIRECTOR OF POSTGRADUATE STUDIES":
+                case "DIRECTOR_OF_POSTGRADUATE_STUDIES":
+                case "DIRECTOR POSTGRADUATE":
+                case "POSTGRADUATE DIRECTOR":
+                case "DPGS":
+                    role = ERole.DIRECTOR_OF_POSTGRADUATE_STUDIES;
+                    break;
+                case "DUS EXAMINATION OFFICE":
+                case "DUS_EXAMINATION_OFFICE":
                 case "DUS SECRETARY":
                 case "DUS_SECRETARY":
                     role = ERole.DUS_SECRETARY;
@@ -353,6 +362,11 @@ public class AdminService {
                 case "ACADEMIC STAFF":
                 case "ACADEMIC_STAFF":
                     role = ERole.ACADEMIC_STAFF;
+                    break;
+                case "SUPERVISOR":
+                case "RESEARCH SUPERVISOR":
+                case "SUPERVISOR_OFFICER":
+                    role = ERole.SUPERVISOR;
                     break;
                 case "ADMINISTRATOR": 
                 case "ADMIN":
@@ -594,12 +608,14 @@ public class AdminService {
                 case "ADMIN": case "ADMINISTRATOR": return ERole.ADMINISTRATOR;
                 case "STAFF": case "ACADEMIC": case "FACULTY": case "TEACHING": return ERole.ACADEMIC_STAFF;
                 case "LECTURER": case "PROFESSOR": case "DOCTOR": return ERole.LECTURER;
-                case "DUS_SECRETARY": case "STATION_SECRETARY": case "SECRETARY": return ERole.DUS_SECRETARY;
+                case "DUS_EXAMINATION_OFFICE": case "DUS EXAMINATION OFFICE": case "DUS_SECRETARY": case "STATION_SECRETARY": case "SECRETARY": return ERole.DUS_SECRETARY;
                 case "DUS": case "DIRECTOR": return ERole.DIRECTOR_OF_UNDERGRADUATE_STUDIES;
+                case "DPGS": case "POSTGRADUATE_DIRECTOR": case "DIRECTOR_OF_POSTGRADUATE_STUDIES": return ERole.DIRECTOR_OF_POSTGRADUATE_STUDIES;
                 case "DEAN": case "DEAN_OF_STUDENTS": return ERole.DEAN_OF_STUDENTS;
                 case "WARDEN": case "HALL_WARDEN": return ERole.HALL_WARDEN;
                 case "COACH": case "SPORTS": case "GAMES": return ERole.GAMES_COACH;
                 case "PRINCIPAL": return ERole.PRINCIPAL;
+                case "SUPERVISOR": case "RESEARCH_SUPERVISOR": return ERole.SUPERVISOR;
                 case "STUDENT": return ERole.STUDENT;
                 default:
                     return "STAFF".equalsIgnoreCase(uploadType) ? ERole.ACADEMIC_STAFF : ERole.STUDENT;

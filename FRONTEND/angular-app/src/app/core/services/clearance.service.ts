@@ -216,6 +216,10 @@ export class ClearanceService {
     return request$;
   }
 
+  getOfficeRequestsBackend(office: ClearanceOffice, status?: string): Observable<ClearanceRequest[]> {
+    return this.fetchOfficeRequests(office, status);
+  }
+
   fetchMyRequest(): Observable<ClearanceRequest | null> {
     if (this.inFlightMyRequest) {
       return this.inFlightMyRequest;
@@ -277,13 +281,14 @@ export class ClearanceService {
     }, { headers });
   }
 
-  getDefaultApprovals(college: string): OfficeApproval[] {
+  getDefaultApprovals(college: string, isPostgraduate: boolean = false): OfficeApproval[] {
     return [
       { office: 'Convocation', status: 'Pending' },
       ...this.getClearanceOffices(college).map(office => ({ office, status: 'Pending' as ApprovalStatus })),
       { office: 'Department', status: 'Pending' },
       { office: 'Principal', status: 'Pending' },
-      { office: 'Finance', status: 'Pending' }
+      { office: 'Finance', status: 'Pending' },
+      ...(isPostgraduate ? [{ office: 'Supervisor' as ClearanceOffice, status: 'Pending' as ApprovalStatus }] : [])
     ];
   }
 
@@ -304,6 +309,9 @@ export class ClearanceService {
     roomNumber?: string;
     sponsor?: string;
     photo?: string;
+    award?: string;
+    isPostgraduate?: boolean;
+    undergraduateCertificate?: string;
   }): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.post(`${this.config.apiUrl}/clearance/request`, {
@@ -405,11 +413,18 @@ export class ClearanceService {
     photo?: string;
     clearanceType?: string;
     remarks?: string;
+    award?: string;
+    isPostgraduate?: boolean;
+    undergraduateCertificate?: string;
   }): ClearanceRequest {
 
     if (this.getStudentRequests(requestData.studentId).length > 0) {
       throw new Error('You already have a submitted clearance request.');
     }
+
+    const isPostgrad = !!requestData.isPostgraduate ||
+      (requestData.award != null && (requestData.award.toLowerCase().includes('postgraduate') || requestData.award.toLowerCase().includes('master') || requestData.award.toLowerCase().includes('phd') || requestData.award.toLowerCase().includes('doctor'))) ||
+      (requestData.programme != null && (requestData.programme.toLowerCase().includes('postgraduate') || requestData.programme.toLowerCase().includes('master') || requestData.programme.toLowerCase().includes('msc') || requestData.programme.toLowerCase().includes('mba') || requestData.programme.toLowerCase().includes('phd')));
 
     const request: ClearanceRequest = {
       id: crypto.randomUUID(),
@@ -431,6 +446,9 @@ export class ClearanceService {
       residenceEvidence: requestData.residenceEvidence || '',
       sponsor: requestData.sponsor || '',
       photo: requestData.photo || '',
+      award: requestData.award,
+      isPostgraduate: isPostgrad,
+      undergraduateCertificateUrl: requestData.undergraduateCertificate,
       clearanceType: requestData.clearanceType || 'Graduation Clearance',
       remarks: requestData.remarks || '',
       requestDate: new Date().toISOString(),
@@ -457,7 +475,11 @@ export class ClearanceService {
         {
           office: 'Finance',
           status: 'Pending'
-        }
+        },
+        ...(isPostgrad ? [{
+          office: 'Supervisor' as ClearanceOffice,
+          status: 'Pending' as const
+        }] : [])
       ]
     };
 
@@ -655,10 +677,32 @@ export class ClearanceService {
           principalApproval?.status === 'Approved' ||
           principalApproval?.status === 'Rejected' ||
           request.currentStage === 'Finance' ||
+          request.currentStage === 'Supervisor' ||
           request.status === 'Completed';
         if (!principalStageReached) return false;
 
         return !college || this.matchCollegeName(request.college, college);
+      }
+
+      if (office === 'Supervisor') {
+        const award = (request.award || '').toLowerCase();
+        const isPostgrad = request.isPostgraduate || award.includes('postgraduate') || award.includes('master') || award.includes('msc') || award.includes('mba') || award.includes('phd') || award.includes('doctor');
+        if (!isPostgrad) return false;
+
+        const supervisorApproval = request.approvals.find(a => a && a.office === 'Supervisor');
+        const financeApproval = request.approvals.find(a => a && a.office === 'Finance');
+        const supervisorStageReached = request.currentStage === 'Supervisor' ||
+          financeApproval?.status === 'Approved' ||
+          supervisorApproval?.status === 'Approved' ||
+          supervisorApproval?.status === 'Rejected' ||
+          request.status === 'Completed';
+
+        if (!supervisorStageReached) return false;
+
+        return (
+          (!college || this.matchCollegeName(request.college, college)) &&
+          (!department || this.matchDepartmentName(request.department, department))
+        );
       }
 
       if (request.approvals.some(a => a && a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
@@ -930,10 +974,18 @@ export class ClearanceService {
     if (!request || !approval) return false;
 
     if (office === 'Finance') {
-      const otherApprovals = request?.approvals?.filter(a => a && a.office !== 'Finance') || [];
+      const otherApprovals = request?.approvals?.filter(a => a && a.office !== 'Finance' && a.office !== 'Supervisor') || [];
       const allCleared = otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
       if (!allCleared) {
         console.warn(`Request ${requestId} cannot reach or be approved by Finance until all other offices are cleared.`);
+        return false;
+      }
+    }
+
+    if (office === 'Supervisor') {
+      const financeApproval = request?.approvals?.find(a => a && a.office === 'Finance');
+      if (!financeApproval || financeApproval.status !== 'Approved') {
+        console.warn(`Request ${requestId} cannot reach or be approved by Supervisor until Finance is cleared.`);
         return false;
       }
     }
@@ -954,6 +1006,17 @@ export class ClearanceService {
       request.currentStage = 'Principal';
       request.currentOffice = 'Principal';
     } else if (office === 'Finance') {
+      const award = (request.award || '').toLowerCase();
+      const isPostgrad = request.isPostgraduate || award.includes('postgraduate') || award.includes('master') || award.includes('msc') || award.includes('mba') || award.includes('phd') || award.includes('doctor');
+      if (isPostgrad) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else {
+        request.currentStage = 'Completed';
+        request.currentOffice = undefined;
+        request.status = 'Completed';
+      }
+    } else if (office === 'Supervisor') {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
       request.status = 'Completed';
@@ -1061,7 +1124,8 @@ export class ClearanceService {
     approval.reviewedAt = undefined;
     request.status = 'Pending';
     request.revisionOffice = undefined;
-    request.currentStage = office === 'Department' ? 'Department'
+    request.currentStage = office === 'Supervisor' ? 'Supervisor'
+      : office === 'Department' ? 'Department'
       : office === 'Principal' ? 'Principal'
       : office === 'Finance' ? 'Finance'
       : office === 'Convocation' ? 'Convocation' : 'Parallel';
@@ -1154,9 +1218,24 @@ export class ClearanceService {
     }
 
     if (request.currentStage === 'Finance') {
+      const award = (request.award || '').toLowerCase();
+      const isPostgrad = request.isPostgraduate || award.includes('postgraduate') || award.includes('master') || award.includes('msc') || award.includes('mba') || award.includes('phd') || award.includes('doctor');
+      if (isPostgrad) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else {
+        request.currentStage = 'Completed';
+        request.currentOffice = undefined;
+        request.status = 'Completed';
+      }
+      return;
+    }
+
+    if (request.currentStage === 'Supervisor') {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
       request.status = 'Completed';
+      return;
     }
   }
 
@@ -1169,13 +1248,17 @@ export class ClearanceService {
       request.convocation = {};
     }
 
+    const award = (request.award || '').toLowerCase();
+    const isPostgrad = request.isPostgraduate || award.includes('postgraduate') || award.includes('master') || award.includes('msc') || award.includes('mba') || award.includes('phd') || award.includes('doctor');
+
     const existing = request.approvals ?? [];
     const offices: ClearanceOffice[] = [
       'Convocation',
       ...this.getClearanceOffices(request.college),
       'Department',
       'Principal',
-      'Finance'
+      'Finance',
+      ...(isPostgrad ? ['Supervisor' as ClearanceOffice] : [])
     ];
 
     for (const office of offices) {
@@ -1200,26 +1283,53 @@ export class ClearanceService {
     const deptApproved = getStatus('Department') === 'Approved';
     const principalApproved = getStatus('Principal') === 'Approved';
     const financeApproved = getStatus('Finance') === 'Approved';
+    const supervisorApproved = getStatus('Supervisor') === 'Approved';
 
-    if (financeApproved || request.status === 'Completed') {
-      request.currentStage = 'Completed';
-      request.status = 'Completed';
-      request.currentOffice = undefined;
-    } else if (principalApproved) {
-      request.currentStage = 'Finance';
-      request.currentOffice = 'Finance';
-    } else if (deptApproved) {
-      request.currentStage = 'Principal';
-      request.currentOffice = 'Principal';
-    } else if (allParallelApproved) {
-      request.currentStage = 'Department';
-      request.currentOffice = 'Department';
-    } else if (convocationApproved) {
-      request.currentStage = 'Parallel';
-      request.currentOffice = undefined;
+    if (isPostgrad) {
+      if (supervisorApproved || request.status === 'Completed') {
+        request.currentStage = 'Completed';
+        request.status = 'Completed';
+        request.currentOffice = undefined;
+      } else if (financeApproved) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else if (principalApproved) {
+        request.currentStage = 'Finance';
+        request.currentOffice = 'Finance';
+      } else if (deptApproved) {
+        request.currentStage = 'Principal';
+        request.currentOffice = 'Principal';
+      } else if (allParallelApproved) {
+        request.currentStage = 'Department';
+        request.currentOffice = 'Department';
+      } else if (convocationApproved) {
+        request.currentStage = 'Parallel';
+        request.currentOffice = undefined;
+      } else {
+        request.currentStage = 'Convocation';
+        request.currentOffice = undefined;
+      }
     } else {
-      request.currentStage = 'Convocation';
-      request.currentOffice = undefined;
+      if (financeApproved || request.status === 'Completed') {
+        request.currentStage = 'Completed';
+        request.status = 'Completed';
+        request.currentOffice = undefined;
+      } else if (principalApproved) {
+        request.currentStage = 'Finance';
+        request.currentOffice = 'Finance';
+      } else if (deptApproved) {
+        request.currentStage = 'Principal';
+        request.currentOffice = 'Principal';
+      } else if (allParallelApproved) {
+        request.currentStage = 'Department';
+        request.currentOffice = 'Department';
+      } else if (convocationApproved) {
+        request.currentStage = 'Parallel';
+        request.currentOffice = undefined;
+      } else {
+        request.currentStage = 'Convocation';
+        request.currentOffice = undefined;
+      }
     }
 
     return request;

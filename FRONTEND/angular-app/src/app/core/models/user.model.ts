@@ -13,10 +13,13 @@ export type UserRole =
   | 'Academic Staff'
   | 'Lecturer'
   | 'Director of Undergraduate Studies'
+  | 'Director of Postgraduate Studies'
+  | 'DUS Examination Office'
   | 'DUS Secretary'
   | 'Station Secretary'
   | 'Workshop'
   | 'Laboratory'
+  | 'Supervisor'
   | 'Administrator';
 
 export type UserStatus = 'Active' | 'Inactive' | 'Suspended';
@@ -35,6 +38,9 @@ export interface User {
   college: string;
   stationCode?: string;
   stationName?: string;
+  award?: string;
+  isPostgraduate?: boolean;
+  undergraduateCertificateUrl?: string;
   yearOfStudy: number;
   status: UserStatus;
   createdAt: string;

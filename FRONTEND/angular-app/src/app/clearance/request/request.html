@@ -204,10 +204,23 @@
         <div class="fields-grid non-hostel-row" *ngIf="requestForm.controls.residenceType.value === 'Non-Hostel Dwellers'">
           <label class="field full-width">
             <span>Residence Evidence Document</span>
-            <input type="file" accept="image/*,.pdf" (change)="onResidenceEvidenceSelected($event)" />
+            <input #residenceFileInput type="file" accept="image/*,.pdf" (change)="onResidenceEvidenceSelected($event)" />
             <small class="field-hint residence-evidence-hint" *ngIf="!requestForm.controls.residenceEvidence.value">Upload a document or photo showing proof of your non-hostel residence (JPG, PNG, PDF).</small>
-            <small class="field-hint" *ngIf="requestForm.controls.residenceEvidence.value">✓ Document uploaded successfully</small>
           </label>
+
+          <div class="attached-file-simple-card" *ngIf="requestForm.controls.residenceEvidence.value">
+            <div class="attached-file-meta">
+              <i class="bi bi-file-earmark-check-fill attached-file-icon"></i>
+              <div class="attached-file-details">
+                <strong>{{ residenceEvidenceFileName || 'Residence Evidence' }}</strong>
+                <small>Document attached successfully</small>
+              </div>
+            </div>
+            <div class="file-action-buttons">
+              <button type="button" class="btn-simple-view" (click)="viewResidenceEvidence()">View</button>
+              <button type="button" class="btn-simple-remove" (click)="removeResidenceEvidence(residenceFileInput)">Remove</button>
+            </div>
+          </div>
         </div>
 
         <div class="fields-grid sponsor-row">
@@ -248,6 +261,26 @@
 
     </form>
   </section>
+
+  <!-- DOCUMENT VIEWER LIGHTBOX MODAL -->
+  <div class="document-viewer-modal-backdrop" *ngIf="viewingDocumentUrl" (click)="closeDocumentViewer()">
+    <div class="document-viewer-modal" (click)="$event.stopPropagation()">
+      <div class="document-viewer-header">
+        <strong>{{ viewingDocumentTitle }}</strong>
+        <button type="button" class="btn-close-viewer" (click)="closeDocumentViewer()">✕</button>
+      </div>
+      <div class="document-viewer-body">
+        <img [src]="viewingDocumentUrl" [alt]="viewingDocumentTitle" *ngIf="!viewingDocumentUrl.includes('application/pdf')" />
+        <div *ngIf="viewingDocumentUrl.includes('application/pdf')" class="pdf-viewer-note">
+          <p>PDF Document Preview</p>
+          <a [href]="viewingDocumentUrl" target="_blank" class="btn-simple-view">Open PDF in New Window</a>
+        </div>
+      </div>
+      <div class="document-viewer-footer">
+        <button type="button" class="btn-simple-view" (click)="closeDocumentViewer()">Close</button>
+      </div>
+    </div>
+  </div>
 
   </main>
 </section>

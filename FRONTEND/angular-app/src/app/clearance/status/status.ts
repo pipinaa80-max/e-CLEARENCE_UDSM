@@ -102,6 +102,15 @@ export class ClearanceStatusComponent implements OnInit {
     }
   }
 
+  viewReceiptFile(): void {
+    if (this.receiptPreviewUrl) {
+      window.open(this.receiptPreviewUrl, '_blank');
+    } else if (this.selectedReceiptFile) {
+      const fileUrl = URL.createObjectURL(this.selectedReceiptFile);
+      window.open(fileUrl, '_blank');
+    }
+  }
+
   removeReceiptFile(): void {
     this.selectedReceiptFile = null;
     this.receiptPreviewUrl = null;
@@ -607,6 +616,7 @@ export class ClearanceStatusComponent implements OnInit {
         'Department': { email: 'department@udsm.ac.tz', phone: '+255 22 2410550' },
         'Principal': { email: 'principal@udsm.ac.tz', phone: '+255 22 2410560' },
         'Finance': { email: 'finance@udsm.ac.tz', phone: '+255 22 2410570' },
+        'Supervisor': { email: 'postgraduate@udsm.ac.tz', phone: '+255 22 2410500' },
         'Smart Card': { email: 'smartcard@udsm.ac.tz', phone: '+255 22 2410580' },
         'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
         'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
@@ -682,6 +692,16 @@ export class ClearanceStatusComponent implements OnInit {
     return false;
   }
 
+  get isPostgraduate(): boolean {
+    const r = this.request;
+    const u = this.currentUser;
+    if (r?.isPostgraduate || u?.isPostgraduate) return true;
+    const award = ((r?.award || u?.award || '')).toLowerCase();
+    const prog = ((r?.programme || u?.programme || '')).toLowerCase();
+    return award.includes('postgraduate') || award.includes('master') || award.includes('phd') || award.includes('doctor') ||
+           prog.includes('postgraduate') || prog.includes('master') || prog.includes('msc') || prog.includes('mba') || prog.includes('phd') || prog.includes('doctor');
+  }
+
   // =====================================================
   // GET NEXT STAGE NAME
   // =====================================================
@@ -700,6 +720,8 @@ export class ClearanceStatusComponent implements OnInit {
       case 'Principal':
         return 'Step 5: Finance';
       case 'Finance':
+        return this.isPostgraduate ? 'Step 6: Research Supervisor (Final Check)' : 'Clearance Confirmation';
+      case 'Supervisor':
         return 'Clearance Confirmation';
       default:
         return '';
@@ -721,7 +743,8 @@ export class ClearanceStatusComponent implements OnInit {
     if (
         request.currentStage === 'Department' ||
         request.currentStage === 'Principal' ||
-        request.currentStage === 'Finance'
+        request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor'
     ) {
       return this.getOfficeStatus(request.currentStage) === 'Approved';
     }
@@ -739,7 +762,11 @@ export class ClearanceStatusComponent implements OnInit {
     const request = this.request;
     if (!request || request.status === 'Rejected') return;
 
-    if (this.getOfficeStatus('Finance') === 'Approved' || request.status === 'Completed' || request.currentStage === 'Completed') {
+    const isFullyCleared = this.isPostgraduate
+      ? (this.getOfficeStatus('Supervisor') === 'Approved' || request.status === 'Completed' || request.currentStage === 'Completed')
+      : (this.getOfficeStatus('Finance') === 'Approved' || request.status === 'Completed' || request.currentStage === 'Completed');
+
+    if (isFullyCleared) {
       if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
         this.clearanceService.advanceStage(request.id, 'Completed', undefined);
         this.loadData();
@@ -748,7 +775,7 @@ export class ClearanceStatusComponent implements OnInit {
     }
 
     let iterations = 0;
-    while (this.canAdvanceFromCurrentStage() && iterations < 5) {
+    while (this.canAdvanceFromCurrentStage() && iterations < 6) {
       iterations++;
       console.log(`Auto-advancing request ${request.id} from stage ${request.currentStage}`);
       this.continueToNextStageSilently();
@@ -775,6 +802,14 @@ export class ClearanceStatusComponent implements OnInit {
       nextStage = 'Finance';
       nextOffice = 'Finance';
     } else if (request.currentStage === 'Finance' && this.getOfficeStatus('Finance') === 'Approved') {
+      if (this.isPostgraduate) {
+        nextStage = 'Supervisor';
+        nextOffice = 'Supervisor';
+      } else {
+        nextStage = 'Completed';
+        nextOffice = undefined;
+      }
+    } else if (request.currentStage === 'Supervisor' && this.getOfficeStatus('Supervisor') === 'Approved') {
       nextStage = 'Completed';
       nextOffice = undefined;
     }
@@ -846,6 +881,20 @@ export class ClearanceStatusComponent implements OnInit {
       } else if (request.currentStage === 'Finance') {
         if (this.getOfficeStatus('Finance') !== 'Approved') {
           this.toastService.warning('Action Required', 'Finance approval is required first.');
+          this.isLoading = false;
+          return;
+        }
+        if (this.isPostgraduate) {
+          nextStage = 'Supervisor';
+          nextOffice = 'Supervisor';
+        } else {
+          nextStage = 'Completed';
+          nextOffice = undefined;
+          allRequests[requestIndex].status = 'Completed';
+        }
+      } else if (request.currentStage === 'Supervisor') {
+        if (this.getOfficeStatus('Supervisor') !== 'Approved') {
+          this.toastService.warning('Action Required', 'Research Supervisor approval is required first.');
           this.isLoading = false;
           return;
         }
@@ -947,7 +996,8 @@ export class ClearanceStatusComponent implements OnInit {
     if (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
-      this.getOfficeStatus('Finance') === 'Approved'
+      (!this.isPostgraduate && this.getOfficeStatus('Finance') === 'Approved') ||
+      (this.isPostgraduate && this.getOfficeStatus('Supervisor') === 'Approved')
     ) {
       if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
         request.status = 'Completed';
@@ -988,6 +1038,8 @@ export class ClearanceStatusComponent implements OnInit {
         return 'Principal';
       case 'Finance':
         return 'Finance';
+      case 'Supervisor':
+        return 'Research Supervisor (Final Check)';
       default:
         return 'Clearance completed';
     }
@@ -1014,6 +1066,7 @@ export class ClearanceStatusComponent implements OnInit {
         request.currentStage === 'Department' ||
         request.currentStage === 'Principal' ||
         request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor' ||
         request.status === 'Completed'
     ) {
       convocationStatus = 'Approved';
@@ -1034,6 +1087,7 @@ export class ClearanceStatusComponent implements OnInit {
         request.currentStage === 'Department' ||
         request.currentStage === 'Principal' ||
         request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor' ||
         request.status === 'Completed'
     ) {
       officesStatus = 'Approved';
@@ -1053,6 +1107,7 @@ export class ClearanceStatusComponent implements OnInit {
     if (
         request.currentStage === 'Principal' ||
         request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor' ||
         request.status === 'Completed'
     ) {
       departmentStatus = 'Approved';
@@ -1071,6 +1126,7 @@ export class ClearanceStatusComponent implements OnInit {
 
     if (
         request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor' ||
         request.status === 'Completed'
     ) {
       principalStatus = 'Approved';
@@ -1087,7 +1143,7 @@ export class ClearanceStatusComponent implements OnInit {
     // STEP 5 — FINANCE
     let financeStatus = this.getApproval('Finance')?.status ?? 'Pending';
 
-    if (request.status === 'Completed') {
+    if (request.status === 'Completed' || request.currentStage === 'Supervisor') {
       financeStatus = 'Approved';
     }
 
@@ -1095,9 +1151,25 @@ export class ClearanceStatusComponent implements OnInit {
       number: 5,
       label: 'Finance',
       office: 'Finance',
-      detail: 'Final financial clearance approval.',
+      detail: 'Financial clearance review.',
       status: financeStatus
     });
+
+    // STEP 6 — SUPERVISOR (Final Check for Postgraduate Students)
+    const supervisorApproval = this.getApproval('Supervisor');
+    if (this.isPostgraduate || supervisorApproval || request.currentStage === 'Supervisor') {
+      let supervisorStatus = supervisorApproval?.status ?? 'Pending';
+      if (request.status === 'Completed') {
+        supervisorStatus = 'Approved';
+      }
+      steps.push({
+        number: 6,
+        label: 'Supervisor',
+        office: 'Supervisor',
+        detail: 'Final academic and dissertation/thesis verification by research supervisor.',
+        status: supervisorStatus
+      });
+    }
 
     return steps;
   }
@@ -1142,7 +1214,8 @@ export class ClearanceStatusComponent implements OnInit {
       'Laboratory': '/dashboard/laboratory',
       'Department': '/department/dashboard',
       'Principal': '/principal',
-      'Finance': '/dashboard/finance'
+      'Finance': '/dashboard/finance',
+      'Supervisor': '/dashboard/supervisor'
     };
     return map[office] || '/clearance/status';
   }

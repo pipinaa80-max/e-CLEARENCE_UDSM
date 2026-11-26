@@ -40,7 +40,7 @@ export class StaffRegister implements OnInit {
     }
   }
 
-  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
+  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'Convocation', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'Supervisor', 'USAB', 'Workshop'];
   readonly laboratoryDepartments = ['Anatomy laboratory', 'Pathology laboratory', 'Biochemistry', 'Microbiology & Immunology', 'Physiology', 'Parasitology & Entomology', 'Pharmacology'];
 
   readonly collegeDepartments: Record<string, string[]> = {
@@ -119,6 +119,10 @@ export class StaffRegister implements OnInit {
     return this.form.controls.role.value === 'Lecturer';
   }
 
+  get isSupervisorStaff(): boolean {
+    return this.form.controls.role.value === 'Supervisor';
+  }
+
   get departments(): string[] {
     return this.collegeDepartments[this.form.controls.college.value] ?? [];
   }
@@ -167,7 +171,7 @@ export class StaffRegister implements OnInit {
       password: value.password,
       role: value.role,
       department: this.isDepartmentStaff || this.isLecturerStaff ? value.department : value.role,
-      college: this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff ? value.college : 'Administration',
+      college: this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff || this.isSupervisorStaff ? value.college : 'Administration',
       laboratory: this.isLaboratoryStaff ? value.laboratory : ''
     };
 
@@ -187,13 +191,13 @@ export class StaffRegister implements OnInit {
   }
 
   private updateDepartmentValidators(): void {
-    const collegeValidators = this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff ? [Validators.required] : [];
-    const departmentValidators = this.isDepartmentStaff || this.isLecturerStaff ? [Validators.required] : [];
+    const collegeValidators = this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff || this.isSupervisorStaff ? [Validators.required] : [];
+    const departmentValidators = this.isDepartmentStaff || this.isLecturerStaff || this.isSupervisorStaff ? [Validators.required] : [];
     this.form.controls.college.setValidators(collegeValidators);
     this.form.controls.department.setValidators(departmentValidators);
     this.form.controls.laboratory.setValidators(this.isLaboratoryStaff ? [Validators.required] : []);
 
-    if (!this.isDepartmentStaff && !this.isPrincipalStaff && !this.isLecturerStaff) {
+    if (!this.isDepartmentStaff && !this.isPrincipalStaff && !this.isLecturerStaff && !this.isSupervisorStaff) {
       this.form.controls.college.setValue('');
       this.form.controls.department.setValue('');
     }
@@ -228,8 +232,11 @@ export class StaffRegister implements OnInit {
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+      'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+      'DUS Examination Office': '/dashboard/dus-secretary',
       'DUS Secretary': '/dashboard/dus-secretary',
-      'Station Secretary': '/dashboard/station-secretary'
+      'Station Secretary': '/dashboard/station-secretary',
+      Supervisor: '/dashboard/supervisor'
     };
     return map[role] ?? '/dashboard';
   }

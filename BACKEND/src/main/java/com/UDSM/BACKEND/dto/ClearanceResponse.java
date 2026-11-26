@@ -91,6 +91,24 @@ public class ClearanceResponse {
         return controlNumber;
     }
 
+    private String award;
+
+    @JsonProperty("is_postgraduate")
+    private Boolean isPostgraduate;
+
+    @JsonProperty("isPostgraduate")
+    public Boolean getIsPostgraduateCamel() {
+        return isPostgraduate;
+    }
+
+    @JsonProperty("undergraduate_certificate_url")
+    private String undergraduateCertificateUrl;
+
+    @JsonProperty("undergraduateCertificateUrl")
+    public String getUndergraduateCertificateUrlCamel() {
+        return undergraduateCertificateUrl;
+    }
+
     private ClearanceStatus status;
 
     @JsonProperty("current_stage")

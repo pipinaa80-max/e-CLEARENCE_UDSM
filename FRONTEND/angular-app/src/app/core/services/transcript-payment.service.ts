@@ -496,7 +496,7 @@ export class TranscriptPaymentService {
     request.certificateVerifiedAt = verified ? new Date().toISOString() : undefined;
     if (verified && !request.digitalSignatureHash) {
       request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
-      request.signedBy = 'DUS Directorate Secretary';
+      request.signedBy = 'DUS Examination Office';
       request.signedAt = new Date().toISOString();
     }
     this.save(request);
@@ -560,6 +560,17 @@ export class TranscriptPaymentService {
     if (!request) return false;
     request.dispatchStatus = 'Dispatched';
     request.dispatchedAt = new Date().toISOString();
+    this.save(request);
+    return true;
+  }
+
+  issueTranscriptByDirector(requestId: string, directorTitle: string = 'Director of Postgraduate Studies'): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.issuedByDirector = true;
+    request.issuedByDirectorTitle = directorTitle;
+    request.issuedAt = new Date().toISOString();
+    request.dispatchStatus = 'Pending Dispatch';
     this.save(request);
     return true;
   }

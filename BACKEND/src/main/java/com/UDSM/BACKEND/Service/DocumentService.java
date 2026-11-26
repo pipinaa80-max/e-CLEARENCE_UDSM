@@ -48,7 +48,7 @@ public class DocumentService {
     private final FileStorageService fileStorageService;
 
     private static final List<String> REQUIRED_CLEARANCE_DOCUMENTS = Arrays.asList(
-            "Transcript", "O-Level Certificate", "A-Level Certificate", "Identity Document"
+            "Transcript", "O-Level Certificate", "A-Level Certificate", "Diploma Certificate", "Identity Document"
     );
 
     @Transactional
@@ -138,7 +138,12 @@ public class DocumentService {
                 .map(Document::getFileType)
                 .collect(Collectors.toList());
 
-        return uploadedCategories.containsAll(REQUIRED_CLEARANCE_DOCUMENTS);
+        boolean hasTranscript = uploadedCategories.contains("Transcript");
+        boolean hasOLevel = uploadedCategories.contains("O-Level Certificate");
+        boolean hasEntryCert = uploadedCategories.contains("A-Level Certificate") || uploadedCategories.contains("Diploma Certificate");
+        boolean hasIdentity = uploadedCategories.contains("Identity Document");
+
+        return hasTranscript && hasOLevel && hasEntryCert && hasIdentity;
     }
 
     public List<String> getMissingDocuments(String studentId) {
@@ -148,11 +153,13 @@ public class DocumentService {
                 .collect(Collectors.toList());
 
         List<String> missing = new ArrayList<>();
-        for (String required : REQUIRED_CLEARANCE_DOCUMENTS) {
-            if (!uploadedCategories.contains(required)) {
-                missing.add(required);
-            }
+        if (!uploadedCategories.contains("Transcript")) missing.add("Transcript");
+        if (!uploadedCategories.contains("O-Level Certificate")) missing.add("O-Level Certificate");
+        if (!uploadedCategories.contains("A-Level Certificate") && !uploadedCategories.contains("Diploma Certificate")) {
+            missing.add("A-Level or Diploma Certificate");
         }
+        if (!uploadedCategories.contains("Identity Document")) missing.add("Identity Document");
+
         return missing;
     }
 
@@ -170,7 +177,16 @@ public class DocumentService {
                 .filter(document -> expectedDescription.equals(document.getDescription()))
                 .map(Document::getFileType)
                 .collect(Collectors.toSet());
-        return uploaded.containsAll(REQUIRED_TRANSCRIPT_DOCUMENTS);
+        boolean hasBase = uploaded.contains("Birth Certificate") && uploaded.contains("O-Level Certificate");
+        boolean hasEntry = uploaded.contains("A-Level Certificate") || uploaded.contains("Diploma Certificate");
+        boolean isPostgrad = student.getUser() != null && (Boolean.TRUE.equals(student.getUser().getIsPostgraduate())
+                || (student.getUser().getAward() != null && student.getUser().getAward().toLowerCase().contains("postgraduate"))
+                || (student.getUser().getProgramme() != null && (student.getUser().getProgramme().toLowerCase().contains("postgraduate")
+                    || student.getUser().getProgramme().toLowerCase().contains("master")
+                    || student.getUser().getProgramme().toLowerCase().contains("msc")
+                    || student.getUser().getProgramme().toLowerCase().contains("phd"))));
+        boolean hasUndergrad = !isPostgrad || uploaded.contains("Undergraduate Certificate");
+        return hasBase && hasEntry && hasUndergrad;
     }
 
     public List<String> getTranscriptDocumentCategories(String studentUserId, String paymentRequestId) {

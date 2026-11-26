@@ -3036,6 +3036,71 @@
   white-space: nowrap;
 }
 
+/* =========================================
+   WELCOME BACK POPUP (DISAPPEARS AFTER START)
+========================================= */
+.welcome-popup-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  pointer-events: none;
+  animation: welcomeToastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1), welcomeToastOut 0.5s cubic-bezier(0.4, 0, 0.2, 1) 3s forwards;
+}
+
+.welcome-popup-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  background: linear-gradient(135deg, rgba(0, 31, 52, 0.96) 0%, rgba(0, 59, 92, 0.94) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(245, 158, 11, 0.75);
+  border-radius: 999px;
+  box-shadow:
+    0 10px 30px rgba(0, 20, 35, 0.35),
+    0 0 16px rgba(245, 158, 11, 0.25);
+  color: #ffffff;
+}
+
+.welcome-icon {
+  font-size: 1.15rem;
+  color: #f59e0b;
+}
+
+.welcome-label {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+@keyframes welcomeToastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes welcomeToastOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -15px) scale(0.95);
+  }
+}
+
+
 
 .transcript-control-number-input {
   display: block;

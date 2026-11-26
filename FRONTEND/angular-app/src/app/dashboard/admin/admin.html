@@ -121,13 +121,37 @@
     <!-- Users Tab -->
     <div *ngIf="activeTab === 'users'" class="tab-content">
       <div class="section-header">
-        <h3>User Management (Total: {{ users.length }})</h3>
+        <div>
+          <h3>User Management (Total: {{ users.length }})</h3>
+          <div class="user-sub-counters">
+            <span class="counter-badge counter-ug" (click)="filterByAwardCategory('UNDERGRADUATE')" title="Click to filter Undergraduates">
+              <i class="bi bi-mortarboard"></i> Undergrads: <strong>{{ stats.totalUndergraduates }}</strong>
+            </span>
+            <span class="counter-badge counter-pg" (click)="filterByAwardCategory('POSTGRADUATE')" title="Click to filter Postgraduates">
+              <i class="bi bi-mortarboard-fill"></i> Postgrads: <strong>{{ stats.totalPostgraduates }}</strong>
+            </span>
+            <span class="counter-badge counter-staff" (click)="filterByStaff()" title="Click to filter Staff">
+              <i class="bi bi-person-badge"></i> Staff: <strong>{{ stats.totalStaff }}</strong>
+            </span>
+          </div>
+        </div>
         <div class="header-actions">
           <input type="text" [(ngModel)]="userSearchTerm" (ngModelChange)="onUserFilterChange()" placeholder="Search users..." class="search-input">
           <select [(ngModel)]="userRoleFilter" name="userRoleFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by role" class="filter-select">
             <option value="">All roles</option>
             <option value="STAFF">All Staff</option>
             <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+          </select>
+          <select [(ngModel)]="userAwardFilter" name="userAwardFilter" (ngModelChange)="onUserFilterChange()" title="Filter students by award category" class="filter-select">
+            <option value="">All Award Categories</option>
+            <option value="POSTGRADUATE">🎓 All Postgraduates</option>
+            <option value="UNDERGRADUATE">📘 All Undergraduates</option>
+            <option value="Master Degree">Master Degree</option>
+            <option value="PhD">PhD / Doctorate</option>
+            <option value="Postgraduate Diploma">Postgraduate Diploma</option>
+            <option value="Bachelor Degree">Bachelor Degree</option>
+            <option value="Diploma">Diploma</option>
+            <option value="Certificate">Certificate</option>
           </select>
           <select [(ngModel)]="userStatusFilter" name="userStatusFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by status" class="filter-select">
             <option value="">All statuses</option>
@@ -206,11 +230,41 @@
                 <option *ngFor="let prog of programmeOptions" [value]="prog">{{ prog }}</option>
               </select>
             </div>
+
+            <!-- Academic Award Level (For Students) -->
+            <div class="form-group" *ngIf="isStudentRole">
+              <label>Academic Award / Degree Level <span class="required" style="color: #dc2626;">*</span></label>
+              <select [(ngModel)]="newUser.award" name="award" (change)="onAwardChange()" required>
+                <optgroup label="Postgraduate Programmes (Supervisor Check)">
+                  <option value="Master Degree">Master Degree (MSc, MA, MBA, etc.)</option>
+                  <option value="PhD">PhD / Doctorate</option>
+                  <option value="Postgraduate Diploma">Postgraduate Diploma (PGD)</option>
+                </optgroup>
+                <optgroup label="Undergraduate Programmes">
+                  <option value="Bachelor Degree">Bachelor Degree</option>
+                  <option value="Diploma">Diploma</option>
+                  <option value="Certificate">Certificate</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Postgraduate Toggle (For Students) -->
+            <div class="form-group checkbox-group" *ngIf="isStudentRole">
+              <label class="checkbox-label" title="Toggle postgraduate candidate status">
+                <input type="checkbox" [(ngModel)]="newUser.isPostgraduate" name="isPostgraduate" (change)="onPostgraduateToggle()">
+                <span>
+                  <strong>Postgraduate Candidate Status</strong>
+                  <small style="display:block; color: #64748b; font-size: 11px;">
+                    Appends Research Supervisor as final check &amp; requires Undergraduate Certificate upload
+                  </small>
+                </span>
+              </label>
+            </div>
           </div>
 
           <!-- Dynamic Role Guidance Banner -->
-          <div class="role-hint-banner {{ isStudentRole ? 'student-hint' : 'staff-hint' }}">
-            <i class="bi {{ isStudentRole ? 'bi-mortarboard-fill' : 'bi-person-badge-fill' }}"></i>
+          <div class="role-hint-banner {{ isStudentRole ? (newUser.isPostgraduate ? 'postgrad-hint' : 'student-hint') : 'staff-hint' }}">
+            <i class="bi {{ isStudentRole ? (newUser.isPostgraduate ? 'bi-mortarboard-fill' : 'bi-mortarboard') : 'bi-person-badge-fill' }}"></i>
             <span>{{ roleBadgeDescription }}</span>
           </div>
 
@@ -231,13 +285,14 @@
               <th>Email</th>
               <th>Reg No</th>
               <th>Role</th>
+              <th>Award / Category</th>
               <th>Status</th>
               <th class="users-actions-heading">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="isLoadingUsers">
-              <td colspan="7" style="text-align: center; padding: 36px; color: #0284c7; font-weight: 600;">
+              <td colspan="8" style="text-align: center; padding: 36px; color: #0284c7; font-weight: 600;">
                 <span style="display: inline-block; width: 18px; height: 18px; border: 2.5px solid #cbd5e1; border-top-color: #0284c7; border-radius: 50%; vertical-align: middle; margin-right: 8px;"></span>
                 Loading users from database...
               </td>
@@ -256,6 +311,22 @@
                 </select>
               </td>
               <td>
+                <div *ngIf="isStudent(user)">
+                  <span
+                    class="award-badge"
+                    [ngClass]="isPostgraduateUser(user) ? 'award-badge-postgrad' : 'award-badge-undergrad'"
+                    [title]="isPostgraduateUser(user) ? 'Postgraduate candidate: requires Undergraduate Certificate & routes to Research Supervisor for final check' : 'Undergraduate candidate: 5-stage clearance flow'"
+                  >
+                    <i class="bi" [ngClass]="isPostgraduateUser(user) ? 'bi-mortarboard-fill' : 'bi-mortarboard'"></i>
+                    {{ getStudentAwardCategory(user).label }}
+                    <span class="category-pill" *ngIf="isPostgraduateUser(user)">PG</span>
+                  </span>
+                </div>
+                <div *ngIf="!isStudent(user)">
+                  <span class="staff-dept-badge">{{ user.department || user.college || 'Staff / Central' }}</span>
+                </div>
+              </td>
+              <td>
                 <select [(ngModel)]="user.isActive" [name]="'status-' + user.id" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive" (ngModelChange)="updateStatus(user.id, $event)">
                   <option [ngValue]="true">Active</option>
                   <option [ngValue]="false">Inactive</option>
@@ -266,7 +337,7 @@
               </td>
             </tr>
             <tr *ngIf="!isLoadingUsers && !paginatedUsers.length">
-              <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+              <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
                 No users found.
               </td>
             </tr>

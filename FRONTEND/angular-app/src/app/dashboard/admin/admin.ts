@@ -90,7 +90,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
     'Workshop',
     'Laboratory',
     'Director of Undergraduate Studies',
-    'DUS Secretary',
+    'Director of Postgraduate Studies',
+    'DUS Examination Office',
+    'Station Secretary',
+    'Supervisor',
     'Administrator'
   ];
   clearanceRequests: any[] = [];
@@ -143,6 +146,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   stats = {
     totalStudents: 0,
+    totalPostgraduates: 0,
+    totalUndergraduates: 0,
     totalRequests: 0,
     completed: 0,
     pending: 0,
@@ -150,6 +155,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
     totalStaff: 0,
     pendingUsers: 0
   };
+
+  userAwardFilter: string = '';
 
   newUser = {
     firstName: '',
@@ -163,7 +170,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     department: '',
     programme: '',
     faculty: '',
-    yearOfStudy: ''
+    yearOfStudy: '',
+    award: 'Bachelor Degree',
+    isPostgraduate: false
   };
 
   readonly academicUnits: AcademicUnitData = {
@@ -491,7 +500,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   get roleBadgeDescription(): string {
     if (this.isStudentRole) {
-      return 'Student Account — Requires College, Department, and Programme selection.';
+      if (this.newUser.isPostgraduate) {
+        return '🎓 Postgraduate Student — Requires College, Department, Programme, and Award Level. Routes through Convocation, Parallel Offices, Department, Principal, Finance, and Research Supervisor (Final Check). Requires Undergraduate Certificate upload.';
+      }
+      return '📘 Undergraduate Student — Requires College, Department, and Programme selection. Standard 5-stage clearance flow.';
     }
     if (this.isPrincipalRole) {
       return 'College Principal — Oversees the entire selected College (no individual department).';
@@ -500,6 +512,29 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return 'Academic / Departmental Staff — Associated with College and Department. Programme not required.';
     }
     return 'Institutional / Central Unit — University-wide office (College, Department, and Programme not required).';
+  }
+
+  onAwardChange(): void {
+    const award = (this.newUser.award || '').toLowerCase();
+    if (award.includes('postgraduate') || award.includes('master') || award.includes('phd') || award.includes('doctor')) {
+      this.newUser.isPostgraduate = true;
+    } else if (award.includes('bachelor') || award.includes('diploma') || award.includes('certificate')) {
+      this.newUser.isPostgraduate = false;
+    }
+  }
+
+  onPostgraduateToggle(): void {
+    if (this.newUser.isPostgraduate) {
+      const award = (this.newUser.award || '').toLowerCase();
+      if (!award.includes('postgraduate') && !award.includes('master') && !award.includes('phd')) {
+        this.newUser.award = 'Master Degree';
+      }
+    } else {
+      const award = (this.newUser.award || '').toLowerCase();
+      if (award.includes('postgraduate') || award.includes('master') || award.includes('phd')) {
+        this.newUser.award = 'Bachelor Degree';
+      }
+    }
   }
 
   onRoleChange(): void {
@@ -518,6 +553,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     } else if (this.isStudentRole) {
       if (this.newUser.department && !this.departments.includes(this.newUser.department)) {
         this.newUser.department = '';
+      }
+      if (!this.newUser.award) {
+        this.newUser.award = 'Bachelor Degree';
       }
     }
   }
@@ -605,7 +643,18 @@ export class AdminDashboard implements OnInit, OnDestroy {
       const matchesStatus = !statusFilter ||
         (statusFilter === 'active' ? u.isActive !== false : u.isActive === false);
 
-      return matchesSearch && matchesRole && matchesStatus;
+      let matchesAward = true;
+      if (this.userAwardFilter === 'POSTGRADUATE') {
+        matchesAward = userRole === 'STUDENT' && this.isPostgraduateUser(u);
+      } else if (this.userAwardFilter === 'UNDERGRADUATE') {
+        matchesAward = userRole === 'STUDENT' && !this.isPostgraduateUser(u);
+      } else if (this.userAwardFilter) {
+        const uAward = (u.award || '').toLowerCase();
+        const fAward = this.userAwardFilter.toLowerCase();
+        matchesAward = uAward.includes(fAward) || (u.programme && u.programme.toLowerCase().includes(fAward));
+      }
+
+      return matchesSearch && matchesRole && matchesStatus && matchesAward;
     });
 
     this.totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
@@ -655,6 +704,82 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.userSearchTerm = '';
     this.userRoleFilter = '';
     this.userStatusFilter = '';
+    this.userAwardFilter = '';
+    this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
+  }
+
+  isPostgraduateUser(u: any): boolean {
+    if (!u) return false;
+    if (u.isPostgraduate === true || u.is_postgraduate === true) return true;
+    const award = (u.award || '').toLowerCase();
+    const prog = (u.programme || '').toLowerCase();
+    return award.includes('postgraduate') || award.includes('master') || award.includes('phd') || award.includes('doctor') ||
+           prog.includes('postgraduate') || prog.includes('master') || prog.includes('msc') || prog.includes('mba') || prog.includes('phd') || prog.includes('doctor');
+  }
+
+  isStudent(u: any): boolean {
+    return String(u?.role ?? '').toUpperCase() === 'STUDENT';
+  }
+
+  getStudentAwardCategory(u: any): { label: string; type: 'postgraduate' | 'undergraduate'; isPostgrad: boolean; badgeClass: string; icon: string } {
+    if (!u) return { label: 'Unknown', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-bachelor', icon: 'bi-mortarboard' };
+    const isPostgrad = this.isPostgraduateUser(u);
+    const award = (u.award || '').trim();
+    const prog = (u.programme || '').toLowerCase();
+
+    if (award) {
+      const lower = award.toLowerCase();
+      if (lower.includes('phd') || lower.includes('doctor')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-phd', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('master')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-masters', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('postgraduate')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-pgd', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('bachelor') || lower.includes('degree')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-bachelor', icon: 'bi-mortarboard' };
+      }
+      if (lower.includes('diploma')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-diploma', icon: 'bi-award' };
+      }
+      if (lower.includes('certificate')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-certificate', icon: 'bi-patch-check' };
+      }
+      return { label: award, type: isPostgrad ? 'postgraduate' : 'undergraduate', isPostgrad, badgeClass: isPostgrad ? 'award-badge-masters' : 'award-badge-bachelor', icon: 'bi-mortarboard' };
+    }
+
+    if (prog.includes('phd') || prog.includes('doctor')) {
+      return { label: 'PhD', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-phd', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('master') || prog.includes('msc') || prog.includes('mba')) {
+      return { label: 'Master Degree', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-masters', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('postgraduate') || prog.includes('pgd')) {
+      return { label: 'Postgraduate Diploma', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-pgd', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('diploma')) {
+      return { label: 'Diploma', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-diploma', icon: 'bi-award' };
+    }
+    if (prog.includes('certificate')) {
+      return { label: 'Certificate', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-certificate', icon: 'bi-patch-check' };
+    }
+
+    return { label: isPostgrad ? 'Postgraduate' : 'Bachelor Degree', type: isPostgrad ? 'postgraduate' : 'undergraduate', isPostgrad, badgeClass: isPostgrad ? 'award-badge-masters' : 'award-badge-bachelor', icon: 'bi-mortarboard' };
+  }
+
+  filterByAwardCategory(cat: string): void {
+    this.userRoleFilter = 'Student';
+    this.userAwardFilter = cat;
+    this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
+  }
+
+  filterByStaff(): void {
+    this.userRoleFilter = 'STAFF';
+    this.userAwardFilter = '';
     this.currentPage = 1;
     this.applyUserFiltersAndPagination();
   }
@@ -854,7 +979,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
-    this.stats.totalStudents = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT').length;
+    const students = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT');
+    this.stats.totalStudents = students.length;
+    this.stats.totalPostgraduates = students.filter(s => this.isPostgraduateUser(s)).length;
+    this.stats.totalUndergraduates = this.stats.totalStudents - this.stats.totalPostgraduates;
     this.stats.totalStaff = this.users.filter(u => String(u.role ?? '').toUpperCase() !== 'STUDENT').length;
     this.stats.pendingUsers = this.users.filter(u => u.isActive === false).length;
     this.stats.totalRequests = this.clearanceRequests.length;
@@ -1355,6 +1483,15 @@ export class AdminDashboard implements OnInit, OnDestroy {
       payload.programme = '';
     } else if (this.isDepartmentalStaffRole) {
       payload.programme = '';
+    } else if (this.isStudentRole) {
+      payload.award = this.newUser.award || 'Bachelor Degree';
+      const awardLower = (payload.award || '').toLowerCase();
+      const isPg = this.newUser.isPostgraduate ||
+        awardLower.includes('postgraduate') ||
+        awardLower.includes('master') ||
+        awardLower.includes('phd') ||
+        awardLower.includes('doctor');
+      payload.isPostgraduate = isPg;
     }
 
     this.adminService.createUser(payload).subscribe({
@@ -1390,7 +1527,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
       department: '',
       programme: '',
       faculty: '',
-      yearOfStudy: ''
+      yearOfStudy: '',
+      award: 'Bachelor Degree',
+      isPostgraduate: false
     };
   }
 

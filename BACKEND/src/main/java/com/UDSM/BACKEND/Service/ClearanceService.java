@@ -80,6 +80,25 @@ public class ClearanceService {
         String effectiveAddress = requestDTO.getAddress() != null ? requestDTO.getAddress() : student.getAddress();
         String effectivePhysicalAddress = requestDTO.getPhysicalAddress() != null ? requestDTO.getPhysicalAddress() : effectiveAddress;
 
+        boolean isPostgrad = requestDTO.isPostgraduate()
+                || (requestDTO.getAward() != null && isPostgraduateAward(requestDTO.getAward()))
+                || student.isPostgraduateStudent();
+
+        String effectiveAward = requestDTO.getAward() != null && !requestDTO.getAward().isBlank()
+                ? requestDTO.getAward()
+                : student.getAward();
+
+        String effectiveUndergradCert = requestDTO.getUndergraduateCertificate() != null && !requestDTO.getUndergraduateCertificate().isBlank()
+                ? requestDTO.getUndergraduateCertificate()
+                : student.getUndergraduateCertificateUrl();
+
+        if (isPostgrad) {
+            student.setIsPostgraduate(true);
+            if (effectiveAward != null) student.setAward(effectiveAward);
+            if (effectiveUndergradCert != null) student.setUndergraduateCertificateUrl(effectiveUndergradCert);
+            studentRepository.save(student);
+        }
+
         // Create new clearance request
         ClearanceRequest clearanceRequest = ClearanceRequest.builder()
                 .student(student)
@@ -90,6 +109,9 @@ public class ClearanceService {
                 .block(requestDTO.getBlock() != null ? requestDTO.getBlock() : student.getBlock())
                 .address(effectiveAddress)
                 .physicalAddress(effectivePhysicalAddress)
+                .award(effectiveAward)
+                .isPostgraduate(isPostgrad)
+                .undergraduateCertificateUrl(effectiveUndergradCert)
                 .projectId(projectId)
                 .status(ClearanceStatus.PENDING.name())
                 .currentStage("Parallel")
@@ -160,13 +182,23 @@ public class ClearanceService {
                 .orderNumber(order++)
                 .build());
 
-        // 5. Finance (last)
+        // 5. Finance
         approvals.add(DepartmentApproval.builder()
                 .clearanceRequest(savedRequest)
                 .department("Finance")
                 .status(ClearanceStatus.PENDING)
-                .orderNumber(order)
+                .orderNumber(order++)
                 .build());
+
+        // 6. Supervisor (Final check for Postgraduate students ONLY)
+        if (isPostgrad) {
+            approvals.add(DepartmentApproval.builder()
+                    .clearanceRequest(savedRequest)
+                    .department("Supervisor")
+                    .status(ClearanceStatus.PENDING)
+                    .orderNumber(order)
+                    .build());
+        }
 
         departmentApprovalRepository.saveAll(approvals);
 
@@ -301,6 +333,18 @@ public class ClearanceService {
                         }
                     }
 
+                    if ("Supervisor".equalsIgnoreCase(targetOffice)
+                            && !"Supervisor".equalsIgnoreCase(cr.getCurrentStage())
+                            && approval.getStatus() == ClearanceStatus.PENDING) {
+                        List<DepartmentApproval> crApprovals = approvalsByReqId.getOrDefault(cr.getId(), Collections.emptyList());
+                        boolean financeApproved = crApprovals.stream()
+                                .filter(a -> matchesOffice(a.getDepartment(), "Finance", cr))
+                                .anyMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+                        if (!financeApproved) {
+                            return false;
+                        }
+                    }
+
                     if (statusFilter != null && !statusFilter.isBlank() && !"ALL".equalsIgnoreCase(statusFilter)) {
                         if (!approval.getStatus().name().equalsIgnoreCase(statusFilter)) {
                             return false;
@@ -326,6 +370,20 @@ public class ClearanceService {
                         String userCol = user.getCollege().trim();
                         String studentCol = (cr.getCollege() != null ? cr.getCollege() : (cr.getStudent() != null ? cr.getStudent().getCollege() : "")).trim();
                         if (!matchesScope(studentCol, userCol)) {
+                            return false;
+                        }
+                    }
+
+                    // Scope by Department if Supervisor with assigned department
+                    if (user.getRole() == ERole.SUPERVISOR && user.getDepartment() != null && !user.getDepartment().isBlank()) {
+                        String userDept = user.getDepartment().trim();
+                        String studentDept = (cr.getDepartment() != null && !cr.getDepartment().isBlank())
+                                ? cr.getDepartment().trim()
+                                : (cr.getStudent() != null && cr.getStudent().getDepartment() != null ? cr.getStudent().getDepartment().trim() : "");
+                        if (studentDept.isBlank() && cr.getProgramme() != null) {
+                            studentDept = cr.getProgramme().trim();
+                        }
+                        if (!matchesDepartmentScope(studentDept, userDept)) {
                             return false;
                         }
                     }
@@ -546,13 +604,23 @@ public class ClearanceService {
             }
             List<DepartmentApproval> allApprovals = departmentApprovalRepository.findByClearanceRequest(request);
             for (DepartmentApproval app : allApprovals) {
-                if (app.getStatus() != ClearanceStatus.APPROVED) {
+                // Do NOT auto-approve Supervisor! Supervisor is the final check for postgraduate students
+                if (!"Supervisor".equalsIgnoreCase(app.getDepartment()) && app.getStatus() != ClearanceStatus.APPROVED) {
                     app.setStatus(ClearanceStatus.APPROVED);
                     app.setApprovedBy(user != null ? user.getFullName() : "Auto-Approved via Finance");
                     app.setApprovalDate(LocalDateTime.now());
                     app.setComments("Auto-approved upon Finance endorsement");
                     departmentApprovalRepository.save(app);
                 }
+            }
+        }
+
+        if ("Supervisor".equalsIgnoreCase(department)) {
+            boolean financeApproved = reqApprovals.stream()
+                    .filter(a -> matchesOffice(a.getDepartment(), "Finance", request))
+                    .allMatch(a -> a.getStatus() == ClearanceStatus.APPROVED);
+            if (!financeApproved) {
+                return ApiResponse.error("Finance approval is required before Supervisor clearance.");
             }
         }
 
@@ -871,6 +939,7 @@ public class ClearanceService {
         if (matchesOffice(dept, "Convocation", request)) return false;
         if (matchesOffice(dept, "Principal", request)) return false;
         if (matchesOffice(dept, "Finance", request)) return false;
+        if (matchesOffice(dept, "Supervisor", request)) return false;
         if (isDepartmentApproval(dept, request)) return false;
         return true;
     }
@@ -925,6 +994,17 @@ public class ClearanceService {
             return;
         }
 
+        // Supervisor stage (Postgraduate final check)
+        Optional<DepartmentApproval> supervisorApproval = approvals.stream()
+                .filter(a -> matchesOffice(a.getDepartment(), "Supervisor", request))
+                .findFirst();
+
+        if (supervisorApproval.isPresent() && supervisorApproval.get().getStatus() != ClearanceStatus.APPROVED) {
+            request.setCurrentStage("Supervisor");
+            request.setCurrentOffice("Supervisor");
+            return;
+        }
+
         request.setCurrentStage("Completed");
         request.setCurrentOffice("Completed");
     }
@@ -974,6 +1054,7 @@ public class ClearanceService {
             case LABORATORY_OFFICER -> "Laboratory";
             case DEPARTMENT_OFFICER -> "Department";
             case PRINCIPAL -> "Principal";
+            case SUPERVISOR -> "Supervisor";
             default -> requestedOffice != null && !requestedOffice.isBlank() ? requestedOffice : "Department";
         };
     }
@@ -1045,6 +1126,9 @@ public class ClearanceService {
                 .sponsor(sponsor)
                 .photo(photo)
                 .controlNumber(controlNumber)
+                .award(request.getAward() != null ? request.getAward() : (student != null ? student.getAward() : null))
+                .isPostgraduate(request.isPostgraduate())
+                .undergraduateCertificateUrl(request.getUndergraduateCertificateUrl() != null ? request.getUndergraduateCertificateUrl() : (student != null ? student.getUndergraduateCertificateUrl() : null))
                 .status(ClearanceStatus.valueOf(request.getStatus()))
                 .currentStage(request.getCurrentStage())
                 .currentOffice(request.getCurrentOffice())
@@ -1058,6 +1142,12 @@ public class ClearanceService {
                 .approvals(approvalDTOs)
                 .statusMessage(getStatusMessage(ClearanceStatus.valueOf(request.getStatus())))
                 .build();
+    }
+
+    private boolean isPostgraduateAward(String award) {
+        if (award == null) return false;
+        String a = award.toLowerCase();
+        return a.contains("postgraduate") || a.contains("master") || a.contains("phd") || a.contains("doctor");
     }
 
     private ClearanceResponse.DepartmentApprovalDTO mapApproval(DepartmentApproval approval) {

@@ -56,5 +56,11 @@ public class ClearanceRequestDTO {
 
     private String photo;
 
+    private String award;
+
+    private boolean isPostgraduate;
+
+    private String undergraduateCertificate;
+
     private boolean confirm;
 }

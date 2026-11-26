@@ -66,8 +66,16 @@
       </div>
     </div>
 
+    <!-- WELCOME BACK POPUP (POPS UP AT START, DISAPPEARS AFTER 3.5s) -->
+    <div class="welcome-popup-toast" *ngIf="showWelcomePopup" role="status" aria-live="polite">
+      <div class="welcome-popup-inner">
+        <i class="bi bi-hand-thumbs-up-fill welcome-icon"></i>
+        <span class="welcome-label">Welcome back</span>
+      </div>
+    </div>
+
     <app-dashboard-header
-      [title]="'Welcome back, ' + (currentUser?.fullName ?? 'Student')"
+      [title]="headerTitle"
       [user]="currentUser"
       [showProfile]="false"
       [showToggle]="true"
@@ -291,6 +299,48 @@
             <small style="display: block; color: #64748b; font-size: 0.78rem; margin-top: 4px;">Enter the written Government/University payment control number.</small>
           </div>
 
+          <!-- OPTIONAL DROPZONE / FILE SELECTOR -->
+          <input
+            #receiptFileInput
+            type="file"
+            (change)="onReceiptFileSelected($event)"
+            accept="image/png,image/jpeg,image/jpg,application/pdf"
+            style="display: none;"
+          />
+
+          <div
+            class="receipt-dropzone"
+            [class.has-file]="!!selectedReceiptFile"
+            (click)="receiptFileInput.click()"
+            style="border-style: dashed; padding: 14px;"
+          >
+            <ng-container *ngIf="!selectedReceiptFile">
+              <div class="dropzone-prompt">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <strong>Attach Optional Payment Slip or Screenshot (Optional)</strong>
+                <small>Supports JPG, PNG, or PDF</small>
+              </div>
+            </ng-container>
+
+            <ng-container *ngIf="selectedReceiptFile">
+              <div class="file-preview-card" (click)="$event.stopPropagation()">
+                <div class="preview-thumb" *ngIf="receiptPreviewUrl">
+                  <img [src]="receiptPreviewUrl" alt="Receipt preview" />
+                </div>
+                <div class="preview-thumb pdf" *ngIf="!receiptPreviewUrl">
+                  <span>PDF</span>
+                </div>
+                <div class="preview-info">
+                  <strong>{{ receiptFileName }}</strong>
+                  <small>{{ receiptFileSizeText }}</small>
+                </div>
+                <div class="file-action-buttons">
+                  <button type="button" class="btn-simple-view" (click)="viewReceiptFile()">View</button>
+                  <button type="button" class="btn-simple-remove" (click)="removeReceiptFile()">Remove</button>
+                </div>
+              </div>
+            </ng-container>
+          </div>
           <div class="receipt-modal-actions" style="margin-top: 18px;">
             <button type="button" class="cancel-modal-btn" (click)="closeReceiptModal()">
               Cancel
@@ -458,10 +508,10 @@
             Continue
           </a>
 
-          <!-- ALL 3 STEPS COMPLETED: FORWARDED TO DUS SECRETARY -->
+          <!-- ALL 3 STEPS COMPLETED: FORWARDED TO DUS EXAMINATION OFFICE -->
           <ng-container *ngIf="clearanceTranscriptRequest?.status === 'Paid' && clearanceTranscriptRequest?.collectionMethod">
             <p style="margin: 0; margin-right: auto; color: #15803d; font-size: 0.92rem; font-weight: 600;">
-              Your transcript request has been completed and forwarded to the DUS Secretary ({{ clearanceTranscriptRequest?.collectionMethod }}).
+              Your transcript request has been completed and forwarded to the DUS Examination Office ({{ clearanceTranscriptRequest?.collectionMethod }}).
             </p>
             <button
               type="button"
@@ -532,7 +582,65 @@
         placeholder="Enter the control number shown on your payment receipt"
         class="transcript-control-number-input"
       />
-      <small class="transcript-control-number-help">Finance will verify this number before you can continue to Step 2.</small>
+      <!-- Dropzone -->
+      <div
+        class="multi-receipt-dropzone"
+        [class.dropzone-disabled]="uploadedTranscriptReceipts.length >= transcriptCopies"
+        (click)="triggerReceiptUpload(transcriptFilesInput)"
+      >
+        <div class="dropzone-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <strong *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
+            {{ transcriptCopies === 1 ? 'Click or Drag & Drop Receipt Here' : 'Click or Drag & Drop Receipts Here' }}
+          </strong>
+          <strong *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
+            ✓ All {{ transcriptCopies }} {{ transcriptCopies === 1 ? 'Receipt' : 'Receipts' }} Attached
+          </strong>
+          <small *ngIf="uploadedTranscriptReceipts.length < transcriptCopies">
+            PNG, JPG, or PDF files &bull; Max 10MB each
+            <span *ngIf="transcriptCopies > 1"> &bull; Max {{ transcriptCopies }} receipts (1 per copy)</span>
+          </small>
+          <small *ngIf="uploadedTranscriptReceipts.length >= transcriptCopies" style="color: #16a34a;">
+            {{ transcriptCopies }} of {{ transcriptCopies }} receipts attached. Increase number of copies above to upload more.
+          </small>
+        </div>
+      </div>
+
+      <!-- Uploaded Receipts Preview List -->
+      <div class="uploaded-receipts-container" *ngIf="uploadedTranscriptReceipts.length > 0">
+        <div class="receipts-list-bar">
+          <span>Attached Receipts ({{ uploadedTranscriptReceipts.length }} of {{ transcriptCopies }})</span>
+          <button
+            type="button"
+            class="btn-attach-another"
+            *ngIf="uploadedTranscriptReceipts.length < transcriptCopies"
+            (click)="triggerReceiptUpload(transcriptFilesInput)"
+          >
+            + Attach Another Receipt
+          </button>
+        </div>
+
+        <div class="receipt-chips-list">
+          <div class="receipt-chip-item" *ngFor="let item of uploadedTranscriptReceipts; let idx = index">
+            <div class="receipt-thumb-box" *ngIf="item.previewUrl">
+              <img [src]="item.previewUrl" alt="Receipt preview" />
+            </div>
+            <div class="receipt-thumb-box pdf" *ngIf="!item.previewUrl">
+              <span>PDF</span>
+            </div>
+            <div class="receipt-chip-info">
+              <strong class="receipt-chip-title" [title]="item.fileName">{{ item.fileName }}</strong>
+              <small>{{ item.sizeText }} &bull; Receipt #{{ idx + 1 }}</small>
+            </div>
+            <div class="file-action-buttons">
+              <button type="button" class="btn-simple-view" (click)="viewTranscriptReceipt(idx)">View</button>
+              <button type="button" class="btn-simple-remove" (click)="removeTranscriptReceipt(idx)">Remove</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- MODAL FOOTER ACTIONS -->
     <div class="modal-footer-actions">

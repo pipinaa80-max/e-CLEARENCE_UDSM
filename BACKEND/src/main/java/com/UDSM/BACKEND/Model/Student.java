@@ -100,6 +100,16 @@ public class Student {
     @Column(name = "graduation_year")
     private String graduationYear;
 
+    @Column(name = "award")
+    private String award;
+
+    @Column(name = "is_postgraduate")
+    @Builder.Default
+    private Boolean isPostgraduate = false;
+
+    @Column(name = "undergraduate_certificate_url", length = 1000)
+    private String undergraduateCertificateUrl;
+
     @Column(name = "semester")
     private String semester;
 
@@ -241,5 +251,23 @@ public class Student {
 
     public void setFinalYear(boolean b) {
         this.isFinalYear = b;
+    }
+
+    public boolean isPostgraduateStudent() {
+        if (Boolean.TRUE.equals(this.isPostgraduate)) return true;
+        if (this.award != null) {
+            String a = this.award.toLowerCase();
+            if (a.contains("postgraduate") || a.contains("master") || a.contains("phd") || a.contains("doctor")) {
+                return true;
+            }
+        }
+        if (this.programme != null) {
+            String p = this.programme.toLowerCase();
+            if (p.contains("postgraduate") || p.contains("master") || p.contains("msc") || p.contains("m.sc")
+                    || p.contains("mba") || p.contains("m.a") || p.contains("ma ") || p.contains("phd") || p.contains("doctor")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

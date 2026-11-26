@@ -61,22 +61,61 @@ export class Login implements OnInit {
     }
   }
 
+  get isIdentifierFilled(): boolean {
+    const val = this.loginForm.controls.identifier.value;
+    return typeof val === 'string' && val.trim().length > 0;
+  }
+
+  get isPasswordFilled(): boolean {
+    const val = this.loginForm.controls.password.value;
+    return typeof val === 'string' && val.length > 0;
+  }
+
+  get isFormReady(): boolean {
+    return this.loginForm.valid;
+  }
+
+  onIdentifierEnter(event: Event): void {
+    event.preventDefault();
+    const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+    if (passwordInput) {
+      passwordInput.focus();
+    }
+  }
+
+  onPasswordEnter(event: Event): void {
+    event.preventDefault();
+    if (!this.isLoading) {
+      this.submit();
+    }
+  }
+
   submit(): void {
-    this.isLoading = true;
+    if (this.isLoading) return;
 
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
 
       const controls = this.loginForm.controls;
-      if (controls.password.errors?.['minlength']) {
+      if (!controls.identifier.value.trim()) {
+        this.toastService.warning('Missing Information', 'Please enter your email or registration number.');
+        const idInput = document.getElementById('identifier') as HTMLInputElement | null;
+        idInput?.focus();
+      } else if (!controls.password.value) {
+        this.toastService.warning('Missing Information', 'Please enter your password.');
+        const passInput = document.getElementById('password') as HTMLInputElement | null;
+        passInput?.focus();
+      } else if (controls.password.errors?.['minlength']) {
         this.toastService.warning('Invalid Input', 'Password must be at least 6 characters long.');
+        const passInput = document.getElementById('password') as HTMLInputElement | null;
+        passInput?.focus();
       } else {
-        this.toastService.warning('Missing Information', 'Please enter both your identifier and password.');
+        this.toastService.warning('Missing Information', 'Please complete the login form.');
       }
-
-      this.isLoading = false;
       return;
     }
+
+    this.isLoading = true;
 
     const { identifier, password } = this.loginForm.getRawValue();
 
@@ -84,7 +123,7 @@ export class Login implements OnInit {
     this.authService.login(identifier, password).subscribe({
       next: (user) => {
         this.isLoading = false;
-        this.toastService.success('Login Successful', `Welcome back, ${user.fullName}`);
+        this.toastService.success('Login Successful', 'Welcome back');
         this.changeDetector.detectChanges();
         this.router.navigate([this.redirectPathFor(user.role)]);
       },
@@ -120,8 +159,11 @@ export class Login implements OnInit {
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+      'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+      'DUS Examination Office': '/dashboard/dus-secretary',
       'DUS Secretary': '/dashboard/dus-secretary',
-      'Station Secretary': '/dashboard/station-secretary'
+      'Station Secretary': '/dashboard/station-secretary',
+      Supervisor: '/dashboard/supervisor'
     };
     return map[role] ?? '/dashboard';
   }

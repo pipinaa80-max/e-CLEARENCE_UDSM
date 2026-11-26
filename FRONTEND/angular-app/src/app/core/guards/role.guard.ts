@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
+import { catchError, map, of } from '23dax                  ` rxjs';
 
 import { AuthService } from '../services/auth.service';
 import { UserRole } from '../models/user.model';
@@ -65,8 +65,11 @@ function thisRoleRedirect(role: UserRole): string {
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
     'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+    'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+    'DUS Examination Office': '/dashboard/dus-secretary',
     'DUS Secretary': '/dashboard/dus-secretary',
     'Station Secretary': '/dashboard/station-secretary',
+    Supervisor: '/dashboard/supervisor',
     Administrator: '/dashboard/admin'
   };
 

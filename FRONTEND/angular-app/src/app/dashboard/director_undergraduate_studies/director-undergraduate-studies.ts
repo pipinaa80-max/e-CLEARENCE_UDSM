@@ -182,6 +182,18 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     }
   }
 
+  issueTranscript(requestId: string): void {
+    if (this.transcriptService.issueTranscriptByDirector(requestId, this.isPostgraduateDirector ? 'Director of Postgraduate Studies' : 'Director of Undergraduate Studies')) {
+      this.toastService.success('Transcript Issued', 'Transcript process approved & issued! Forwarded to DUS Examination Office for physical certificate collection.');
+    } else {
+      this.toastService.error('Action Failed', 'Could not issue transcript.');
+    }
+  }
+
+  get isPostgraduateDirector(): boolean {
+    return this.currentUser?.role === 'Director of Postgraduate Studies';
+  }
+
   // Collection Stations Computed Helpers & Actions
   get filteredStations(): CollectionStation[] {
     const q = (this.stationSearchTerm || '').trim().toLowerCase();

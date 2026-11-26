@@ -268,20 +268,64 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* SENSITIVE PLACEHOLDER & ACTIVE FILLED STATES */
+.field input::placeholder {
+  color: #94a3b8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.field input:focus::placeholder {
+  opacity: 0.45;
+  transform: translateX(4px);
+}
+
+.field input:not(:placeholder-shown),
+.field-input-wrap.has-value input {
+  background: #ffffff;
+  border-color: #0284c7;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(2, 102, 158, 0.08);
+}
+
 .field-input-wrap .field-icon {
   position: absolute;
   top: 50%;
   left: 14px;
   width: 18px;
   height: 18px;
-  color: #02669e;
+  color: #64748b;
   transform: translateY(-50%);
   pointer-events: none;
   font-size: 16px;
+  transition: color 0.2s ease;
+}
+
+.field-input-wrap:focus-within .field-icon,
+.field-input-wrap.has-value .field-icon {
+  color: #02669e;
+}
+
+/* SENSITIVE VALIDATION INDICATOR CHECKMARKS */
+.field-valid-icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  color: #10b981;
+  font-size: 16px;
+  pointer-events: none;
+  animation: scaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-valid-icon {
+  right: 48px;
 }
 
 .field-input-wrap input#password {
-  padding-right: 46px;
+  padding-right: 76px;
 }
 
 .password-toggle {
@@ -328,9 +372,13 @@
 }
 
 .btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   min-height: 50px;
-  border: none;
+  border: 1.5px solid transparent;
   border-radius: 12px;
   background: var(--udsm-blue);
   color: #ffffff;
@@ -343,10 +391,52 @@
   margin-top: 6px;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
   background: var(--udsm-blue-dark);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--udsm-blue-dark) 38%, transparent);
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ACTIVE READY STATE WHEN ALL DATA IS FILLED */
+.btn-submit.btn-ready {
+  background: linear-gradient(135deg, #02669e 0%, #003b5c 100%);
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow:
+    0 8px 24px rgba(2, 102, 158, 0.35),
+    0 0 16px rgba(245, 158, 11, 0.2);
+}
+
+.btn-arrow {
+  font-size: 1.35rem;
+  line-height: 1;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-submit:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to { transform: rotate(360deg); }
 }
 
 .btn-submit:active {

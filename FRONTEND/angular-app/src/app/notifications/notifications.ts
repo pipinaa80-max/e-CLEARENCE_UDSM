@@ -34,18 +34,21 @@ export class NotificationListComponent implements OnInit {
   }
 
   get isSecretary(): boolean {
-    return this.currentUser?.role === 'DUS Secretary' || this.isStationSecretary;
+    return this.currentUser?.role === 'DUS Examination Office' || this.currentUser?.role === 'DUS Secretary' || this.isStationSecretary;
   }
 
   get dashboardRoute(): string {
     const role: UserRole | undefined = this.currentUser?.role;
     switch (role) {
+      case 'DUS Examination Office':
       case 'DUS Secretary':
         return '/dashboard/dus-secretary';
       case 'Station Secretary':
         return '/dashboard/station-secretary';
       case 'Director of Undergraduate Studies':
         return '/dashboard/director-undergraduate-studies';
+      case 'Director of Postgraduate Studies':
+        return '/dashboard/director-postgraduate-studies';
       case 'Administrator':
         return '/dashboard/admin';
       case 'Finance':
@@ -91,7 +94,7 @@ export class NotificationListComponent implements OnInit {
 
   get portalSubtitle(): string {
     const role = this.currentUser?.role;
-    if (role === 'DUS Secretary') return 'Undergraduate Studies';
+    if (role === 'DUS Examination Office' || role === 'DUS Secretary') return 'Undergraduate Studies';
     if (role === 'Station Secretary') return 'Receiving & Handover Hub';
     if (role === 'Director of Undergraduate Studies') return 'Directorate Office';
     if (!role || role === 'Student') return 'University of Dar es Salaam';
@@ -100,7 +103,7 @@ export class NotificationListComponent implements OnInit {
 
   get dashboardLabel(): string {
     const role = this.currentUser?.role;
-    if (role === 'DUS Secretary') return 'Main Campus Dispatch';
+    if (role === 'DUS Examination Office' || role === 'DUS Secretary') return 'Examination & Dispatch';
     if (role === 'Station Secretary') return 'Station Vault & Intake';
     return 'Dashboard';
   }

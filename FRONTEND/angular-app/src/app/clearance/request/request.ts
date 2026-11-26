@@ -72,10 +72,12 @@ export class ClearanceRequestComponent implements OnInit {
     residenceEvidence: [''],
     sponsor: ['', Validators.required],
     photo: [''],
+    undergraduateCertificate: [''],
     confirm: [false, Validators.requiredTrue]
   });
 
   photoPreview: string | null = null;
+  undergraduateCertificateFileName: string | null = null;
   isSubmitting = false;
   hasSubmittedRequest = false;
 
@@ -743,6 +745,96 @@ export class ClearanceRequestComponent implements OnInit {
     reader.readAsDataURL(file);
   }
 
+  get isPostgraduate(): boolean {
+    const user = this.currentUser;
+    if (!user) return false;
+    if (user.isPostgraduate) return true;
+    const award = (user.award || '').toLowerCase();
+    const prog = (user.programme || this.requestForm.controls.programme.value || '').toLowerCase();
+    return award.includes('postgraduate') || award.includes('master') || award.includes('phd') || award.includes('doctor') ||
+           prog.includes('postgraduate') || prog.includes('master') || prog.includes('msc') || prog.includes('mba') || prog.includes('phd') || prog.includes('doctor');
+  }
+
+  onUndergraduateCertificateSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    this.requestForm.controls.undergraduateCertificate.setValue('');
+    this.undergraduateCertificateFileName = null;
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.toastService.warning('Invalid File', 'Undergraduate certificate must be an image or PDF file.');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.undergraduateCertificateFileName = file.name;
+      this.requestForm.controls.undergraduateCertificate.setValue(reader.result as string);
+      this.toastService.success('File Attached', `${file.name} ready for upload.`);
+    };
+    reader.onerror = () => {
+      this.toastService.error('Read Error', 'Failed to read undergraduate certificate file.');
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  viewingDocumentUrl: string | null = null;
+  viewingDocumentTitle: string = '';
+
+  viewUndergraduateCertificate(): void {
+    const val = this.requestForm.controls.undergraduateCertificate.value;
+    if (val) {
+      this.viewingDocumentUrl = val;
+      this.viewingDocumentTitle = this.undergraduateCertificateFileName || 'Undergraduate Certificate';
+    }
+  }
+
+  removeUndergraduateCertificate(input?: HTMLInputElement): void {
+    this.requestForm.controls.undergraduateCertificate.setValue('');
+    this.undergraduateCertificateFileName = null;
+    if (input) input.value = '';
+    this.toastService.info('File Removed', 'Undergraduate certificate removed.');
+  }
+
+  viewPassportPhoto(): void {
+    if (this.photoPreview) {
+      this.viewingDocumentUrl = this.photoPreview;
+      this.viewingDocumentTitle = 'Passport Photo';
+    }
+  }
+
+  removePassportPhoto(input?: HTMLInputElement): void {
+    this.photoPreview = null;
+    this.requestForm.patchValue({ photo: '' });
+    if (input) input.value = '';
+    this.toastService.info('Photo Removed', 'Passport photo removed.');
+  }
+
+  viewResidenceEvidence(): void {
+    const val = this.requestForm.controls.residenceEvidence.value;
+    if (val) {
+      this.viewingDocumentUrl = val;
+      this.viewingDocumentTitle = this.residenceEvidenceFileName || 'Residence Evidence';
+    }
+  }
+
+  removeResidenceEvidence(input?: HTMLInputElement): void {
+    this.requestForm.controls.residenceEvidence.setValue('');
+    this.residenceEvidenceFileName = null;
+    if (input) input.value = '';
+    this.toastService.info('File Removed', 'Residence evidence removed.');
+  }
+
+  closeDocumentViewer(): void {
+    this.viewingDocumentUrl = null;
+    this.viewingDocumentTitle = '';
+  }
+
   // =====================================================
   // PHOTO UPLOAD - ANY SIZE ACCEPTED
   // =====================================================
@@ -1025,7 +1117,10 @@ export class ClearanceRequestComponent implements OnInit {
         block: finalBlock,
         roomNumber: finalRoomNumber,
         sponsor: value.sponsor,
-        photo: value.photo
+        photo: value.photo,
+        award: user.award,
+        isPostgraduate: this.isPostgraduate,
+        undergraduateCertificate: value.undergraduateCertificate
       }));
 
       this.clearanceService.createFullRequest({
@@ -1046,7 +1141,10 @@ export class ClearanceRequestComponent implements OnInit {
         residenceType: value.residenceType as 'Hostel Dwellers' | 'Non-Hostel Dwellers',
         residenceEvidence: value.residenceEvidence,
         sponsor: value.sponsor,
-        photo: value.photo
+        photo: value.photo,
+        award: user.award,
+        isPostgraduate: this.isPostgraduate,
+        undergraduateCertificate: value.undergraduateCertificate
       });
 
       this.hasSubmittedRequest = true;

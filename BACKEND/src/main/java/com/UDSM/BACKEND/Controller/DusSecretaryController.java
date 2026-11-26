@@ -80,11 +80,11 @@ public class DusSecretaryController {
 
         if (signatureHash != null && !signatureHash.isBlank()) {
             student.setDigitalSignatureHash(signatureHash);
-            student.setSignedBy(signedBy != null ? signedBy : "DUS Directorate Secretary");
+            student.setSignedBy(signedBy != null ? signedBy : "DUS Examination Office");
             student.setSignedAt(LocalDateTime.now());
         } else if (Boolean.TRUE.equals(verified) && (student.getDigitalSignatureHash() == null || student.getDigitalSignatureHash().isBlank())) {
             student.setDigitalSignatureHash("UDSM-DUS-SIG-" + (100000000L + (long)(Math.random() * 900000000L)));
-            student.setSignedBy(signedBy != null ? signedBy : "DUS Directorate Secretary");
+            student.setSignedBy(signedBy != null ? signedBy : "DUS Examination Office");
             student.setSignedAt(LocalDateTime.now());
         }
 
@@ -258,7 +258,7 @@ public class DusSecretaryController {
         String releaseType = request.getReleaseType() != null ? request.getReleaseType() : "Academic Transcript & Degree Certificate";
         String instructions = request.getInstructions() != null && !request.getInstructions().isBlank()
                 ? request.getInstructions()
-                : "Please visit the Directorate of Undergraduate Studies (DUS) Secretary Office with your original Student ID / National ID.";
+                : "Please visit the Directorate of Undergraduate Studies (DUS) Examination Office with your original Student ID / National ID.";
 
         String title = "🎓 Certificate & Transcript Ready for Release (" + releaseType + ")";
         StringBuilder msg = new StringBuilder();
@@ -280,7 +280,7 @@ public class DusSecretaryController {
         boolean emailSent = false;
         if (student.getEmail() != null && !student.getEmail().isBlank()) {
             try {
-                emailService.sendClearanceUpdateEmail(student, "CERTIFICATE_RELEASE", "DUS Secretary Office", msg.toString());
+                emailService.sendClearanceUpdateEmail(student, "CERTIFICATE_RELEASE", "DUS Examination Office", msg.toString());
                 emailSent = true;
             } catch (Exception e) {
                 log.error("❌ Failed to dispatch certificate release email: {}", e.getMessage());

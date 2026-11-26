@@ -45,7 +45,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   showSignatureModal = false;
   selectedSigRequest: TranscriptPaymentRequest | null = null;
   signatureForm = {
-    secretaryName: 'Directorate Secretary',
+    secretaryName: 'DUS Examination Office',
     title: 'Directorate of Undergraduate Studies (DUS)',
     stampNote: 'Official Certificate & Transcript Release Verification'
   };
@@ -616,7 +616,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
       request.certificateVerifiedAt = new Date().toISOString();
       if (!request.digitalSignatureHash) {
         request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
-        request.signedBy = this.currentUser?.fullName || 'Directorate Secretary';
+        request.signedBy = this.currentUser?.fullName || 'DUS Examination Office';
         request.signedAt = new Date().toISOString();
       }
       this.saveVerificationToBackend(request, verified);
@@ -734,7 +734,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   // Digital Signature Modal Handlers
   openSignatureModal(request: TranscriptPaymentRequest): void {
     this.selectedSigRequest = request;
-    this.signatureForm.secretaryName = this.currentUser?.fullName || 'Directorate Secretary';
+    this.signatureForm.secretaryName = this.currentUser?.fullName || 'DUS Examination Office';
     this.showSignatureModal = true;
   }
 
@@ -754,9 +754,9 @@ export class DusSecretaryDashboardComponent implements OnInit {
       releaseDate: new Date().toISOString().split('T')[0],
       instructions: request.collectionMethod === 'Post by DHL'
         ? `Education Certificate verified and digitally signed. Dispatched via DHL Courier Service to ${request.postingRegion || 'specified address'}.`
-        : 'Education Certificate verified and digitally signed. Please visit DUS Secretary Office Room 102 with your valid Student ID or National ID.',
+        : 'Education Certificate verified and digitally signed. Please visit DUS Examination Office Room 102 with your valid Student ID or National ID.',
       trackingNumber: '',
-      customNote: `Digitally Signed and Sealed by ${request.signedBy || 'Directorate Secretary'} (${request.digitalSignatureHash || 'UDSM-DUS-SIG-SEALED'}).`
+      customNote: `Digitally Signed and Sealed by ${request.signedBy || 'DUS Examination Office'} (${request.digitalSignatureHash || 'UDSM-DUS-SIG-SEALED'}).`
     };
 
     const url = `${this.config.apiUrl}/dus-secretary/notify-release`;

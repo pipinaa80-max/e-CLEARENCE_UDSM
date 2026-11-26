@@ -252,6 +252,11 @@ public class AuthService {
                     case "LABORATORY": userRole = ERole.LABORATORY_OFFICER; break;
                     case "ADMIN": userRole = ERole.ADMIN; break;
                     case "ADMINISTRATOR": userRole = ERole.ADMINISTRATOR; break;
+                    case "SUPERVISOR":
+                    case "RESEARCH SUPERVISOR":
+                    case "SUPERVISOR_OFFICER":
+                        userRole = ERole.SUPERVISOR;
+                        break;
                     default: 
                         log.warn("Unknown role: {}. Defaulting to STUDENT.", request.getRole());
                         userRole = ERole.STUDENT; 
@@ -292,6 +297,11 @@ public class AuthService {
         user.setCollege(request.getCollege());
         user.setDepartment(request.getDepartment());
         user.setProgramme(request.getProgramme());
+        user.setAward(request.getAward());
+        boolean isPostgrad = Boolean.TRUE.equals(request.getIsPostgraduate())
+                || (request.getAward() != null && (request.getAward().toLowerCase().contains("postgraduate") || request.getAward().toLowerCase().contains("master") || request.getAward().toLowerCase().contains("phd") || request.getAward().toLowerCase().contains("doctor")))
+                || (request.getProgramme() != null && (request.getProgramme().toLowerCase().contains("postgraduate") || request.getProgramme().toLowerCase().contains("master") || request.getProgramme().toLowerCase().contains("msc") || request.getProgramme().toLowerCase().contains("mba") || request.getProgramme().toLowerCase().contains("phd")));
+        user.setIsPostgraduate(isPostgrad);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         
@@ -329,6 +339,8 @@ public class AuthService {
             student.setYearOfStudy(request.getYearOfStudy());
             student.setAcademicYear(request.getAcademicYear());
             student.setUser(savedUser);
+            student.setAward(request.getAward());
+            student.setIsPostgraduate(isPostgrad);
             student.setFinalYear("Final Year".equalsIgnoreCase(request.getYearOfStudy()));
             student.setClearanceStatus(ClearanceStatus.PENDING);
             student.setCreatedAt(LocalDateTime.now());

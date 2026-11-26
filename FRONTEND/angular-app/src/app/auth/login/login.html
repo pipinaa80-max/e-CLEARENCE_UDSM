@@ -23,29 +23,41 @@
 
       <label class="field" for="identifier">
         <span>Email / Registration Number</span>
-        <div class="field-input-wrap">
+        <div class="field-input-wrap" [class.has-value]="isIdentifierFilled">
           <i class="bi bi-envelope-fill field-icon" aria-hidden="true"></i>
           <input
-                id="identifier"
-                type="text"
-                formControlName="identifier"
-                placeholder="Enter your email or registration number"
-                required
+            id="identifier"
+            type="text"
+            formControlName="identifier"
+            placeholder="Enter your email or registration number"
+            autocomplete="username"
+            inputmode="email"
+            autocapitalize="none"
+            autocorrect="off"
+            spellcheck="false"
+            enterkeyhint="next"
+            (keydown.enter)="onIdentifierEnter($event)"
+            required
           />
+          <i class="bi bi-check-circle-fill field-valid-icon" *ngIf="isIdentifierFilled" title="Identifier entered" aria-hidden="true"></i>
         </div>
       </label>
 
       <div class="field">
         <label for="password">Password</label>
-        <div class="field-input-wrap">
+        <div class="field-input-wrap" [class.has-value]="isPasswordFilled">
           <i class="bi bi-lock-fill field-icon" aria-hidden="true"></i>
           <input
-                id="password"
-                [type]="showPassword ? 'text' : 'password'"
-                formControlName="password"
-                placeholder="Enter your password"
-                required
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            enterkeyhint="go"
+            (keydown.enter)="onPasswordEnter($event)"
+            required
           />
+          <i class="bi bi-check-circle-fill field-valid-icon password-valid-icon" *ngIf="isPasswordFilled && loginForm.controls.password.valid" title="Valid password entered" aria-hidden="true"></i>
           <button
             class="password-toggle"
             type="button"
@@ -60,9 +72,20 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-submit" [disabled]="loginForm.invalid || isLoading">
-        <span *ngIf="!isLoading">Sign In</span>
-        <span *ngIf="isLoading">Signing In...</span>
+      <button
+        type="submit"
+        class="btn-submit"
+        [class.btn-ready]="isFormReady"
+        [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">
+          Sign In
+          <i class="bi bi-arrow-right-short btn-arrow" aria-hidden="true"></i>
+        </span>
+        <span *ngIf="isLoading" class="btn-loading">
+          <span class="spinner-border" role="status" aria-hidden="true"></span>
+          Signing In...
+        </span>
       </button>
 
       <div class="helper-row">

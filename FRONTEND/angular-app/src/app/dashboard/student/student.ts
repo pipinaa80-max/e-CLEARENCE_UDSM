@@ -79,6 +79,57 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.showReceiptModal = false;
   }
 
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.receiptErrorMessage = 'Receipt file must be an image (PNG, JPG) or PDF document.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.receiptErrorMessage = 'Receipt file size must be less than 10MB.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedReceiptFile = file;
+    this.receiptFileName = file.name;
+    const sizeKb = Math.round(file.size / 1024);
+    this.receiptFileSizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+    this.receiptErrorMessage = '';
+    this.receiptSuccessMessage = '';
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.receiptPreviewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.receiptPreviewUrl = null;
+    }
+  }
+
+  viewReceiptFile(): void {
+    if (this.receiptPreviewUrl) {
+      window.open(this.receiptPreviewUrl, '_blank');
+    } else if (this.selectedReceiptFile) {
+      const fileUrl = URL.createObjectURL(this.selectedReceiptFile);
+      window.open(fileUrl, '_blank');
+    }
+  }
+
+  removeReceiptFile(): void {
+    this.selectedReceiptFile = null;
+    this.receiptPreviewUrl = null;
+    this.receiptFileName = '';
+    this.receiptFileSizeText = '';
+    this.receiptErrorMessage = '';
+  }
   async submitRejectionReceipt(): Promise<void> {
     const controlNumber = this.receiptNote.trim();
     if (!/^[A-Za-z0-9-]{4,40}$/.test(controlNumber)) {
@@ -154,7 +205,18 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.userDropdownOpen = false;
   }
 
+  headerTitle = 'Welcome back';
+  showWelcomePopup = true;
+  private welcomeTimer?: any;
+
   ngOnInit(): void {
+    this.headerTitle = 'Welcome back';
+    this.showWelcomePopup = true;
+    this.welcomeTimer = setTimeout(() => {
+      this.showWelcomePopup = false;
+      this.headerTitle = 'Student Dashboard';
+    }, 3500);
+
     this.loadProfilePhoto();
     this.loadActiveStudentDebtFlag();
     if (this.currentUser?.role === 'Student') {
@@ -201,6 +263,9 @@ export class StudentDashboard implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.welcomeTimer) {
+      clearTimeout(this.welcomeTimer);
+    }
     this.pollSubscription?.unsubscribe();
   }
 
@@ -345,7 +410,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
           note = 'Principal approval';
           break;
         case 'Finance':
-          note = 'Final financial clearance';
+          note = this.isPostgraduate ? 'Financial clearance' : 'Final financial clearance';
+          break;
+        case 'Supervisor':
+          note = 'Supervisor final check';
           break;
       }
 
@@ -403,6 +471,13 @@ export class StudentDashboard implements OnInit, OnDestroy {
     return 'degree';
   }
 
+  get isPostgraduate(): boolean {
+    const r = this.currentRequest;
+    const u = this.currentUser;
+    if (r?.isPostgraduate || u?.isPostgraduate) return true;
+    return this.awardType === 'postgraduate' || this.awardType === 'masters' || this.awardType === 'phd';
+  }
+
   get dashboardEyebrow(): string {
     switch (this.awardType) {
       case 'diploma': return 'Diploma Student Dashboard';
@@ -450,6 +525,13 @@ export class StudentDashboard implements OnInit, OnDestroy {
   get isClearanceCompleted(): boolean {
     const request = this.currentRequest;
     if (!request) return false;
+    if (this.isPostgraduate) {
+      return (
+        request.status === 'Completed' ||
+        request.currentStage === 'Completed' ||
+        this.getOfficeStatus('Supervisor') === 'Approved'
+      );
+    }
     return (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
@@ -522,6 +604,106 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.transcriptSuccessMessage = '';
   }
 
+  triggerReceiptUpload(input: HTMLInputElement): void {
+    if (this.uploadedTranscriptReceipts.length >= this.transcriptCopies) {
+      this.transcriptErrorMessage = `You selected ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}. Increase the number of copies above if you wish to upload more receipts.`;
+      return;
+    }
+    this.transcriptErrorMessage = '';
+    input.click();
+  }
+
+  incrementCopies(): void {
+    if (this.transcriptCopies < 10) {
+      this.transcriptCopies++;
+      this.transcriptErrorMessage = '';
+    }
+  }
+
+  decrementCopies(): void {
+    if (this.transcriptCopies > 1) {
+      this.transcriptCopies--;
+      if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+        this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+      }
+      this.transcriptErrorMessage = '';
+    }
+  }
+
+  onCopiesCountChange(): void {
+    if (!this.transcriptCopies || this.transcriptCopies < 1) {
+      this.transcriptCopies = 1;
+    } else if (this.transcriptCopies > 10) {
+      this.transcriptCopies = 10;
+    }
+    if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+      this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+    }
+    this.transcriptErrorMessage = '';
+  }
+
+  getEstimatedTranscriptCost(): number {
+    const copies = Math.max(1, Math.floor(this.transcriptCopies || 1));
+    return 15000 + (copies - 1) * 5000;
+  }
+
+  async onTranscriptReceiptsSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    this.transcriptErrorMessage = '';
+    const availableSlots = Math.max(0, this.transcriptCopies - this.uploadedTranscriptReceipts.length);
+    if (availableSlots <= 0) {
+      this.transcriptErrorMessage = `Maximum limit of ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'receipt' : 'receipts'} reached for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+      input.value = '';
+      return;
+    }
+
+    const allFiles: File[] = Array.from(input.files);
+    if (allFiles.length > availableSlots) {
+      this.transcriptErrorMessage = `You selected ${allFiles.length} files, but only ${availableSlots} more ${availableSlots === 1 ? 'receipt is' : 'receipts are'} allowed for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+    }
+
+    const files: File[] = allFiles.slice(0, availableSlots);
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        this.transcriptErrorMessage = `File ${file.name} exceeds 10MB limit.`;
+        continue;
+      }
+      const sizeText = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      try {
+        const receiptData = await this.readFileAsDataUrl(file);
+        const isImage = file.type.startsWith('image/');
+        this.uploadedTranscriptReceipts.push({
+          file,
+          fileName: file.name,
+          previewUrl: isImage ? receiptData : null,
+          sizeText,
+          receiptData
+        });
+      } catch {
+        this.transcriptErrorMessage = `Failed to process ${file.name}.`;
+      }
+    }
+    input.value = '';
+  }
+
+  viewTranscriptReceipt(index: number): void {
+    const item = this.uploadedTranscriptReceipts[index];
+    if (!item) return;
+    if (item.previewUrl) {
+      window.open(item.previewUrl, '_blank');
+    } else if (item.receiptData) {
+      window.open(item.receiptData, '_blank');
+    }
+  }
+
+  removeTranscriptReceipt(index: number): void {
+    this.uploadedTranscriptReceipts.splice(index, 1);
+  }
   async submitTranscriptRequest(): Promise<void> {
     const user = this.currentUser;
     if (!user) {
@@ -657,6 +839,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
         'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
         'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
         'Convocation': { email: 'convocation@udsm.ac.tz', phone: '+255 22 2410505' },
+        'Supervisor': { email: 'postgraduate.clearance@udsm.ac.tz', phone: '+255 22 2410600' },
       };
       const def = defaultContacts[office] || { email: 'clearance@udsm.ac.tz', phone: '+255 22 2410500' };
       email = email || def.email;
@@ -703,6 +886,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
         this.currentRequest?.currentStage === 'Department' ||
         this.currentRequest?.currentStage === 'Principal' ||
         this.currentRequest?.currentStage === 'Finance' ||
+        this.currentRequest?.currentStage === 'Supervisor' ||
         this.currentRequest?.status === 'Completed') {
       return 100;
     }
@@ -719,7 +903,8 @@ export class StudentDashboard implements OnInit, OnDestroy {
     if (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
-      this.getOfficeStatus('Finance') === 'Approved'
+      (!this.isPostgraduate && this.getOfficeStatus('Finance') === 'Approved') ||
+      (this.isPostgraduate && this.getOfficeStatus('Supervisor') === 'Approved')
     ) {
       if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
         request.status = 'Completed';
@@ -745,6 +930,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       case 'Department': return 'Department';
       case 'Principal': return 'Principal';
       case 'Finance': return 'Finance';
+      case 'Supervisor': return 'Supervisor (Final Check)';
       default: return 'Clearance completed';
     }
   }
@@ -762,6 +948,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       convocationStatus = 'Approved';
@@ -783,6 +970,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       officesStatus = 'Approved';
@@ -802,6 +990,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     if (
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       departmentStatus = 'Approved';
@@ -818,6 +1007,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     let principalStatus = this.getApproval('Principal')?.status ?? 'Pending';
     if (
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       principalStatus = 'Approved';
@@ -832,16 +1022,34 @@ export class StudentDashboard implements OnInit, OnDestroy {
 
     // STEP 5 — FINANCE
     let financeStatus = this.getApproval('Finance')?.status ?? 'Pending';
-    if (request.status === 'Completed') {
+    if (
+      request.currentStage === 'Supervisor' ||
+      request.status === 'Completed'
+    ) {
       financeStatus = 'Approved';
     }
     steps.push({
       number: 5,
       label: 'Finance',
       office: 'Finance',
-      detail: 'Final financial clearance approval.',
+      detail: this.isPostgraduate ? 'Financial clearance approval.' : 'Final financial clearance approval.',
       status: financeStatus
     });
+
+    // STEP 6 — SUPERVISOR (Postgraduate Only)
+    if (this.isPostgraduate) {
+      let supervisorStatus = this.getApproval('Supervisor')?.status ?? 'Pending';
+      if (request.status === 'Completed') {
+        supervisorStatus = 'Approved';
+      }
+      steps.push({
+        number: 6,
+        label: 'Supervisor',
+        office: 'Supervisor',
+        detail: 'Postgraduate supervisor final thesis & academic clearance check.',
+        status: supervisorStatus
+      });
+    }
 
     return steps;
   }

@@ -1,0 +1,24 @@
+-- Flyway Migration V36: Allow SUPERVISOR role and add postgraduate clearance fields
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+
+ALTER TABLE users
+    ADD CONSTRAINT users_role_check CHECK (
+        role IN (
+            'SUPERUSER', 'STUDENT', 'DEPARTMENT_OFFICER', 'FINANCE_OFFICER',
+            'LIBRARY_OFFICER', 'ICT_OFFICER', 'ACADEMIC_STAFF', 'ADMINISTRATOR',
+            'ADMIN', 'CONVOCATION_OFFICER', 'GAMES_COACH', 'HALL_WARDEN',
+            'USAB_OFFICER', 'DARUSO_OFFICER', 'DEAN_OF_STUDENTS',
+            'SMART_CARD_OFFICER', 'WORKSHOP_OFFICER', 'PRINCIPAL',
+            'LABORATORY_OFFICER', 'LECTURER',
+            'DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DUS_SECRETARY', 'SUPERVISOR'
+        )
+    );
+
+ALTER TABLE students ADD COLUMN IF NOT EXISTS award VARCHAR(255);
+ALTER TABLE students ADD COLUMN IF NOT EXISTS is_postgraduate BOOLEAN DEFAULT FALSE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS undergraduate_certificate_url VARCHAR(1000);
+
+ALTER TABLE clearance_requests ADD COLUMN IF NOT EXISTS award VARCHAR(255);
+ALTER TABLE clearance_requests ADD COLUMN IF NOT EXISTS is_postgraduate BOOLEAN DEFAULT FALSE;
+ALTER TABLE clearance_requests ADD COLUMN IF NOT EXISTS undergraduate_certificate_url VARCHAR(1000);

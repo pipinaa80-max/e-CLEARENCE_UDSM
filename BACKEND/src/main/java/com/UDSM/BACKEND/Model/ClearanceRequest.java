@@ -66,6 +66,16 @@ public class ClearanceRequest {
     @Column(name = "physical_address")
     private String physicalAddress;
 
+    @Column(name = "award")
+    private String award;
+
+    @Column(name = "is_postgraduate")
+    @Builder.Default
+    private Boolean isPostgraduate = false;
+
+    @Column(name = "undergraduate_certificate_url", length = 1000)
+    private String undergraduateCertificateUrl;
+
     @Column(name = "project_id", length = 100)
     private String projectId;
 
@@ -162,6 +172,29 @@ public class ClearanceRequest {
         return "Finance".equals(currentStage);
     }
 
+    public boolean isAtSupervisorStage() {
+        return "Supervisor".equalsIgnoreCase(currentStage);
+    }
+
+    public boolean isPostgraduate() {
+        if (Boolean.TRUE.equals(this.isPostgraduate)) return true;
+        if (this.student != null && this.student.isPostgraduateStudent()) return true;
+        if (this.award != null) {
+            String a = this.award.toLowerCase();
+            if (a.contains("postgraduate") || a.contains("master") || a.contains("phd") || a.contains("doctor")) {
+                return true;
+            }
+        }
+        if (this.programme != null) {
+            String p = this.programme.toLowerCase();
+            if (p.contains("postgraduate") || p.contains("master") || p.contains("msc") || p.contains("m.sc")
+                    || p.contains("mba") || p.contains("m.a") || p.contains("ma ") || p.contains("phd") || p.contains("doctor")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void moveToNextStage() {
         if (isAtConvocationStage()) {
             setCurrentStage("Parallel");
@@ -172,6 +205,13 @@ public class ClearanceRequest {
         } else if (isAtPrincipalStage()) {
             setCurrentStage("Finance");
         } else if (isAtFinanceStage()) {
+            if (isPostgraduate()) {
+                setCurrentStage("Supervisor");
+            } else {
+                setCurrentStage("Completed");
+                status = ClearanceStatus.COMPLETED.name();
+            }
+        } else if (isAtSupervisorStage()) {
             setCurrentStage("Completed");
             status = ClearanceStatus.COMPLETED.name();
         }

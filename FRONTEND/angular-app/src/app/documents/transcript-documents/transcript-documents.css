@@ -14,8 +14,130 @@
 .document-list { display: grid; gap: 14px; margin-top: 26px; }
 .document-item { display: flex; justify-content: space-between; gap: 22px; align-items: center; padding: 18px; border: 1px solid #e0e7eb; border-radius: 8px; background: #f8fbfc; }
 .document-number { color: #00679b; font-size: 12px; font-weight: 900; }
-.document-item h3 { margin: 5px 0; color: #003b5c; font-size: 15px; }
+.document-item h3 { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: #003b5c; font-size: 15px; }
 .document-item p { margin: 0; color: #68757d; font-size: 12px; }
+
+/* Pathway Switch & Badges */
+.entry-pathway-banner {
+  margin-top: 22px;
+  padding: 18px 20px;
+  background: #f0f7fb;
+  border: 1px solid #cce3f0;
+  border-radius: 10px;
+}
+.pathway-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #0284c7;
+  text-transform: uppercase;
+}
+.pathway-header h4 {
+  margin: 4px 0 3px;
+  font-size: 14.5px;
+  color: #0f172a;
+  font-weight: 700;
+}
+.pathway-header p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+.pathway-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+.pathway-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+.pathway-btn:hover {
+  border-color: #0284c7;
+  background: #f8fafc;
+}
+.pathway-btn.active {
+  background: #eff6ff;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 1px #0284c7;
+}
+.pathway-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.pathway-btn.active .pathway-radio {
+  border-color: #0284c7;
+}
+.pathway-btn.active .pathway-radio::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0284c7;
+}
+.pathway-btn-content {
+  display: flex;
+  flex-direction: column;
+}
+.pathway-btn-content strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+.pathway-btn-content small {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.entry-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.entry-pill.diploma-pill {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pathway-inline-switch {
+  margin-top: 6px;
+}
+.link-switch {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0284c7;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.link-switch:hover {
+  color: #0369a1;
+}
+
 .document-action { display: flex; align-items: center; gap: 9px; }
 .document-action input { max-width: 210px; font-size: 12px; }
 .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border: 1px solid #00679b; border-radius: 7px; background: #00679b; color: #fff; font-size: 12px; font-weight: 800; text-decoration: none; cursor: pointer; }

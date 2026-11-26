@@ -129,9 +129,19 @@ export class AuthService {
       'DIRECTOR OF UNDERGRADUATE STUDIES': 'Director of Undergraduate Studies',
       'DIRECTOR OF UNDEGRADUATE STUDIES': 'Director of Undergraduate Studies',
       DUS: 'Director of Undergraduate Studies',
-      DUS_SECRETARY: 'DUS Secretary',
-      'DUS SECRETARY': 'DUS Secretary',
-      'DUS Secretary': 'DUS Secretary',
+      DIRECTOR_OF_POSTGRADUATE_STUDIES: 'Director of Postgraduate Studies',
+      'DIRECTOR OF POSTGRADUATE STUDIES': 'Director of Postgraduate Studies',
+      'Director of Postgraduate Studies': 'Director of Postgraduate Studies',
+      DPGS: 'Director of Postgraduate Studies',
+      DUS_SECRETARY: 'DUS Examination Office',
+      'DUS SECRETARY': 'DUS Examination Office',
+      'DUS Secretary': 'DUS Examination Office',
+      DUS_EXAMINATION_OFFICE: 'DUS Examination Office',
+      'DUS EXAMINATION OFFICE': 'DUS Examination Office',
+      'DUS Examination Office': 'DUS Examination Office',
+      SUPERVISOR: 'Supervisor',
+      SUPERVISOR_OFFICER: 'Supervisor',
+      'RESEARCH SUPERVISOR': 'Supervisor',
       ADMINISTRATOR: 'Administrator',
       ADMIN: 'Administrator',
       SUPERUSER: 'Administrator'
@@ -168,13 +178,15 @@ export class AuthService {
       isFinalYear: response.isFinalYear !== undefined ? response.isFinalYear : (response.finalYear !== undefined ? response.finalYear : response.is_final_year),
       stationCode: response.station_code || response.stationCode,
       stationName: response.station_name || response.stationName,
+      isPostgraduate: response.isPostgraduate !== undefined ? response.isPostgraduate : (response.is_postgraduate !== undefined ? response.is_postgraduate : false),
+      undergraduateCertificateUrl: response.undergraduateCertificateUrl || response.undergraduate_certificate_url,
       photo: response.photo || response.profilePhoto || response.profile_photo || response.profileImageUrl || response.profile_image_url
     };
     if (user.role) {
-      // Differentiate Main Campus DUS Secretary from Regional Station Secretary
+      // Differentiate Main Campus DUS Examination Office from Regional Station Secretary
       const mapped = this.mapRole(user.role);
       const isRegionalStation = user.stationCode && user.stationCode.toUpperCase() !== 'UDSM-MAIN';
-      if (mapped === 'DUS Secretary' && isRegionalStation) {
+      if ((mapped === 'DUS Examination Office' || mapped === 'DUS Secretary') && isRegionalStation) {
         user.role = 'Station Secretary';
       } else {
         user.role = mapped;

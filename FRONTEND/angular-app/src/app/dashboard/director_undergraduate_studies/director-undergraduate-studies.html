@@ -10,8 +10,8 @@
         />
       </a>
       <div>
-        <strong>DIRECTOR OF UNDERGRADUATE STUDIES</strong>
-        <small>Clearance Analytics</small>
+        <strong>{{ isPostgraduateDirector ? 'DIRECTOR OF POSTGRADUATE STUDIES' : 'DIRECTOR OF UNDERGRADUATE STUDIES' }}</strong>
+        <small>{{ isPostgraduateDirector ? 'Postgraduate Clearance & Transcripts' : 'Clearance Analytics' }}</small>
       </div>
     </div>
 
@@ -83,7 +83,8 @@
   <main class="content">
 
     <app-dashboard-header
-      title="Directorate Office"
+      [title]="isPostgraduateDirector ? 'Directorate of Postgraduate Studies (DPGS)' : 'Directorate of Undergraduate Studies (DUS)'"
+      [subtitle]="isPostgraduateDirector ? 'Postgraduate Academic Clearance, Transcript Issuance & DUS Examination Office Collection Pipeline' : 'Central Undergraduate Academic Oversight, Clearance Analytics & Verification'"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
@@ -692,6 +693,16 @@
                       <i class="bi bi-eye-fill"></i> Details
                     </button>
                     <button
+                      *ngIf="!tReq.issuedByDirector"
+                      type="button"
+                      class="btn-ledger-dispatch"
+                      style="background: #7c3aed; border-color: #6d28d9;"
+                      (click)="issueTranscript(tReq.id); tReq.issuedByDirector = true"
+                      title="Issue transcript & forward to DUS Examination Office for collection"
+                    >
+                      <i class="bi bi-patch-check-fill"></i> Issue &amp; Forward
+                    </button>
+                    <button
                       *ngIf="tReq.dispatchStatus !== 'Dispatched'"
                       type="button"
                       class="btn-ledger-dispatch"
@@ -758,11 +769,26 @@
           <div><dt>P.O. Box</dt><dd>{{ selectedTranscriptForModal.postingPoBox || '—' }}</dd></div>
           <div><dt>Contact Phone</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactPhone" href="tel:{{ selectedTranscriptForModal.postingContactPhone }}">{{ selectedTranscriptForModal.postingContactPhone }}</a><span *ngIf="!selectedTranscriptForModal.postingContactPhone">—</span></dd></div>
           <div><dt>Contact Email</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactEmail" href="mailto:{{ selectedTranscriptForModal.postingContactEmail }}">{{ selectedTranscriptForModal.postingContactEmail }}</a><span *ngIf="!selectedTranscriptForModal.postingContactEmail">—</span></dd></div>
-          <div><dt>Full Address / Delivery Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Directorate Office' }}</dd></div>
+          <div><dt>Full Address / Delivery Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Examination Office' }}</dd></div>
+          <div *ngIf="selectedTranscriptForModal.issuedByDirector"><dt>Issued By Directorate</dt><dd><strong style="color: #15803d;">✓ Processed &amp; Issued by {{ selectedTranscriptForModal.issuedByDirectorTitle || 'Director of Postgraduate Studies' }}</strong></dd></div>
         </dl>
 
-        <div class="modal-actions-footer" *ngIf="selectedTranscriptForModal.dispatchStatus !== 'Dispatched'">
-          <button type="button" class="btn-modal-dispatch" (click)="markDispatched(selectedTranscriptForModal.id); selectedTranscriptForModal.dispatchStatus = 'Dispatched'">
+        <div class="modal-actions-footer">
+          <button
+            *ngIf="!selectedTranscriptForModal.issuedByDirector"
+            type="button"
+            class="btn-modal-dispatch"
+            style="background: #7c3aed;"
+            (click)="issueTranscript(selectedTranscriptForModal.id); selectedTranscriptForModal.issuedByDirector = true"
+          >
+            <i class="bi bi-patch-check-fill"></i> Issue &amp; Forward to DUS Examination Office
+          </button>
+          <button
+            *ngIf="selectedTranscriptForModal.dispatchStatus !== 'Dispatched'"
+            type="button"
+            class="btn-modal-dispatch"
+            (click)="markDispatched(selectedTranscriptForModal.id); selectedTranscriptForModal.dispatchStatus = 'Dispatched'"
+          >
             <i class="bi bi-send-check-fill"></i> Mark this Transcript as Dispatched
           </button>
         </div>
