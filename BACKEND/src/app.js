@@ -18,6 +18,8 @@ const dusSecretaryRoutes = require('./routes/dusSecretary.routes');
 const qrRoutes = require('./routes/qr.routes');
 const transcriptPaymentRoutes = require('./routes/transcriptPayment.routes');
 const roleTestRoutes = require('./routes/roleTest.routes');
+const coalesceGetMiddleware = require('./middleware/coalesceGet.middleware');
+const { apiSpikeLimiter } = require('./middleware/rateLimiter.middleware');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler.middleware');
 
 const app = express();
@@ -59,13 +61,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Block unauthenticated static access to private student documents (must use GET /api/v1/documents/:id/download)
-app.use(['/uploads/private-documents', '/api/v1/uploads/private-documents'], (req, res) => {
+// Block unauthenticated static access to private student documents and convocation receipts
+app.use([
+  '/uploads/private-documents',
+  '/api/v1/uploads/private-documents',
+  '/uploads/convocation',
+  '/api/v1/uploads/convocation'
+], (req, res) => {
   res.status(403).json({
     success: false,
     status: 403,
     error: 'Forbidden',
-    message: 'Direct static access to private student documents is forbidden. Use the authenticated download endpoint.'
+    message: 'Direct static access to private student documents or receipts is forbidden. Use the authenticated API endpoint.'
   });
 });
 
@@ -88,7 +95,8 @@ app.get('/', (req, res) => {
   });
 });
 
-// API v1 Routing
+// API v1 Routing (protect against endpoint flooding + coalesce concurrent identical GETs)
+app.use('/api/v1', apiSpikeLimiter, coalesceGetMiddleware);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/clearance', clearanceRoutes);
 app.use('/api/v1/convocation', convocationRoutes);

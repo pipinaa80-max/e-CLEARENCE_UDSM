@@ -1,177 +1,216 @@
 <!-- profile.html -->
-<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+<section [class]="isStudent ? 'student-portal-shell' : 'dashboard-shell'" [class.sidebar-open]="sidebarOpen">
 
-  <!-- =========================
-       SIDEBAR OVERLAY
-  ========================== -->
+  <!-- SHARED STUDENT SIDEBAR -->
+  <app-student-sidebar *ngIf="isStudent" [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
-  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+  <!-- STAFF SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="!isStudent && sidebarOpen" (click)="closeSidebar()"></div>
 
-  <!-- =========================
-       SIDEBAR
-  ========================== -->
-
-  <aside class="sidebar">
+  <!-- STAFF SIDEBAR -->
+  <aside class="sidebar" *ngIf="!isStudent" [class.sidebar-open]="sidebarOpen">
     <div class="brand">
-      <img src="/udsm-logo.png" alt="UDSM Logo" />
+      <a [routerLink]="[dashboardRoute]" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
       <div>
-        <strong>STUDENT PORTAL</strong>
-        <small>University of Dar es Salaam</small>
+        <strong>{{ portalTitle }}</strong>
+        <small>{{ portalSubtitle }}</small>
       </div>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
     </div>
 
+    <!-- Role-Aware Staff Sidebar Links (matches each dashboard's full navigation) -->
     <nav>
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
-        <span>Clearance Process</span>
+      <a
+        *ngFor="let item of staffNavItems"
+        [routerLink]="[item.route]"
+        [queryParams]="item.queryParams || null"
+        (click)="closeSidebar()"
+      >
+        <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
       </a>
     </nav>
   </aside>
 
-  <!-- =========================
-       MAIN CONTENT
-  ========================== -->
-
+  <!-- MAIN CONTENT -->
   <main class="content-panel">
 
     <app-dashboard-header
-      eyebrow="Student Account"
       title="My Profile"
-      subtitle="View your student information and clearance account."
+      [subtitle]="headerSubtitle"
       [user]="currentUser"
-      [showProfile]="false"
+      [showProfile]="true"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions class="header-user-dropdown-container">
-        <button
-          type="button"
-          class="header-avatar-button"
-          (click)="toggleUserDropdown($event)"
-          title="Account menu"
-          aria-haspopup="true"
-          [attr.aria-expanded]="userDropdownOpen"
-        >
-          <img
-            *ngIf="hasPhoto(); else profileInitial"
-            [src]="getPhotoSource()"
-            [alt]="currentUser?.fullName || 'Student profile photo'"
-            (error)="onImageError()"
-          />
-          <ng-template #profileInitial>
-            <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
-          </ng-template>
-          <span class="profile-notification-dot" *ngIf="unreadNotifications > 0" aria-label="Unread notifications"></span>
-        </button>
-
-        <!-- Dropdown menu with Profile and Notifications -->
-        <div class="header-user-dropdown-menu" *ngIf="userDropdownOpen" (click)="$event.stopPropagation()">
-          <div class="dropdown-user-header">
-            <strong>{{ currentUser?.fullName || 'Student' }}</strong>
-            <small>{{ currentUser?.registrationNumber || currentUser?.email || 'Student' }}</small>
-          </div>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item" routerLink="/profile" (click)="closeUserDropdown()">
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-              <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
-            </svg>
-            <span>Profile</span>
-          </a>
-          <a class="dropdown-item" routerLink="/notifications" (click)="closeUserDropdown()">
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
-            </svg>
-            <span>Notifications</span>
-            <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-          </a>
-        </div>
+      <div header-actions>
+        <a [routerLink]="[dashboardRoute]" class="header-back-btn" title="Return to Dashboard">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          <span>Back to Dashboard</span>
+        </a>
       </div>
     </app-dashboard-header>
 
     <div class="profile-content">
-      <!-- STUDENT INFORMATION -->
-      <section class="student-profile-card">
+      <section class="profile-card" aria-label="Account profile information">
 
-        <div class="student-photo">
-          <!-- Show loading state -->
-          <div *ngIf="isLoading" class="photo-loading">
-            <span class="spinner"></span>
+        <!-- TOP IDENTITY HEADER -->
+        <div class="profile-identity">
+          <div class="profile-avatar" aria-hidden="true">
+            <div *ngIf="isLoading" class="photo-loading">
+              <span class="spinner"></span>
+            </div>
+
+            <img
+              *ngIf="!isLoading && hasPhoto()"
+              [src]="getPhotoSource()"
+              [alt]="user?.fullName || roleLabel"
+              (error)="onImageError()"
+              class="profile-avatar-img"
+            />
+
+            <span *ngIf="!isLoading && !hasPhoto()" class="profile-avatar-initials">
+              {{ initials }}
+            </span>
           </div>
 
-          <!-- Show photo if available -->
-          <img
-                  *ngIf="!isLoading && hasPhoto()"
-                  [src]="getPhotoSource()"
-                  [alt]="user?.fullName || 'Student'"
-                  (error)="onImageError()"
-                  class="profile-image"
-          />
+          <div class="profile-identity-meta">
+            <div class="profile-name-row">
+              <h2>{{ user?.fullName || roleLabel }}</h2>
+              <span class="profile-role-badge">{{ roleLabel }}</span>
+            </div>
+            <p class="profile-primary-id" *ngIf="primaryIdentifier">{{ primaryIdentifier }}</p>
+          </div>
 
-          <!-- Show initials if no photo -->
-          <span *ngIf="!isLoading && !hasPhoto()" class="initials">
-            {{ initials }}
-          </span>
-
-          <!-- Refresh button -->
-          <button *ngIf="!isLoading" class="refresh-photo-overlay" (click)="refreshPhoto()" title="Refresh photo">
-            <i class="bi bi-arrow-clockwise"></i>
+          <button
+            type="button"
+            class="profile-refresh-btn"
+            (click)="refreshPhoto()"
+            [disabled]="isLoading"
+            title="Refresh profile details"
+          >
+            <i class="bi bi-arrow-clockwise" [class.spin-icon]="isLoading" aria-hidden="true"></i>
+            <span>{{ isLoading ? 'Refreshing…' : 'Refresh' }}</span>
           </button>
         </div>
 
-        <div class="student-information">
-          <span class="label">Student</span>
-          <h2>{{ user?.fullName || 'Student' }}</h2>
+        <!-- STUDENT PROFILE SECTIONS -->
+        <div class="profile-sections" *ngIf="isStudent">
+          <div class="profile-section">
+            <h3 class="section-heading">Account &amp; Academic Information</h3>
+            <dl class="profile-grid">
+              <div class="profile-field">
+                <dt>Registration Number</dt>
+                <dd>{{ user?.registrationNumber || 'Not available' }}</dd>
+              </div>
 
-          <div class="profile-details">
-            <div>
-              <span>Registration Number</span>
-              <strong>{{ user?.registrationNumber || 'Not available' }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="email">
+                <dt>Email Address</dt>
+                <dd>{{ email }}</dd>
+              </div>
 
-            <div *ngIf="programme">
-              <span>Programme</span>
-              <strong>{{ programme }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="phone">
+                <dt>Phone Number</dt>
+                <dd>{{ phone }}</dd>
+              </div>
 
-            <div *ngIf="college">
-              <span>College</span>
-              <strong>{{ college }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="programme">
+                <dt>Programme</dt>
+                <dd>{{ programme }}</dd>
+              </div>
 
-            <div *ngIf="department">
-              <span>Department</span>
-              <strong>{{ department }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="college">
+                <dt>College</dt>
+                <dd>{{ college }}</dd>
+              </div>
 
-            <div *ngIf="hall">
-              <span>Hall</span>
-              <strong>{{ hall }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="department">
+                <dt>Department</dt>
+                <dd>{{ department }}</dd>
+              </div>
 
-            <div *ngIf="wing">
-              <span>Wing</span>
-              <strong>{{ wing }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="award">
+                <dt>Academic Award</dt>
+                <dd>{{ award }}</dd>
+              </div>
+            </dl>
+          </div>
 
-            <div *ngIf="block">
-              <span>Block</span>
-              <strong>{{ block }}</strong>
-            </div>
+          <div class="profile-section" *ngIf="hasResidenceOrSponsor">
+            <h3 class="section-heading">Accommodation &amp; Sponsorship</h3>
+            <dl class="profile-grid">
+              <div class="profile-field" *ngIf="hall">
+                <dt>Hall / Hostel</dt>
+                <dd>{{ hall }}</dd>
+              </div>
 
-            <div *ngIf="roomNumber">
-              <span>Room Number</span>
-              <strong>{{ roomNumber }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="wing">
+                <dt>Wing</dt>
+                <dd>{{ wing }}</dd>
+              </div>
 
-            <div *ngIf="sponsor">
-              <span>Sponsor</span>
-              <strong>{{ sponsor }}</strong>
-            </div>
+              <div class="profile-field" *ngIf="block">
+                <dt>Block</dt>
+                <dd>{{ block }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="roomNumber">
+                <dt>Room Number</dt>
+                <dd>{{ roomNumber }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="sponsor">
+                <dt>Sponsor</dt>
+                <dd>{{ sponsor }}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- STAFF PROFILE SECTION -->
+        <div class="profile-sections" *ngIf="!isStudent">
+          <div class="profile-section">
+            <h3 class="section-heading">Staff &amp; Office Details</h3>
+            <dl class="profile-grid">
+              <div class="profile-field">
+                <dt>Assigned Office / Role</dt>
+                <dd>{{ roleLabel }}</dd>
+              </div>
+
+              <div class="profile-field">
+                <dt>Official Email</dt>
+                <dd>{{ email || 'Not available' }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="staffId">
+                <dt>Staff ID</dt>
+                <dd>{{ staffId }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="phone">
+                <dt>Phone Number</dt>
+                <dd>{{ phone }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="college">
+                <dt>College / Unit</dt>
+                <dd>{{ college }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="department">
+                <dt>Department</dt>
+                <dd>{{ department }}</dd>
+              </div>
+
+              <div class="profile-field" *ngIf="pickupStation">
+                <dt>Assigned Station</dt>
+                <dd>{{ pickupStation }}</dd>
+              </div>
+            </dl>
           </div>
         </div>
 

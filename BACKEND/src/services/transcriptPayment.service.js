@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { getDb } = require('../config/database');
 const AuditService = require('./audit.service');
 const NotificationService = require('./notification.service');
+const { isPostgraduateRecord } = require('../utils/postgraduate');
 
 const CONTROL_NUMBER_REGEX = /^[A-Za-z0-9-]{4,40}$/;
 const COLLECTION_METHODS = new Set(['Physical Collection', 'Post by DHL']);
@@ -45,7 +46,19 @@ function formatResponse(row) {
     postingWard: row.posting_ward || null,
     postingPoBox: row.posting_po_box || null,
     contactPhone: row.contact_phone || null,
-    contactEmail: row.contact_email || null
+    contactEmail: row.contact_email || null,
+    college: row.college || null,
+    department: row.department || null,
+    programme: row.programme || null,
+    award: row.student_award || row.award || null,
+    isPostgraduate: isPostgraduateRecord({
+      isPostgraduate: row.student_is_postgraduate ?? row.is_postgraduate,
+      award: row.student_award || row.award,
+      programme: row.programme
+    }),
+    issuedByDirector: Boolean(row.issued_by_director),
+    issuedByDirectorTitle: row.issued_by_director_title || null,
+    issuedAt: toIsoOrNull(row.issued_at)
   };
 }
 
@@ -453,6 +466,104 @@ class TranscriptPaymentService {
 
     const updated = await db('transcript_payment_requests').where({ id }).first();
     return formatResponse(updated);
+  }
+
+  /**
+   * GET /api/v1/transcript-payments/directorate
+   * Scoped automatically: DUS -> Undergraduate, DPGS -> Postgraduate, DUS_SECRETARY / Admin -> All
+   */
+  static async getDirectorateRequests(actor) {
+    const db = getDb();
+    const projectId = resolveProjectId(actor);
+
+    const rows = await db('transcript_payment_requests')
+      .leftJoin('students', 'transcript_payment_requests.student_id', 'students.id')
+      .where('transcript_payment_requests.project_id', projectId)
+      .select(
+        'transcript_payment_requests.*',
+        'students.award as student_award',
+        'students.is_postgraduate as student_is_postgraduate'
+      )
+      .orderBy('transcript_payment_requests.submitted_at', 'desc');
+
+    const formatted = rows.map(formatResponse);
+    if (actor?.role === 'DIRECTOR_OF_UNDERGRADUATE_STUDIES') {
+      return formatted.filter(r => !r.isPostgraduate);
+    }
+    if (actor?.role === 'DIRECTOR_OF_POSTGRADUATE_STUDIES') {
+      return formatted.filter(r => r.isPostgraduate);
+    }
+    return formatted;
+  }
+
+  /**
+   * POST /api/v1/transcript-payments/:id/issue
+   * Persists Directorate ("Issue & Forward") approval in MySQL.
+   */
+  static async issueByDirector(actor, id, directorTitle = null, reqContext = {}) {
+    const db = getDb();
+    const projectId = resolveProjectId(actor);
+    const resolvedTitle = directorTitle && String(directorTitle).trim()
+      ? String(directorTitle).trim().substring(0, 255)
+      : (actor?.role === 'DIRECTOR_OF_POSTGRADUATE_STUDIES'
+        ? 'Director of Postgraduate Studies'
+        : 'Director of Undergraduate Studies');
+
+    return db.transaction(async (trx) => {
+      const existing = await trx('transcript_payment_requests')
+        .where({ id, project_id: projectId })
+        .forUpdate()
+        .first();
+
+      if (!existing) {
+        throw createHttpError(404, 'Transcript payment request not found.');
+      }
+
+      if (existing.status !== 'APPROVED') {
+        throw createHttpError(409, 'Finance must verify and approve this transcript payment before the Directorate can issue it.');
+      }
+
+      const now = new Date();
+      await trx('transcript_payment_requests').where({ id }).update({
+        issued_by_director: 1,
+        issued_by_director_title: resolvedTitle,
+        issued_at: now,
+        version: Number(existing.version || 0) + 1,
+        updated_at: now
+      });
+
+      await NotificationService.sendNotification({
+        userId: existing.user_id || null,
+        studentId: existing.student_id,
+        title: 'Transcript Issued & Forwarded to DUS Examination Office',
+        message: `Your transcript request has been issued by the ${resolvedTitle} and forwarded to the DUS Examination Office for physical certificate/transcript release.`,
+        type: 'APPROVAL',
+        projectId,
+        trx
+      });
+
+      await AuditService.logAction({
+        userId: actor.id,
+        username: actor.email || actor.username,
+        action: 'ISSUE_TRANSCRIPT_BY_DIRECTOR',
+        details: `${resolvedTitle} issued & forwarded transcript payment #${id} for ${existing.registration_number}`,
+        ipAddress: reqContext.ip || null,
+        userAgent: reqContext.userAgent || null,
+        projectId,
+        trx
+      });
+
+      const updated = await trx('transcript_payment_requests')
+        .leftJoin('students', 'transcript_payment_requests.student_id', 'students.id')
+        .where('transcript_payment_requests.id', id)
+        .select(
+          'transcript_payment_requests.*',
+          'students.award as student_award',
+          'students.is_postgraduate as student_is_postgraduate'
+        )
+        .first();
+      return formatResponse(updated);
+    });
   }
 }
 

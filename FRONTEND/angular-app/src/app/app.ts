@@ -1,10 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, NgZone, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ToastComponent } from './shared/components/toast/toast';
 import { normalizeBrandAssetUrl, ProjectAdminService, ProjectConfig } from './core/services/project-admin.service';
 import { AuthService } from './core/services/auth.service';
+import { SessionActivityService } from './core/services/session-activity.service';
 import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor } from './core/config/udsm-brand-colors';
 
 @Component({
@@ -14,10 +15,12 @@ import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor } from './core/config
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnDestroy {
   private readonly projectAdminService = inject(ProjectAdminService);
   private readonly authService = inject(AuthService);
+  private readonly sessionActivityService = inject(SessionActivityService);
   private readonly router = inject(Router);
+  private readonly ngZone = inject(NgZone);
   readonly currentYear = new Date().getFullYear();
   branding: ProjectConfig['branding'] = { universityName: 'University of Dar es Salaam', shortName: 'Clearance', logoUrl: '/udsm-logo.png', backgroundUrl: '/background.png', primaryColor: '#0864af', fontFamily: 'Roboto', footerLinks: [] };
   private brandingObserver?: MutationObserver;
@@ -26,6 +29,8 @@ export class App {
   private readonly failedBrandLogoUrls = new Set<string>();
 
   constructor() {
+    this.sessionActivityService.start();
+
     const saved = this.projectAdminService.getSavedBranding();
     if (saved) this.applyBranding(saved);
 
@@ -40,13 +45,24 @@ export class App {
       if (customEvent.detail?.branding) this.applyBranding(customEvent.detail.branding);
       this.refreshBranding(true);
     });
-    window.addEventListener('error', this.handleBrandLogoError, true);
 
-    this.brandingObserver = new MutationObserver(() => {
-      if (this.debounceTimer) clearTimeout(this.debounceTimer);
-      this.debounceTimer = setTimeout(() => this.refreshBrandingNodes(), 300);
+    // Run DOM MutationObserver and image error fallback OUTSIDE Angular's NgZone
+    // so DOM updates never re-trigger Zone microtasks / infinite change-detection loops.
+    this.ngZone.runOutsideAngular(() => {
+      window.addEventListener('error', this.handleBrandLogoError, true);
+
+      this.brandingObserver = new MutationObserver(() => {
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => this.refreshBrandingNodes(), 300);
+      });
+      this.brandingObserver.observe(document.body, { childList: true, subtree: true });
     });
-    this.brandingObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  ngOnDestroy(): void {
+    this.brandingObserver?.disconnect();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    window.removeEventListener('error', this.handleBrandLogoError, true);
   }
 
   private refreshBranding(force: boolean = false): void {
@@ -54,6 +70,12 @@ export class App {
       return;
     }
     const saved = this.projectAdminService.getSavedBranding();
+
+    if (!force && saved && this.projectAdminService.isSavedBrandingFresh()) {
+      this.brandingLoaded = true;
+      this.applyBranding(saved);
+      return;
+    }
 
     if (this.authService.getToken()) {
       this.projectAdminService.getMyBranding().subscribe({
@@ -174,7 +196,7 @@ export class App {
 
         if (originalText) {
           let newText = originalText.replaceAll(targetName, currentName);
-          if (currentShortName && currentShortName !== targetShortName) {
+          if (currentShortName && currentShortName !== targetShortName && currentShortName.toLowerCase() !== 'clearance') {
             newText = newText.replaceAll(targetShortName, currentShortName);
           }
           if (node.nodeValue !== newText) {

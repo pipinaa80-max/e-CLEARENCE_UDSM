@@ -1,36 +1,7 @@
 <!-- request.html -->
-<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
 
-  <!-- =========================
-       SIDEBAR OVERLAY
-  ========================== -->
-
-  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
-
-  <!-- =========================
-       SIDEBAR
-  ========================== -->
-
-  <aside class="sidebar">
-    <div class="brand">
-      <img src="/udsm-logo.png" alt="UDSM Logo" />
-      <div>
-        <strong>STUDENT PORTAL</strong>
-        <small>University of Dar es Salaam</small>
-      </div>
-    </div>
-
-    <nav>
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
-        <span>Clearance Process</span>
-      </a>
-    </nav>
-  </aside>
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
   <!-- =========================
        MAIN CONTENT
@@ -39,7 +10,6 @@
   <main class="content-panel">
 
     <app-dashboard-header
-      eyebrow="Student Clearance"
       title="Clearance Request"
       subtitle="Complete the information below to submit your clearance request."
       [user]="null"
@@ -204,10 +174,23 @@
         <div class="fields-grid non-hostel-row" *ngIf="requestForm.controls.residenceType.value === 'Non-Hostel Dwellers'">
           <label class="field full-width">
             <span>Residence Evidence Document</span>
-            <input type="file" accept="image/*,.pdf" (change)="onResidenceEvidenceSelected($event)" />
+            <input #residenceFileInput type="file" accept="image/*,.pdf" (change)="onResidenceEvidenceSelected($event)" />
             <small class="field-hint residence-evidence-hint" *ngIf="!requestForm.controls.residenceEvidence.value">Upload a document or photo showing proof of your non-hostel residence (JPG, PNG, PDF).</small>
-            <small class="field-hint" *ngIf="requestForm.controls.residenceEvidence.value">✓ Document uploaded successfully</small>
           </label>
+
+          <div class="attached-file-simple-card" *ngIf="requestForm.controls.residenceEvidence.value">
+            <div class="attached-file-meta">
+              <i class="bi bi-file-earmark-check-fill attached-file-icon"></i>
+              <div class="attached-file-details">
+                <strong>{{ residenceEvidenceFileName || 'Residence Evidence' }}</strong>
+                <small>Document attached successfully</small>
+              </div>
+            </div>
+            <div class="file-action-buttons">
+              <button type="button" class="btn-simple-view" (click)="viewResidenceEvidence()">View</button>
+              <button type="button" class="btn-simple-remove" (click)="removeResidenceEvidence(residenceFileInput)">Remove</button>
+            </div>
+          </div>
         </div>
 
         <div class="fields-grid sponsor-row">
@@ -220,6 +203,31 @@
               </option>
             </select>
           </label>
+        </div>
+
+        <!-- POSTGRADUATE ONLY: UNDERGRADUATE CERTIFICATE FOR STAGE 6 SUPERVISOR REVIEW -->
+        <div class="fields-grid" *ngIf="isPostgraduate" style="margin-top: 14px;">
+          <label class="field full-width">
+            <span>Undergraduate Degree Certificate (Postgraduate Clearance Requirement)</span>
+            <input #undergradCertFileInput type="file" accept="image/*,.pdf" (change)="onUndergraduateCertificateSelected($event)" />
+            <small class="field-hint" *ngIf="!requestForm.controls.undergraduateCertificate.value">
+              Upload your prior Bachelor Degree / Undergraduate Certificate (JPG, PNG, or PDF) for Research Supervisor verification at Stage 6.
+            </small>
+          </label>
+
+          <div class="attached-file-simple-card" *ngIf="requestForm.controls.undergraduateCertificate.value">
+            <div class="attached-file-meta">
+              <i class="bi bi-file-earmark-check-fill attached-file-icon"></i>
+              <div class="attached-file-details">
+                <strong>{{ undergraduateCertificateFileName || 'Undergraduate Certificate' }}</strong>
+                <small>Certificate attached for Research Supervisor review</small>
+              </div>
+            </div>
+            <div class="file-action-buttons">
+              <button type="button" class="btn-simple-view" (click)="viewUndergraduateCertificate()">View</button>
+              <button type="button" class="btn-simple-remove" (click)="removeUndergraduateCertificate(undergradCertFileInput)">Remove</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -248,6 +256,26 @@
 
     </form>
   </section>
+
+  <!-- DOCUMENT VIEWER LIGHTBOX MODAL -->
+  <div class="document-viewer-modal-backdrop" *ngIf="viewingDocumentUrl" (click)="closeDocumentViewer()">
+    <div class="document-viewer-modal" (click)="$event.stopPropagation()">
+      <div class="document-viewer-header">
+        <strong>{{ viewingDocumentTitle }}</strong>
+        <button type="button" class="btn-close-viewer" (click)="closeDocumentViewer()">✕</button>
+      </div>
+      <div class="document-viewer-body">
+        <img [src]="viewingDocumentUrl" [alt]="viewingDocumentTitle" *ngIf="!viewingDocumentUrl.includes('application/pdf')" />
+        <div *ngIf="viewingDocumentUrl.includes('application/pdf')" class="pdf-viewer-note">
+          <p>PDF Document Preview</p>
+          <a [href]="viewingDocumentUrl" target="_blank" class="btn-simple-view">Open PDF in New Window</a>
+        </div>
+      </div>
+      <div class="document-viewer-footer">
+        <button type="button" class="btn-simple-view" (click)="closeDocumentViewer()">Close</button>
+      </div>
+    </div>
+  </div>
 
   </main>
 </section>

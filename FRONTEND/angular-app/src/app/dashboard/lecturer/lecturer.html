@@ -1,14 +1,16 @@
 <section class="lecturer-page office-page" [class.sidebar-open]="sidebarOpen">
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" [class.open]="sidebarOpen" [class.sidebar-open]="sidebarOpen">
     <div class="sidebar-header">
       <div class="brand">
         <a routerLink="/dashboard/lecturer" (click)="closeSidebar()">
-          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="UDSM Institutional Logo" />
         </a>
         <div class="brand-text">
           <strong>LECTURER</strong>
-          <small>Student Debt Register</small>
+          <small>{{ lecturerUnit }}</small>
         </div>
       </div>
       <button
@@ -21,39 +23,115 @@
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
+
     <nav>
-      <a routerLink="/dashboard/lecturer" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+      <a
+        routerLink="/dashboard/lecturer"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeSidebar()"
+      >
+        <i class="bi bi-journal-check" aria-hidden="true"></i>
         <span>Debt Register</span>
+        <span class="nav-badge" *ngIf="openCount > 0">{{ openCount }}</span>
       </a>
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <strong>{{ currentUser?.fullName || 'Lecturer' }}</strong>
+          <span>{{ currentUser?.college || 'University of Dar es Salaam' }}</span>
+        </div>
+      </div>
+    </div>
   </aside>
 
+  <!-- MAIN CONTENT -->
   <main class="content">
     <app-dashboard-header
       title="Lecturer Dashboard"
+      subtitle="Register, monitor, and resolve student equipment, book, apparatus, and coursework liabilities."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <button
+        header-actions
+        type="button"
+        class="header-refresh-btn"
+        (click)="loadFlags()"
+        [disabled]="isLoading"
+        title="Refresh student debt register"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin]="isLoading"></i>
+        <span>{{ isLoading ? 'Syncing…' : 'Refresh' }}</span>
+      </button>
     </app-dashboard-header>
 
-    <div class="notice success" *ngIf="message">{{ message }}</div>
-    <div class="notice error" *ngIf="error">{{ error }}</div>
+    <div class="notice success" *ngIf="message">
+      <i class="bi bi-check-circle-fill"></i>
+      <span>{{ message }}</span>
+    </div>
+    <div class="notice error" *ngIf="error">
+      <i class="bi bi-exclamation-octagon-fill"></i>
+      <span>{{ error }}</span>
+    </div>
 
+    <!-- KPI SUMMARY CARDS -->
+    <section class="debt-stats">
+      <article class="stat-card clickable-filter" [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'; currentPage = 1" role="button" tabindex="0">
+        <div class="stat-icon total-icon"><i class="bi bi-card-list"></i></div>
+        <div class="stat-body">
+          <span>Total Liabilities Filed</span>
+          <strong>{{ totalCount }}</strong>
+          <small>All recorded entries</small>
+        </div>
+      </article>
+
+      <article class="stat-card clickable-filter" [class.highlight]="openCount > 0" [class.active]="statusFilter === 'OPEN'" (click)="statusFilter = 'OPEN'; currentPage = 1" role="button" tabindex="0">
+        <div class="stat-icon open-icon"><i class="bi bi-lock-fill"></i></div>
+        <div class="stat-body">
+          <span>Open Clearance Locks</span>
+          <strong>{{ openCount }}</strong>
+          <small>Blocking Department approval</small>
+        </div>
+      </article>
+
+      <article class="stat-card clickable-filter" [class.active]="statusFilter === 'RESOLVED'" (click)="statusFilter = 'RESOLVED'; currentPage = 1" role="button" tabindex="0">
+        <div class="stat-icon resolved-icon"><i class="bi bi-patch-check-fill"></i></div>
+        <div class="stat-body">
+          <span>Resolved Liabilities</span>
+          <strong>{{ resolvedCount }}</strong>
+          <small>Cleared after settlement</small>
+        </div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-icon value-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="stat-body">
+          <span>Total Open Value</span>
+          <strong>{{ totalOpenAmount | currency:'TZS ':'symbol':'1.0-0' }}</strong>
+          <small>Across {{ openCount }} active flag(s)</small>
+        </div>
+      </article>
+    </section>
+
+    <!-- REGISTRATION PANEL -->
     <section class="debt-panel" id="debt-flag-form">
-      <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+      <div class="panel-heading panel-heading-split">
         <div>
           <h2>Register Student Liability / Rented Item</h2>
-          <p>Register single or bulk student liabilities (equipment, books, tools, keys, coursework debt). Stored securely and automatically locks clearance until resolved.</p>
+          <p>Register single or bulk student liabilities (equipment, books, tools, keys, coursework debt). Open flags automatically lock Department clearance until resolved.</p>
         </div>
         <div class="mode-toggle-group">
           <button type="button" class="mode-toggle-btn" [class.active]="flagMode === 'single'" (click)="flagMode = 'single'">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/></svg>
+            <i class="bi bi-person-plus-fill"></i>
             <span>Single Student</span>
           </button>
           <button type="button" class="mode-toggle-btn" [class.active]="flagMode === 'bulk'" (click)="flagMode = 'bulk'">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
             <span>Bulk Flagging (Excel/CSV)</span>
           </button>
         </div>
@@ -61,17 +139,44 @@
 
       <!-- SINGLE STUDENT FORM -->
       <form class="debt-form" (ngSubmit)="createFlag()" *ngIf="flagMode === 'single'">
-        <label>Registration Number
-          <input name="registrationNumber" [(ngModel)]="registrationNumber" (ngModelChange)="clearClearanceLookup()" (blur)="checkStudentClearance()" required placeholder="e.g. 2024-01-12345">
+        <div class="field-group">
+          <label for="regNoInput">Registration Number</label>
+          <div class="reg-lookup-row">
+            <input
+              id="regNoInput"
+              name="registrationNumber"
+              [(ngModel)]="registrationNumber"
+              (ngModelChange)="clearClearanceLookup()"
+              (blur)="checkStudentClearance()"
+              required
+              placeholder="e.g. 2024-01-12345"
+            />
+            <button
+              type="button"
+              class="btn-lookup"
+              (click)="checkStudentClearance(true)"
+              [disabled]="!registrationNumber.trim() || clearanceLookupLoading"
+            >
+              <i class="bi bi-search"></i>
+              <span>{{ clearanceLookupLoading ? 'Checking…' : 'Check Status' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <label>Student Full Name (Optional — auto-resolved if student exists)
+          <input name="studentName" [(ngModel)]="studentName" placeholder="e.g. John M. Doe (for pre-registered/external student)" />
         </label>
-        <label>Student Full Name (For Pre-registration / External Student)
-          <input name="studentName" [(ngModel)]="studentName" placeholder="e.g. John M. Doe (optional if student exists)">
-        </label>
-        <div class="clearance-lookup-progress" *ngIf="clearanceLookupLoading">Checking clearance status for this registration number…</div>
+
+        <div class="clearance-lookup-progress" *ngIf="clearanceLookupLoading">
+          Checking clearance status for {{ registrationNumber }}…
+        </div>
         <div class="clearance-lookup-result" *ngIf="clearanceLookup" [class.cleared]="clearanceLookup.cleared" [class.not-cleared]="!clearanceLookup.cleared">
           <strong>{{ clearanceLookup.studentName }}</strong>
-          <span>{{ clearanceLookup.registrationNumber }} · {{ clearanceLookup.college }} / {{ clearanceLookup.department }}</span>
-          <span class="lookup-status">{{ clearanceLookup.cleared ? 'Already cleared' : clearanceLookup.clearanceStatus === 'NOT_STARTED' ? 'Clearance not started' : 'Clearance: ' + clearanceLookup.clearanceStatus }}<ng-container *ngIf="clearanceLookup.currentStage && !clearanceLookup.cleared"> · Current stage: {{ clearanceLookup.currentStage }}</ng-container></span>
+          <span>{{ clearanceLookup.registrationNumber }} · {{ clearanceLookup.college || 'Unassigned College' }} / {{ clearanceLookup.department || 'Unassigned Department' }}</span>
+          <span class="lookup-status">
+            {{ clearanceLookup.cleared ? 'Already cleared (cannot be flagged)' : clearanceLookup.clearanceStatus === 'NOT_STARTED' ? 'Clearance not started — eligible for flagging' : 'Clearance: ' + clearanceLookup.clearanceStatus }}
+            <ng-container *ngIf="clearanceLookup.currentStage && !clearanceLookup.cleared"> · Current stage: {{ clearanceLookup.currentStage }}</ng-container>
+          </span>
         </div>
         <div class="clearance-lookup-error" *ngIf="clearanceLookupError">{{ clearanceLookupError }}</div>
 
@@ -82,24 +187,29 @@
         </label>
 
         <label>Amount Owed / Value (TZS)
-          <input name="amount" type="number" min="0.01" step="0.01" [(ngModel)]="amount" required placeholder="0.00">
+          <input name="amount" type="number" min="1" step="0.01" [(ngModel)]="amount" required placeholder="e.g. 25000" />
         </label>
 
         <label>Due / Return Target Date (Optional)
-          <input name="dueDate" type="date" [(ngModel)]="dueDate">
+          <input name="dueDate" type="date" [(ngModel)]="dueDate" />
         </label>
 
         <label class="wide">Liability Description / Reason
-          <textarea name="reason" [(ngModel)]="reason" rows="3" required placeholder="Describe the rented item, equipment serial, or liability reason"></textarea>
+          <textarea name="reason" [(ngModel)]="reason" rows="3" required placeholder="Describe the rented item, serial number, damaged apparatus, or liability reason"></textarea>
         </label>
 
         <label class="wide">Negotiation / Reminder Notes (Optional)
-          <textarea name="negotiationNotes" [(ngModel)]="negotiationNotes" rows="2" placeholder="Record agreed terms, reminders, or payment plan notes"></textarea>
+          <textarea name="negotiationNotes" [(ngModel)]="negotiationNotes" rows="2" placeholder="Record agreed terms, reminders, or repayment schedule notes"></textarea>
         </label>
 
         <div class="form-actions">
-          <button type="submit" class="primary-button" [disabled]="isSubmitting || !clearanceLookupVerified || clearanceLookup?.cleared">
-            {{ isSubmitting ? 'Registering…' : 'Register Liability & Activate Auto-Check' }}
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="isSubmitting || clearanceLookupLoading || !registrationNumber.trim() || clearanceLookup?.cleared"
+          >
+            <i class="bi bi-shield-lock-fill"></i>
+            <span>{{ isSubmitting ? 'Registering…' : 'Register Liability & Activate Clearance Lock' }}</span>
           </button>
         </div>
       </form>
@@ -108,63 +218,207 @@
       <div class="bulk-flag-box" *ngIf="flagMode === 'bulk'">
         <div class="bulk-template-bar">
           <div class="bulk-template-info">
-            <strong>📥 Download Bulk Student Liability Template</strong>
-            <p>Download the standard format to prepare bulk student liability and debt records.</p>
+            <strong><i class="bi bi-download"></i> Download Bulk Student Liability Template</strong>
+            <p>Use the official column layout to prepare and upload multiple student liability records at once.</p>
           </div>
           <div class="bulk-template-actions">
             <button type="button" class="btn-download excel" (click)="downloadFlagTemplateExcel()">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+              <i class="bi bi-file-earmark-excel-fill"></i>
               <span>Download Excel (.xlsx)</span>
             </button>
             <button type="button" class="btn-download csv" (click)="downloadFlagTemplateCsv()">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+              <i class="bi bi-filetype-csv"></i>
               <span>Download CSV (.csv)</span>
             </button>
           </div>
         </div>
 
         <div class="bulk-spec-box">
-          <strong>📋 Template Column Specifications:</strong>
-          <p>Columns: <code>Registration Number</code> (Required), <code>Student Name</code> (Optional), <code>Category</code> (e.g. Equipment / Item Rental), <code>Amount</code> (TZS), <code>Reason</code> (Required), <code>Due Date</code> (YYYY-MM-DD), <code>Negotiation Notes</code></p>
+          <strong><i class="bi bi-list-columns-reverse"></i> Required &amp; Optional Columns</strong>
+          <p>
+            <code>Registration Number</code> (Required), <code>Student Name</code> (Optional), <code>Category</code> (e.g. Equipment / Item Rental),
+            <code>Amount</code> (Required positive TZS), <code>Reason</code> (Required), <code>Due Date</code> (YYYY-MM-DD), <code>Negotiation Notes</code>.
+            Rows belonging to already-cleared students or missing required values are automatically skipped and listed below.
+          </p>
         </div>
 
         <div class="bulk-upload-dropzone">
-          <input type="file" (change)="onBulkFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.82rem;">
+          <input
+            #bulkFileInput
+            type="file"
+            class="bulk-file-input"
+            (change)="onBulkFileSelected($event)"
+            accept=".csv, .xlsx, .xls"
+          />
           <button type="button" class="primary-button" [disabled]="!selectedBulkFile || isBulkUploading" (click)="uploadBulkFlags()">
-            <span *ngIf="!isBulkUploading">⬆ Process &amp; Flag Students in Bulk</span>
-            <span *ngIf="isBulkUploading">Processing Bulk Flags…</span>
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+            <span>{{ isBulkUploading ? 'Processing Bulk Flags…' : 'Process & Flag Students in Bulk' }}</span>
           </button>
-          <span *ngIf="selectedBulkFile" style="font-size: 0.8rem; color: #0284c7; font-weight: 700;">
-            ✓ {{ selectedBulkFile.name }} ({{ (selectedBulkFile.size / 1024).toFixed(1) }} KB)
+          <button type="button" class="cancel-button" *ngIf="selectedBulkFile && !isBulkUploading" (click)="clearBulkFile()">
+            Clear File
+          </button>
+          <span *ngIf="selectedBulkFile" class="selected-file-chip">
+            <i class="bi bi-check-circle-fill"></i>
+            {{ selectedBulkFile.name }} ({{ (selectedBulkFile.size / 1024).toFixed(1) }} KB)
           </span>
+        </div>
+
+        <div class="bulk-errors-box" *ngIf="bulkUploadErrors.length > 0">
+          <strong><i class="bi bi-exclamation-triangle-fill"></i> Skipped Rows ({{ bulkUploadErrors.length }})</strong>
+          <ul>
+            <li *ngFor="let item of bulkUploadErrors">
+              Row {{ item.row }} (<code>{{ item.registrationNumber }}</code>): {{ item.message }}
+            </li>
+          </ul>
         </div>
       </div>
     </section>
 
+    <!-- DEBT REGISTER TABLE PANEL -->
     <section class="debt-panel register-panel">
-      <div class="panel-heading register-heading"><div><h2>Students requiring payment</h2><p>Open records appear here until the debt is resolved; an open flag disables Department verification.</p></div><div class="payment-register-tools"><select [(ngModel)]="showAllPaymentRecords" aria-label="Payment records filter"><option [ngValue]="false">Payment due</option><option [ngValue]="true">All records</option></select><input class="register-search" [(ngModel)]="searchTerm" placeholder="Search student or registration number"></div></div>
-      <div class="table-scroll" *ngIf="paymentDueFlags.length; else emptyRegister">
-        <table><thead><tr><th>Registration Number</th><th>Student</th><th>Programme</th><th>Amount</th><th>Reason and negotiation</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody><tr *ngFor="let flag of paymentDueFlags">
-            <td>
-              <strong>{{ flag.registrationNumber }}</strong>
-              <span class="category-badge" style="display: block; font-size: 0.72rem; color: #0284c7; font-weight: 700; margin-top: 2px;" *ngIf="flag.category">{{ flag.category }}</span>
-            </td>
-            <td><strong>{{ flag.studentName }}</strong><small>{{ flag.college }} · {{ flag.department }}</small></td><td>{{ flag.programme || '—' }}</td>
-            <td>{{ flag.amount | currency:'TZS ':'symbol':'1.0-2' }}</td><td>{{ flag.reason }}<small *ngIf="flag.dueDate" style="display: block; color: #d97706; font-weight: 600;">Due: {{ flag.dueDate | date:'mediumDate' }}</small><small *ngIf="flag.negotiationNotes">Negotiation: {{ flag.negotiationNotes }}</small><small *ngIf="flag.resolutionNote">Resolution: {{ flag.resolutionNote }}</small></td>
-            <td><span class="status-pill" [class.resolved]="flag.status === 'RESOLVED'">{{ flag.status === 'OPEN' ? 'Open flag' : 'Resolved' }}</span></td>
-            <td><button *ngIf="flag.status === 'OPEN'" type="button" class="resolve-button" (click)="beginResolution(flag)">Clear after negotiation</button><span *ngIf="flag.status === 'RESOLVED'">Cleared {{ flag.resolvedAt | date:'mediumDate' }}</span></td>
-          </tr></tbody>
-        </table>
+      <div class="panel-heading register-heading">
+        <div>
+          <h2>Student Liability Register</h2>
+          <p>Open records actively block Department clearance approval until you clear them after settlement.</p>
+        </div>
+        <div class="payment-register-tools">
+          <select [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()" aria-label="Liability status filter">
+            <option value="OPEN">Open Locks ({{ openCount }})</option>
+            <option value="RESOLVED">Resolved ({{ resolvedCount }})</option>
+            <option value="ALL">All Records ({{ totalCount }})</option>
+          </select>
+          <input
+            class="register-search"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Search reg no, student, category, dept, or reason..."
+          />
+          <button
+            type="button"
+            class="btn-export-csv"
+            (click)="exportRegisterCsv()"
+            [disabled]="filteredFlags.length === 0"
+            title="Export filtered liability register to CSV"
+          >
+            <i class="bi bi-download"></i>
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
-      <ng-template #emptyRegister><div class="empty-register">{{ isLoading ? 'Loading debt records…' : showAllPaymentRecords ? 'No debt records have been filed.' : 'No students currently require payment.' }}</div></ng-template>
+
+      <div class="table-scroll" *ngIf="filteredFlags.length > 0; else emptyRegister">
+        <table>
+          <thead>
+            <tr>
+              <th>Registration Number</th>
+              <th>Student &amp; Unit</th>
+              <th>Programme</th>
+              <th>Amount</th>
+              <th>Reason &amp; Notes</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let flag of paginatedFlags">
+              <td>
+                <code class="reg-code">{{ flag.registrationNumber }}</code>
+                <span class="category-badge" *ngIf="flag.category">{{ flag.category }}</span>
+              </td>
+              <td>
+                <strong>{{ flag.studentName }}</strong>
+                <small>{{ flag.college || '—' }} · {{ flag.department || '—' }}</small>
+              </td>
+              <td>{{ flag.programme || '—' }}</td>
+              <td class="amount-cell">{{ flag.amount | currency:'TZS ':'symbol':'1.0-2' }}</td>
+              <td>
+                <div class="reason-text">{{ flag.reason }}</div>
+                <small class="due-date-note" *ngIf="flag.dueDate">Due: {{ flag.dueDate | date:'mediumDate' }}</small>
+                <small *ngIf="flag.negotiationNotes">Negotiation: {{ flag.negotiationNotes }}</small>
+                <small class="resolution-note-text" *ngIf="flag.resolutionNote">Resolution: {{ flag.resolutionNote }}</small>
+              </td>
+              <td>
+                <span class="status-pill" [class.resolved]="flag.status === 'RESOLVED'">
+                  {{ flag.status === 'OPEN' ? 'Open Lock' : 'Resolved' }}
+                </span>
+              </td>
+              <td>
+                <button
+                  *ngIf="flag.status === 'OPEN'"
+                  type="button"
+                  class="resolve-button"
+                  (click)="beginResolution(flag)"
+                >
+                  <i class="bi bi-unlock-fill"></i>
+                  <span>Clear Debt</span>
+                </button>
+                <span *ngIf="flag.status === 'RESOLVED'" class="cleared-date">
+                  Cleared {{ flag.resolvedAt | date:'mediumDate' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination-bar" *ngIf="totalPages > 1">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">&larr; Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong> ({{ filteredFlags.length }} records)</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next &rarr;</button>
+        </div>
+      </div>
+
+      <ng-template #emptyRegister>
+        <div class="empty-register">
+          <i class="bi bi-folder2-open"></i>
+          <p>
+            {{ isLoading
+              ? 'Loading your student liability register…'
+              : searchTerm
+                ? 'No liability records matched your search criteria.'
+                : statusFilter === 'OPEN'
+                  ? 'No students currently have open liability locks under your register.'
+                  : 'No liability records found in this status view.' }}
+          </p>
+        </div>
+      </ng-template>
     </section>
 
-    <section class="resolve-overlay" *ngIf="resolvingFlag" (click)="resolvingFlag = null">
+    <!-- RESOLUTION MODAL -->
+    <section class="resolve-overlay" *ngIf="resolvingFlag" (click)="cancelResolution()">
       <form class="resolve-dialog" (ngSubmit)="resolveFlag()" (click)="$event.stopPropagation()">
-        <h2>Clear debt after negotiation</h2><p>{{ resolvingFlag.studentName }} · {{ resolvingFlag.registrationNumber }}</p>
-        <label>Negotiation outcome / settlement note<textarea name="resolutionNote" [(ngModel)]="resolutionNote" required rows="4" placeholder="Record what was agreed with the student and why this debt can be cleared"></textarea></label>
-        <div class="form-actions"><button type="button" class="cancel-button" (click)="resolvingFlag = null">Cancel</button><button type="submit" class="primary-button" [disabled]="!resolutionNote.trim()">Clear debt and notify Department</button></div>
+        <div class="resolve-dialog-header">
+          <div>
+            <h2>Clear Student Liability</h2>
+            <p>{{ resolvingFlag.studentName }} · <code>{{ resolvingFlag.registrationNumber }}</code></p>
+          </div>
+          <button type="button" class="close-modal-btn" (click)="cancelResolution()" [disabled]="isResolving" aria-label="Close">✕</button>
+        </div>
+
+        <div class="resolve-summary">
+          <span><strong>Category:</strong> {{ resolvingFlag.category || 'Liability' }}</span>
+          <span><strong>Amount:</strong> {{ resolvingFlag.amount | currency:'TZS ':'symbol':'1.0-2' }}</span>
+          <span><strong>Reason:</strong> {{ resolvingFlag.reason }}</span>
+        </div>
+
+        <label>
+          Negotiation outcome / settlement note (minimum 5 characters)
+          <textarea
+            name="resolutionNote"
+            [(ngModel)]="resolutionNote"
+            (ngModelChange)="resolutionError = ''"
+            required
+            rows="4"
+            placeholder="Record what was settled or returned and why Department clearance can now proceed..."
+          ></textarea>
+        </label>
+        <small class="field-error" *ngIf="resolutionError">{{ resolutionError }}</small>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-button" (click)="cancelResolution()" [disabled]="isResolving">Cancel</button>
+          <button type="submit" class="primary-button" [disabled]="isResolving || resolutionNote.trim().length < 5">
+            {{ isResolving ? 'Resolving…' : 'Clear Debt & Unlock Clearance' }}
+          </button>
+        </div>
       </form>
     </section>
   </main>

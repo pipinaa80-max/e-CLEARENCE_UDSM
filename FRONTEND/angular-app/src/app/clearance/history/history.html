@@ -1,78 +1,53 @@
-<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
-
-  <!-- =========================
-       SIDEBAR OVERLAY
-  ========================== -->
-
-  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
-
-  <!-- =========================
-       SIDEBAR
-  ========================== -->
-
-  <aside class="sidebar">
-    <div class="brand">
-      <img src="/udsm-logo.png" alt="UDSM Logo" />
-      <div>
-        <strong>STUDENT PORTAL</strong>
-        <small>University of Dar es Salaam</small>
-      </div>
-    </div>
-
-    <nav>
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
-        <span>Clearance Process</span>
-      </a>
-    </nav>
-  </aside>
-
-  <!-- =========================
-       MAIN CONTENT
-  ========================== -->
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
   <main class="content-panel">
-
     <div class="history-card">
-        <app-dashboard-header
-            title="Clearance History"
-            [subtitle]="total + ' application' + (total === 1 ? '' : 's') + ' on record'"
-            [user]="null"
-            (toggleSidebar)="toggleSidebar()"
-        >
-            <div header-actions>
-                <select [(ngModel)]="filter" aria-label="Filter clearance history">
-                    <option>All</option>
-                    <option>Pending</option>
-                    <option>Approved</option>
-                    <option>Rejected</option>
-                    <option>Completed</option>
-                </select>
-            </div>
-        </app-dashboard-header>
-        
-        <div class="empty-state" *ngIf="!requests.length">No clearance applications match this view. 
-            <a routerLink="/clearance/request">Start an application</a>
+      <app-dashboard-header
+        title="Clearance History"
+        [subtitle]="total + ' application' + (total === 1 ? '' : 's') + ' on record'"
+        [user]="currentUser"
+        [showToggle]="true"
+        (toggleSidebar)="toggleSidebar()"
+      >
+        <div header-actions>
+          <select [(ngModel)]="filter" aria-label="Filter clearance history">
+            <option>All</option>
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+            <option>Completed</option>
+          </select>
         </div>
-        
-        <div class="history-list" *ngIf="requests.length">
-            <article *ngFor="let request of requests">
-                <div>
-                    <strong>{{ request.programme || 'Academic programme not recorded' }}</strong>
-                    <small>{{ request.department || 'Department not recorded' }} · {{ request.college || 'College not recorded' }}</small>
-                </div>
-                
-                <div class="request-meta">
-                    <span class="status" [ngClass]="request.status.toLowerCase()">{{ request.status }}</span>
-                    <small>Submitted {{ request.requestDate | date:'mediumDate' }}</small>
-                </div>
-            </article>
-        </div>
-    </div>
+      </app-dashboard-header>
 
+      <div class="table-loading-banner" *ngIf="isLoading && !requests.length">
+        <span class="table-loading-spinner"></span>
+        <span>Loading clearance history...</span>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoading && !requests.length">
+        No clearance applications match this view.
+        <a routerLink="/clearance/request">Start an application</a>
+      </div>
+
+      <div class="history-list" *ngIf="requests.length">
+        <article *ngFor="let request of requests">
+          <div>
+            <strong>{{ request.programme || 'Academic programme not recorded' }}</strong>
+            <small>{{ request.department || 'Department not recorded' }} · {{ request.college || 'College not recorded' }}</small>
+            <small *ngIf="request.currentStage">Stage: {{ request.currentStage }}</small>
+          </div>
+
+          <div class="request-meta">
+            <span class="status" [ngClass]="request.status.toLowerCase()">{{ request.status }}</span>
+            <small>Submitted {{ request.requestDate | date:'mediumDate' }}</small>
+            <a routerLink="/clearance/status" style="font-size: 0.8rem; font-weight: 700; color: #005c97; text-decoration: none; margin-top: 4px;">
+              View Process →
+            </a>
+          </div>
+        </article>
+      </div>
+    </div>
   </main>
 </section>

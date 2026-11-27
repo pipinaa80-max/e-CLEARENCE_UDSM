@@ -54,6 +54,7 @@ export class Landing implements OnInit {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
+      Convocation: '/dashboard/convocation',
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',
@@ -70,8 +71,11 @@ export class Landing implements OnInit {
       Lecturer: '/dashboard/lecturer',
       Administrator: '/dashboard/admin',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+      'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+      'DUS Examination Office': '/dashboard/dus-secretary',
       'DUS Secretary': '/dashboard/dus-secretary',
-      'Station Secretary': '/dashboard/station-secretary'
+      'Station Secretary': '/dashboard/station-secretary',
+      Supervisor: '/dashboard/supervisor'
     };
 
     return map[role] ?? '/dashboard';

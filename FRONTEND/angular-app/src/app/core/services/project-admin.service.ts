@@ -79,7 +79,7 @@ export class ProjectAdminService {
     }
   }
 
-  /** Persists branding to localStorage. */
+  /** Persists branding to localStorage with a freshness timestamp. */
   setSavedBranding(branding: Partial<ProjectConfig['branding']>): void {
     const current = this.getSavedBranding() || {};
     localStorage.setItem('udsm-project-branding', JSON.stringify({
@@ -87,6 +87,17 @@ export class ProjectAdminService {
       ...branding,
       primaryColor: normalizeUdsmBrandColor(branding.primaryColor ?? current.primaryColor)
     }));
+    localStorage.setItem('udsm-project-branding-fetched-at', String(Date.now()));
+  }
+
+  /** Returns true if branding was fetched within the TTL window (default 12h). */
+  isSavedBrandingFresh(maxAgeMs: number = 12 * 60 * 60 * 1000): boolean {
+    try {
+      const ts = Number(localStorage.getItem('udsm-project-branding-fetched-at') || 0);
+      return ts > 0 && (Date.now() - ts) < maxAgeMs;
+    } catch {
+      return false;
+    }
   }
 
   getProjectConfig(): Observable<ProjectConfig> {

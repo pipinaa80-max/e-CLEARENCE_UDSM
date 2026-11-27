@@ -1,27 +1,18 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
-  <!-- SIDEBAR OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
-    <div class="sidebar-header">
-      <div class="brand">
-        <a routerLink="/dashboard/daruso" (click)="closeSidebar()">
-          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
-        </a>
-        <div class="brand-text">
-          <strong>DARUSO</strong>
-          <small>Clearance Workspace</small>
-        </div>
+  <aside class="sidebar">
+    <div class="brand">
+      <a routerLink="/dashboard/daruso" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
+      <div class="brand-text">
+        <strong>DARUSO PORTAL</strong>
+        <small>Student Government</small>
       </div>
-      <button
-        type="button"
-        class="sidebar-mobile-close-btn"
-        (click)="closeSidebar()"
-        title="Close navigation menu"
-        aria-label="Close navigation menu"
-      >
-        <i class="bi bi-x-lg"></i>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -30,19 +21,32 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'requests'"
-        (click)="setViewMode('requests'); closeSidebar()"
+        (click)="setViewMode('requests')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
-        <span>Clearance Requests ({{ pendingRequestCount }})</span>
+        <i class="bi bi-people-fill" aria-hidden="true"></i>
+        <span>Clearance Requests</span>
+        <span class="nav-count-badge" *ngIf="pendingRequestCount > 0">{{ pendingRequestCount }}</span>
       </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
+        <span>Analytics</span>
+      </button>
+
       <button
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'guilds'"
-        (click)="setViewMode('guilds'); closeSidebar()"
+        (click)="setViewMode('guilds')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.669.864 8 0 6.331.864l-1.858.282-.842 1.68-1.337 1.32L2.6 6l-.306 1.854 1.337 1.32.842 1.68 1.858.282L8 12l1.669-.864 1.858-.282.842-1.68 1.337-1.32L13.4 6l.306-1.854-1.337-1.32-.842-1.68L9.669.864zm-3.81 12.35.282 1.858L8 16l1.858-.864.282-1.858-2.28 1.072-2.001-1.136z"/></svg>
-        <span>Student Guilds ({{ guilds.length }})</span>
+        <i class="bi bi-award-fill" aria-hidden="true"></i>
+        <span>Student Guilds</span>
+        <span class="nav-count-badge neutral" *ngIf="guilds.length > 0">{{ guilds.length }}</span>
       </button>
     </nav>
   </aside>
@@ -51,442 +55,442 @@
   <main class="content">
     <app-dashboard-header
       title="DARUSO Dashboard"
+      subtitle="Verify DARUSO student union membership, annual dues settlement, and guild property clearance."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadRequests(true)" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
-    <!-- MESSAGE -->
     <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <!-- GUILDS DIRECTORY BOARD (Shown in 'all' or 'guilds') -->
-    <section class="dashboard-board" id="guilds-section" *ngIf="viewMode === 'guilds'">
-      <div class="board-header">
-        <div class="board-title-group">
-          <div class="board-icon-badge"></div>
-          <div>
-            <h2>Student Guilds &amp; Union Chapters Directory</h2>
-            <p>Manage collegiate guild sub-governments, campus secretariats, student welfare committees, and minister contacts.</p>
-          </div>
-        </div>
-        <div class="board-actions-group">
-          <div class="board-search-box">
-            <input
-              type="text"
-              [(ngModel)]="guildSearchTerm"
-              placeholder="Search guild chapter, minister, or college..."
-              aria-label="Search guilds"
-            />
-          </div>
-          <button type="button" class="action-btn secondary" (click)="resetGuilds()" title="Reset to standard university guilds">
-            Restore Defaults
-          </button>
-          <button type="button" class="action-btn primary" (click)="openAddGuildModal()">
-            + Add New Guild
-          </button>
-        </div>
-      </div>
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="viewMode === 'requests' && filterStatus === 'All'" (click)="filterByCard('All')">
+        <span class="stat-label">Total Requests</span>
+        <strong class="stat-value">{{ totalRequestCount }}</strong>
+        <small>All DARUSO clearance records</small>
+      </button>
 
-      <div class="board-body">
-        <!-- GUILDS GRID -->
-        <div class="hostels-grid" *ngIf="filteredGuilds.length">
-          <div class="hostel-card compact" *ngFor="let guild of filteredGuilds">
-            <div class="hostel-card-header">
-              <div class="header-main">
-                <h3>{{ guild.name }}</h3>
-                <span class="location-badge" *ngIf="guild.category"> {{ guild.category }}</span>
-              </div>
-              <div class="card-actions">
-                <button type="button" class="btn-icon edit" (click)="openEditGuildModal(guild)" title="Edit guild details">
-                  <i class="bi bi-pencil-square"></i> Edit
-                </button>
-                <button type="button" class="btn-icon delete" (click)="deleteGuild(guild)" title="Delete guild">
-                  <i class="bi bi-trash3-fill"></i>
-                </button>
-              </div>
-            </div>
+      <button type="button" class="stat-card pending" [class.active]="viewMode === 'requests' && filterStatus === 'Pending'" (click)="filterByCard('Pending')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingRequestCount }}</strong>
+        <small>Awaiting DARUSO verification</small>
+      </button>
 
-            <!-- COMPACT QUICK INFO -->
-            <div class="compact-info-row">
-              <span class="compact-item" *ngIf="guild.capacity">
-                <strong>{{ guild.capacity | number }}</strong> members
-              </span>
-              <span class="compact-dot" *ngIf="guild.capacity && guild.location">•</span>
-              <span class="compact-item" *ngIf="guild.location">
-                📍 {{ guild.location }}
-              </span>
-              <span class="compact-dot" *ngIf="guild.committees.length">•</span>
-              <span class="compact-item units-count" *ngIf="guild.committees.length">
-                {{ guild.committees.length }} {{ guild.committees.length === 1 ? 'Committee' : 'Committees' }}
-              </span>
-            </div>
+      <button type="button" class="stat-card approved" [class.active]="viewMode === 'requests' && filterStatus === 'Approved'" (click)="filterByCard('Approved')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedRequestCount }}</strong>
+        <small>{{ clearanceRatePercent }}% clearance rate</small>
+      </button>
 
-            <!-- EXPANDABLE DETAILS -->
-            <div class="hostel-expanded-details" *ngIf="isGuildExpanded(guild.id)">
-              <p class="hostel-desc" *ngIf="guild.description">{{ guild.description }}</p>
-
-              <div class="hostel-meta-grid">
-                <div class="meta-item" *ngIf="guild.capacity">
-                  <span class="meta-label">Member Population</span>
-                  <strong>{{ guild.capacity | number }} students</strong>
-                </div>
-                <div class="meta-item" *ngIf="guild.leaderName">
-                  <span class="meta-label">Minister / Leader</span>
-                  <strong>{{ guild.leaderName }}</strong>
-                </div>
-                <div class="meta-item" *ngIf="guild.leaderContact">
-                  <span class="meta-label">Contact</span>
-                  <span>{{ guild.leaderContact }}</span>
-                </div>
-                <div class="meta-item" *ngIf="guild.location">
-                  <span class="meta-label">Office Location</span>
-                  <span>{{ guild.location }}</span>
-                </div>
-              </div>
-
-              <!-- COMMITTEES TAGS -->
-              <div class="units-breakdown" *ngIf="guild.committees && guild.committees.length">
-                <span class="unit-title">Sub-Committees &amp; Desks:</span>
-                <div class="tags-container">
-                  <span class="tag block-tag" *ngFor="let c of guild.committees">{{ c }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- VIEW MORE / VIEW LESS TOGGLE -->
-            <div class="card-footer-toggle">
-              <button
-                type="button"
-                class="view-more-btn"
-                (click)="toggleGuildDetails(guild.id)"
-              >
-                {{ isGuildExpanded(guild.id) ? 'View Less ▲' : 'View More ▼' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="board-empty-state" *ngIf="!filteredGuilds.length">
-          <div class="empty-icon"></div>
-          <h2>No Student Guilds Found</h2>
-          <p>No guild matches your search criteria. Click "+ Add New Guild" to create one.</p>
-        </div>
-      </div>
+      <button type="button" class="stat-card rejected" [class.active]="viewMode === 'requests' && filterStatus === 'Rejected'" (click)="filterByCard('Rejected')">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedRequestCount }}</strong>
+        <small>Flagged for DARUSO follow-up</small>
+      </button>
     </section>
 
-    <!-- CLEARANCE REQUESTS BOARD (Shown in 'all' or 'requests') -->
-    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'requests'">
-      <div class="board-header">
+    <!-- VIEW 1: CLEARANCE REQUESTS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'requests'">
+      <header class="board-header">
         <div class="board-title-group">
-          <div class="board-icon-badge"></div>
+          <span class="board-icon-badge"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
           <div>
-            <h2>Student Clearance Applications</h2>
-            <p>Review student applications, verify DARUSO dues &amp; government property clearance, and approve or return requests.</p>
+            <h2>DARUSO Clearance Applications</h2>
+            <p>Review student applications, verify union dues and guild liabilities, and approve or return requests.</p>
           </div>
         </div>
+
         <div class="board-actions-group">
           <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
             <input
               type="text"
+              placeholder="Search name, reg no, programme..."
               [(ngModel)]="searchTerm"
               (ngModelChange)="onFilterChange()"
-              placeholder="Search student, registration number or programme..."
-              aria-label="Search requests"
             />
           </div>
-          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+
+          <select class="board-select" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" aria-label="Filter by status">
+            <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
           </select>
         </div>
-      </div>
+      </header>
 
       <div class="board-body board-table-body">
-        <!-- EMPTY STATE -->
-        <div class="board-empty-state" *ngIf="!filteredRequests.length">
-          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for DARUSO.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for DARUSO.' : 'There are currently no student applications awaiting DARUSO approval.' }}</p>
+        <div class="board-empty-state" *ngIf="isLoading && !requests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading DARUSO clearance requests...</h2>
+          <p>Fetching live student submissions from the server.</p>
         </div>
 
-        <!-- REQUEST LIST TABLE -->
-        <div class="board-table-container" *ngIf="filteredRequests.length">
+        <div class="board-empty-state" *ngIf="!isLoading && filteredRequests.length === 0">
+          <div class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+          <h2>No matching requests</h2>
+          <p>Try adjusting the search term or status filter above.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredRequests.length > 0">
           <app-parallel-office-request-table
-            [requests]="paginatedRequests"
             [office]="'DARUSO'"
+            [requests]="paginatedRequests"
+            (view)="openStudentDetails($event)"
             (approve)="approve($event)"
-            (reject)="openRejectForm($event)"
-            (view)="openStudentDetailsModal($event)"
+            (reject)="openRejectModal($event)"
+            (bulkApproved)="onTableMutated()"
+            (withdrawn)="onTableMutated()"
           ></app-parallel-office-request-table>
         </div>
 
-        <div class="pagination" *ngIf="totalPages > 1">
-          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-            &larr; Previous
-          </button>
-          <span class="page-info">
-            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-          </span>
-          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-            Next &rarr;
-          </button>
+        <div class="pagination" *ngIf="filteredRequests.length > pageSize">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of {{ totalPages }}</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next</button>
         </div>
       </div>
     </section>
 
-    <!-- STUDENT DARUSO DETAILS MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
-      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
-          <div class="modal-student-header">
-            <div class="student-avatar-wrap">
-              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
-              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
-            </div>
-            <div>
-              <h3>{{ getStudentName(viewingRequest) }}</h3>
-              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
-            </div>
-          </div>
-          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
-        </header>
-
-        <div class="student-modal-body">
-          <!-- DARUSO UNION DUES DETAILS -->
-          <div class="detail-section highlight-box">
-            <div class="section-badge-title">
-              <span class="section-icon"></span>
-              <h4>DARUSO Student Union Verification</h4>
-            </div>
-
-            <div class="residence-status-pill hostel">
-              <strong>Guild Affiliation:</strong> {{ getStudentGuildBranch(viewingRequest) }}
-            </div>
-
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">Collegiate Guild</span>
-                <strong class="detail-value text-primary">{{ getStudentGuildBranch(viewingRequest) }}</strong>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Union Dues Status</span>
-                <strong class="detail-value text-accent">{{ getStudentDuesStatus(viewingRequest) }}</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- ACADEMIC & INSTITUTIONAL INFO -->
-          <div class="detail-section">
-            <h4>Academic &amp; Department Information</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">College / Unit</span>
-                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Department</span>
-                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Programme</span>
-                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Sponsor</span>
-                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- CONTACT DETAILS -->
-          <div class="detail-section">
-            <h4>Contact Details</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">Email Address</span>
-                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Phone Number</span>
-                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- DARUSO CLEARANCE STATUS -->
-          <div class="detail-section">
-            <h4>DARUSO Clearance Status</h4>
-            <div class="office-status-row">
-              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'DARUSO') }}</strong></span>
-              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
-            </div>
+    <!-- VIEW 2: LIVE ANALYTICS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'analytics'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>DARUSO Clearance Analytics</h2>
+            <p>Live clearance breakdown computed strictly from verified DARUSO submissions.</p>
           </div>
         </div>
 
-        <footer class="student-modal-footer">
-          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
-            Close
+        <div class="board-actions-group">
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" [disabled]="!totalRequestCount">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Export CSV</span>
           </button>
-          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'DARUSO') === 'Pending'">
-            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
-              Reject / Return
-            </button>
-            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
-              Approve DARUSO Clearance
-            </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="analytics-bars">
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Approved</span>
+              <strong>{{ approvedRequestCount }} ({{ clearanceRatePercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill approved" [style.width.%]="clearanceRatePercent"></div></div>
           </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Pending Review</span>
+              <strong>{{ pendingRequestCount }} ({{ pendingPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill pending" [style.width.%]="pendingPercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Rejected</span>
+              <strong>{{ rejectedRequestCount }} ({{ rejectedPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="rejectedPercent"></div></div>
+          </div>
+        </div>
+
+        <h3 class="analytics-section-title">College / Guild Breakdown</h3>
+        <div class="board-table-container" *ngIf="collegeBreakdown.length > 0; else emptyAnalytics">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>College / Unit</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of collegeBreakdown">
+                <td><strong>{{ item.label }}</strong></td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.approved }}</td>
+                <td>{{ item.pending }}</td>
+                <td>{{ item.rejected }}</td>
+                <td><strong>{{ item.clearanceRate }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyAnalytics>
+          <div class="board-empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></div>
+            <h2>No analytics data yet</h2>
+            <p>Statistics will appear automatically as students reach DARUSO clearance.</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- VIEW 3: STUDENT GUILDS DIRECTORY -->
+    <section class="dashboard-board" *ngIf="viewMode === 'guilds'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-award-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>DARUSO Student Guilds &amp; Chapters ({{ guilds.length }})</h2>
+            <p>Reference directory of collegiate guild branches and welfare desks (changes saved locally in this browser).</p>
+          </div>
+        </div>
+
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" placeholder="Search guild, location, committee..." [(ngModel)]="guildSearchTerm" />
+          </div>
+          <button type="button" class="btn-cancel" (click)="resetGuilds()">Restore Defaults</button>
+          <button type="button" class="action-btn primary" (click)="openAddGuildModal()">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>Add Guild</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="board-empty-state" *ngIf="filteredGuilds.length === 0">
+          <div class="empty-icon"><i class="bi bi-award" aria-hidden="true"></i></div>
+          <h2>No guilds match your search</h2>
+          <p>Try a different keyword or add a new guild chapter.</p>
+        </div>
+
+        <div class="desks-grid" *ngIf="filteredGuilds.length > 0">
+          <article class="desk-card" *ngFor="let g of filteredGuilds">
+            <div class="desk-card-header">
+              <h3>{{ g.name }}</h3>
+              <span class="campus-badge">{{ g.category }}</span>
+            </div>
+            <p class="desk-location"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> {{ g.location }}</p>
+            <p class="desk-desc">{{ g.description }}</p>
+            <div class="desk-tags">
+              <span class="desk-tag" *ngIf="g.leaderTitle">{{ g.leaderTitle }}</span>
+              <span class="desk-tag" *ngIf="g.leaderContact">{{ g.leaderContact }}</span>
+              <span class="desk-tag" *ngFor="let c of g.committees">{{ c }}</span>
+            </div>
+            <div class="hostel-card-actions">
+              <button type="button" class="card-action-btn edit" (click)="openEditGuildModal(g)">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="card-action-btn delete" (click)="deleteGuild(g)">
+                <i class="bi bi-trash" aria-hidden="true"></i> Remove
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT DETAILS MODAL -->
+    <div class="modal-backdrop" *ngIf="viewingRequest as req" (click)="closeStudentDetails()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-student-header">
+            <button
+              type="button"
+              class="student-avatar-wrap"
+              (click)="openPhotoLightbox(getStudentPhoto(req))"
+              [disabled]="!getStudentPhoto(req)"
+              [title]="getStudentPhoto(req) ? 'Click to enlarge photo' : 'No photo uploaded'"
+            >
+              <img *ngIf="getStudentPhoto(req) as photo" [src]="photo" [alt]="getStudentName(req)" />
+              <span *ngIf="!getStudentPhoto(req)">{{ getStudentInitials(getStudentName(req)) }}</span>
+            </button>
+            <div>
+              <h3>{{ getStudentName(req) }}</h3>
+              <p>{{ getStudentRegNumber(req) }} &middot; {{ req.programme }}</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeStudentDetails()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="status-highlight-box">
+          <div class="status-highlight-head">
+            <span class="section-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ getStatusSummary(req) }}</strong>
+              <small>Reviewed by: {{ getRequestReviewer(req) }}<ng-container *ngIf="getRequestReviewedAt(req) as dt"> &middot; {{ dt | date:'medium' }}</ng-container></small>
+            </div>
+            <span class="status-pill" [ngClass]="getRequestOfficeStatus(req).toLowerCase()">
+              {{ getRequestOfficeStatus(req) }}
+            </span>
+          </div>
+
+          <div class="rejection-note-box" *ngIf="getRequestComment(req)">
+            <strong>Officer Remark:</strong> {{ getRequestComment(req) }}
+          </div>
+        </div>
+
+        <dl class="detail-grid">
+          <div>
+            <dt>Collegiate Guild Branch</dt>
+            <dd>{{ getStudentGuildBranch(req) }}</dd>
+          </div>
+          <div>
+            <dt>College / Unit</dt>
+            <dd>{{ req.college || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ req.department || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Sponsor</dt>
+            <dd>{{ req.sponsor || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Email Address</dt>
+            <dd>{{ req.email || 'Not provided' }}</dd>
+          </div>
+          <div>
+            <dt>Submitted On</dt>
+            <dd>{{ req.requestDate ? (req.requestDate | date:'medium') : 'Not recorded' }}</dd>
+          </div>
+        </dl>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeStudentDetails()">Close</button>
+          <ng-container *ngIf="getRequestOfficeStatus(req) !== 'Approved'">
+            <button type="button" class="btn-danger" (click)="openRejectModal(req)" [disabled]="isSubmitting">Reject</button>
+            <button type="button" class="btn-approve" (click)="approve(req)" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Approve Clearance' }}
+            </button>
+          </ng-container>
         </footer>
       </div>
-    </section>
+    </div>
 
-    <!-- REJECTION MODAL -->
-    <section class="reject-modal" *ngIf="selectedRequest">
-      <div class="modal-card">
-        <div class="modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take regarding DARUSO union dues or liabilities before clearance can proceed.</p>
-
-        <label>Reason for Rejection</label>
-        <textarea
-          [(ngModel)]="rejectionComment"
-          placeholder="Enter reason e.g. unpaid union annual dues, unreturned guild property, or pending committee handover..."
-        ></textarea>
-
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="cancel-button"
-            (click)="selectedRequest = null"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            class="return-button"
-            (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
-          >
-            Send Reason to Student
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- GUILD ADD/EDIT MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="showGuildModal" (click)="closeGuildModal()">
-      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
+    <!-- REJECT MODAL -->
+    <div class="modal-backdrop" *ngIf="selectedRequest as target" (click)="closeRejectModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
           <div>
-            <h3>{{ editingGuildId ? 'Edit Guild Chapter' : 'Add New Guild Chapter' }}</h3>
-            <p>{{ editingGuildId ? 'Update details for this student union chapter.' : 'Register a new collegiate guild chapter in the system.' }}</p>
+            <h3>Reject DARUSO Clearance</h3>
+            <p>{{ getStudentName(target) }} ({{ getStudentRegNumber(target) }})</p>
           </div>
-          <button type="button" class="close-modal-btn" (click)="closeGuildModal()">✕</button>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
         </header>
 
-        <form (ngSubmit)="saveGuild()" class="hostel-modal-form">
-          <div class="form-row">
-            <label class="form-field">
-              <span>Guild Chapter Name *</span>
-              <input
-                type="text"
-                [(ngModel)]="guildForm.name"
-                name="guildName"
-                placeholder="e.g. DARUSO CoICT Guild..."
-                required
-              />
-            </label>
+        <p class="reject-hint">
+          Specify the exact union dues, committee handover, or guild property issue the student must resolve before DARUSO clearance can be approved.
+        </p>
 
-            <label class="form-field">
-              <span>Category</span>
-              <input
-                type="text"
-                [(ngModel)]="guildForm.category"
-                name="guildCategory"
-                placeholder="e.g. Collegiate Guild, Cabinet, Secretariat..."
-              />
-            </label>
-          </div>
+        <label class="modal-field">
+          <span>Rejection Reason *</span>
+          <textarea
+            rows="4"
+            [(ngModel)]="rejectionComment"
+            placeholder="Minimum 5 characters explaining what the student must resolve..."
+          ></textarea>
+          <small class="field-hint" *ngIf="rejectionComment.trim().length > 0 && rejectionComment.trim().length < 5">
+            Please enter at least 5 characters.
+          </small>
+        </label>
 
-          <div class="form-row">
-            <label class="form-field">
-              <span>Student Member Population</span>
-              <input
-                type="number"
-                min="0"
-                [(ngModel)]="guildForm.capacity"
-                name="guildCapacity"
-                placeholder="e.g. 3500"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>Minister / Representative Name</span>
-              <input
-                type="text"
-                [(ngModel)]="guildForm.leaderName"
-                name="guildLeaderName"
-                placeholder="e.g. Minister M. Kassim"
-              />
-            </label>
-          </div>
-
-          <div class="form-row">
-            <label class="form-field">
-              <span>Contact (Phone/Email)</span>
-              <input
-                type="text"
-                [(ngModel)]="guildForm.leaderContact"
-                name="guildLeaderContact"
-                placeholder="e.g. +255 22 241 0602"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>Office Location</span>
-              <input
-                type="text"
-                [(ngModel)]="guildForm.location"
-                name="guildLocation"
-                placeholder="e.g. Kijitonyama Campus Block B"
-              />
-            </label>
-          </div>
-
-          <label class="form-field">
-            <span>Committees &amp; Desks (comma-separated)</span>
-            <input
-              type="text"
-              [(ngModel)]="guildForm.committeesText"
-              name="guildCommitteesText"
-              placeholder="e.g. Academic Committee, Projects, Student Welfare Desk"
-            />
-            <small class="field-help">Separate committee names with commas.</small>
-          </label>
-
-          <label class="form-field">
-            <span>Description / Remarks</span>
-            <textarea
-              [(ngModel)]="guildForm.description"
-              name="guildDescription"
-              rows="3"
-              placeholder="Additional information about guild activities, targeted college, or requirements..."
-            ></textarea>
-          </label>
-
-          <div class="modal-actions">
-            <button type="button" class="cancel-button" (click)="closeGuildModal()">
-              Cancel
-            </button>
-            <button type="submit" class="return-button save-btn" [disabled]="!guildForm.name.trim()">
-              {{ editingGuildId ? 'Save Changes' : 'Create Guild' }}
-            </button>
-          </div>
-        </form>
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="reject()"
+            [disabled]="isSubmitting || rejectionComment.trim().length < 5"
+          >
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
+          </button>
+        </footer>
       </div>
-    </section>
+    </div>
 
+    <!-- ADD / EDIT GUILD MODAL -->
+    <div class="modal-backdrop" *ngIf="showGuildModal" (click)="closeGuildModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h3>{{ editingGuildId ? 'Edit Guild Chapter' : 'Add Guild Chapter' }}</h3>
+            <p>Update the local DARUSO student guilds directory.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeGuildModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="hostel-form-grid">
+          <label class="modal-field full-span">
+            <span>Guild Chapter Name *</span>
+            <input type="text" [(ngModel)]="guildForm.name" placeholder="e.g., DARUSO CoICT Guild Sub-Government" />
+          </label>
+
+          <label class="modal-field">
+            <span>Category</span>
+            <input type="text" [(ngModel)]="guildForm.category" placeholder="e.g., Collegiate Guild" />
+          </label>
+
+          <label class="modal-field">
+            <span>Office Location</span>
+            <input type="text" [(ngModel)]="guildForm.location" placeholder="e.g., Student Center, 1st Floor" />
+          </label>
+
+          <label class="modal-field">
+            <span>Office / Secretariat Desk</span>
+            <input type="text" [(ngModel)]="guildForm.leaderTitle" placeholder="e.g., CoICT Guild Secretariat" />
+          </label>
+
+          <label class="modal-field">
+            <span>Contact</span>
+            <input type="text" [(ngModel)]="guildForm.leaderContact" placeholder="e.g., +255 22 241 0500" />
+          </label>
+
+          <label class="modal-field full-span">
+            <span>Committees &amp; Desks (comma-separated)</span>
+            <input type="text" [(ngModel)]="guildForm.committeesText" placeholder="e.g., Academic Affairs, Student Welfare Desk" />
+          </label>
+
+          <label class="modal-field full-span">
+            <span>Description</span>
+            <textarea rows="3" [(ngModel)]="guildForm.description" placeholder="Summary of the guild branch..."></textarea>
+          </label>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeGuildModal()">Cancel</button>
+          <button type="button" class="btn-approve" (click)="saveGuild()">
+            {{ editingGuildId ? 'Save Changes' : 'Add Guild' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- PHOTO LIGHTBOX -->
+    <div class="modal-backdrop lightbox" *ngIf="enlargedPhotoUrl as photoUrl" (click)="closePhotoLightbox()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close-btn lightbox-close" (click)="closePhotoLightbox()" aria-label="Close photo">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <img [src]="photoUrl" alt="Student Passport Photo" />
+      </div>
+    </div>
   </main>
 </section>

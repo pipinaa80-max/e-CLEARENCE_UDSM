@@ -111,24 +111,79 @@ function verifyToken(token) {
   return jwt.verify(token, env.JWT_SECRET);
 }
 
+const sessionLastTouchCache = new Map();
+const SESSION_TOUCH_THROTTLE_MS = 60 * 1000;
+
+function touchSessionActivity(sessionId, now = new Date()) {
+  if (!sessionId) return;
+  const lastTouch = sessionLastTouchCache.get(sessionId) || 0;
+  if (now.getTime() - lastTouch < SESSION_TOUCH_THROTTLE_MS) {
+    return;
+  }
+  sessionLastTouchCache.set(sessionId, now.getTime());
+  // Prevent unbounded growth of touch cache
+  if (sessionLastTouchCache.size > 5000) {
+    const cutoff = now.getTime() - env.SESSION_INACTIVITY_TIMEOUT_MS;
+    for (const [k, ts] of sessionLastTouchCache.entries()) {
+      if (ts < cutoff) sessionLastTouchCache.delete(k);
+    }
+  }
+  db('user_sessions')
+    .where({ id: sessionId, is_revoked: 0 })
+    .update({ updated_at: now })
+    .catch(() => {});
+}
+
 /**
- * Checks if an access token JTI or its parent session is recorded as revoked in MySQL
- * Enforces cross-device access token invalidation on global logout, password change, and reset.
+ * Validates access token JTI and parent session against revocation, absolute
+ * expiry, and inactivity timeout (default 30m). Active sessions have their
+ * updated_at activity timestamp refreshed (throttled to 1x/minute).
  */
-async function isTokenRevoked(jti, sessionId = null) {
+async function checkSessionValidity(jti, sessionId = null) {
+  const now = new Date();
+
   // 1. Check direct JTI revocation (e.g. single access token logout)
   if (jti) {
     const revokedToken = await db('revoked_tokens').where({ jti }).first();
-    if (revokedToken) return true;
+    if (revokedToken) {
+      return { valid: false, reason: 'token_revoked' };
+    }
   }
 
-  // 2. Check session-level revocation (e.g. global logout, password change, targeted session logout)
+  // 2. Check session-level revocation, absolute expiry, and inactivity timeout
   if (sessionId) {
     const session = await db('user_sessions').where({ id: sessionId }).first();
-    if (!session || session.is_revoked) return true;
+    if (!session || session.is_revoked) {
+      sessionLastTouchCache.delete(sessionId);
+      return { valid: false, reason: 'session_revoked' };
+    }
+
+    if (session.expires_at && new Date(session.expires_at) <= now) {
+      sessionLastTouchCache.delete(sessionId);
+      await revokeSession(sessionId, 'session_expired');
+      return { valid: false, reason: 'session_expired' };
+    }
+
+    const lastActivityAt = new Date(session.updated_at || session.created_at).getTime();
+    const inactivityTimeoutMs = env.SESSION_INACTIVITY_TIMEOUT_MS || (30 * 60 * 1000);
+    if (Number.isFinite(lastActivityAt) && (now.getTime() - lastActivityAt) > inactivityTimeoutMs) {
+      sessionLastTouchCache.delete(sessionId);
+      await revokeSession(sessionId, 'inactivity_timeout');
+      return { valid: false, reason: 'inactivity_timeout' };
+    }
+
+    touchSessionActivity(sessionId, now);
   }
 
-  return false;
+  return { valid: true, reason: null };
+}
+
+/**
+ * Checks if an access token JTI or its parent session is revoked or inactive-expired in MySQL.
+ */
+async function isTokenRevoked(jti, sessionId = null) {
+  const result = await checkSessionValidity(jti, sessionId);
+  return !result.valid;
 }
 
 /**
@@ -238,14 +293,35 @@ async function rotateRefreshToken(oldRefreshToken) {
     throw err;
   }
 
-  // Session check
+  // Session check (revocation, absolute expiry, and inactivity timeout)
   if (decoded.sessionId) {
     const session = await db('user_sessions').where({ id: decoded.sessionId }).first();
     if (!session || session.is_revoked) {
+      sessionLastTouchCache.delete(decoded.sessionId);
       const sessErr = new Error('Session has been revoked. Please log in again.');
       sessErr.name = 'SessionRevokedError';
       throw sessErr;
     }
+    const now = new Date();
+    if (session.expires_at && new Date(session.expires_at) <= now) {
+      sessionLastTouchCache.delete(decoded.sessionId);
+      await revokeSession(decoded.sessionId, 'session_expired');
+      const expErr = new Error('Session has expired. Please log in again.');
+      expErr.name = 'SessionExpiredError';
+      throw expErr;
+    }
+    const lastActivityAt = new Date(session.updated_at || session.created_at).getTime();
+    const inactivityTimeoutMs = env.SESSION_INACTIVITY_TIMEOUT_MS || (30 * 60 * 1000);
+    if (Number.isFinite(lastActivityAt) && (now.getTime() - lastActivityAt) > inactivityTimeoutMs) {
+      sessionLastTouchCache.delete(decoded.sessionId);
+      await revokeSession(decoded.sessionId, 'inactivity_timeout');
+      const idleErr = new Error('Session expired due to inactivity. Please log in again.');
+      idleErr.name = 'SessionInactivityExpiredError';
+      throw idleErr;
+    }
+    // Active refresh: bump session last-activity timestamp
+    sessionLastTouchCache.set(decoded.sessionId, now.getTime());
+    await db('user_sessions').where({ id: decoded.sessionId }).update({ updated_at: now });
   }
 
   const record = await db('refresh_tokens').where({ jti: decoded.jti }).first();
@@ -388,6 +464,7 @@ module.exports = {
   generateAccessToken,
   generateAndSaveRefreshToken,
   verifyToken,
+  checkSessionValidity,
   isTokenRevoked,
   revokeAccessToken,
   revokeRefreshToken,

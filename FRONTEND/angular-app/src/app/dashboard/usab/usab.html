@@ -1,15 +1,19 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <a routerLink="/">
-        <img src="/udsm-logo.png" alt="Institutional Logo" />
+      <a routerLink="/dashboard/usab" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
       </a>
-      <div>
-        <strong>USAB</strong>
-        <small>Clearance Workspace</small>
+      <div class="brand-text">
+        <strong>USAB PORTAL</strong>
+        <small>Accommodation Bureau</small>
       </div>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
     </div>
 
     <nav>
@@ -19,17 +23,30 @@
         [class.active]="viewMode === 'requests'"
         (click)="setViewMode('requests')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
-        <span>Clearance Requests ({{ pendingRequestCount }})</span>
+        <i class="bi bi-building-check" aria-hidden="true"></i>
+        <span>Clearance Requests</span>
+        <span class="nav-count-badge" *ngIf="pendingRequestCount > 0">{{ pendingRequestCount }}</span>
       </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
+        <span>Analytics</span>
+      </button>
+
       <button
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'hostels'"
         (click)="setViewMode('hostels')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L8.707 1.5zM13 7.207V13.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V7.207l5-5 5 5z"/></svg>
-        <span>Hostel Directory ({{ hostels.length }})</span>
+        <i class="bi bi-houses-fill" aria-hidden="true"></i>
+        <span>Hostel Directory</span>
+        <span class="nav-count-badge neutral" *ngIf="hostels.length > 0">{{ hostels.length }}</span>
       </button>
     </nav>
   </aside>
@@ -38,491 +55,516 @@
   <main class="content">
     <app-dashboard-header
       title="USAB Dashboard"
+      subtitle="Verify student accommodation records, hostel fee clearance, and off-campus residency proof."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadRequests(true)" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
-    <!-- MESSAGE -->
     <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <!-- HOSTELS BOARD (Shown in 'hostels') -->
-    <section class="dashboard-board" id="hostels-section" *ngIf="viewMode === 'hostels'">
-      <div class="board-header">
-        <div class="board-title-group">
-          <div class="board-icon-badge"></div>
-          <div>
-            <h2>Hostel Directory &amp; Hall Information</h2>
-          </div>
-        </div>
-        <div class="board-actions-group">
-          <div class="board-search-box">
-            <input
-              type="text"
-              [(ngModel)]="hostelSearchTerm"
-              placeholder="Search hostel name, campus location, or warden..."
-              aria-label="Search hostels"
-            />
-          </div>
-          <button type="button" class="action-btn primary" (click)="openAddHostelModal()">
-            + Add New Hostel
-          </button>
-        </div>
-      </div>
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="viewMode === 'requests' && filterStatus === 'All'" (click)="filterByCard('All')">
+        <span class="stat-label">Total Requests</span>
+        <strong class="stat-value">{{ totalRequestCount }}</strong>
+        <small>{{ onCampusCount }} hostel &middot; {{ offCampusCount }} off-campus</small>
+      </button>
 
-      <div class="board-body">
-        <!-- HOSTELS GRID -->
-        <div class="hostels-grid" *ngIf="filteredHostels.length">
-          <div class="hostel-card compact" *ngFor="let hostel of filteredHostels">
-            <div class="hostel-card-header">
-              <div class="header-main">
-                <h3>{{ hostel.name }}</h3>
-                <span class="location-badge" *ngIf="hostel.location"> {{ hostel.location }}</span>
-              </div>
-              <div class="card-actions">
-                <button type="button" class="btn-icon edit" (click)="openEditHostelModal(hostel)" title="Edit hostel details">
-                  <i class="bi bi-pencil-square"></i> Edit
-                </button>
-                <button type="button" class="btn-icon delete" (click)="deleteHostel(hostel)" title="Delete hostel">
-                  <i class="bi bi-trash3-fill"></i>
-                </button>
-              </div>
-            </div>
+      <button type="button" class="stat-card pending" [class.active]="viewMode === 'requests' && filterStatus === 'Pending'" (click)="filterByCard('Pending')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingRequestCount }}</strong>
+        <small>Awaiting USAB verification</small>
+      </button>
 
-            <!-- COMPACT QUICK INFO -->
-            <div class="compact-info-row">
-              <span class="compact-item" *ngIf="hostel.capacity">
-                <strong>{{ hostel.capacity | number }}</strong> capacity
-              </span>
-              <span class="compact-dot" *ngIf="hostel.capacity && (hostel.wings?.length || hostel.blocks?.length)">•</span>
-              <span class="compact-item units-count" *ngIf="hostel.wings?.length">
-                {{ hostel.wings?.length }} {{ hostel.wings?.length === 1 ? 'Wing' : 'Wings' }}
-              </span>
-              <span class="compact-item units-count" *ngIf="hostel.blocks?.length">
-                {{ hostel.blocks?.length }} {{ hostel.blocks?.length === 1 ? 'Block' : 'Blocks' }}
-              </span>
-            </div>
+      <button type="button" class="stat-card approved" [class.active]="viewMode === 'requests' && filterStatus === 'Approved'" (click)="filterByCard('Approved')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedRequestCount }}</strong>
+        <small>{{ clearanceRatePercent }}% clearance rate</small>
+      </button>
 
-            <!-- EXPANDABLE DETAILS -->
-            <div class="hostel-expanded-details" *ngIf="isHostelExpanded(hostel.id)">
-              <p class="hostel-desc" *ngIf="hostel.description">{{ hostel.description }}</p>
-
-              <div class="hostel-meta-grid">
-                <div class="meta-item" *ngIf="hostel.capacity">
-                  <span class="meta-label">Capacity</span>
-                  <strong>{{ hostel.capacity | number }} students</strong>
-                </div>
-                <div class="meta-item" *ngIf="hostel.wardenName">
-                  <span class="meta-label">Hall Warden</span>
-                  <strong>{{ hostel.wardenName }}</strong>
-                </div>
-                <div class="meta-item" *ngIf="hostel.wardenContact">
-                  <span class="meta-label">Contact</span>
-                  <span>{{ hostel.wardenContact }}</span>
-                </div>
-              </div>
-
-              <!-- WINGS / BLOCKS -->
-              <div class="units-breakdown" *ngIf="(hostel.wings && hostel.wings.length) || (hostel.blocks && hostel.blocks.length)">
-                <div *ngIf="hostel.wings && hostel.wings.length">
-                  <span class="unit-title">Wings:</span>
-                  <div class="tags-container">
-                    <span class="tag wing-tag" *ngFor="let w of hostel.wings">{{ w }}</span>
-                  </div>
-                </div>
-
-                <div *ngIf="hostel.blocks && hostel.blocks.length" style="margin-top: 8px;">
-                  <span class="unit-title">Blocks:</span>
-                  <div class="tags-container">
-                    <span class="tag block-tag" *ngFor="let b of hostel.blocks">{{ b }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- VIEW MORE / VIEW LESS TOGGLE -->
-            <div class="card-footer-toggle">
-              <button
-                type="button"
-                class="view-more-btn"
-                (click)="toggleHostelDetails(hostel.id)"
-              >
-                {{ isHostelExpanded(hostel.id) ? 'View Less ▲' : 'View More ▼' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="board-empty-state" *ngIf="!filteredHostels.length">
-          <div class="empty-icon"></div>
-          <h2>No Hostels Found</h2>
-          <p>No hostel matches your search criteria. Click "+ Add New Hostel" to create one.</p>
-        </div>
-      </div>
+      <button type="button" class="stat-card rejected" [class.active]="viewMode === 'requests' && filterStatus === 'Rejected'" (click)="filterByCard('Rejected')">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedRequestCount }}</strong>
+        <small>Flagged for accommodation issue</small>
+      </button>
     </section>
 
-    <!-- CLEARANCE REQUESTS BOARD (Shown in 'requests') -->
-    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'requests'">
-      <div class="board-header">
+    <!-- ==========================================
+         VIEW 1: CLEARANCE REQUESTS
+    =========================================== -->
+    <section class="dashboard-board" *ngIf="viewMode === 'requests'">
+      <header class="board-header">
         <div class="board-title-group">
-          <div class="board-icon-badge"></div>
+          <span class="board-icon-badge"><i class="bi bi-building-check" aria-hidden="true"></i></span>
           <div>
-            <h2>Student Clearance Applications</h2>
+            <h2>USAB Accommodation Clearance Queue</h2>
+            <p>Review hostel fee settlement, room allocation status, or off-campus residency documentation.</p>
           </div>
         </div>
+
         <div class="board-actions-group">
           <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
             <input
               type="text"
+              placeholder="Search name, reg no, hall, room..."
               [(ngModel)]="searchTerm"
               (ngModelChange)="onFilterChange()"
-              placeholder="Search student, registration number or programme..."
-              aria-label="Search requests"
             />
           </div>
-          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+
+          <select class="board-select" [(ngModel)]="residenceFilter" (ngModelChange)="onFilterChange()" aria-label="Filter by residence">
+            <option value="All">All Residences</option>
+            <option value="On-Campus">Hostel Dwellers</option>
+            <option value="Off-Campus">Off-Campus</option>
+          </select>
+
+          <select class="board-select" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" aria-label="Filter by status">
+            <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
           </select>
         </div>
-      </div>
+      </header>
 
       <div class="board-body board-table-body">
-        <!-- EMPTY STATE -->
-        <div class="board-empty-state" *ngIf="!filteredRequests.length">
-          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for USAB.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for USAB.' : 'There are currently no student applications awaiting USAB approval.' }}</p>
+        <div class="board-empty-state" *ngIf="isLoading && !requests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading USAB clearance requests...</h2>
+          <p>Fetching live student submissions from the server.</p>
         </div>
 
-        <!-- REQUEST LIST TABLE -->
-        <div class="board-table-container" *ngIf="filteredRequests.length">
+        <div class="board-empty-state" *ngIf="!isLoading && filteredRequests.length === 0">
+          <div class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+          <h2>No matching requests</h2>
+          <p>Try adjusting the search term, residence filter, or status filter above.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredRequests.length > 0">
           <app-parallel-office-request-table
-            [requests]="paginatedRequests"
             [office]="'USAB'"
+            [requests]="paginatedRequests"
+            (view)="openStudentDetails($event)"
             (approve)="approve($event)"
-            (reject)="openRejectForm($event)"
-            (view)="openStudentDetailsModal($event)"
+            (reject)="openRejectModal($event)"
+            (bulkApproved)="onBulkApproved()"
+            (withdrawn)="onWithdrawn()"
           ></app-parallel-office-request-table>
         </div>
 
-        <div class="pagination" *ngIf="totalPages > 1">
-          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-            &larr; Previous
-          </button>
-          <span class="page-info">
-            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-          </span>
-          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-            Next &rarr;
-          </button>
+        <div class="pagination" *ngIf="filteredRequests.length > pageSize">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of {{ totalPages }}</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next</button>
         </div>
       </div>
     </section>
 
-    <!-- STUDENT USAB ACCOMMODATION DETAILS MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
-      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
-          <div class="modal-student-header">
-            <div class="student-avatar-wrap">
-              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
-              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
-            </div>
-            <div>
-              <h3>{{ getStudentName(viewingRequest) }}</h3>
-              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
-            </div>
-          </div>
-          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
-        </header>
-
-        <div class="student-modal-body">
-          <!-- USAB ACCOMMODATION / HOSTEL SECTION -->
-          <div class="detail-section highlight-box">
-            <div class="section-badge-title">
-              <span class="section-icon"></span>
-              <h4>USAB Accommodation &amp; Residence Details</h4>
-            </div>
-
-            <div class="residence-status-pill" [class.hostel]="getStudentResidenceType(viewingRequest) === 'Hostel Dwellers'" [class.non-hostel]="getStudentResidenceType(viewingRequest) !== 'Hostel Dwellers'">
-              <strong>Residence Status:</strong> {{ getStudentResidenceType(viewingRequest) }}
-            </div>
-
-            <div class="details-grid-2" *ngIf="getStudentResidenceType(viewingRequest) === 'Hostel Dwellers'">
-              <div class="detail-item">
-                <span class="detail-label">Hall / Hostel</span>
-                <strong class="detail-value text-primary">{{ getStudentHall(viewingRequest) }}</strong>
-              </div>
-              <div class="detail-item" *ngIf="getStudentWing(viewingRequest) !== '—'">
-                <span class="detail-label">Wing</span>
-                <strong class="detail-value">{{ getStudentWing(viewingRequest) }}</strong>
-              </div>
-              <div class="detail-item" *ngIf="getStudentBlock(viewingRequest) !== '—'">
-                <span class="detail-label">Block</span>
-                <strong class="detail-value">{{ getStudentBlock(viewingRequest) }}</strong>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Room Number</span>
-                <strong class="detail-value text-accent">{{ getStudentRoom(viewingRequest) }}</strong>
-              </div>
-            </div>
-
-            <!-- Non-Hostel Evidence if applicable -->
-            <div class="non-hostel-info" *ngIf="getStudentResidenceType(viewingRequest) !== 'Hostel Dwellers'">
-              <p>This student is registered as living off-campus (Non-Hostel Dweller).</p>
-              <div *ngIf="viewingRequest.residenceEvidence" class="evidence-box">
-                <span class="detail-label">Residence Proof / Document:</span>
-                <img *ngIf="viewingRequest.residenceEvidence.startsWith('data:image')" [src]="viewingRequest.residenceEvidence" alt="Residence proof" class="evidence-preview" (click)="openEnlargedPhoto(viewingRequest.residenceEvidence)" />
-                <a *ngIf="!viewingRequest.residenceEvidence.startsWith('data:image')" [href]="viewingRequest.residenceEvidence" target="_blank" class="download-link">View Proof Document</a>
-              </div>
-            </div>
-          </div>
-
-          <!-- ACADEMIC & INSTITUTIONAL INFO -->
-          <div class="detail-section">
-            <h4>Academic &amp; Department Information</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">College / Unit</span>
-                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Department</span>
-                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Programme</span>
-                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Sponsor</span>
-                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- CONTACT DETAILS -->
-          <div class="detail-section">
-            <h4>Contact Details</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">Email Address</span>
-                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Phone Number</span>
-                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- USAB CLEARANCE STATUS -->
-          <div class="detail-section">
-            <h4>USAB Clearance Status</h4>
-            <div class="office-status-row">
-              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'USAB') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'USAB') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'USAB') }}</strong></span>
-              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
-            </div>
+    <!-- ==========================================
+         VIEW 2: LIVE ANALYTICS
+    =========================================== -->
+    <section class="dashboard-board" *ngIf="viewMode === 'analytics'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>USAB Accommodation &amp; Clearance Analytics</h2>
+            <p>Live clearance breakdown computed strictly from verified USAB submissions.</p>
           </div>
         </div>
 
-        <footer class="student-modal-footer">
-          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
-            Close
+        <div class="board-actions-group">
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" [disabled]="!totalRequestCount">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Export CSV</span>
           </button>
-          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'USAB') === 'Pending'">
-            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
-              Reject / Return
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="analytics-bars">
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Approved</span>
+              <strong>{{ approvedRequestCount }} ({{ clearanceRatePercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill approved" [style.width.%]="clearanceRatePercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Pending Review</span>
+              <strong>{{ pendingRequestCount }} ({{ pendingPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill pending" [style.width.%]="pendingPercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Rejected</span>
+              <strong>{{ rejectedRequestCount }} ({{ rejectedPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="rejectedPercent"></div></div>
+          </div>
+        </div>
+
+        <h3 class="analytics-section-title">Hall &amp; Residence Breakdown</h3>
+        <div class="board-table-container" *ngIf="residenceBreakdown.length > 0; else emptyAnalytics">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Hall / Residence</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of residenceBreakdown">
+                <td><strong>{{ item.label }}</strong></td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.approved }}</td>
+                <td>{{ item.pending }}</td>
+                <td>{{ item.rejected }}</td>
+                <td><strong>{{ item.clearanceRate }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-container *ngIf="collegeBreakdown.length > 0">
+          <h3 class="analytics-section-title">College Breakdown</h3>
+          <div class="board-table-container">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>College</th>
+                  <th>Total</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                  <th>Rejected</th>
+                  <th>Clearance Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of collegeBreakdown">
+                  <td><strong>{{ item.label }}</strong></td>
+                  <td>{{ item.total }}</td>
+                  <td>{{ item.approved }}</td>
+                  <td>{{ item.pending }}</td>
+                  <td>{{ item.rejected }}</td>
+                  <td><strong>{{ item.clearanceRate }}%</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-template #emptyAnalytics>
+          <div class="board-empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></div>
+            <h2>No analytics data yet</h2>
+            <p>Charts and breakdowns will populate automatically as students reach USAB clearance.</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 3: HOSTEL DIRECTORY MANAGEMENT
+    =========================================== -->
+    <section class="dashboard-board" *ngIf="viewMode === 'hostels'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-houses-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>UDSM Hostel Directory ({{ hostels.length }} Hostels &middot; {{ totalHostelCapacity | number }} Beds)</h2>
+            <p>Maintain the hostel catalog used by student clearance forms and Hall Wardens (saved locally in this browser).</p>
+          </div>
+        </div>
+
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" placeholder="Search hostel, location, warden..." [(ngModel)]="hostelSearchTerm" />
+          </div>
+          <button type="button" class="action-btn primary" (click)="openAddHostelModal()">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>Add Hostel</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="board-empty-state" *ngIf="filteredHostels.length === 0">
+          <div class="empty-icon"><i class="bi bi-houses" aria-hidden="true"></i></div>
+          <h2>No hostels match your search</h2>
+          <p>Try a different search keyword or add a new hostel to the directory.</p>
+        </div>
+
+        <div class="desks-grid" *ngIf="filteredHostels.length > 0">
+          <article class="desk-card" *ngFor="let h of filteredHostels">
+            <div class="desk-card-header">
+              <h3>{{ h.name }}</h3>
+              <span class="campus-badge">{{ h.capacity | number }} Beds</span>
+            </div>
+            <p class="desk-location"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> {{ h.location }}</p>
+            <p class="desk-desc">{{ h.description || 'University of Dar es Salaam student residence facility.' }}</p>
+            <div class="desk-tags">
+              <span class="desk-tag" *ngIf="h.blocks?.length">Blocks: {{ h.blocks?.join(', ') }}</span>
+              <span class="desk-tag" *ngIf="h.wings?.length">Wings: {{ h.wings?.join(', ') }}</span>
+              <span class="desk-tag" *ngIf="h.wardenName">Warden: {{ h.wardenName }}</span>
+              <span class="desk-tag" *ngIf="h.wardenContact">{{ h.wardenContact }}</span>
+            </div>
+            <div class="hostel-card-actions">
+              <button type="button" class="card-action-btn edit" (click)="openEditHostelModal(h)">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="card-action-btn delete" (click)="deleteHostel(h)">
+                <i class="bi bi-trash" aria-hidden="true"></i> Remove
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         STUDENT DETAILS MODAL
+    =========================================== -->
+    <div class="modal-backdrop" *ngIf="viewingRequest as req" (click)="closeStudentDetails()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-student-header">
+            <button
+              type="button"
+              class="student-avatar-wrap"
+              (click)="openPhotoLightbox(getStudentPhoto(req))"
+              [disabled]="!getStudentPhoto(req)"
+              [title]="getStudentPhoto(req) ? 'Click to enlarge photo' : 'No photo uploaded'"
+            >
+              <img *ngIf="getStudentPhoto(req) as photo" [src]="photo" [alt]="req.studentName" />
+              <span *ngIf="!getStudentPhoto(req)">{{ getStudentInitials(req.studentName) }}</span>
             </button>
-            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
-              Approve USAB Clearance
+            <div>
+              <h3>{{ req.studentName }}</h3>
+              <p>{{ req.registrationNumber }} &middot; {{ req.programme }}</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeStudentDetails()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="status-highlight-box">
+          <div class="status-highlight-head">
+            <span class="section-icon"><i class="bi bi-building-check" aria-hidden="true"></i></span>
+            <div>
+              <strong>USAB Accommodation Clearance Status</strong>
+              <small>Reviewed by: {{ getRequestReviewer(req) }}<ng-container *ngIf="getRequestReviewedAt(req) as dt"> &middot; {{ dt | date:'medium' }}</ng-container></small>
+            </div>
+            <span class="status-pill" [ngClass]="getRequestOfficeStatus(req).toLowerCase()">
+              {{ getRequestOfficeStatus(req) }}
+            </span>
+          </div>
+
+          <div class="residence-chip-row">
+            <span class="residence-badge" [class.off-campus]="isOffCampus(req)">
+              <i class="bi" [ngClass]="isOffCampus(req) ? 'bi-house-fill' : 'bi-building-fill'" aria-hidden="true"></i>
+              {{ getResidenceLabel(req) }}
+            </span>
+            <button
+              type="button"
+              class="btn-cancel"
+              *ngIf="getResidenceEvidenceUrl(req)"
+              (click)="viewResidenceEvidence(req)"
+            >
+              <i class="bi bi-file-earmark-check" aria-hidden="true"></i> View Residence Proof
             </button>
           </div>
+
+          <div class="rejection-note-box" *ngIf="getRequestComment(req)">
+            <strong>Officer Remark:</strong> {{ getRequestComment(req) }}
+          </div>
+        </div>
+
+        <dl class="detail-grid">
+          <div>
+            <dt>College</dt>
+            <dd>{{ req.college || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ req.department || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Hall / Hostel</dt>
+            <dd>{{ getStudentHall(req) }}</dd>
+          </div>
+          <div>
+            <dt>Room Number</dt>
+            <dd>{{ getStudentRoom(req) }}</dd>
+          </div>
+          <div *ngIf="!isOffCampus(req)">
+            <dt>Wing</dt>
+            <dd>{{ getStudentWing(req) }}</dd>
+          </div>
+          <div *ngIf="!isOffCampus(req)">
+            <dt>Block</dt>
+            <dd>{{ getStudentBlock(req) }}</dd>
+          </div>
+          <div>
+            <dt>Sponsor</dt>
+            <dd>{{ req.sponsor || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Submitted On</dt>
+            <dd>{{ req.requestDate ? (req.requestDate | date:'medium') : 'Not recorded' }}</dd>
+          </div>
+        </dl>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeStudentDetails()">Close</button>
+          <ng-container *ngIf="getRequestOfficeStatus(req) !== 'Approved'">
+            <button type="button" class="btn-danger" (click)="openRejectModal(req)" [disabled]="isSubmitting">Reject</button>
+            <button type="button" class="btn-approve" (click)="approve(req)" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Approve Clearance' }}
+            </button>
+          </ng-container>
         </footer>
       </div>
-    </section>
+    </div>
 
-    <!-- REJECTION MODAL -->
-    <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
+    <!-- ==========================================
+         REJECT MODAL
+    =========================================== -->
+    <div class="modal-backdrop" *ngIf="selectedRequest as target" (click)="closeRejectModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take before the clearance can proceed.</p>
-
-        <label>Reason for Rejection</label>
-        <textarea
-          [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
-        ></textarea>
-
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="cancel-button"
-            (click)="selectedRequest = null"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            class="return-button"
-            (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
-          >
-            Send Reason to Student
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- HOSTEL ADD/EDIT MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="showHostelModal" (click)="closeHostelModal()">
-      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
+        <header class="modal-header">
           <div>
-            <h3>{{ editingHostelId ? 'Edit Hostel Details' : 'Add New Hostel' }}</h3>
-            <p>{{ editingHostelId ? 'Update details for this hall of residence.' : 'Create a new hall of residence in the system.' }}</p>
+            <h3>Reject USAB Clearance</h3>
+            <p>{{ target.studentName }} ({{ target.registrationNumber }})</p>
           </div>
-          <button type="button" class="close-modal-btn" (click)="closeHostelModal()">✕</button>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
         </header>
 
-        <form (ngSubmit)="saveHostel()" class="hostel-modal-form">
-          <div class="form-row">
-            <label class="form-field">
-              <span>Hostel / Hall Name *</span>
-              <input
-                type="text"
-                [(ngModel)]="hostelForm.name"
-                name="hostelName"
-                placeholder="e.g. Mabibo Hostels, Hall 6..."
-                required
-              />
-            </label>
+        <p class="reject-hint">
+          Specify the exact accommodation issue (e.g., unpaid hostel fee balance, missing off-campus residency proof, or pending room handover).
+        </p>
 
-            <label class="form-field">
-              <span>Campus / Location</span>
-              <input
-                type="text"
-                [(ngModel)]="hostelForm.location"
-                name="hostelLocation"
-                placeholder="e.g. Mlimani Main Campus, Mabibo..."
-              />
-            </label>
-          </div>
+        <label class="modal-field">
+          <span>Rejection Reason *</span>
+          <textarea
+            rows="4"
+            [(ngModel)]="rejectionComment"
+            placeholder="Minimum 5 characters explaining what the student must resolve..."
+          ></textarea>
+          <small class="field-hint" *ngIf="rejectionComment.trim().length > 0 && rejectionComment.trim().length < 5">
+            Please enter at least 5 characters.
+          </small>
+        </label>
 
-          <div class="form-row">
-            <label class="form-field">
-              <span>Student Capacity</span>
-              <input
-                type="number"
-                min="0"
-                [(ngModel)]="hostelForm.capacity"
-                name="hostelCapacity"
-                placeholder="e.g. 500"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>Hall Warden Name</span>
-              <input
-                type="text"
-                [(ngModel)]="hostelForm.wardenName"
-                name="hostelWardenName"
-                placeholder="e.g. Dr. J. Mwita"
-              />
-            </label>
-          </div>
-
-          <div class="form-row">
-            <label class="form-field">
-              <span>Warden Contact (Phone/Email)</span>
-              <input
-                type="text"
-                [(ngModel)]="hostelForm.wardenContact"
-                name="hostelWardenContact"
-                placeholder="e.g. +255 22 241 0500"
-              />
-            </label>
-          </div>
-
-          <!-- WINGS CONFIG -->
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                [(ngModel)]="hostelForm.hasWings"
-                name="hasWings"
-              />
-              <span>Has Wings (e.g. Wing A, Wing B)</span>
-            </label>
-          </div>
-
-          <label class="form-field" *ngIf="hostelForm.hasWings">
-            <span>Wings (comma-separated)</span>
-            <input
-              type="text"
-              [(ngModel)]="hostelForm.wingsText"
-              name="wingsText"
-              placeholder="e.g. Wing A, Wing B, Wing C"
-            />
-            <small class="field-help">Separate wing names with commas.</small>
-          </label>
-
-          <!-- BLOCKS CONFIG -->
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                [(ngModel)]="hostelForm.hasBlocks"
-                name="hasBlocks"
-              />
-              <span>Has Blocks (e.g. Block A, Block B, Block C)</span>
-            </label>
-          </div>
-
-          <label class="form-field" *ngIf="hostelForm.hasBlocks">
-            <span>Blocks (comma-separated)</span>
-            <input
-              type="text"
-              [(ngModel)]="hostelForm.blocksText"
-              name="blocksText"
-              placeholder="e.g. Block A, Block B, Block C, Block D"
-            />
-            <small class="field-help">Separate block names with commas.</small>
-          </label>
-
-          <label class="form-field">
-            <span>Description / Remarks</span>
-            <textarea
-              [(ngModel)]="hostelForm.description"
-              name="hostelDescription"
-              rows="3"
-              placeholder="Additional information about accommodation, targeted student year, or specific requirements..."
-            ></textarea>
-          </label>
-
-          <div class="modal-actions">
-            <button type="button" class="cancel-button" (click)="closeHostelModal()">
-              Cancel
-            </button>
-            <button type="submit" class="return-button save-btn" [disabled]="!hostelForm.name.trim()">
-              {{ editingHostelId ? 'Save Changes' : 'Create Hostel' }}
-            </button>
-          </div>
-        </form>
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="reject()"
+            [disabled]="isSubmitting || rejectionComment.trim().length < 5"
+          >
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
+          </button>
+        </footer>
       </div>
-    </section>
-  </main>
-
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
     </div>
-  </div>
+
+    <!-- ==========================================
+         ADD / EDIT HOSTEL MODAL
+    =========================================== -->
+    <div class="modal-backdrop" *ngIf="showHostelModal" (click)="closeHostelModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h3>{{ isEditingHostel ? 'Edit Hostel Details' : 'Add New University Hostel' }}</h3>
+            <p>Update the USAB local hostel directory entry.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeHostelModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="hostel-form-grid">
+          <label class="modal-field full-span">
+            <span>Hostel Name *</span>
+            <input type="text" [(ngModel)]="hostelForm.name" placeholder="e.g., Dr. John Pombe Magufuli Hostels" />
+          </label>
+
+          <label class="modal-field">
+            <span>Campus / Location</span>
+            <input type="text" [(ngModel)]="hostelForm.location" placeholder="e.g., Main Campus (Mlimani)" />
+          </label>
+
+          <label class="modal-field">
+            <span>Bed Capacity</span>
+            <input type="number" min="0" [(ngModel)]="hostelForm.capacity" placeholder="e.g., 1200" />
+          </label>
+
+          <label class="modal-field">
+            <span>Blocks (comma-separated)</span>
+            <input type="text" [(ngModel)]="hostelBlocksInput" placeholder="e.g., Block A, Block B, Block C" />
+          </label>
+
+          <label class="modal-field">
+            <span>Wings (comma-separated)</span>
+            <input type="text" [(ngModel)]="hostelWingsInput" placeholder="e.g., Wing A, Wing B" />
+          </label>
+
+          <label class="modal-field">
+            <span>Hostel Manager / Warden</span>
+            <input type="text" [(ngModel)]="hostelForm.wardenName" placeholder="e.g., Mr. J. Mbwambo" />
+          </label>
+
+          <label class="modal-field">
+            <span>Contact Information</span>
+            <input type="text" [(ngModel)]="hostelForm.wardenContact" placeholder="e.g., +255 22 241 0500" />
+          </label>
+
+          <label class="modal-field full-span">
+            <span>Description</span>
+            <textarea rows="3" [(ngModel)]="hostelForm.description" placeholder="Brief summary of the hostel facility..."></textarea>
+          </label>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeHostelModal()">Cancel</button>
+          <button type="button" class="btn-approve" (click)="saveHostel()">
+            {{ isEditingHostel ? 'Save Changes' : 'Add Hostel' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- PHOTO LIGHTBOX -->
+    <div class="modal-backdrop lightbox" *ngIf="enlargedPhotoUrl as photoUrl" (click)="closePhotoLightbox()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close-btn lightbox-close" (click)="closePhotoLightbox()" aria-label="Close photo">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <img [src]="photoUrl" alt="Student Passport Photo" />
+      </div>
+    </div>
+  </main>
 </section>

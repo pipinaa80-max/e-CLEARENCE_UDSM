@@ -1,20 +1,24 @@
-// dean-of-students.component.ts
+// src/app/dashboard/dean_of_students/dean_of_students.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ClearanceRequest } from '../../core/models/clearance.model';
+import { ToastService } from '../../core/services/toast.service';
+import { ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
-interface AnalyticsBar {
+export interface DeanBreakdownStat {
   label: string;
-  count: number;
-  width: number;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  clearanceRate: number;
 }
 
 @Component({
@@ -28,53 +32,203 @@ export class DeanOfStudentsComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   sidebarOpen = false;
   viewMode: 'requests' | 'analytics' = 'requests';
+
+  isLoading = false;
+  isSubmitting = false;
+
   selectedRequest: ClearanceRequest | null = null;
-  detailsRequest: ClearanceRequest | null = null;
+  viewingRequest: ClearanceRequest | null = null;
+  enlargedPhotoUrl: string | null = null;
+
   rejectionComment = '';
   message = '';
   messageState: 'success' | 'error' = 'success';
-  isLoading = false;
-  pendingRequests: ClearanceRequest[] = [];
-  allRequests: ClearanceRequest[] = [];
 
   searchTerm = '';
-  filterStatus = 'Pending';
+  filterStatus: 'All' | 'Pending' | 'Approved' | 'Rejected' = 'Pending';
   currentPage = 1;
-  pageSize = 20;
+  pageSize = 15;
 
-  get paginatedRequests(): ClearanceRequest[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRequests.slice(start, start + this.pageSize);
+  private readonly studentCache = new Map<string, any>();
+
+  ngOnInit(): void {
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['requests', 'analytics'].includes(initialTab)) {
+      this.viewMode = initialTab as any;
+    }
+    this.loadRequests();
+  }
+
+  loadRequests(showToast = false): void {
+    this.isLoading = true;
+    this.clearanceService.fetchOfficeRequests('Dean of Students').subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.clampPage();
+        if (showToast) {
+          this.toastService.success('Refreshed', 'Dean of Students clearance queue updated.');
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        const msg = err?.error?.message || 'Unable to load Dean of Students clearance requests.';
+        this.toastService.error('Load Failed', msg);
+      }
+    });
+  }
+
+  get currentUser() {
+    return this.authService.getCurrentUser();
+  }
+
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
+  }
+
+  get requests(): ClearanceRequest[] {
+    return this.clearanceService.getRequestsForOffice('Dean of Students');
+  }
+
+  get totalRequestCount(): number {
+    return this.requests.length;
+  }
+
+  get pendingRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Pending').length;
+  }
+
+  get approvedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Approved').length;
+  }
+
+  get rejectedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Rejected').length;
+  }
+
+  get clearanceRatePercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.approvedRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get pendingPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.pendingRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get rejectedPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.rejectedRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get filteredRequests(): ClearanceRequest[] {
+    let list = this.requests;
+
+    if (this.filterStatus !== 'All') {
+      list = list.filter(r => this.getRequestOfficeStatus(r) === this.filterStatus);
+    }
+
+    const q = this.searchTerm.trim().toLowerCase();
+    if (q) {
+      list = list.filter(r =>
+        this.getStudentName(r).toLowerCase().includes(q) ||
+        this.getStudentRegNumber(r).toLowerCase().includes(q) ||
+        (r.programme || '').toLowerCase().includes(q) ||
+        (r.college || '').toLowerCase().includes(q) ||
+        (r.department || '').toLowerCase().includes(q)
+      );
+    }
+
+    return list;
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
   }
 
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  get paginatedRequests(): ClearanceRequest[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
   }
 
-  prevPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  get collegeBreakdown(): DeanBreakdownStat[] {
+    const map = new Map<string, { total: number; approved: number; pending: number; rejected: number }>();
+
+    for (const req of this.requests) {
+      const label = (req.college || '').trim() || 'Unspecified College';
+      const entry = map.get(label) || { total: 0, approved: 0, pending: 0, rejected: 0 };
+      entry.total += 1;
+      const st = this.getRequestOfficeStatus(req);
+      if (st === 'Approved') entry.approved += 1;
+      else if (st === 'Rejected') entry.rejected += 1;
+      else entry.pending += 1;
+      map.set(label, entry);
     }
+
+    return Array.from(map.entries())
+      .map(([label, stats]) => ({
+        label,
+        ...stats,
+        clearanceRate: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  get programmeBreakdown(): DeanBreakdownStat[] {
+    const map = new Map<string, { total: number; approved: number; pending: number; rejected: number }>();
+
+    for (const req of this.requests) {
+      const label = (req.programme || '').trim() || 'Unspecified Programme';
+      const entry = map.get(label) || { total: 0, approved: 0, pending: 0, rejected: 0 };
+      entry.total += 1;
+      const st = this.getRequestOfficeStatus(req);
+      if (st === 'Approved') entry.approved += 1;
+      else if (st === 'Rejected') entry.rejected += 1;
+      else entry.pending += 1;
+      map.set(label, entry);
+    }
+
+    return Array.from(map.entries())
+      .map(([label, stats]) => ({
+        label,
+        ...stats,
+        clearanceRate: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  setViewMode(mode: 'requests' | 'analytics'): void {
+    this.viewMode = mode;
+    this.closeSidebar();
+  }
+
+  filterByCard(status: 'All' | 'Pending' | 'Approved' | 'Rejected'): void {
+    this.viewMode = 'requests';
+    this.filterStatus = status;
+    this.currentPage = 1;
   }
 
   onFilterChange(): void {
     this.currentPage = 1;
   }
 
-  get currentUser() {
-    return this.authService.getCurrentUser();
+  clampPage(): void {
+    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    if (this.currentPage < 1) this.currentPage = 1;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
   }
 
   toggleSidebar(): void {
@@ -85,525 +239,265 @@ export class DeanOfStudentsComponent implements OnInit {
     this.sidebarOpen = false;
   }
 
-  onLogoError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img && !img.dataset['fallback']) {
-      img.dataset['fallback'] = '1';
-      img.src = '/udsm-logo.jpg';
-    } else if (img && img.dataset['fallback'] === '1') {
-      img.dataset['fallback'] = '2';
-      img.src = 'assets/udsm-logo.png';
+  /* =========================
+     STUDENT & APPROVAL HELPERS
+  ========================= */
+
+  private getStudentData(studentId: string): any | null {
+    if (this.studentCache.has(studentId)) {
+      return this.studentCache.get(studentId);
     }
+    try {
+      const raw = localStorage.getItem('udsm-local-users');
+      if (raw) {
+        const users = JSON.parse(raw);
+        if (Array.isArray(users)) {
+          const match = users.find((u: any) => u.id === studentId) || null;
+          this.studentCache.set(studentId, match);
+          return match;
+        }
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+    this.studentCache.set(studentId, null);
+    return null;
   }
 
-  setViewMode(mode: 'requests' | 'analytics'): void {
-    this.viewMode = mode;
-    this.sidebarOpen = false;
+  getStudentName(request: ClearanceRequest): string {
+    if (request.studentName) return request.studentName;
+    const u = this.getStudentData(request.studentId);
+    return u?.fullName || [u?.firstName, u?.lastName].filter(Boolean).join(' ') || request.registrationNumber || 'Student';
   }
 
-  // Cache for student data to avoid repeated lookups
-  private studentCache: Map<string, any> = new Map();
-
-  // =====================================================
-  // GET REQUESTS - WITH RELOAD
-  // =====================================================
-
-  get requests(): ClearanceRequest[] {
-    this.pendingRequests = this.clearanceService.getRequestsForOffice('Dean of Students');
-    return this.pendingRequests;
+  getStudentRegNumber(request: ClearanceRequest): string {
+    return request.registrationNumber || request.studentId;
   }
 
-  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return (Array.isArray(request?.approvals)
-      ? request.approvals.find(approval => approval?.office === office)?.status
-      : undefined) ?? 'Pending';
+  getStudentGender(request: ClearanceRequest): string {
+    const gender = this.getStudentData(request.studentId)?.gender || (request as any).gender;
+    return typeof gender === 'string' && gender.trim() ? gender.trim() : 'Not recorded';
   }
 
-  get pendingRequestCount(): number {
-    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'Dean of Students') === 'Pending').length;
+  getStudentPhone(request: ClearanceRequest): string {
+    if (request.phoneNumber?.trim()) return request.phoneNumber.trim();
+    const u = this.getStudentData(request.studentId);
+    return u?.phone || u?.phoneNumber || 'Not provided';
   }
 
-  get completedRequestCount(): number {
-    return this.allRequests.filter(request => this.isCompleted(request)).length;
+  getStudentPhoto(request: ClearanceRequest): string | null {
+    let photo = request.photo;
+    if (!photo) {
+      const u = this.getStudentData(request.studentId);
+      photo = u?.photo || u?.profilePhoto || u?.profileImageUrl;
+    }
+    if (!photo) return null;
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
+    }
+    return photo.length > 50 ? `data:image/jpeg;base64,${photo}` : photo;
   }
 
-  get rejectedRequestCount(): number {
-    return this.allRequests.filter(request => request.status === 'Rejected').length;
+  getStudentInitials(name?: string): string {
+    if (!name) return 'ST';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   }
 
-  get inProgressRequestCount(): number {
-    return Math.max(0, this.allRequests.length - this.completedRequestCount - this.rejectedRequestCount);
+  getOfficeApproval(request: ClearanceRequest, office: string = 'Dean of Students'): OfficeApproval | undefined {
+    return Array.isArray(request?.approvals)
+      ? request.approvals.find(a => a?.office === office)
+      : undefined;
   }
 
-  get clearanceRate(): number {
-    return this.allRequests.length ? Math.round(this.completedRequestCount / this.allRequests.length * 100) : 0;
+  getRequestOfficeStatus(request: ClearanceRequest, office: string = 'Dean of Students'): 'Pending' | 'Approved' | 'Rejected' {
+    return this.getOfficeApproval(request, office)?.status || 'Pending';
   }
 
-  get programmeClearanceBars(): AnalyticsBar[] {
-    return this.buildBars(this.groupCompleted(request => request.programme || 'Not recorded'));
+  getRequestReviewer(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request)?.reviewedBy || 'Not reviewed yet';
   }
 
-  get yearClearanceBars(): AnalyticsBar[] {
-    return this.buildBars(this.groupCompleted(request => this.getAnalyticsYear(request)));
+  getRequestReviewedAt(request: ClearanceRequest): string | null {
+    return this.getOfficeApproval(request)?.reviewedAt || null;
   }
 
-  get collegeClearanceBars(): AnalyticsBar[] {
-    return this.buildBars(this.groupCompleted(request => request.college || 'Not recorded'));
+  getRequestComment(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request)?.comment || '';
   }
 
-  get filteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
+  getStatusSummary(request: ClearanceRequest): string {
+    const status = this.getRequestOfficeStatus(request);
+    if (status === 'Approved') return 'Cleared by Dean of Students — student welfare & discipline verified';
+    if (status === 'Rejected') return 'Action required — welfare, disciplinary, or loan board issue flagged';
+    return 'Awaiting Dean of Students welfare and disciplinary clearance verification';
+  }
 
-    if (this.searchTerm.trim()) {
-      const s = this.searchTerm.toLowerCase();
-      list = list.filter(r =>
-        this.getStudentName(r).toLowerCase().includes(s) ||
-        this.getStudentRegNumber(r).toLowerCase().includes(s) ||
-        (r.programme || '').toLowerCase().includes(s)
+  /* =========================
+     MODALS & ACTIONS
+  ========================= */
+
+  openStudentDetails(request: ClearanceRequest): void {
+    this.viewingRequest = request;
+  }
+
+  closeStudentDetails(): void {
+    this.viewingRequest = null;
+  }
+
+  openPhotoLightbox(url: string | null): void {
+    if (url) this.enlargedPhotoUrl = url;
+  }
+
+  closePhotoLightbox(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
+  openRejectModal(request: ClearanceRequest): void {
+    this.viewingRequest = null;
+    this.selectedRequest = request;
+    this.rejectionComment = '';
+    this.message = '';
+  }
+
+  closeRejectModal(): void {
+    if (this.isSubmitting) return;
+    this.selectedRequest = null;
+    this.rejectionComment = '';
+  }
+
+  async approve(request: ClearanceRequest): Promise<void> {
+    if (this.isSubmitting) return;
+    const staff = this.currentUser;
+    if (!staff) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.isSubmitting = true;
+    const studentName = this.getStudentName(request);
+    try {
+      const ok = await this.clearanceService.approveRequest(
+        request.id,
+        'Dean of Students',
+        staff.fullName || 'Dean of Students'
       );
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'Dean of Students approval could not be completed. Refresh the dashboard and try again.';
+        this.toastService.error('Approval Failed', this.message);
+        return;
+      }
+
+      this.viewingRequest = null;
+      this.messageState = 'success';
+      this.message = `Dean of Students clearance approved for ${studentName} (${this.getStudentRegNumber(request)}).`;
+      this.toastService.success('Approved', `${studentName} has been cleared by the Dean of Students.`);
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async reject(): Promise<void> {
+    if (!this.selectedRequest || this.isSubmitting) return;
+    const staff = this.currentUser;
+    if (!staff) {
+      this.router.navigate(['/login']);
+      return;
     }
 
-    return list.filter(r => this.getRequestOfficeStatus(r, 'Dean of Students') === this.filterStatus);
-  }
-
-  // =====================================================
-  // INIT
-  // =====================================================
-
-  ngOnInit(): void {
-    this.clearanceService.fetchOfficeRequests('Dean of Students').subscribe({
-      next: () => this.loadData(),
-      error: () => this.loadData()
-    });
-    this.loadData();
-  }
-
-  loadData(): void {
-    this.isLoading = true;
-    this.allRequests = this.clearanceService.getAllRequests();
-    this.pendingRequests = this.clearanceService.getRequestsForOffice('Dean of Students');
-    this.isLoading = false;
-  }
-
-  private isCompleted(request: ClearanceRequest): boolean {
-    return request.status === 'Completed' || request.currentStage === 'Completed';
-  }
-
-  private groupCompleted(labelFor: (request: ClearanceRequest) => string): Map<string, number> {
-    const counts = new Map<string, number>();
-    this.allRequests.filter(request => this.isCompleted(request)).forEach(request => {
-      const label = labelFor(request).trim() || 'Not recorded';
-      counts.set(label, (counts.get(label) ?? 0) + 1);
-    });
-    return counts;
-  }
-
-  private buildBars(counts: Map<string, number>): AnalyticsBar[] {
-    const sorted = [...counts.entries()].sort((left, right) => right[1] - left[1]).slice(0, 6);
-    const maximum = Math.max(1, ...sorted.map(([, count]) => count));
-    return sorted.map(([label, count]) => ({
-      label,
-      count,
-      width: Math.max(6, Math.round(count / maximum * 100))
-    }));
-  }
-
-  private getAnalyticsYear(request: ClearanceRequest): string {
-    const student = this.getStudentData(request.studentId);
-    const academicYear = student?.academicYear;
-    if (academicYear !== undefined && academicYear !== null && String(academicYear).trim()) {
-      return String(academicYear).trim();
+    const trimmed = this.rejectionComment.trim();
+    if (trimmed.length < 5) {
+      this.messageState = 'error';
+      this.message = 'Please enter a clear rejection reason (at least 5 characters).';
+      return;
     }
-    const graduationYear = student?.graduationYear;
-    if (graduationYear !== undefined && graduationYear !== null && String(graduationYear).trim()) {
-      return `Graduation ${String(graduationYear).trim()}`;
+
+    const target = this.selectedRequest;
+    const studentName = this.getStudentName(target);
+    this.isSubmitting = true;
+    try {
+      const ok = await this.clearanceService.rejectRequest(
+        target.id,
+        'Dean of Students',
+        staff.fullName || 'Dean of Students',
+        trimmed
+      );
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'Dean of Students return could not be processed. Refresh the dashboard and try again.';
+        this.toastService.error('Rejection Failed', this.message);
+        return;
+      }
+
+      this.selectedRequest = null;
+      this.rejectionComment = '';
+      this.messageState = 'success';
+      this.message = `Dean of Students clearance returned for ${studentName}. Student has been notified.`;
+      this.toastService.warning('Rejected', `${studentName} was flagged for Dean of Students follow-up.`);
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
     }
-    const yearOfStudy = student?.yearOfStudy;
-    if (yearOfStudy !== undefined && yearOfStudy !== null && String(yearOfStudy).trim()) {
-      return `Year ${String(yearOfStudy).trim()}`;
-    }
-    const submittedYear = new Date(request.requestDate).getFullYear();
-    return Number.isNaN(submittedYear) ? 'Not recorded' : `Request ${submittedYear}`;
   }
 
-  downloadAnalyticsReport(): void {
+  onTableMutated(): void {
+    this.studentCache.clear();
+    this.loadRequests();
+  }
+
+  downloadAnalyticsCsv(): void {
     const rows: string[][] = [
-      ['UDSM Clearance MIS - Dean of Students Analytics'],
-      ['Generated', new Date().toLocaleString()],
-      ['Total requests', String(this.allRequests.length)],
-      ['Completed clearances', String(this.completedRequestCount)],
-      ['In progress', String(this.inProgressRequestCount)],
+      ['UNIVERSITY OF DAR ES SALAAM - DEAN OF STUDENTS CLEARANCE REPORT'],
+      [`Generated On: ${new Date().toLocaleString()}`],
+      [],
+      ['SUMMARY METRICS'],
+      ['Metric', 'Value'],
+      ['Total Requests', String(this.totalRequestCount)],
+      ['Pending Review', String(this.pendingRequestCount)],
+      ['Approved', String(this.approvedRequestCount)],
       ['Rejected', String(this.rejectedRequestCount)],
-      ['Clearance rate', `${this.clearanceRate}%`],
+      ['Clearance Rate', `${this.clearanceRatePercent}%`],
       [],
-      ['Completed clearances by programme', 'Count'],
-      ...this.programmeClearanceBars.map(bar => [bar.label, String(bar.count)]),
+      ['COLLEGE BREAKDOWN'],
+      ['College', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.collegeBreakdown.map(item => [
+        item.label,
+        String(item.total),
+        String(item.approved),
+        String(item.pending),
+        String(item.rejected),
+        `${item.clearanceRate}%`
+      ]),
       [],
-      ['Completed clearances by academic/graduation year', 'Count'],
-      ...this.yearClearanceBars.map(bar => [bar.label, String(bar.count)]),
-      [],
-      ['Completed clearances by college', 'Count'],
-      ...this.collegeClearanceBars.map(bar => [bar.label, String(bar.count)]),
-      [],
-      ['Registration number', 'Student', 'Programme', 'College', 'Department', 'Status', 'Request date', 'Clearance year'],
-      ...this.allRequests.map(request => [
-        this.getStudentRegNumber(request), this.getStudentName(request), request.programme || '',
-        request.college || '', request.department || '', request.status,
-        request.requestDate || '', this.getAnalyticsYear(request)
+      ['PROGRAMME BREAKDOWN'],
+      ['Programme', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.programmeBreakdown.map(item => [
+        item.label,
+        String(item.total),
+        String(item.approved),
+        String(item.pending),
+        String(item.rejected),
+        `${item.clearanceRate}%`
       ])
     ];
-    const csv = rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `dean-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dean-of-students-clearance-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
     URL.revokeObjectURL(url);
+    this.toastService.success('Export Ready', 'Dean of Students clearance report downloaded as CSV.');
   }
 
   printAnalyticsReport(): void {
     window.print();
   }
-
-  // =====================================================
-  // GET STUDENT DATA FROM LOCAL STORAGE
-  // =====================================================
-
-  private getStudentData(studentId: string): any | null {
-    // Check cache first
-    if (this.studentCache.has(studentId)) {
-      return this.studentCache.get(studentId);
-    }
-
-    try {
-      // Try to get from users list in localStorage
-      const usersJson = localStorage.getItem('udsm-local-users');
-      if (usersJson) {
-        const users = JSON.parse(usersJson);
-        const user = users.find((u: any) => u.id === studentId);
-        if (user) {
-          this.studentCache.set(studentId, user);
-          return user;
-        }
-      }
-
-      // Try to get from current user if it matches
-      const currentUser = this.authService.getCurrentUser();
-      if (currentUser && currentUser.id === studentId) {
-        this.studentCache.set(studentId, currentUser);
-        return currentUser;
-      }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-    }
-
-    return null;
-  }
-
-  // =====================================================
-  // GET STUDENT NAME
-  // =====================================================
-
-  getStudentName(request: ClearanceRequest): string {
-    // Check request first
-    if (request.studentName) {
-      return request.studentName;
-    }
-
-    // Try to get from user data
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
-    }
-
-    const studentId = request.studentId || '';
-    return request.registrationNumber || (studentId ? 'Student #' + studentId.substring(0, 8) : 'Student');
-  }
-
-  getStudentListName(request: ClearanceRequest): string {
-    const user = this.getStudentData(request.studentId);
-    const firstName = user?.firstName?.trim();
-    const middleName = user?.middleName?.trim();
-    const lastName = user?.lastName?.trim();
-    if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
-    const fullName = (request.studentName || user?.fullName || '').trim();
-    if (!fullName) return '—';
-    const parts = fullName.split(/\s+/).filter(Boolean);
-    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
-  }
-
-  // =====================================================
-  // GET STUDENT REGISTRATION NUMBER
-  // =====================================================
-
-  getStudentRegNumber(request: ClearanceRequest): string {
-    if (request.registrationNumber) {
-      return request.registrationNumber;
-    }
-
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.registrationNumber || user.studentId || 'Not available';
-    }
-
-    return 'Not available';
-  }
-
-  getStudentGender(request: ClearanceRequest): string {
-    const gender = this.getStudentData(request.studentId)?.gender
-      || (request as ClearanceRequest & { gender?: string }).gender;
-    return typeof gender === 'string' && gender.trim() ? gender.trim() : '—';
-  }
-
-  // =====================================================
-  // GET STUDENT PHOTO
-  // =====================================================
-
-  getStudentPhoto(request: ClearanceRequest): string | null {
-    let photo = request.photo;
-
-    // Check user data if request doesn't have it
-    if (!photo) {
-      const user = this.getStudentData(request.studentId);
-      if (user) {
-        photo = user.photo || user.profilePhoto || user.profileImageUrl;
-      }
-    }
-
-    if (typeof photo !== 'string' || !photo) {
-      return null;
-    }
-
-    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
-      return photo;
-    }
-
-    if (photo.length > 50) {
-      return 'data:image/jpeg;base64,' + photo;
-    }
-
-    return photo;
-  }
-
-  // =====================================================
-  // GET STUDENT INITIALS
-  // =====================================================
-
-  getStudentInitials(request: ClearanceRequest): string {
-    const name = this.getStudentName(request);
-    if (!name || name === 'Student') {
-      return 'ST';
-    }
-
-    const parts = name.split(' ');
-    let initials = '';
-    for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) {
-        initials += parts[i].charAt(0);
-      }
-    }
-    return initials.toUpperCase();
-  }
-
-  // =====================================================
-  // GET STUDENT EMAIL
-  // =====================================================
-
-  getStudentEmail(request: ClearanceRequest): string {
-    if (request.email?.trim()) return request.email.trim();
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.email || 'Not available';
-    }
-    return 'Not available';
-  }
-
-  // =====================================================
-  // GET STUDENT PHONE
-  // =====================================================
-
-  getStudentPhone(request: ClearanceRequest): string {
-    if (request.phoneNumber?.trim()) return request.phoneNumber.trim();
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.phone || user.phoneNumber || 'Not available';
-    }
-    return 'Not available';
-  }
-
-  // =====================================================
-  // HAS PHOTO
-  // =====================================================
-
-  hasPhoto(request: ClearanceRequest): boolean {
-    const photo = this.getStudentPhoto(request);
-    return !!photo;
-  }
-
-  enlargedPhotoUrl: string | null = null;
-
-  openEnlargedPhoto(photoUrl: string | null): void {
-    if (photoUrl) {
-      this.enlargedPhotoUrl = photoUrl;
-    }
-  }
-
-  closeEnlargedPhoto(): void {
-    this.enlargedPhotoUrl = null;
-  }
-
-  // =====================================================
-  // APPROVE
-  // =====================================================
-
-  async approve(request: ClearanceRequest): Promise<void> {
-    this.isLoading = true;
-    const staff = this.authService.getCurrentUser();
-
-    if (!staff) {
-      this.router.navigate(['/login']);
-      this.isLoading = false;
-      return;
-    }
-
-    try {
-      const approved = await this.clearanceService.approveRequest(
-          request.id,
-          'Dean of Students',
-          staff.fullName || 'Dean of Students'
-      );
-
-      if (!approved) {
-        this.messageState = 'error';
-        this.message = 'This request could not be approved in its current state. Refresh the dashboard and try again.';
-        return;
-      }
-
-      // Reload data
-      this.loadData();
-
-      this.notificationService.createNotification(
-          request.studentId,
-          'Dean of Students clearance approved',
-          `Your clearance request has been approved by the Dean of Students.`,
-          'success'
-      );
-
-      this.messageState = 'success';
-      this.message = `Student ${this.getStudentName(request)} was approved successfully.`;
-
-      setTimeout(() => {
-        this.message = '';
-      }, 5000);
-
-    } catch (error: any) {
-      console.error('Approval error:', error);
-      this.messageState = 'error';
-      this.message = 'Failed to approve request. Please try again.';
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  // =====================================================
-  // OPEN REJECT FORM
-  // =====================================================
-
-  openRejectForm(request: ClearanceRequest): void {
-    this.selectedRequest = request;
-    this.rejectionComment = '';
-    this.message = '';
-    this.messageState = 'success';
-  }
-
-  // =====================================================
-  // REJECT
-  // =====================================================
-
-  async reject(): Promise<void> {
-    const request = this.selectedRequest;
-    if (!request || !this.rejectionComment.trim()) return;
-
-    this.isLoading = true;
-    const staff = this.authService.getCurrentUser();
-
-    if (!staff) {
-      this.isLoading = false;
-      return;
-    }
-
-    try {
-      if (!await this.clearanceService.rejectRequest(
-          request.id,
-          'Dean of Students',
-          staff.fullName || 'Dean of Students',
-          this.rejectionComment
-      )) {
-        this.messageState = 'error';
-        this.message = 'This request could not be returned. Refresh the dashboard and try again.';
-        return;
-      }
-
-      // Reload data
-      this.loadData();
-
-      this.notificationService.createNotification(
-          request.studentId,
-          'Dean of Students requires action',
-          this.rejectionComment,
-          'warning'
-      );
-
-      this.messageState = 'success';
-      this.message = `Student ${this.getStudentName(request)} has been notified about the required action.`;
-
-      this.selectedRequest = null;
-      this.rejectionComment = '';
-
-      setTimeout(() => {
-        this.message = '';
-      }, 5000);
-
-    } catch (error: any) {
-      console.error('Rejection error:', error);
-      this.messageState = 'error';
-      this.message = 'Failed to reject request. Please try again.';
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  // =====================================================
-  // CLOSE MODAL
-  // =====================================================
-
-  closeModal(): void {
-    this.selectedRequest = null;
-    this.rejectionComment = '';
-  }
-
-  // =====================================================
-  // REFRESH DATA
-  // =====================================================
-
-  refreshData(): void {
-    this.messageState = 'success';
-    this.message = 'Refreshing data...';
-    // Clear cache
-    this.studentCache.clear();
-    this.loadData();
-    setTimeout(() => {
-      this.message = 'Data refreshed successfully.';
-      setTimeout(() => {
-        this.message = '';
-      }, 3000);
-    }, 500);
-  }
-
-  // =====================================================
-  // LOGOUT
-  // =====================================================
 
   logout(): void {
     this.authService.logout();

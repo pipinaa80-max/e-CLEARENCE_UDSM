@@ -1,72 +1,72 @@
-<section class="documents-page">
-  <div class="documents-card">
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
-    <div class="header-row">
-      <h1>Documents</h1>
+  <main class="content-panel">
+    <app-dashboard-header
+      title="My Documents"
+      subtitle="View your uploaded clearance and academic certificates."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <a routerLink="/documents/upload" class="primary-link">
+          <i class="bi bi-cloud-arrow-up-fill" style="margin-right: 6px;"></i>
+          Upload Document
+        </a>
+      </div>
+    </app-dashboard-header>
 
-      <a
-              routerLink="/documents/upload"
-              class="primary-link"
-      >
-        Upload Document
-      </a>
+    <div class="documents-card">
+      <div class="table-loading-banner" *ngIf="isLoading">
+        <span class="table-loading-spinner"></span>
+        <span>Loading your documents...</span>
+      </div>
+
+      <p class="error-banner" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</p>
+
+      <div class="empty-state" *ngIf="!isLoading && !errorMessage && documents.length === 0">
+        <p>No documents uploaded yet. Use <strong>Upload Document</strong> above to add your required academic and identity certificates.</p>
+      </div>
+
+      <div class="table-scroll" *ngIf="!isLoading && documents.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>File Name</th>
+              <th>Upload Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let document of documents">
+              <td><strong>{{ document.category || document.description || 'General Document' }}</strong></td>
+              <td>{{ document.fileName }}</td>
+              <td>{{ document.uploadDate | date:'mediumDate' }}</td>
+              <td>
+                <span class="status" [ngClass]="document.verified ? 'approved' : 'pending'">
+                  {{ document.verified ? 'Verified' : 'Uploaded' }}
+                </span>
+              </td>
+              <td>
+                <a
+                  *ngIf="getDocumentUrl(document)"
+                  [href]="getDocumentUrl(document)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-simple-view"
+                >
+                  View
+                </a>
+                <span *ngIf="!getDocumentUrl(document)" style="color: #64748b; font-size: 0.8rem;">Stored</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-
-    <ng-container *ngIf="documents$ | async as documents">
-
-      <!-- Empty state -->
-      <p
-              class="empty-state"
-              *ngIf="documents.length === 0"
-      >
-        No documents uploaded yet.
-        Upload the four required clearance documents to continue.
-      </p>
-
-      <!-- Documents table -->
-      <table *ngIf="documents.length > 0">
-
-        <thead>
-        <tr>
-          <th>File Name</th>
-          <th>Type</th>
-          <th>Upload Date</th>
-          <th>Status</th>
-        </tr>
-        </thead>
-
-        <tbody>
-
-        <tr *ngFor="let document of documents">
-
-          <td>
-            {{ document.fileName }}
-          </td>
-
-          <td>
-            {{ document.fileType }}
-          </td>
-
-          <td>
-            {{ document.uploadDate | date:'mediumDate' }}
-          </td>
-
-          <td>
-              <span
-                      class="status"
-                      [ngClass]="document.verified ? 'approved' : 'pending'"
-              >
-                {{ document.verified ? 'Approved' : 'Pending' }}
-              </span>
-          </td>
-
-        </tr>
-
-        </tbody>
-
-      </table>
-
-    </ng-container>
-
-  </div>
+  </main>
 </section>

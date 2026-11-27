@@ -15,29 +15,37 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
       return router.createUrlTree(['/login']);
     }
 
-    // Re-read the profile on navigation so a stale, client-controlled role
-    // cannot select a different dashboard after a browser refresh.
+    const evaluateAccess = () => {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        return router.createUrlTree(['/login']);
+      }
+
+      if (allowedRoles.includes(currentUser.role)) {
+        return true;
+      }
+
+      const redirectPath = thisRoleRedirect(currentUser.role);
+      const currentPath = router.url;
+
+      if (currentPath.includes(redirectPath)) {
+        console.warn(`🛑 RoleGuard: Loop detected. User with role ${currentUser.role} already on ${currentPath}.`);
+        return true;
+      }
+
+      return router.createUrlTree([redirectPath]);
+    };
+
+    // If the user just logged in or verified their profile in this browser
+    // session within the freshness window, avoid an extra /auth/profile call.
+    // On a full page refresh, lastProfileVerifiedAt resets to 0 so the server
+    // profile is always re-verified before granting access.
+    if (authService.hasFreshVerifiedProfile()) {
+      return evaluateAccess();
+    }
+
     return authService.getProfile().pipe(
-      map(() => {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser) {
-          return router.createUrlTree(['/login']);
-        }
-
-        if (allowedRoles.includes(currentUser.role)) {
-          return true;
-        }
-
-        const redirectPath = thisRoleRedirect(currentUser.role);
-        const currentPath = router.url;
-
-        if (currentPath.includes(redirectPath)) {
-          console.warn(`🛑 RoleGuard: Loop detected. User with role ${currentUser.role} already on ${currentPath}.`);
-          return true;
-        }
-
-        return router.createUrlTree([redirectPath]);
-      }),
+      map(() => evaluateAccess()),
       catchError((error) => {
         console.error('RoleGuard: Could not verify the current user profile.', error);
         authService.logoutLocal();
@@ -50,6 +58,7 @@ export const roleGuard = (allowedRoles: UserRole[]): CanActivateFn => {
 function thisRoleRedirect(role: UserRole): string {
   const map: Record<UserRole, string> = {
     Student: '/dashboard',
+    Convocation: '/dashboard/convocation',
     'Games Coach': '/dashboard/games-coach',
     'Hall Warden': '/dashboard/hall-warden',
     USAB: '/dashboard/usab',
@@ -65,8 +74,11 @@ function thisRoleRedirect(role: UserRole): string {
     'Academic Staff': '/dashboard/academic',
     Lecturer: '/dashboard/lecturer',
     'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+    'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+    'DUS Examination Office': '/dashboard/dus-secretary',
     'DUS Secretary': '/dashboard/dus-secretary',
     'Station Secretary': '/dashboard/station-secretary',
+    Supervisor: '/dashboard/supervisor',
     Administrator: '/dashboard/admin'
   };
 

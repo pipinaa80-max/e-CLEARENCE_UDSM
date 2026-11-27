@@ -14,6 +14,7 @@ const {
   revokeAllUserSessions
 } = require('../utils/token');
 const { ROLES, normalizeRole } = require('../constants/roles');
+const { isPostgraduateRecord } = require('../utils/postgraduate');
 const env = require('../config/env');
 const NotificationService = require('../services/notification.service');
 const EmailService = require('../services/email.service');
@@ -192,6 +193,13 @@ async function login(req, res, next) {
       faculty: user.college || (student ? student.faculty : null),
       college: user.college || (student ? student.college : null),
       programme: user.programme || (student ? student.programme : null),
+      award: user.award || (student ? student.award : null),
+      isPostgraduate: isPostgraduateRecord({
+        isPostgraduate: user.is_postgraduate || (student ? student.is_postgraduate : false),
+        award: user.award || (student ? student.award : null),
+        programme: user.programme || (student ? student.programme : null)
+      }),
+      undergraduateCertificateUrl: student ? (student.undergraduate_certificate_url || null) : null,
       stationCode: user.station_code || null,
       stationName: user.station_name || null,
       photo: user.photo || (student ? student.photo : null)
@@ -217,6 +225,8 @@ async function register(req, res, next) {
       programme,
       phone,
       yearOfStudy,
+      award,
+      isPostgraduate,
       role,
       roles,
       honeypotTrap
@@ -299,6 +309,7 @@ async function register(req, res, next) {
     const now = new Date();
 
     const fullName = `${firstName.trim()} ${middleName ? middleName.trim() + ' ' : ''}${lastName.trim()}`.trim();
+    const resolvedIsPostgrad = isPostgraduateRecord({ isPostgraduate, award, programme }) ? 1 : 0;
 
     // Insert user row
     await db('users').insert({
@@ -316,6 +327,8 @@ async function register(req, res, next) {
       department: department || null,
       phone_number: phone || null,
       year_of_study: yearOfStudy || null,
+      award: award || null,
+      is_postgraduate: resolvedIsPostgrad,
       role: ROLES.STUDENT,
       is_active: 1,
       is_email_verified: 1,
@@ -335,6 +348,8 @@ async function register(req, res, next) {
       college: college || null,
       department: department || null,
       year_of_study: yearOfStudy || null,
+      award: award || null,
+      is_postgraduate: resolvedIsPostgrad,
       user_id: userId,
       is_final_year: 1,
       clearance_status: 'PENDING',
@@ -808,6 +823,17 @@ async function resetPasswordConfirm(req, res, next) {
 async function getUserProfile(req, res, next) {
   try {
     const { userId } = req.params;
+
+    // Prevent horizontal privilege escalation (IDOR): students may only read their own profile
+    if (req.user?.role === ROLES.STUDENT && String(req.user.id) !== String(userId)) {
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        error: 'Forbidden',
+        message: 'You are only authorized to view your own profile.'
+      });
+    }
+
     const user = await db('users').where({ id: userId }).first();
     if (!user) {
       return res.status(404).json({

@@ -1,20 +1,17 @@
-<section class="office-page" [class.sidebar-open]="sidebarOpen">
+<section class="directorate-page office-page" [class.sidebar-open]="sidebarOpen">
   <!-- SIDEBAR OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" [class.open]="sidebarOpen" [class.sidebar-open]="sidebarOpen">
     <div class="sidebar-header">
       <div class="brand">
-        <a routerLink="/dashboard/director-undergraduate-studies" (click)="closeSidebar()">
-          <img
-            src="/udsm-logo.png"
-            (error)="onLogoError($event)"
-            alt="Institutional Logo"
-          />
+        <a [routerLink]="homeRoute" (click)="closeSidebar()">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="UDSM Institutional Logo" />
         </a>
         <div class="brand-text">
-          <strong>DIRECTOR OF UNDERGRADUATE STUDIES</strong>
-          <small>Clearance Analytics</small>
+          <strong>{{ directorateShort }} DIRECTORATE</strong>
+          <small>{{ isPostgraduateDirector ? 'Postgraduate Clearance & Transcripts' : 'Undergraduate Analytics & Oversight' }}</small>
         </div>
       </div>
       <button
@@ -29,785 +26,786 @@
     </div>
 
     <nav>
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'overview'"
-        (click)="setTab('overview')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'overview'" (click)="setTab('overview')">
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
         <span>Analytics &amp; Overview</span>
       </button>
 
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'process'"
-        (click)="setTab('process')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'process'" (click)="setTab('process')">
+        <i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
         <span>Clearance Process Flow</span>
       </button>
 
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'offices'"
-        (click)="setTab('offices')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'offices'" (click)="setTab('offices')">
+        <i class="bi bi-grid-fill" aria-hidden="true"></i>
         <span>Corresponding Offices</span>
       </button>
 
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'students'"
-        (click)="setTab('students')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'students'" (click)="setTab('students')">
+        <i class="bi bi-people-fill" aria-hidden="true"></i>
         <span>Student Clearance Tracker</span>
+        <span class="nav-badge" *ngIf="totalRequestsCount > 0">{{ totalRequestsCount }}</span>
       </button>
 
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'transcripts'"
-        (click)="setTab('transcripts')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 1h6v7a.5.5 0 0 1-.757.429L9 7.083 6.757 8.43A.5.5 0 0 1 6 8V1z"/><path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'transcripts'" (click)="setTab('transcripts')">
+        <i class="bi bi-journal-bookmark-fill" aria-hidden="true"></i>
         <span>Transcript Dispatch Ledger</span>
+        <span class="nav-badge" *ngIf="pendingDispatchCount > 0">{{ pendingDispatchCount }}</span>
       </button>
 
-      <button
-        type="button"
-        class="nav-tab-btn"
-        [class.active]="activeTab === 'stations'"
-        (click)="setTab('stations')"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+      <button type="button" class="nav-tab-btn" [class.active]="activeTab === 'stations'" (click)="setTab('stations')">
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
         <span>Collection Stations</span>
       </button>
-
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <strong>{{ currentUser?.fullName || directorTitle }}</strong>
+          <span>{{ directorateName }}</span>
+        </div>
+      </div>
+    </div>
   </aside>
 
-
+  <!-- MAIN CONTENT -->
   <main class="content">
-
     <app-dashboard-header
-      title="Directorate Office"
+      [title]="directorateName + ' (' + directorateShort + ')'"
+      [subtitle]="isPostgraduateDirector
+        ? 'Postgraduate Academic Clearance Oversight, Transcript Issuance & Regional Collection Stations'
+        : 'Central Undergraduate Academic Clearance Oversight, Institutional Analytics, Transcript Issuance & Collection Stations'"
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <button
+        header-actions
+        type="button"
+        class="header-refresh-btn"
+        (click)="refreshAllData()"
+        [disabled]="isLoading"
+        title="Refresh analytics, transcripts, and stations"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin]="isLoading"></i>
+        <span>{{ isLoading ? 'Syncing…' : 'Refresh' }}</span>
+      </button>
     </app-dashboard-header>
 
-    <!-- INSTITUTION-WIDE ANALYTICS SECTION (MATCHING DEAN OF STUDENTS LAYOUT) -->
-    <ng-container *ngIf="activeTab === 'overview'">
-      <section class="analytics-section" id="analytics">
-      <div class="analytics-heading">
-        <div>
-          <h2>Clearance analytics &amp; statistical overview</h2>
-        </div>
-        <div class="analytics-actions">
-          <button type="button" class="analytics-primary" (click)="downloadComprehensivePdf()">Download PDF report</button>
-        </div>
+    <!-- ERROR BANNER -->
+    <div class="error-banner" *ngIf="loadError">
+      <div class="error-banner-body">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        <span>{{ loadError }}</span>
       </div>
+      <button type="button" class="btn-retry" (click)="loadAnalyticsData()">Retry</button>
+    </div>
 
-      <div class="analytics-charts">
-        <article class="analytics-chart-card registered-students-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Total students registered for every year</h3>
-            </div>
-            <div class="card-head-actions">
-              <span class="total-registered-pill">{{ totalRegisteredStudents }} total registered</span>
-              <button type="button" class="btn-card-pdf" (click)="downloadRegisteredStudentsPdf()" title="Download PDF for registered students">
-                <i class="bi bi-file-earmark-pdf-fill"></i>
-                <span>Download PDF</span>
-              </button>
-            </div>
+    <!-- ============================================================
+         TAB 1: ANALYTICS & EXECUTIVE OVERVIEW
+    ============================================================ -->
+    <ng-container *ngIf="activeTab === 'overview'">
+      <!-- EXECUTIVE KPI STRIP -->
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon total-icon"><i class="bi bi-people-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Total Registered ({{ directorateShort }})</span>
+            <strong class="stat-value">{{ totalRegisteredStudents }}</strong>
+            <small class="stat-hint">{{ studentLevelLabel }} student records</small>
           </div>
-          <div class="bar-list" *ngIf="registeredStudentsByYear.length; else noRegisteredYearStats">
-            <div class="bar-row" *ngFor="let yr of displayedRegisteredStudentsByYear">
-              <div class="bar-label">
-                <span class="registered-year-title">
-                  <i class="year-color-indicator" [style.background-color]="yr.color"></i>
-                  <strong>{{ yr.label }}</strong>
-                </span>
-                <div class="registered-counts">
-                  <strong>{{ yr.totalRegistered }} registered</strong>
-                  <span class="registered-pct-badge" *ngIf="totalRegisteredStudents > 0">({{ yr.percentage }}%)</span>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon requests-icon"><i class="bi bi-file-earmark-check-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Clearance Requests</span>
+            <strong class="stat-value">{{ totalRequestsCount }}</strong>
+            <small class="stat-hint">Submitted applications</small>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon cleared-icon"><i class="bi bi-patch-check-fill"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Fully Cleared</span>
+            <strong class="stat-value">{{ clearedCount }} <span class="stat-rate">({{ overallClearanceRate }}%)</span></strong>
+            <small class="stat-hint">All stages completed</small>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon pending-icon"><i class="bi bi-hourglass-split"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Pending / Rejected</span>
+            <strong class="stat-value">{{ pendingCount }} / {{ rejectedCount }}</strong>
+            <small class="stat-hint">{{ pendingRate }}% in progress · {{ rejectedRate }}% returned</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="analytics-section" id="analytics">
+        <div class="analytics-heading">
+          <div>
+            <h2>{{ studentLevelLabel }} Clearance Analytics &amp; Statistical Overview</h2>
+            <p class="section-sub">Live database metrics scoped strictly to the {{ directorateName }}.</p>
+          </div>
+          <div class="analytics-actions">
+            <button type="button" class="analytics-secondary" (click)="downloadComprehensiveReport()">
+              <i class="bi bi-download"></i> Export CSV
+            </button>
+            <button type="button" class="analytics-primary" (click)="downloadComprehensivePdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF Report
+            </button>
+          </div>
+        </div>
+
+        <div class="analytics-charts">
+          <!-- REGISTERED STUDENTS BY YEAR -->
+          <article class="analytics-chart-card registered-students-card">
+            <div class="chart-heading">
+              <div>
+                <h3>Registered {{ studentLevelLabel }} Students by Cohort</h3>
+              </div>
+              <div class="card-head-actions">
+                <span class="total-registered-pill">{{ totalRegisteredStudents }} total</span>
+                <button type="button" class="btn-card-pdf" (click)="downloadRegisteredStudentsPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>PDF</span>
+                </button>
+              </div>
+            </div>
+            <div class="bar-list" *ngIf="registeredStudentsByYear.length; else noRegisteredYearStats">
+              <div class="bar-row" *ngFor="let yr of displayedRegisteredStudentsByYear">
+                <div class="bar-label">
+                  <span class="registered-year-title">
+                    <i class="year-color-indicator" [style.background-color]="yr.color"></i>
+                    <strong>{{ yr.label }}</strong>
+                  </span>
+                  <div class="registered-counts">
+                    <strong>{{ yr.totalRegistered }} registered</strong>
+                    <span class="registered-pct-badge" *ngIf="totalRegisteredStudents > 0">({{ yr.percentage }}%)</span>
+                  </div>
+                </div>
+                <div class="bar-track registered-year-track">
+                  <span [style.width.%]="yr.barWidth" [style.background]="yr.color"></span>
+                </div>
+                <div class="bar-sub-info" *ngIf="yr.clearanceRequests > 0">
+                  <small>{{ yr.clearanceRequests }} applied · {{ yr.clearedRequests }} cleared</small>
                 </div>
               </div>
-              <div class="bar-track registered-year-track">
-                <span [style.width.%]="yr.barWidth" [style.background]="yr.color"></span>
+
+              <div class="view-more-container" *ngIf="registeredStudentsByYear.length > 5">
+                <button type="button" class="view-more-btn" (click)="toggleRegisteredYears()">
+                  {{ showAllRegisteredYears ? 'View less' : 'View more (' + (registeredStudentsByYear.length - 5) + ' more)' }}
+                </button>
               </div>
-              <div class="bar-sub-info" *ngIf="yr.clearanceRequests > 0">
-                <small>{{ yr.clearanceRequests }} applied for clearance · {{ yr.clearedRequests }} cleared</small>
+            </div>
+            <ng-template #noRegisteredYearStats>
+              <p class="analytics-empty">Registered student cohort data will appear here.</p>
+            </ng-template>
+          </article>
+
+          <!-- MOST-CLEARED COLLEGES -->
+          <article class="analytics-chart-card">
+            <div class="chart-heading">
+              <div>
+                <h3>Clearance by College / School</h3>
+              </div>
+              <div class="card-head-actions">
+                <button type="button" class="btn-card-pdf" (click)="downloadCollegesPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>PDF</span>
+                </button>
               </div>
             </div>
-
-            <div class="view-more-container" *ngIf="registeredStudentsByYear.length > 4">
-              <button type="button" class="view-more-btn" (click)="toggleRegisteredYears()">
-                {{ showAllRegisteredYears ? 'View less ▲' : 'View more (' + (registeredStudentsByYear.length - 4) + ' more) ▼' }}
-              </button>
-            </div>
-          </div>
-          <ng-template #noRegisteredYearStats><p class="analytics-empty">Registered student data will appear here.</p></ng-template>
-        </article>
-
-        <article class="analytics-chart-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Most-cleared colleges</h3>
-            </div>
-            <div class="card-head-actions">
-              <button type="button" class="btn-card-pdf" (click)="downloadCollegesPdf()" title="Download PDF for colleges">
-                <i class="bi bi-file-earmark-pdf-fill"></i>
-                <span>Download PDF</span>
-              </button>
-            </div>
-          </div>
-          <div class="bar-list" *ngIf="collegeBreakdown.length; else noCollegeStats">
-            <div class="bar-row" *ngFor="let col of displayedCollegeBreakdown">
-              <div class="bar-label">
-                <span>{{ col.label }}</span>
-                <strong>{{ col.cleared }} / {{ col.total }} ({{ col.rate }}%)</strong>
-              </div>
-              <div class="bar-track college-track"><span [style.width.%]="col.barWidth"></span></div>
-            </div>
-
-            <div class="view-more-container" *ngIf="collegeBreakdown.length > 4">
-              <button type="button" class="view-more-btn" (click)="toggleColleges()">
-                {{ showAllColleges ? 'View less ▲' : 'View more (' + (collegeBreakdown.length - 4) + ' more) ▼' }}
-              </button>
-            </div>
-          </div>
-          <ng-template #noCollegeStats><p class="analytics-empty">College clearance statistics will appear here.</p></ng-template>
-        </article>
-
-        <article class="analytics-chart-card year-histogram-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Clearances by academic year (Histogram)</h3>
-            </div>
-            <div class="card-head-actions">
-              <div class="histogram-legend">
-                <span class="legend-chip"><i class="chip-color chip-cleared"></i> Cleared</span>
-                <span class="legend-chip"><i class="chip-color chip-pending"></i> Pending</span>
-                <span class="legend-chip"><i class="chip-color chip-rejected"></i> Rejected</span>
-              </div>
-              <button type="button" class="btn-card-pdf" (click)="downloadYearHistogramPdf()" title="Download PDF for year histogram">
-                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span>Download PDF</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="histogram-wrapper" *ngIf="yearHistogramData.length; else noYearHistogram">
-            <div class="histogram-chart">
-              <!-- Y-Axis Ticks -->
-              <div class="histogram-y-axis">
-                <span *ngFor="let tick of histogramYAxisTicks">{{ tick }}</span>
+            <div class="bar-list" *ngIf="collegeBreakdown.length; else noCollegeStats">
+              <div class="bar-row" *ngFor="let col of displayedCollegeBreakdown">
+                <div class="bar-label">
+                  <span>{{ col.label }}</span>
+                  <strong>{{ col.cleared }} / {{ col.total }} ({{ col.rate }}%)</strong>
+                </div>
+                <div class="bar-track college-track"><span [style.width.%]="col.barWidth"></span></div>
               </div>
 
-              <!-- Plot Area -->
-              <div class="histogram-plot">
-                <!-- Horizontal Guide Lines -->
-                <div class="histogram-grid-line" style="top: 0%;"></div>
-                <div class="histogram-grid-line" style="top: 33%;"></div>
-                <div class="histogram-grid-line" style="top: 66%;"></div>
-                <div class="histogram-grid-line" style="bottom: 0%;"></div>
+              <div class="view-more-container" *ngIf="collegeBreakdown.length > 5">
+                <button type="button" class="view-more-btn" (click)="toggleColleges()">
+                  {{ showAllColleges ? 'View less' : 'View more (' + (collegeBreakdown.length - 5) + ' more)' }}
+                </button>
+              </div>
+            </div>
+            <ng-template #noCollegeStats>
+              <p class="analytics-empty">College clearance statistics will appear here.</p>
+            </ng-template>
+          </article>
 
-                <!-- Columns -->
-                <div class="histogram-columns">
-                  <div class="histogram-col-item"
-                       *ngFor="let yr of yearHistogramData"
-                       [class.highlighted]="hoveredYear === yr.yearLabel"
-                       (mouseenter)="setHoveredYear(yr.yearLabel)"
-                       (mouseleave)="setHoveredYear(null)">
-                    <div class="col-value-badge">{{ yr.total }}</div>
-                    <div class="col-bar-track">
-                      <div class="col-bar-fill" [style.height.%]="yr.barHeightPercent">
-                        <span class="bar-seg cleared-seg" [style.height.%]="yr.clearedPercent" [title]="yr.cleared + ' Cleared'"></span>
-                        <span class="bar-seg pending-seg" [style.height.%]="yr.pendingPercent" [title]="yr.pending + ' Pending'"></span>
-                        <span class="bar-seg rejected-seg" [style.height.%]="yr.rejectedPercent" [title]="yr.rejected + ' Rejected'"></span>
+          <!-- ACADEMIC YEAR HISTOGRAM -->
+          <article class="analytics-chart-card year-histogram-card">
+            <div class="chart-heading">
+              <div>
+                <h3>Clearances by Cohort (Histogram)</h3>
+              </div>
+              <div class="card-head-actions">
+                <div class="histogram-legend">
+                  <span class="legend-chip"><i class="chip-color chip-cleared"></i> Cleared</span>
+                  <span class="legend-chip"><i class="chip-color chip-pending"></i> Pending</span>
+                  <span class="legend-chip"><i class="chip-color chip-rejected"></i> Rejected</span>
+                </div>
+                <button type="button" class="btn-card-pdf" (click)="downloadYearHistogramPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>PDF</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="histogram-wrapper" *ngIf="yearHistogramData.length; else noYearHistogram">
+              <div class="histogram-chart">
+                <div class="histogram-y-axis">
+                  <span *ngFor="let tick of histogramYAxisTicks">{{ tick }}</span>
+                </div>
+                <div class="histogram-plot">
+                  <div class="histogram-grid-line" style="top: 0%;"></div>
+                  <div class="histogram-grid-line" style="top: 33%;"></div>
+                  <div class="histogram-grid-line" style="top: 66%;"></div>
+                  <div class="histogram-grid-line" style="bottom: 0%;"></div>
+                  <div class="histogram-columns">
+                    <div
+                      class="histogram-col-item"
+                      *ngFor="let yr of yearHistogramData"
+                      [class.highlighted]="hoveredYear === yr.yearLabel"
+                      (mouseenter)="setHoveredYear(yr.yearLabel)"
+                      (mouseleave)="setHoveredYear(null)"
+                    >
+                      <div class="col-value-badge">{{ yr.total }}</div>
+                      <div class="col-bar-track">
+                        <div class="col-bar-fill" [style.height.%]="yr.barHeightPercent">
+                          <span class="bar-seg cleared-seg" [style.height.%]="yr.clearedPercent" [title]="yr.cleared + ' Cleared'"></span>
+                          <span class="bar-seg pending-seg" [style.height.%]="yr.pendingPercent" [title]="yr.pending + ' Pending'"></span>
+                          <span class="bar-seg rejected-seg" [style.height.%]="yr.rejectedPercent" [title]="yr.rejected + ' Rejected'"></span>
+                        </div>
+                      </div>
+                      <div class="col-x-label">
+                        <strong>{{ yr.shortLabel }}</strong>
+                        <span class="col-rate-pill">{{ yr.clearanceRate }}% clr</span>
                       </div>
                     </div>
-                    <div class="col-x-label">
-                      <strong>{{ yr.yearLabel }}</strong>
-                      <span class="col-rate-pill">{{ yr.clearanceRate }}% clr</span>
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-          <ng-template #noYearHistogram><p class="analytics-empty">Academic year clearance data will appear here.</p></ng-template>
-        </article>
+            <ng-template #noYearHistogram>
+              <p class="analytics-empty">Cohort clearance histogram data will appear here.</p>
+            </ng-template>
+          </article>
 
-        <article class="analytics-chart-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Most-cleared programmes</h3>
-            </div>
-            <div class="card-head-actions">
-              <button type="button" class="btn-card-pdf" (click)="downloadProgrammesPdf()" title="Download PDF for programmes">
-                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span>Download PDF</span>
-              </button>
-            </div>
-          </div>
-          <div class="bar-list" *ngIf="programmeBreakdown.length; else noProgrammeStats">
-            <div class="bar-row" *ngFor="let prog of programmeBreakdown.slice(0, 6)">
-              <div class="bar-label">
-                <span>{{ prog.label }}</span>
-                <strong>{{ prog.cleared }} / {{ prog.total }} ({{ prog.rate }}%)</strong>
+          <!-- PROGRAMMES BREAKDOWN -->
+          <article class="analytics-chart-card">
+            <div class="chart-heading">
+              <div>
+                <h3>Top {{ studentLevelLabel }} Programmes</h3>
               </div>
-              <div class="bar-track"><span [style.width.%]="prog.barWidth"></span></div>
+              <div class="card-head-actions">
+                <button type="button" class="btn-card-pdf" (click)="downloadProgrammesPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>PDF</span>
+                </button>
+              </div>
             </div>
-          </div>
-          <ng-template #noProgrammeStats><p class="analytics-empty">Programme clearance data will appear here.</p></ng-template>
-        </article>
-
-        <article class="analytics-chart-card status-chart-card">
-          <div class="chart-heading">
-            <div>
-              <h3>Overall clearance system status</h3>
-            </div>
-            <div class="card-head-actions">
-              <button type="button" class="btn-card-pdf" (click)="downloadOverallStatusPdf()" title="Download PDF for system status">
-                <svg class="pdf-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                <span>Download PDF</span>
-              </button>
-            </div>
-          </div>
-          <div class="status-breakdown">
-            <div><span class="status-dot completed-dot"></span><span>Cleared (Completed)</span><strong>{{ clearedCount }} ({{ overallClearanceRate }}%)</strong></div>
-            <div><span class="status-dot progress-dot"></span><span>Pending (In progress)</span><strong>{{ pendingCount }} ({{ pendingRate }}%)</strong></div>
-            <div><span class="status-dot rejected-dot"></span><span>Rejected (Action needed)</span><strong>{{ rejectedCount }} ({{ rejectedRate }}%)</strong></div>
-          </div>
-          <div class="status-stack" role="img" [attr.aria-label]="'Clearance statuses: ' + clearedCount + ' cleared, ' + pendingCount + ' pending, ' + rejectedCount + ' rejected'">
-            <span class="completed-segment" [style.flex]="clearedCount || (totalRequestsCount === 0 ? 1 : 0)"></span>
-            <span class="progress-segment" [style.flex]="pendingCount"></span>
-            <span class="rejected-segment" [style.flex]="rejectedCount"></span>
-          </div>
-          <p class="analytics-note" *ngIf="topClearedStudents.length" style="margin-top: 14px;">
-            <strong>Recently cleared student:</strong> {{ topClearedStudents[0].studentName }} ({{ topClearedStudents[0].registrationNumber }} · {{ topClearedStudents[0].college }})
-          </p>
-        </article>
-      </div>
-    </section>
-  </ng-container>
-
-  <!-- GENERAL OVERVIEW WITH REFERENCE TO THE CLEARANCE PROCESS -->
-  <ng-container *ngIf="activeTab === 'process'">
-    <section class="analytics-section" id="process-overview">
-      <div class="analytics-heading">
-        <div>
-          <span class="analytics-eyebrow">Clearance workflow reference</span>
-          <h2>General overview of the clearance process</h2>
-          <p>Graphical progression of undergraduate students across the 5 sequential clearance stages.</p>
-        </div>
-      </div>
-
-      <div class="process-stage-grid">
-        <article class="analytics-chart-card process-stage-card" *ngFor="let step of stagePipeline">
-          <div class="chart-heading">
-            <h3>{{ step.stage }} · {{ step.title }}</h3>
-            <span>{{ step.percentage }}%</span>
-          </div>
-          <p class="stage-desc">{{ step.description }}</p>
-          <div class="bar-label">
-            <span>Active / completed at stage</span>
-            <strong>{{ step.count }} student(s)</strong>
-          </div>
-          <div class="bar-track" [class.college-track]="step.tone === 'green'" [class.year-track]="step.tone === 'amber'">
-            <span [style.width.%]="step.percentage"></span>
-          </div>
-        </article>
-      </div>
-    </section>
-  </ng-container>
-
-  <!-- CORRESPONDING OFFICES STATUS BREAKDOWN -->
-  <ng-container *ngIf="activeTab === 'offices'">
-    <section class="analytics-section" id="office-status">
-      <div class="analytics-heading">
-        <div>
-          <span class="analytics-eyebrow">Office-by-office tracking</span>
-          <h2>Clearance status by corresponding office</h2>
-          <p>Cleared, pending, rejected, and total student clearance counts across each corresponding office.</p>
-        </div>
-        <div class="analytics-actions">
-          <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownPdf()">Export office PDF</button>
-        </div>
-      </div>
-
-      <div class="compact-table-wrap office-table-wrap">
-        <table class="compact-request-table">
-          <thead>
-            <tr>
-              <th>Corresponding Office</th>
-              <th>Cleared</th>
-              <th>Pending</th>
-              <th>Rejected</th>
-              <th>Total</th>
-              <th>Office Clearance Progress</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let o of officeStatusSummaries">
-              <td class="compact-name">{{ o.office }}</td>
-              <td><span class="office-stat cleared">{{ o.cleared }}</span></td>
-              <td><span class="office-stat pending">{{ o.pending }}</span></td>
-              <td><span class="office-stat rejected">{{ o.rejected }}</span></td>
-              <td><strong>{{ o.total }}</strong></td>
-              <td>
-                <div class="office-progress-cell">
-                  <div class="status-stack office-stack">
-                    <span class="completed-segment" [style.flex]="o.cleared || (o.total === 0 ? 1 : 0)"></span>
-                    <span class="progress-segment" [style.flex]="o.pending"></span>
-                    <span class="rejected-segment" [style.flex]="o.rejected"></span>
-                  </div>
-                  <strong>{{ o.clearanceRate }}%</strong>
+            <div class="bar-list" *ngIf="programmeBreakdown.length; else noProgrammeStats">
+              <div class="bar-row" *ngFor="let prog of programmeBreakdown.slice(0, 6)">
+                <div class="bar-label">
+                  <span>{{ prog.label }}</span>
+                  <strong>{{ prog.cleared }} / {{ prog.total }} ({{ prog.rate }}%)</strong>
                 </div>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="office-total-row">
-              <td class="compact-name">TOTAL (ALL OFFICES)</td>
-              <td><span class="office-stat cleared">{{ totalOfficeApprovalsCount }}</span></td>
-              <td><span class="office-stat pending">{{ totalOfficePendingCount }}</span></td>
-              <td><span class="office-stat rejected">{{ totalOfficeRejectedCount }}</span></td>
-              <td><strong>{{ totalOfficeApprovalsCount + totalOfficePendingCount + totalOfficeRejectedCount }}</strong></td>
-              <td><strong>{{ overallClearanceRate }}% Overall Cleared</strong></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </section>
-  </ng-container>
-
-  <!-- STUDENT CLEARANCE TRACKER -->
-  <ng-container *ngIf="activeTab === 'students'">
-    <!-- FILTER BAR (MATCHING DEAN OF STUDENTS TOOLBAR) -->
-    <section class="toolbar" id="student-tracker">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          placeholder="Search student, registration number, college, or programme..."
-        />
-      </div>
-
-      <select [(ngModel)]="selectedCollege">
-        <option value="ALL">All Colleges</option>
-        <option *ngFor="let c of availableColleges" [value]="c">{{ c }}</option>
-      </select>
-
-      <select [(ngModel)]="selectedYear">
-        <option value="ALL">All Years</option>
-        <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
-      </select>
-
-      <select [(ngModel)]="selectedStatus">
-        <option value="ALL">All Statuses</option>
-        <option value="Completed">Cleared</option>
-        <option value="Pending">Pending</option>
-        <option value="Rejected">Rejected</option>
-      </select>
-    </section>
-
-    <!-- EMPTY STATE -->
-    <section class="empty-state" *ngIf="!filteredRequests.length">
-      <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-      <h2>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' ? 'No matching clearance records' : 'No clearance requests recorded yet' }}</h2>
-      <p>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' ? 'Try adjusting your search term or status filter.' : 'Student clearance applications will appear here automatically as they are submitted.' }}</p>
-    </section>
-
-    <!-- STUDENT CLEARANCE COMPACT TABLE (MATCHING DEAN OF STUDENTS) -->
-    <section class="compact-table-wrap" *ngIf="filteredRequests.length">
-      <table class="compact-request-table">
-        <thead>
-          <tr>
-            <th>Registration Number</th>
-            <th>Full Name</th>
-            <th>College</th>
-            <th>Programme</th>
-            <th>Year</th>
-            <th>Current Stage / Office</th>
-            <th>Offices Cleared</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let request of filteredRequests">
-            <td>{{ request.registrationNumber || '—' }}</td>
-            <td class="compact-name">{{ request.studentName || 'Student' }}</td>
-            <td>{{ request.college || '—' }}</td>
-            <td>{{ request.programme || '—' }}</td>
-            <td>{{ getYearLabel(request) }}</td>
-            <td>{{ request.status === 'Completed' ? 'Completed (All Offices)' : (request.currentStage + ' · ' + (request.currentOffice || 'Pending')) }}</td>
-            <td><strong>{{ getApprovedOfficesCount(request) }} / {{ getTotalOfficesCount(request) }}</strong> ({{ getRequestProgressPercent(request) }}%)</td>
-            <td><span class="compact-status">{{ request.status === 'Completed' ? 'Cleared' : request.status }}</span></td>
-            <td>
-              <div class="compact-actions">
-                <button type="button" class="compact-view" (click)="openStudentModal(request)">View</button>
+                <div class="bar-track"><span [style.width.%]="prog.barWidth"></span></div>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-  </ng-container>
+            </div>
+            <ng-template #noProgrammeStats>
+              <p class="analytics-empty">Programme clearance data will appear here.</p>
+            </ng-template>
+          </article>
 
-  <!-- STUDENT DETAILS OVERLAY (MATCHING DEAN OF STUDENTS COMPACT DETAILS MODAL) -->
-  <section class="compact-details-overlay" *ngIf="selectedRequestForModal" (click)="closeStudentModal()">
-      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student clearance details" (click)="$event.stopPropagation()">
-        <button type="button" class="compact-close" aria-label="Close" (click)="closeStudentModal()">×</button>
-        <div class="compact-details-heading">
+          <!-- OVERALL SYSTEM STATUS -->
+          <article class="analytics-chart-card status-chart-card">
+            <div class="chart-heading">
+              <div>
+                <h3>Overall {{ studentLevelLabel }} Clearance Status</h3>
+              </div>
+              <div class="card-head-actions">
+                <button type="button" class="btn-card-pdf" (click)="downloadOverallStatusPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i>
+                  <span>PDF</span>
+                </button>
+              </div>
+            </div>
+            <div class="status-breakdown">
+              <div class="status-metric"><span class="status-dot completed-dot"></span><span>Cleared (Completed)</span><strong>{{ clearedCount }} ({{ overallClearanceRate }}%)</strong></div>
+              <div class="status-metric"><span class="status-dot progress-dot"></span><span>Pending (In Progress)</span><strong>{{ pendingCount }} ({{ pendingRate }}%)</strong></div>
+              <div class="status-metric"><span class="status-dot rejected-dot"></span><span>Rejected (Action Needed)</span><strong>{{ rejectedCount }} ({{ rejectedRate }}%)</strong></div>
+            </div>
+            <div class="status-stack" role="img" [attr.aria-label]="'Clearance statuses: ' + clearedCount + ' cleared, ' + pendingCount + ' pending, ' + rejectedCount + ' rejected'">
+              <span class="completed-segment" [style.flex]="clearedCount || (totalRequestsCount === 0 ? 1 : 0)"></span>
+              <span class="progress-segment" [style.flex]="pendingCount"></span>
+              <span class="rejected-segment" [style.flex]="rejectedCount"></span>
+            </div>
+            <p class="analytics-note" *ngIf="recentlyClearedStudent">
+              <strong>Most recently cleared student:</strong>
+              {{ recentlyClearedStudent.studentName }} ({{ recentlyClearedStudent.registrationNumber }} · {{ recentlyClearedStudent.college }})
+            </p>
+          </article>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- ============================================================
+         TAB 2: CLEARANCE PROCESS FLOW
+    ============================================================ -->
+    <ng-container *ngIf="activeTab === 'process'">
+      <section class="analytics-section" id="process-overview">
+        <div class="analytics-heading">
           <div>
-            <span class="request-label">Student Clearance Breakdown</span>
-            <h2>{{ selectedRequestForModal.studentName }} ({{ selectedRequestForModal.registrationNumber }})</h2>
+            <span class="analytics-eyebrow">Clearance Workflow Reference</span>
+            <h2>{{ studentLevelLabel }} Clearance Process Progression</h2>
+            <p class="section-sub">
+              Live progression of {{ studentLevelLabel.toLowerCase() }} candidates across the
+              {{ includeSupervisorStage ? '6 sequential postgraduate stages (Stage 1 Convocation through Stage 6 Research Supervisor)' : '5 sequential undergraduate stages (Stage 1 Convocation through Stage 5 Finance)' }}.
+            </p>
           </div>
         </div>
 
-        <dl class="compact-details-grid">
-          <div><dt>Registration Number</dt><dd>{{ selectedRequestForModal.registrationNumber || '—' }}</dd></div>
-          <div><dt>Year / Cohort</dt><dd>{{ getYearLabel(selectedRequestForModal) }}</dd></div>
-          <div><dt>College</dt><dd>{{ selectedRequestForModal.college || '—' }}</dd></div>
-          <div><dt>Department</dt><dd>{{ selectedRequestForModal.department || '—' }}</dd></div>
-          <div><dt>Programme</dt><dd>{{ selectedRequestForModal.programme || '—' }}</dd></div>
-          <div><dt>Overall Status</dt><dd>{{ selectedRequestForModal.status === 'Completed' ? 'Cleared (Completed)' : selectedRequestForModal.status }}</dd></div>
-        </dl>
-
-        <div class="modal-office-section">
-          <h3>Corresponding Offices Approval Status ({{ getApprovedOfficesCount(selectedRequestForModal) }} / {{ getTotalOfficesCount(selectedRequestForModal) }} Cleared)</h3>
-          <dl class="compact-details-grid">
-            <div *ngFor="let app of selectedRequestForModal.approvals">
-              <dt>{{ app.office }}</dt>
-              <dd>
-                <strong>{{ app.status === 'Approved' ? 'Cleared' : app.status }}</strong>
-                <span *ngIf="app.reviewedBy"> · {{ app.reviewedBy }}</span>
-                <span *ngIf="app.comment" style="display:block; color:#b42318; margin-top:3px;">Reason/Note: {{ app.comment }}</span>
-              </dd>
+        <div class="process-stage-grid">
+          <article class="analytics-chart-card process-stage-card" *ngFor="let step of stagePipeline">
+            <div class="chart-heading">
+              <h3>{{ step.stage }} · {{ step.title }}</h3>
+              <span class="stage-pct-badge">{{ step.percentage }}%</span>
             </div>
-          </dl>
-        </div>
-      </div>
-    </section>
-
-    <!-- TRANSCRIPT DISPATCH & COLLECTION LEDGER (DIRECTOR OF UNDERGRADUATE STUDIES) -->
-    <ng-container *ngIf="activeTab === 'transcripts'">
-      <section class="transcript-ledger-section" id="transcript-dispatch">
-      <!-- Section Header -->
-      <div class="ledger-header">
-        <div class="ledger-header-info">
-          <span class="analytics-eyebrow">
-            <i class="bi bi-journal-bookmark-fill"></i> Direct Directorate Registry
-          </span>
-          <h2 class="ledger-title">Transcript Collection &amp; Delivery Ledger</h2>
-          <p class="ledger-subtitle">
-            Official dispatch and posting registry for student academic transcripts processed through the Directorate of Undergraduate Studies.
-          </p>
-        </div>
-
-        <div class="ledger-header-stats">
-          <div class="ledger-stat-chip total" title="Total Transcript Requests">
-            <i class="bi bi-stack"></i>
-            <div>
-              <strong>{{ transcriptRequests.length }}</strong>
-              <small>Total Requests</small>
+            <p class="stage-desc">{{ step.description }}</p>
+            <div class="bar-label">
+              <span>Candidates at stage</span>
+              <strong>{{ step.count }} student(s)</strong>
             </div>
+            <div class="bar-track" [class.college-track]="step.tone === 'green'" [class.year-track]="step.tone === 'amber'" [class.purple-track]="step.tone === 'purple'">
+              <span [style.width.%]="step.percentage"></span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- ============================================================
+         TAB 3: CORRESPONDING OFFICES MATRIX
+    ============================================================ -->
+    <ng-container *ngIf="activeTab === 'offices'">
+      <section class="analytics-section" id="office-status">
+        <div class="analytics-heading">
+          <div>
+            <span class="analytics-eyebrow">Office-by-Office Performance</span>
+            <h2>Clearance Status by Corresponding Office</h2>
+            <p class="section-sub">Cleared, pending, rejected, and completion rate across every participating university office.</p>
           </div>
-          <div class="ledger-stat-chip dispatched" title="Dispatched Transcripts">
-            <i class="bi bi-check-circle-fill"></i>
-            <div>
-              <strong>{{ dispatchedCount }}</strong>
-              <small>Dispatched</small>
-            </div>
+          <div class="analytics-actions">
+            <button type="button" class="analytics-secondary" (click)="downloadOfficeBreakdownPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> Export Office PDF
+            </button>
           </div>
-          <div class="ledger-stat-chip pending" title="Awaiting Dispatch">
-            <i class="bi bi-clock-history"></i>
-            <div>
-              <strong>{{ pendingDispatchCount }}</strong>
-              <small>Awaiting Dispatch</small>
-            </div>
-          </div>
-          <button type="button" class="btn-ledger-pdf" (click)="downloadTranscriptLedgerPdf()" title="Export Transcript Ledger Report as PDF">
-            <i class="bi bi-file-earmark-pdf-fill"></i>
-            <span>Export PDF</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Toolbar: Search & Status Filter Tabs -->
-      <div class="ledger-toolbar">
-        <div class="ledger-search-box">
-          <i class="bi bi-search"></i>
-          <input
-            type="text"
-            [(ngModel)]="transcriptSearchTerm"
-            placeholder="Search by student name, reg number, phone, region..."
-          />
-          <button *ngIf="transcriptSearchTerm" type="button" class="clear-search-btn" (click)="transcriptSearchTerm = ''" title="Clear search">
-            <i class="bi bi-x-lg"></i>
-          </button>
         </div>
 
-        <div class="ledger-filter-tabs">
-          <button
-            type="button"
-            class="filter-tab-btn"
-            [ngClass]="{'active': transcriptStatusFilter === 'ALL'}"
-            (click)="transcriptStatusFilter = 'ALL'"
-          >
-            All ({{ transcriptRequests.length }})
-          </button>
-          <button
-            type="button"
-            class="filter-tab-btn warning-tab"
-            [ngClass]="{'active': transcriptStatusFilter === 'Pending'}"
-            (click)="transcriptStatusFilter = 'Pending'"
-          >
-            <i class="bi bi-hourglass-split"></i> Pending ({{ pendingDispatchCount }})
-          </button>
-          <button
-            type="button"
-            class="filter-tab-btn success-tab"
-            [ngClass]="{'active': transcriptStatusFilter === 'Dispatched'}"
-            (click)="transcriptStatusFilter = 'Dispatched'"
-          >
-            <i class="bi bi-check2-circle"></i> Dispatched ({{ dispatchedCount }})
-          </button>
-        </div>
-      </div>
-
-      <!-- Ledger Table -->
-      <div class="ledger-table-card" *ngIf="filteredTranscriptRequests.length; else noTranscriptsFound">
-        <div class="ledger-table-wrap">
-          <table class="ledger-table">
+        <div class="compact-table-wrap office-table-wrap">
+          <table class="compact-request-table">
             <thead>
               <tr>
-                <th style="min-width: 220px;">Student &amp; Registration No.</th>
-                <th style="min-width: 140px;">Order &amp; Copies</th>
-                <th style="min-width: 170px;">Collection Method</th>
-                <th style="min-width: 260px;">Delivery Destination &amp; Contact</th>
-                <th style="min-width: 160px;">Dispatch Status</th>
-                <th style="min-width: 170px; text-align: right;">Actions</th>
+                <th>Corresponding Office</th>
+                <th>Workflow Stage</th>
+                <th>Cleared</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Total</th>
+                <th>Office Clearance Progress</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let tReq of filteredTranscriptRequests">
-                <!-- Student & Reg No -->
+              <tr *ngFor="let o of officeStatusSummaries">
+                <td class="compact-name">{{ o.office }}</td>
+                <td><span class="stage-group-label">{{ o.stageGroup }}</span></td>
+                <td><span class="office-stat cleared">{{ o.cleared }}</span></td>
+                <td><span class="office-stat pending">{{ o.pending }}</span></td>
+                <td><span class="office-stat rejected">{{ o.rejected }}</span></td>
+                <td><strong>{{ o.total }}</strong></td>
                 <td>
-                  <div class="student-meta-cell">
-                    <span class="student-name-text">{{ tReq.studentName }}</span>
-                    <span class="student-reg-tag">
-                      <i class="bi bi-person-badge"></i> {{ tReq.registrationNumber }}
-                    </span>
-                  </div>
-                </td>
-
-                <!-- Copies & Degree -->
-                <td>
-                  <div class="copies-cell">
-                    <span class="copy-count-badge" *ngIf="tReq.copyNumber">
-                      <i class="bi bi-file-earmark-text"></i> Copy {{ tReq.copyNumber }} of {{ tReq.totalCopies || tReq.transcriptCount }}
-                    </span>
-                    <span class="copy-count-badge" *ngIf="!tReq.copyNumber">
-                      <i class="bi bi-files"></i> {{ tReq.transcriptCount }} {{ tReq.transcriptCount === 1 ? 'Copy' : 'Copies' }}
-                    </span>
-                    <small class="degree-note" *ngIf="tReq.award || tReq.graduationYear">
-                      {{ tReq.award || 'Undergraduate Degree' }}
-                      <span *ngIf="tReq.graduationYear">({{ tReq.graduationYear }})</span>
-                    </small>
-                  </div>
-                </td>
-
-                <!-- Collection Method -->
-                <td>
-                  <span class="method-tag" [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'method-dhl' : 'method-physical'">
-                    <i [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'bi bi-truck' : 'bi bi-building'"></i>
-                    {{ tReq.collectionMethod || 'Physical Collection' }}
-                  </span>
-                </td>
-
-                <!-- Destination & Contact -->
-                <td>
-                  <div class="dest-info-cell">
-                    <div class="dest-primary" *ngIf="tReq.collectionMethod === 'Post by DHL'; else physicalLocation">
-                      <i class="bi bi-geo-alt-fill dest-icon"></i>
-                      <span>
-                        <strong>{{ tReq.postingRegion || 'Dar es Salaam' }}</strong><span *ngIf="tReq.postingWard">, {{ tReq.postingWard }}</span>
-                        <small class="pobox-text" *ngIf="tReq.postingPoBox && tReq.postingPoBox !== '—'"> (P.O. Box {{ tReq.postingPoBox }})</small>
-                      </span>
+                  <div class="office-progress-cell">
+                    <div class="status-stack office-stack">
+                      <span class="completed-segment" [style.flex]="o.cleared || (o.total === 0 ? 1 : 0)"></span>
+                      <span class="progress-segment" [style.flex]="o.pending"></span>
+                      <span class="rejected-segment" [style.flex]="o.rejected"></span>
                     </div>
-                    <ng-template #physicalLocation>
-                      <div class="dest-primary physical-dest">
-                        <i class="bi bi-geo-alt-fill dest-icon"></i>
-                        <span><strong>DUS Directorate Office</strong> <small>(Main Campus)</small></span>
-                      </div>
-                    </ng-template>
-
-                    <div class="dest-phone" *ngIf="tReq.postingContactPhone && tReq.postingContactPhone !== '—'">
-                      <i class="bi bi-telephone-fill"></i>
-                      <span>{{ tReq.postingContactPhone }}</span>
-                    </div>
-                  </div>
-                </td>
-
-                <!-- Dispatch Status -->
-                <td>
-                  <div class="status-cell">
-                    <span class="dispatch-pill" [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'pill-dispatched' : 'pill-pending'">
-                      <i [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'"></i>
-                      {{ tReq.dispatchStatus || 'Pending Dispatch' }}
-                    </span>
-                    <small class="dispatch-date-note" *ngIf="tReq.dispatchedAt">
-                      {{ tReq.dispatchedAt | date:'mediumDate' }}
-                    </small>
-                  </div>
-                </td>
-
-                <!-- Actions -->
-                <td style="text-align: right;">
-                  <div class="ledger-actions-row">
-                    <button
-                      type="button"
-                      class="btn-ledger-view"
-                      (click)="selectedTranscriptForModal = tReq"
-                      title="View complete delivery address and student request details"
-                    >
-                      <i class="bi bi-eye-fill"></i> Details
-                    </button>
-                    <button
-                      *ngIf="tReq.dispatchStatus !== 'Dispatched'"
-                      type="button"
-                      class="btn-ledger-dispatch"
-                      (click)="markDispatched(tReq.id)"
-                      title="Confirm this transcript has been dispatched or handed over"
-                    >
-                      <i class="bi bi-send-check-fill"></i> Dispatch
-                    </button>
+                    <strong>{{ o.clearanceRate }}%</strong>
                   </div>
                 </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr class="office-total-row">
+                <td class="compact-name">TOTAL (ALL OFFICES)</td>
+                <td>All Stages</td>
+                <td><span class="office-stat cleared">{{ totalOfficeApprovalsCount }}</span></td>
+                <td><span class="office-stat pending">{{ totalOfficePendingCount }}</span></td>
+                <td><span class="office-stat rejected">{{ totalOfficeRejectedCount }}</span></td>
+                <td><strong>{{ totalOfficeApprovalsCount + totalOfficePendingCount + totalOfficeRejectedCount }}</strong></td>
+                <td><strong>{{ overallClearanceRate }}% Overall Cleared</strong></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-      </div>
+      </section>
+    </ng-container>
 
-      <!-- Empty State -->
-      <ng-template #noTranscriptsFound>
-        <div class="ledger-empty-card">
-          <div class="empty-icon-wrap">
-            <i class="bi bi-inbox-fill"></i>
-          </div>
-          <h3>{{ transcriptRequests.length === 0 ? 'No transcript collection requests recorded yet' : 'No matching transcript requests found' }}</h3>
-          <p *ngIf="transcriptRequests.length === 0">
-            Student transcript collection preferences, DHL delivery addresses, and pickup details will automatically appear in this ledger once submitted.
-          </p>
-          <p *ngIf="transcriptRequests.length > 0">
-            No records matched your search filter "{{ transcriptSearchTerm }}". Try resetting the filter to see all requests.
-          </p>
-          <button *ngIf="transcriptSearchTerm || transcriptStatusFilter !== 'ALL'" type="button" class="btn-clear-filters" (click)="transcriptSearchTerm = ''; transcriptStatusFilter = 'ALL'">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
-          </button>
-        </div>
-      </ng-template>
-    </section>
-  </ng-container>
-
-    <!-- TRANSCRIPT DISPATCH DETAILS OVERLAY MODAL -->
-    <section class="compact-details-overlay" *ngIf="selectedTranscriptForModal" (click)="selectedTranscriptForModal = null">
-      <div class="compact-details-card transcript-modal-card" role="dialog" aria-modal="true" aria-label="Transcript delivery details" (click)="$event.stopPropagation()">
-        <button type="button" class="compact-close" aria-label="Close" (click)="selectedTranscriptForModal = null">×</button>
-        <div class="compact-details-heading">
-          <div>
-            <span class="request-label"><i class="bi bi-patch-check-fill"></i> Transcript Dispatch Registry (DUS)</span>
-            <h2>{{ selectedTranscriptForModal.studentName }}</h2>
-            <span class="modal-sub-reg"><i class="bi bi-person-badge"></i> {{ selectedTranscriptForModal.registrationNumber }}</span>
-          </div>
+    <!-- ============================================================
+         TAB 4: STUDENT CLEARANCE TRACKER
+    ============================================================ -->
+    <ng-container *ngIf="activeTab === 'students'">
+      <section class="toolbar" id="student-tracker">
+        <div class="search-box">
+          <i class="bi bi-search search-icon"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onStudentFilterChange()"
+            placeholder="Search student, registration number, college, award, or programme..."
+          />
         </div>
 
-        <dl class="compact-details-grid">
-          <div><dt>Registration Number</dt><dd><code>{{ selectedTranscriptForModal.registrationNumber }}</code></dd></div>
-          <div><dt>Degree Award</dt><dd>{{ selectedTranscriptForModal.award || 'Undergraduate Degree' }}</dd></div>
-          <div><dt>Graduation Year</dt><dd>{{ selectedTranscriptForModal.graduationYear || '—' }}</dd></div>
-          <div><dt>Copies Requested</dt><dd><strong>{{ selectedTranscriptForModal.transcriptCount }} copy</strong> (TSh {{ selectedTranscriptForModal.amount | number }})</dd></div>
-          <div><dt>Collection Method</dt><dd><strong>{{ selectedTranscriptForModal.collectionMethod }}</strong></dd></div>
-          <div><dt>Dispatch Status</dt><dd>
-            <span class="dispatch-pill" [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'pill-dispatched' : 'pill-pending'">
-              <i [ngClass]="selectedTranscriptForModal.dispatchStatus === 'Dispatched' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'"></i>
-              {{ selectedTranscriptForModal.dispatchStatus || 'Pending Dispatch' }}
+        <select [(ngModel)]="selectedCollege" (ngModelChange)="onStudentFilterChange()" aria-label="Filter by college">
+          <option value="ALL">All Colleges</option>
+          <option *ngFor="let c of availableColleges" [value]="c">{{ c }}</option>
+        </select>
+
+        <select [(ngModel)]="selectedYear" (ngModelChange)="onStudentFilterChange()" aria-label="Filter by cohort year">
+          <option value="ALL">All Years</option>
+          <option *ngFor="let y of availableYears" [value]="y">{{ y }}</option>
+        </select>
+
+        <select [(ngModel)]="selectedStatus" (ngModelChange)="onStudentFilterChange()" aria-label="Filter by status">
+          <option value="ALL">All Statuses</option>
+          <option value="Completed">Cleared</option>
+          <option value="Pending">Pending</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+
+        <button
+          *ngIf="searchTerm || selectedCollege !== 'ALL' || selectedYear !== 'ALL' || selectedStatus !== 'ALL'"
+          type="button"
+          class="btn-clear-filters"
+          (click)="resetFilters()"
+        >
+          Reset
+        </button>
+      </section>
+
+      <section class="empty-state" *ngIf="!filteredRequests.length">
+        <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
+        <h2>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' || selectedYear !== 'ALL' ? 'No matching clearance records' : 'No clearance requests recorded yet' }}</h2>
+        <p>{{ searchTerm || selectedCollege !== 'ALL' || selectedStatus !== 'ALL' || selectedYear !== 'ALL' ? 'Try adjusting your search or filter selections.' : studentLevelLabel + ' clearance applications will appear here automatically once submitted.' }}</p>
+      </section>
+
+      <section class="compact-table-wrap" *ngIf="filteredRequests.length">
+        <table class="compact-request-table">
+          <thead>
+            <tr>
+              <th>Registration No</th>
+              <th>Full Name</th>
+              <th>College</th>
+              <th>Programme</th>
+              <th>Cohort</th>
+              <th>Current Stage / Office</th>
+              <th>Progress</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let request of paginatedRequests">
+              <td><code class="reg-code">{{ request.registrationNumber || '—' }}</code></td>
+              <td class="compact-name">{{ request.studentName || 'Student' }}</td>
+              <td>{{ request.college || '—' }}</td>
+              <td>{{ request.programme || '—' }}</td>
+              <td>{{ getYearLabel(request) }}</td>
+              <td>{{ request.status === 'Completed' ? 'Completed (All Offices)' : (request.currentStage + ' · ' + (request.currentOffice || 'Pending')) }}</td>
+              <td><strong>{{ getApprovedOfficesCount(request) }} / {{ getTotalOfficesCount(request) }}</strong> ({{ getRequestProgressPercent(request) }}%)</td>
+              <td>
+                <span
+                  class="compact-status"
+                  [class.status-cleared]="request.status === 'Completed'"
+                  [class.status-rejected]="request.status === 'Rejected'"
+                >
+                  {{ request.status === 'Completed' ? 'Cleared' : request.status }}
+                </span>
+              </td>
+              <td>
+                <button type="button" class="compact-view" (click)="openStudentModal(request)">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="pagination-bar" *ngIf="requestsTotalPages > 1">
+          <button type="button" class="page-btn" [disabled]="requestsPage <= 1" (click)="prevRequestsPage()">&larr; Previous</button>
+          <span class="page-info">Page <strong>{{ requestsPage }}</strong> of <strong>{{ requestsTotalPages }}</strong> ({{ filteredRequests.length }} requests)</span>
+          <button type="button" class="page-btn" [disabled]="requestsPage >= requestsTotalPages" (click)="nextRequestsPage()">Next &rarr;</button>
+        </div>
+      </section>
+    </ng-container>
+
+    <!-- ============================================================
+         TAB 5: TRANSCRIPT DISPATCH & ISSUANCE LEDGER
+    ============================================================ -->
+    <ng-container *ngIf="activeTab === 'transcripts'">
+      <section class="transcript-ledger-section" id="transcript-dispatch">
+        <div class="ledger-header">
+          <div class="ledger-header-info">
+            <span class="analytics-eyebrow">
+              <i class="bi bi-journal-bookmark-fill"></i> {{ directorateShort }} Official Registry
             </span>
-          </dd></div>
-          <div><dt>Region / City</dt><dd>{{ selectedTranscriptForModal.postingRegion || 'Dar es Salaam' }}</dd></div>
-          <div><dt>Ward / District</dt><dd>{{ selectedTranscriptForModal.postingWard || 'University Campus' }}</dd></div>
-          <div><dt>P.O. Box</dt><dd>{{ selectedTranscriptForModal.postingPoBox || '—' }}</dd></div>
-          <div><dt>Contact Phone</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactPhone" href="tel:{{ selectedTranscriptForModal.postingContactPhone }}">{{ selectedTranscriptForModal.postingContactPhone }}</a><span *ngIf="!selectedTranscriptForModal.postingContactPhone">—</span></dd></div>
-          <div><dt>Contact Email</dt><dd><a *ngIf="selectedTranscriptForModal.postingContactEmail" href="mailto:{{ selectedTranscriptForModal.postingContactEmail }}">{{ selectedTranscriptForModal.postingContactEmail }}</a><span *ngIf="!selectedTranscriptForModal.postingContactEmail">—</span></dd></div>
-          <div><dt>Full Address / Delivery Notes</dt><dd>{{ selectedTranscriptForModal.postingAddress || 'Physical Collection at DUS Directorate Office' }}</dd></div>
-        </dl>
+            <h2 class="ledger-title">{{ studentLevelLabel }} Transcript Issuance &amp; Delivery Ledger</h2>
+            <p class="ledger-subtitle">
+              Official issuance, verification, and delivery ledger for {{ studentLevelLabel.toLowerCase() }} academic transcripts processed through the {{ directorateName }}.
+            </p>
+          </div>
 
-        <div class="modal-actions-footer" *ngIf="selectedTranscriptForModal.dispatchStatus !== 'Dispatched'">
-          <button type="button" class="btn-modal-dispatch" (click)="markDispatched(selectedTranscriptForModal.id); selectedTranscriptForModal.dispatchStatus = 'Dispatched'">
-            <i class="bi bi-send-check-fill"></i> Mark this Transcript as Dispatched
+          <div class="ledger-header-stats">
+            <div class="ledger-stat-chip total">
+              <i class="bi bi-stack"></i>
+              <div>
+                <strong>{{ transcriptRequests.length }}</strong>
+                <small>Total</small>
+              </div>
+            </div>
+            <div class="ledger-stat-chip dispatched">
+              <i class="bi bi-check-circle-fill"></i>
+              <div>
+                <strong>{{ dispatchedCount }}</strong>
+                <small>Dispatched</small>
+              </div>
+            </div>
+            <div class="ledger-stat-chip pending">
+              <i class="bi bi-clock-history"></i>
+              <div>
+                <strong>{{ pendingDispatchCount }}</strong>
+                <small>Pending</small>
+              </div>
+            </div>
+            <button type="button" class="btn-ledger-pdf" (click)="downloadTranscriptLedgerPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+              <span>Export PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="error-banner" *ngIf="transcriptLoadError" style="margin-bottom: 16px;">
+          <div class="error-banner-body">
+            <i class="bi bi-exclamation-octagon-fill"></i>
+            <span>{{ transcriptLoadError }}</span>
+          </div>
+          <button type="button" class="btn-retry" (click)="loadTranscriptLedger()" [disabled]="isLoadingTranscripts">
+            {{ isLoadingTranscripts ? 'Retrying…' : 'Retry' }}
           </button>
         </div>
-      </div>
-    </section>
 
-    <!-- COLLECTION STATIONS MANAGEMENT TAB -->
+        <div class="ledger-toolbar">
+          <div class="ledger-search-box">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              [(ngModel)]="transcriptSearchTerm"
+              (ngModelChange)="onTranscriptFilterChange()"
+              placeholder="Search by student name, reg number, phone, region..."
+            />
+            <button *ngIf="transcriptSearchTerm" type="button" class="clear-search-btn" (click)="transcriptSearchTerm = ''; onTranscriptFilterChange()" title="Clear search">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <div class="ledger-filter-tabs">
+            <button type="button" class="filter-tab-btn" [class.active]="transcriptStatusFilter === 'ALL'" (click)="setTranscriptStatusFilter('ALL')">
+              All ({{ transcriptRequests.length }})
+            </button>
+            <button type="button" class="filter-tab-btn warning-tab" [class.active]="transcriptStatusFilter === 'Pending'" (click)="setTranscriptStatusFilter('Pending')">
+              <i class="bi bi-hourglass-split"></i> Pending ({{ pendingDispatchCount }})
+            </button>
+            <button type="button" class="filter-tab-btn success-tab" [class.active]="transcriptStatusFilter === 'Dispatched'" (click)="setTranscriptStatusFilter('Dispatched')">
+              <i class="bi bi-check2-circle"></i> Dispatched ({{ dispatchedCount }})
+            </button>
+          </div>
+        </div>
+
+        <div class="ledger-table-card" *ngIf="filteredTranscriptRequests.length; else noTranscriptsFound">
+          <div class="ledger-table-wrap">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Student &amp; Reg No.</th>
+                  <th>Order &amp; Payment</th>
+                  <th>Collection Method</th>
+                  <th>Delivery Destination &amp; Contact</th>
+                  <th>Directorate &amp; Dispatch</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tReq of paginatedTranscriptRequests">
+                  <td>
+                    <div class="student-meta-cell">
+                      <span class="student-name-text">{{ tReq.studentName }}</span>
+                      <span class="student-reg-tag"><i class="bi bi-person-badge"></i> {{ tReq.registrationNumber }}</span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="copies-cell">
+                      <span class="copy-count-badge" *ngIf="tReq.copyNumber">
+                        <i class="bi bi-file-earmark-text"></i> Copy {{ tReq.copyNumber }} of {{ tReq.totalCopies || tReq.transcriptCount }}
+                      </span>
+                      <span class="copy-count-badge" *ngIf="!tReq.copyNumber">
+                        <i class="bi bi-files"></i> {{ tReq.transcriptCount }} {{ tReq.transcriptCount === 1 ? 'Copy' : 'Copies' }}
+                      </span>
+                      <small class="degree-note">
+                        {{ tReq.award || (studentLevelLabel + ' Degree') }}
+                        <span *ngIf="tReq.graduationYear">({{ tReq.graduationYear }})</span>
+                      </small>
+                      <span class="payment-mini-pill" [class.paid]="tReq.status === 'Paid'">
+                        {{ tReq.status === 'Paid' ? 'Finance Verified' : tReq.status }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span class="method-tag" [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'method-dhl' : 'method-physical'">
+                      <i [ngClass]="tReq.collectionMethod === 'Post by DHL' ? 'bi bi-truck' : 'bi bi-building'"></i>
+                      {{ tReq.collectionMethod || 'Physical Collection' }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div class="dest-info-cell">
+                      <div class="dest-primary" *ngIf="tReq.collectionMethod === 'Post by DHL'; else physicalLocation">
+                        <i class="bi bi-geo-alt-fill dest-icon"></i>
+                        <span>
+                          <strong>{{ tReq.postingRegion || 'Dar es Salaam' }}</strong><span *ngIf="tReq.postingWard">, {{ tReq.postingWard }}</span>
+                          <small class="pobox-text" *ngIf="tReq.postingPoBox && tReq.postingPoBox !== '—'"> (P.O. Box {{ tReq.postingPoBox }})</small>
+                        </span>
+                      </div>
+                      <ng-template #physicalLocation>
+                        <div class="dest-primary physical-dest">
+                          <i class="bi bi-geo-alt-fill dest-icon"></i>
+                          <span><strong>{{ directorateShort }} Examination Office</strong> <small>(Main Campus)</small></span>
+                        </div>
+                      </ng-template>
+                      <div class="dest-phone" *ngIf="tReq.postingContactPhone && tReq.postingContactPhone !== '—'">
+                        <i class="bi bi-telephone-fill"></i>
+                        <span>{{ tReq.postingContactPhone }}</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="status-cell">
+                      <span class="dispatch-pill" [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'pill-dispatched' : 'pill-pending'">
+                        <i [ngClass]="tReq.dispatchStatus === 'Dispatched' ? 'bi bi-check-circle-fill' : 'bi bi-hourglass-split'"></i>
+                        {{ tReq.dispatchStatus || 'Pending Dispatch' }}
+                      </span>
+                      <small class="issued-tag" *ngIf="tReq.issuedByDirector">
+                        <i class="bi bi-patch-check-fill"></i> Issued ({{ tReq.issuedByDirectorTitle || directorTitle }})
+                      </small>
+                    </div>
+                  </td>
+
+                  <td class="text-right">
+                    <div class="ledger-actions-row">
+                      <button type="button" class="btn-ledger-view" (click)="selectedTranscriptForModal = tReq">
+                        <i class="bi bi-eye-fill"></i> Details
+                      </button>
+                      <button
+                        *ngIf="!tReq.issuedByDirector"
+                        type="button"
+                        class="btn-ledger-issue"
+                        [disabled]="tReq.status !== 'Paid' || issuingTranscriptId === tReq.id"
+                        (click)="issueTranscript(tReq)"
+                        [title]="tReq.status === 'Paid' ? 'Issue transcript & forward to DUS Examination Office' : 'Awaiting Finance payment verification'"
+                      >
+                        <i class="bi bi-patch-check-fill"></i>
+                        <span>{{ issuingTranscriptId === tReq.id ? 'Issuing…' : 'Issue & Forward' }}</span>
+                      </button>
+                      <button
+                        *ngIf="tReq.dispatchStatus !== 'Dispatched'"
+                        type="button"
+                        class="btn-ledger-dispatch"
+                        (click)="markDispatched(tReq.id)"
+                      >
+                        <i class="bi bi-send-check-fill"></i> Dispatch
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-bar" *ngIf="transcriptTotalPages > 1">
+            <button type="button" class="page-btn" [disabled]="transcriptPage <= 1" (click)="prevTranscriptPage()">&larr; Previous</button>
+            <span class="page-info">Page <strong>{{ transcriptPage }}</strong> of <strong>{{ transcriptTotalPages }}</strong> ({{ filteredTranscriptRequests.length }} transcripts)</span>
+            <button type="button" class="page-btn" [disabled]="transcriptPage >= transcriptTotalPages" (click)="nextTranscriptPage()">Next &rarr;</button>
+          </div>
+        </div>
+
+        <ng-template #noTranscriptsFound>
+          <div class="ledger-empty-card">
+            <div class="empty-icon-wrap"><i class="bi bi-inbox-fill"></i></div>
+            <h3>{{ transcriptRequests.length === 0 ? 'No transcript collection requests recorded yet' : 'No matching transcript requests found' }}</h3>
+            <p *ngIf="transcriptRequests.length === 0">
+              {{ studentLevelLabel }} transcript collection preferences and DHL addresses will appear here automatically once submitted.
+            </p>
+            <p *ngIf="transcriptRequests.length > 0">
+              No records matched your active search or status filter.
+            </p>
+            <button *ngIf="transcriptSearchTerm || transcriptStatusFilter !== 'ALL'" type="button" class="btn-clear-filters" (click)="resetTranscriptFilters()">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+            </button>
+          </div>
+        </ng-template>
+      </section>
+    </ng-container>
+
+    <!-- ============================================================
+         TAB 6: COLLECTION STATIONS MANAGEMENT
+    ============================================================ -->
     <ng-container *ngIf="activeTab === 'stations'">
       <section class="transcript-ledger-section" id="collection-stations">
-        <div class="ledger-header-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 20px;">
-          <div>
-            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a;">Collection Stations &amp; Regional Pickup Hubs</h2>
+        <div class="ledger-header">
+          <div class="ledger-header-info">
+            <span class="analytics-eyebrow"><i class="bi bi-geo-alt-fill"></i> Regional Logistics Hubs</span>
+            <h2 class="ledger-title">Collection Stations &amp; Regional Pickup Hubs</h2>
+            <p class="ledger-subtitle">
+              Manage active campus and regional stations ({{ activeStationsCount }} active across {{ stationRegionsCount }} region(s)) for certificate and transcript pickup.
+            </p>
           </div>
-          <div>
-            <button type="button" class="btn-primary-action" (click)="openCreateStationModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 8px; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);">
+          <div class="ledger-header-stats">
+            <button type="button" class="btn-primary-action" (click)="openCreateStationModal()">
               <i class="bi bi-plus-circle-fill"></i>
               <span>Add Collection Station</span>
             </button>
           </div>
         </div>
 
-        <!-- SEARCH BAR -->
-        <div style="margin-bottom: 20px;">
+        <div class="station-search-wrap">
+          <i class="bi bi-search"></i>
           <input
             type="text"
-            placeholder="Search stations by name, code, region, district or address..."
+            placeholder="Search stations by name, code, region, district, or address..."
             [(ngModel)]="stationSearchTerm"
-            style="width: 100%; max-width: 480px; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;"
           />
         </div>
 
-        <!-- STATIONS TABLE -->
         <div class="ledger-table-card">
           <div class="ledger-table-wrap">
             <table class="ledger-table">
@@ -815,57 +813,51 @@
                 <tr>
                   <th>Code / ID</th>
                   <th>Station Name</th>
-                  <th>Region & District</th>
-                  <th>Address & Hours</th>
+                  <th>Region &amp; District</th>
+                  <th>Address &amp; Hours</th>
                   <th>Contact Info</th>
                   <th>Status</th>
-                  <th style="text-align: right;">Actions</th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let st of filteredStations">
-                  <td><code style="font-weight: 800; color: #0284c7;">{{ st.code }}</code></td>
-                  <td><strong style="color: #0f172a;">{{ st.name }}</strong></td>
+                  <td><code class="reg-code">{{ st.code }}</code></td>
+                  <td><strong class="station-name">{{ st.name }}</strong></td>
                   <td>
-                    <span style="padding: 3px 8px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 800;">
-                      {{ st.region }}
-                    </span>
-                    <small *ngIf="st.district" style="display: block; margin-top: 2px; color: #64748b;">{{ st.district }}</small>
+                    <span class="region-badge">{{ st.region }}</span>
+                    <small class="station-sub" *ngIf="st.district">{{ st.district }}</small>
                   </td>
                   <td>
-                    <span style="display: block; font-size: 12px; color: #334155; font-weight: 600;">{{ st.address }}</span>
-                    <small style="color: #64748b;">⏰ {{ st.operatingHours }}</small>
+                    <span class="station-address">{{ st.address }}</span>
+                    <small class="station-sub" *ngIf="st.operatingHours"><i class="bi bi-clock"></i> {{ st.operatingHours }}</small>
                   </td>
                   <td>
-                    <small style="display: block; color: #334155;" *ngIf="st.contactPhone">📞 {{ st.contactPhone }}</small>
-                    <small style="display: block; color: #334155;" *ngIf="st.contactEmail">✉️ {{ st.contactEmail }}</small>
+                    <small class="station-contact" *ngIf="st.contactPhone"><i class="bi bi-telephone"></i> {{ st.contactPhone }}</small>
+                    <small class="station-contact" *ngIf="st.contactEmail"><i class="bi bi-envelope"></i> {{ st.contactEmail }}</small>
                   </td>
                   <td>
-                    <span
-                      style="padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800;"
-                      [ngClass]="st.isActive ? 'status-active' : 'status-inactive'"
-                    >
+                    <span class="station-status-pill" [class.status-active]="st.isActive" [class.status-inactive]="!st.isActive">
                       {{ st.isActive ? 'Active' : 'Inactive' }}
                     </span>
                   </td>
-                  <td style="text-align: right;">
-                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                      <button type="button" (click)="openEditStationModal(st)" style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0284c7; font-size: 12px; font-weight: 700; cursor: pointer;">
-                        Edit
+                  <td class="text-right">
+                    <div class="ledger-actions-row">
+                      <button type="button" class="btn-station-edit" (click)="openEditStationModal(st)">Edit</button>
+                      <button
+                        type="button"
+                        class="btn-station-toggle"
+                        [disabled]="togglingStationId === st.id"
+                        (click)="toggleStationActive(st)"
+                      >
+                        {{ togglingStationId === st.id ? 'Updating…' : (st.isActive ? 'Deactivate' : 'Activate') }}
                       </button>
-                      <button type="button" (click)="toggleStationActive(st)" style="padding: 5px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer;">
-                        {{ st.isActive ? 'Deactivate' : 'Activate' }}
-                      </button>
-                      <button type="button" (click)="deleteStation(st)" style="padding: 5px 12px; border: none; border-radius: 6px; background: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 700; cursor: pointer;">
-                        Delete
-                      </button>
+                      <button type="button" class="btn-station-delete" (click)="openDeleteStationModal(st)">Delete</button>
                     </div>
                   </td>
                 </tr>
                 <tr *ngIf="filteredStations.length === 0">
-                  <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
-                    No collection stations found matching your search term.
-                  </td>
+                  <td colspan="7" class="empty-table-cell">No collection stations found matching your search.</td>
                 </tr>
               </tbody>
             </table>
@@ -874,78 +866,198 @@
       </section>
     </ng-container>
 
-    <!-- CREATE / EDIT COLLECTION STATION MODAL -->
-    <div class="compact-details-overlay" *ngIf="showStationModal" (click)="closeStationModal()">
-      <div class="modal-dialog-card" (click)="$event.stopPropagation()" style="max-width: 580px; width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); margin: auto;">
-        <header style="padding: 16px 20px; background: linear-gradient(135deg, #001f34 0%, #003b5c 100%); color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin: 0; font-size: 16px; font-weight: 800;">
-            {{ editingStation ? 'Edit Collection Station' : 'Add New Collection Station' }}
-          </h3>
-          <button type="button" (click)="closeStationModal()" style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;">&times;</button>
+    <!-- ============================================================
+         MODAL 1: STUDENT CLEARANCE DETAILS
+    ============================================================ -->
+    <section class="modal-backdrop" *ngIf="selectedRequestForModal" (click)="closeStudentModal()">
+      <div class="modal-card modal-large" role="dialog" aria-modal="true" aria-label="Student clearance details" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <span class="modal-eyebrow">{{ studentLevelLabel }} Clearance Breakdown</span>
+            <h2>{{ selectedRequestForModal.studentName }} ({{ selectedRequestForModal.registrationNumber }})</h2>
+          </div>
+          <button type="button" class="modal-close-btn" aria-label="Close" (click)="closeStudentModal()">✕</button>
         </header>
 
-        <form (ngSubmit)="saveStation()" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">Station Code *</label>
-              <input type="text" [(ngModel)]="stationForm.code" name="code" required style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
-            </div>
+        <div class="modal-body">
+          <dl class="details-grid">
+            <div><dt>Registration Number</dt><dd><code>{{ selectedRequestForModal.registrationNumber || '—' }}</code></dd></div>
+            <div><dt>Cohort Year</dt><dd>{{ getYearLabel(selectedRequestForModal) }}</dd></div>
+            <div><dt>College</dt><dd>{{ selectedRequestForModal.college || '—' }}</dd></div>
+            <div><dt>Department</dt><dd>{{ selectedRequestForModal.department || '—' }}</dd></div>
+            <div><dt>Programme</dt><dd>{{ selectedRequestForModal.programme || '—' }}</dd></div>
+            <div><dt>Overall Status</dt><dd><strong>{{ selectedRequestForModal.status === 'Completed' ? 'Cleared (Completed)' : selectedRequestForModal.status }}</strong></dd></div>
+          </dl>
 
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">Region / City *</label>
-              <input type="text" [(ngModel)]="stationForm.region" name="region" required placeholder="e.g. Dar es Salaam, Arusha, Mwanza" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          <div class="modal-office-section">
+            <h3>Corresponding Offices Approval Status ({{ getApprovedOfficesCount(selectedRequestForModal) }} / {{ getTotalOfficesCount(selectedRequestForModal) }} Cleared)</h3>
+            <dl class="details-grid">
+              <div *ngFor="let app of selectedRequestForModal.approvals">
+                <dt>{{ app.office }}</dt>
+                <dd>
+                  <strong [class.text-green]="app.status === 'Approved'" [class.text-red]="app.status === 'Rejected'">
+                    {{ app.status === 'Approved' ? 'Cleared' : app.status }}
+                  </strong>
+                  <span *ngIf="app.reviewedBy"> · {{ app.reviewedBy }}</span>
+                  <span *ngIf="app.comment" class="approval-comment-note">Note: {{ app.comment }}</span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MODAL 2: TRANSCRIPT DETAILS
+    ============================================================ -->
+    <section class="modal-backdrop" *ngIf="selectedTranscriptForModal" (click)="selectedTranscriptForModal = null">
+      <div class="modal-card modal-medium" role="dialog" aria-modal="true" aria-label="Transcript delivery details" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <span class="modal-eyebrow">Transcript Dispatch Registry ({{ directorateShort }})</span>
+            <h2>{{ selectedTranscriptForModal.studentName }}</h2>
+            <span class="modal-sub-reg"><i class="bi bi-person-badge"></i> {{ selectedTranscriptForModal.registrationNumber }}</span>
+          </div>
+          <button type="button" class="modal-close-btn" aria-label="Close" (click)="selectedTranscriptForModal = null">✕</button>
+        </header>
+
+        <div class="modal-body">
+          <dl class="details-grid">
+            <div><dt>Registration Number</dt><dd><code>{{ selectedTranscriptForModal.registrationNumber }}</code></dd></div>
+            <div><dt>Degree Award</dt><dd>{{ selectedTranscriptForModal.award || (studentLevelLabel + ' Degree') }}</dd></div>
+            <div><dt>Payment Status</dt><dd><strong>{{ selectedTranscriptForModal.status === 'Paid' ? 'Finance Verified' : selectedTranscriptForModal.status }}</strong></dd></div>
+            <div><dt>Copies &amp; Amount</dt><dd><strong>{{ selectedTranscriptForModal.transcriptCount }} copy</strong> (TZS {{ selectedTranscriptForModal.amount | number }})</dd></div>
+            <div><dt>Collection Method</dt><dd><strong>{{ selectedTranscriptForModal.collectionMethod || 'Physical Collection' }}</strong></dd></div>
+            <div><dt>Dispatch Status</dt><dd>{{ selectedTranscriptForModal.dispatchStatus || 'Pending Dispatch' }}</dd></div>
+            <div><dt>Region / City</dt><dd>{{ selectedTranscriptForModal.postingRegion || 'Dar es Salaam' }}</dd></div>
+            <div><dt>Ward / District</dt><dd>{{ selectedTranscriptForModal.postingWard || 'Main Campus' }}</dd></div>
+            <div><dt>P.O. Box</dt><dd>{{ selectedTranscriptForModal.postingPoBox || '—' }}</dd></div>
+            <div><dt>Contact Phone</dt><dd>{{ selectedTranscriptForModal.postingContactPhone || '—' }}</dd></div>
+            <div><dt>Contact Email</dt><dd>{{ selectedTranscriptForModal.postingContactEmail || '—' }}</dd></div>
+            <div><dt>Delivery Address</dt><dd>{{ selectedTranscriptForModal.postingAddress || ('Physical Collection at ' + directorateShort + ' Examination Office') }}</dd></div>
+            <div *ngIf="selectedTranscriptForModal.issuedByDirector" class="grid-span-full">
+              <dt>Issued By Directorate</dt>
+              <dd><strong class="text-green">Processed &amp; Issued by {{ selectedTranscriptForModal.issuedByDirectorTitle || directorTitle }}</strong></dd>
             </div>
+          </dl>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="selectedTranscriptForModal = null">Close</button>
+          <button
+            *ngIf="!selectedTranscriptForModal.issuedByDirector"
+            type="button"
+            class="btn-ledger-issue"
+            [disabled]="selectedTranscriptForModal.status !== 'Paid' || issuingTranscriptId === selectedTranscriptForModal.id"
+            (click)="issueTranscript(selectedTranscriptForModal)"
+          >
+            <i class="bi bi-patch-check-fill"></i>
+            {{ issuingTranscriptId === selectedTranscriptForModal.id ? 'Issuing…' : 'Issue & Forward to DUS Exam Office' }}
+          </button>
+          <button
+            *ngIf="selectedTranscriptForModal.dispatchStatus !== 'Dispatched'"
+            type="button"
+            class="btn-modal-dispatch"
+            (click)="markDispatched(selectedTranscriptForModal.id)"
+          >
+            <i class="bi bi-send-check-fill"></i> Mark as Dispatched
+          </button>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         MODAL 3: CREATE / EDIT COLLECTION STATION
+    ============================================================ -->
+    <div class="modal-backdrop" *ngIf="showStationModal" (click)="closeStationModal()">
+      <div class="modal-card modal-medium" (click)="$event.stopPropagation()">
+        <header class="modal-header dark-modal-header">
+          <div>
+            <h3>{{ editingStation ? 'Edit Collection Station' : 'Add New Collection Station' }}</h3>
+          </div>
+          <button type="button" class="modal-close-btn light" (click)="closeStationModal()" [disabled]="isSavingStation" aria-label="Close">✕</button>
+        </header>
+
+        <form class="station-form" (ngSubmit)="saveStation()">
+          <div class="form-row-2">
+            <label>Station Code *
+              <input type="text" [(ngModel)]="stationForm.code" name="code" required />
+            </label>
+            <label>Region / City *
+              <input type="text" [(ngModel)]="stationForm.region" name="region" required placeholder="e.g. Dar es Salaam, Arusha, Mwanza" />
+            </label>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; font-weight: 700; color: #334155;">Station / Hub Name *</label>
-            <input type="text" [(ngModel)]="stationForm.name" name="name" required placeholder="e.g. UDSM Arusha Regional Collection Station" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          <label>Station / Hub Name *
+            <input type="text" [(ngModel)]="stationForm.name" name="name" required placeholder="e.g. UDSM Arusha Regional Collection Station" />
+          </label>
+
+          <div class="form-row-2">
+            <label>District / Area
+              <input type="text" [(ngModel)]="stationForm.district" name="district" placeholder="e.g. Kinondoni" />
+            </label>
+            <label>Operating Hours
+              <input type="text" [(ngModel)]="stationForm.operatingHours" name="operatingHours" placeholder="Mon - Fri: 08:00 - 16:00" />
+            </label>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">District / Area</label>
-              <input type="text" [(ngModel)]="stationForm.district" name="district" placeholder="e.g. Arusha Urban, Kinondoni" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
-            </div>
+          <label>Physical Address / Location *
+            <textarea [(ngModel)]="stationForm.address" name="address" rows="2" required placeholder="Full address details or room number..."></textarea>
+          </label>
 
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">Operating Hours</label>
-              <input type="text" [(ngModel)]="stationForm.operatingHours" name="operatingHours" placeholder="Mon - Fri: 08:00 - 16:00" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
-            </div>
+          <div class="form-row-2">
+            <label>Contact Phone
+              <input type="tel" [(ngModel)]="stationForm.contactPhone" name="contactPhone" placeholder="+255 22 2410500" />
+            </label>
+            <label>Contact Email
+              <input type="email" [(ngModel)]="stationForm.contactEmail" name="contactEmail" placeholder="station@udsm.ac.tz" />
+            </label>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <label style="font-size: 12px; font-weight: 700; color: #334155;">Physical Address / Location *</label>
-            <textarea [(ngModel)]="stationForm.address" name="address" rows="2" required placeholder="Full address details or room number..." style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
-          </div>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="stationForm.isActive" name="isActive" />
+            <span>Station is Active for Student Pickup</span>
+          </label>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">Contact Phone</label>
-              <input type="tel" [(ngModel)]="stationForm.contactPhone" name="contactPhone" placeholder="+255 22 2410500" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: #334155;">Contact Email</label>
-              <input type="email" [(ngModel)]="stationForm.contactEmail" name="contactEmail" placeholder="station@udsm.ac.tz" style="padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
-            </div>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-            <input type="checkbox" [(ngModel)]="stationForm.isActive" name="isActive" id="stationActive" style="width: 16px; height: 16px; cursor: pointer;" />
-            <label for="stationActive" style="font-size: 13px; font-weight: 700; color: #334155; cursor: pointer;">Station is Active for Student Pickup</label>
-          </div>
-
-          <footer style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
-            <button type="button" (click)="closeStationModal()" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #334155; font-weight: 700; font-size: 13px; cursor: pointer;">Cancel</button>
-            <button type="submit" style="padding: 8px 20px; border: none; border-radius: 6px; background: #0284c7; color: #ffffff; font-weight: 800; font-size: 13px; cursor: pointer;">
-              {{ editingStation ? 'Save Changes' : 'Create Station' }}
+          <footer class="modal-footer flush-footer">
+            <button type="button" class="btn-modal-cancel" (click)="closeStationModal()" [disabled]="isSavingStation">Cancel</button>
+            <button type="submit" class="btn-primary-action" [disabled]="isSavingStation">
+              {{ isSavingStation ? 'Saving…' : (editingStation ? 'Save Changes' : 'Create Station') }}
             </button>
           </footer>
         </form>
       </div>
     </div>
 
-  </main>
+    <!-- ============================================================
+         MODAL 4: CONFIRM DEACTIVATE COLLECTION STATION
+    ============================================================ -->
+    <div class="modal-backdrop" *ngIf="stationToDeactivate" (click)="closeDeleteStationModal()">
+      <div class="modal-card modal-small" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <span class="modal-eyebrow">Station Confirmation</span>
+            <h2>Deactivate Collection Station</h2>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeDeleteStationModal()" [disabled]="isDeletingStation" aria-label="Close">✕</button>
+        </header>
 
+        <div class="modal-body">
+          <p class="confirm-copy">
+            Are you sure you want to deactivate <strong>{{ stationToDeactivate.name }}</strong> (<code>{{ stationToDeactivate.code }}</code>)?
+            Students will no longer be able to select this hub for new pickup consignments.
+          </p>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeDeleteStationModal()" [disabled]="isDeletingStation">Cancel</button>
+          <button type="button" class="btn-danger-action" (click)="confirmDeleteStation()" [disabled]="isDeletingStation">
+            {{ isDeletingStation ? 'Deactivating…' : 'Deactivate Station' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+
+  </main>
 </section>

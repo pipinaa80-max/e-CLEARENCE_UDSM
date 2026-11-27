@@ -21,6 +21,8 @@ export class NotificationService {
 
   private refreshUnreadInFlight$: Observable<number> | null = null;
   private notificationsInFlight$: Observable<NotificationItem[]> | null = null;
+  private lastNotificationsLoadedAt = 0;
+  private activeCacheUserId: string | null = null;
 
   constructor() {
     // Permanently purge any stale mock notifications stored in localStorage
@@ -33,12 +35,39 @@ export class NotificationService {
     }
   }
 
+  private getCurrentAuthUserId(): string {
+    const user = this.storage.get<any>('udsm-current-user');
+    const id = user?.id ?? user?.userId ?? user?.email ?? null;
+    if (id !== null && id !== undefined && String(id).trim() !== '') {
+      return `user:${String(id).trim()}`;
+    }
+    const token = this.storage.get<string>('udsm-auth-token')?.replace(/^"|"$/g, '') || '';
+    if (token) {
+      return `token:${token.slice(-16)}`;
+    }
+    return 'anon';
+  }
+
+  private ensureCacheMatchesCurrentUser(): void {
+    const currentId = this.getCurrentAuthUserId();
+    if (this.activeCacheUserId !== currentId) {
+      this.notificationsSubject.next([]);
+      this.unreadCountSubject.next(0);
+      this.refreshUnreadInFlight$ = null;
+      this.notificationsInFlight$ = null;
+      this.lastNotificationsLoadedAt = 0;
+      this.activeCacheUserId = currentId;
+    }
+  }
+
   private getAuthHeaders(): HttpHeaders {
     const token = this.storage.get<string>('udsm-auth-token')?.replace(/^"|"$/g, '') || null;
     return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
   getStudentNotifications(): Observable<NotificationItem[]> {
+    this.ensureCacheMatchesCurrentUser();
+    const requestUserId = this.activeCacheUserId;
     if (this.notificationsInFlight$) {
       return this.notificationsInFlight$;
     }
@@ -47,13 +76,15 @@ export class NotificationService {
       headers: this.getAuthHeaders()
     }).pipe(
       tap((items) => {
+        if (this.getCurrentAuthUserId() !== requestUserId) return;
         const sorted = (items || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         this.notificationsSubject.next(sorted);
         this.updateUnreadCount(sorted);
+        this.lastNotificationsLoadedAt = Date.now();
       }),
       catchError((err) => {
         console.warn('Could not load notifications from server:', err);
-        return of(this.notificationsSubject.value);
+        return of(this.getCurrentAuthUserId() === requestUserId ? this.notificationsSubject.value : []);
       }),
       finalize(() => {
         this.notificationsInFlight$ = null;
@@ -64,7 +95,17 @@ export class NotificationService {
     return this.notificationsInFlight$;
   }
 
-  refreshUnreadCount(): Observable<number> {
+  refreshUnreadCount(force: boolean = false): Observable<number> {
+    this.ensureCacheMatchesCurrentUser();
+    const requestUserId = this.activeCacheUserId;
+    if (!force && this.notificationsInFlight$) {
+      return this.notificationsInFlight$.pipe(
+        map(items => (items || []).filter(n => !n.read).length)
+      );
+    }
+    if (!force && this.lastNotificationsLoadedAt > 0 && (Date.now() - this.lastNotificationsLoadedAt) < 10_000) {
+      return of(this.unreadCountSubject.value);
+    }
     if (this.refreshUnreadInFlight$) {
       return this.refreshUnreadInFlight$;
     }
@@ -73,8 +114,12 @@ export class NotificationService {
       headers: this.getAuthHeaders()
     }).pipe(
       map(res => res?.unreadCount ?? 0),
-      tap(count => this.unreadCountSubject.next(count)),
+      tap(count => {
+        if (this.getCurrentAuthUserId() !== requestUserId) return;
+        this.unreadCountSubject.next(count);
+      }),
       catchError(() => {
+        if (this.getCurrentAuthUserId() !== requestUserId) return of(0);
         const count = this.notificationsSubject.value.filter(n => !n.read).length;
         this.unreadCountSubject.next(count);
         return of(count);
@@ -89,6 +134,7 @@ export class NotificationService {
   }
 
   get unreadCount(): number {
+    this.ensureCacheMatchesCurrentUser();
     return this.unreadCountSubject.value;
   }
 
@@ -179,6 +225,10 @@ export class NotificationService {
   }
 
   getNotifications(userId?: string): NotificationItem[] {
+    this.ensureCacheMatchesCurrentUser();
+    if (userId && this.activeCacheUserId && this.activeCacheUserId !== `user:${String(userId).trim()}`) {
+      return [];
+    }
     return this.notificationsSubject.value;
   }
 
@@ -198,6 +248,8 @@ export class NotificationService {
     this.unreadCountSubject.next(0);
     this.refreshUnreadInFlight$ = null;
     this.notificationsInFlight$ = null;
+    this.lastNotificationsLoadedAt = 0;
+    this.activeCacheUserId = null;
   }
 
   markAllAsRead(userId?: string): void {

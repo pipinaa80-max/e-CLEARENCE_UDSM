@@ -118,30 +118,98 @@
         </div>
       </div>
     </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" *ngIf="currentUser">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <strong>{{ currentUser.fullName }}</strong>
+          <small>{{ currentUser.role }}</small>
+        </div>
+      </div>
+    </div>
   </aside>
 
   <main class="content-panel">
     <app-dashboard-header
       title="Administrator Dashboard"
+      subtitle="Manage users, clearance records, institutional dashboards, branding, awards, and sponsors."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions *ngIf="message" class="alert" [class.alert-danger]="isError" [class.alert-success]="!isError">
-        {{ message }}
-      </div>
+      <button header-actions type="button" class="header-refresh-btn" (click)="loadData()" [disabled]="isLoadingUsers">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>{{ isLoadingUsers ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
     </app-dashboard-header>
+
+    <div *ngIf="message" class="admin-alert-banner" [class.alert-danger]="isError" [class.alert-success]="!isError">
+      <span>{{ message }}</span>
+      <button type="button" class="alert-dismiss-btn" (click)="message = ''" aria-label="Dismiss message">&times;</button>
+    </div>
+
+    <!-- EXECUTIVE KPI SUMMARY STRIP -->
+    <section class="admin-stats-grid">
+      <button type="button" class="admin-stat-card stat-blue" (click)="navigateToStudents()">
+        <span class="stat-label">Total Students</span>
+        <strong class="stat-value">{{ stats.totalStudents }}</strong>
+        <span class="stat-meta">UG: {{ stats.totalUndergraduates }} &middot; PG: {{ stats.totalPostgraduates }}</span>
+      </button>
+
+      <button type="button" class="admin-stat-card stat-teal" (click)="navigateToStaff()">
+        <span class="stat-label">Staff Accounts</span>
+        <strong class="stat-value">{{ stats.totalStaff }}</strong>
+        <span class="stat-meta">Officers, faculty &amp; admins</span>
+      </button>
+
+      <button type="button" class="admin-stat-card stat-green" (click)="navigateToClearanceRequests()">
+        <span class="stat-label">Clearance Requests</span>
+        <strong class="stat-value">{{ stats.totalRequests }}</strong>
+        <span class="stat-meta">Cleared: {{ stats.completed }} &middot; Pending: {{ stats.pending }}</span>
+      </button>
+
+      <button type="button" class="admin-stat-card stat-amber" (click)="navigateToPendingActivation()">
+        <span class="stat-label">Inactive Accounts</span>
+        <strong class="stat-value">{{ stats.pendingUsers }}</strong>
+        <span class="stat-meta">Pending activation or disabled</span>
+      </button>
+    </section>
 
     <!-- Users Tab -->
     <div *ngIf="activeTab === 'users'" class="tab-content">
       <div class="section-header">
-        <h3>User Management (Total: {{ users.length }})</h3>
+        <div>
+          <h3>User Management (Total: {{ users.length }})</h3>
+          <div class="user-sub-counters">
+            <span class="counter-badge counter-ug" (click)="filterByAwardCategory('UNDERGRADUATE')" title="Click to filter Undergraduates">
+              <i class="bi bi-mortarboard"></i> Undergrads: <strong>{{ stats.totalUndergraduates }}</strong>
+            </span>
+            <span class="counter-badge counter-pg" (click)="filterByAwardCategory('POSTGRADUATE')" title="Click to filter Postgraduates">
+              <i class="bi bi-mortarboard-fill"></i> Postgrads: <strong>{{ stats.totalPostgraduates }}</strong>
+            </span>
+            <span class="counter-badge counter-staff" (click)="filterByStaff()" title="Click to filter Staff">
+              <i class="bi bi-person-badge"></i> Staff: <strong>{{ stats.totalStaff }}</strong>
+            </span>
+          </div>
+        </div>
         <div class="header-actions">
           <input type="text" [(ngModel)]="userSearchTerm" (ngModelChange)="onUserFilterChange()" placeholder="Search users..." class="search-input">
           <select [(ngModel)]="userRoleFilter" name="userRoleFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by role" class="filter-select">
             <option value="">All roles</option>
             <option value="STAFF">All Staff</option>
             <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+          </select>
+          <select [(ngModel)]="userAwardFilter" name="userAwardFilter" (ngModelChange)="onUserFilterChange()" title="Filter students by award category" class="filter-select">
+            <option value="">All Award Categories</option>
+            <option value="POSTGRADUATE">🎓 All Postgraduates</option>
+            <option value="UNDERGRADUATE">📘 All Undergraduates</option>
+            <option value="Master Degree">Master Degree</option>
+            <option value="PhD">PhD / Doctorate</option>
+            <option value="Postgraduate Diploma">Postgraduate Diploma</option>
+            <option value="Bachelor Degree">Bachelor Degree</option>
+            <option value="Diploma">Diploma</option>
+            <option value="Certificate">Certificate</option>
           </select>
           <select [(ngModel)]="userStatusFilter" name="userStatusFilter" (ngModelChange)="onUserFilterChange()" title="Filter users by status" class="filter-select">
             <option value="">All statuses</option>
@@ -155,8 +223,8 @@
             <span *ngIf="isLoadingUsers">Loading...</span>
           </button>
 
-          <button *ngIf="selectedUserIds.size > 0" class="btn-danger" (click)="deleteSelectedUsers()">
-            Delete Selected ({{ selectedUserIds.size }})
+          <button *ngIf="selectedUserIds.size > 0" class="btn-danger" [disabled]="isDeletingUsers" (click)="deleteSelectedUsers()">
+            {{ isDeletingUsers ? 'Deleting...' : 'Delete Selected (' + selectedUserIds.size + ')' }}
           </button>
 
           <button class="btn-primary" (click)="showAddForm = !showAddForm">
@@ -215,21 +283,59 @@
             </div>
             <div class="form-group" *ngIf="showProgramme">
               <label>Programme</label>
-              <select [(ngModel)]="newUser.programme" name="programme">
-                <option value="">Select Programme</option>
-                <option *ngFor="let prog of programmeOptions" [value]="prog">{{ prog }}</option>
+              <input
+                type="text"
+                [(ngModel)]="newUser.programme"
+                name="programme"
+                list="admin-programme-options"
+                [placeholder]="newUser.isPostgraduate ? 'Select or type Postgraduate programme (e.g. MSc, MBA, PhD)' : 'Select or type Programme'"
+              >
+              <datalist id="admin-programme-options">
+                <option *ngFor="let prog of programmeOptions" [value]="prog"></option>
+              </datalist>
+            </div>
+
+            <!-- Academic Award Level (For Students) -->
+            <div class="form-group" *ngIf="isStudentRole">
+              <label>Academic Award / Degree Level <span class="required" style="color: #dc2626;">*</span></label>
+              <select [(ngModel)]="newUser.award" name="award" (change)="onAwardChange()" required>
+                <optgroup label="Postgraduate Programmes (Supervisor Check)">
+                  <option value="Master Degree">Master Degree (MSc, MA, MBA, etc.)</option>
+                  <option value="PhD">PhD / Doctorate</option>
+                  <option value="Postgraduate Diploma">Postgraduate Diploma (PGD)</option>
+                </optgroup>
+                <optgroup label="Undergraduate Programmes">
+                  <option value="Bachelor Degree">Bachelor Degree</option>
+                  <option value="Diploma">Diploma</option>
+                  <option value="Certificate">Certificate</option>
+                </optgroup>
               </select>
+            </div>
+
+            <!-- Postgraduate Toggle (For Students) -->
+            <div class="form-group checkbox-group" *ngIf="isStudentRole">
+              <label class="checkbox-label" title="Toggle postgraduate candidate status">
+                <input type="checkbox" [(ngModel)]="newUser.isPostgraduate" name="isPostgraduate" (change)="onPostgraduateToggle()">
+                <span>
+                  <strong>Postgraduate Candidate Status</strong>
+                  <small style="display:block; color: #64748b; font-size: 11px;">
+                    Appends Research Supervisor as final check &amp; requires Undergraduate Certificate upload
+                  </small>
+                </span>
+              </label>
             </div>
           </div>
 
           <!-- Dynamic Role Guidance Banner -->
-          <div class="role-hint-banner {{ isStudentRole ? 'student-hint' : 'staff-hint' }}">
-            <i class="bi {{ isStudentRole ? 'bi-mortarboard-fill' : 'bi-person-badge-fill' }}"></i>
+          <div class="role-hint-banner {{ isStudentRole ? (newUser.isPostgraduate ? 'postgrad-hint' : 'student-hint') : 'staff-hint' }}">
+            <i class="bi {{ isStudentRole ? (newUser.isPostgraduate ? 'bi-mortarboard-fill' : 'bi-mortarboard') : 'bi-person-badge-fill' }}"></i>
             <span>{{ roleBadgeDescription }}</span>
           </div>
 
           <div class="form-actions">
-            <button type="submit" class="btn-success" [disabled]="!userForm.form.valid">Save User</button>
+            <button type="submit" class="btn-success" [disabled]="!userForm.form.valid || isSubmittingUser">
+              {{ isSubmittingUser ? 'Saving User...' : 'Save User' }}
+            </button>
           </div>
         </form>
       </div>
@@ -245,13 +351,14 @@
               <th>Email</th>
               <th>Reg No</th>
               <th>Role</th>
+              <th>Award / Category</th>
               <th>Status</th>
               <th class="users-actions-heading">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="isLoadingUsers">
-              <td colspan="7" style="text-align: center; padding: 36px; color: #0284c7; font-weight: 600;">
+              <td colspan="8" style="text-align: center; padding: 36px; color: #0284c7; font-weight: 600;">
                 <span style="display: inline-block; width: 18px; height: 18px; border: 2.5px solid #cbd5e1; border-top-color: #0284c7; border-radius: 50%; vertical-align: middle; margin-right: 8px;"></span>
                 Loading users from database...
               </td>
@@ -270,6 +377,22 @@
                 </select>
               </td>
               <td>
+                <div *ngIf="isStudent(user)">
+                  <span
+                    class="award-badge"
+                    [ngClass]="isPostgraduateUser(user) ? 'award-badge-postgrad' : 'award-badge-undergrad'"
+                    [title]="isPostgraduateUser(user) ? 'Postgraduate candidate: requires Undergraduate Certificate & routes to Research Supervisor for final check' : 'Undergraduate candidate: 5-stage clearance flow'"
+                  >
+                    <i class="bi" [ngClass]="isPostgraduateUser(user) ? 'bi-mortarboard-fill' : 'bi-mortarboard'"></i>
+                    {{ getStudentAwardCategory(user).label }}
+                    <span class="category-pill" *ngIf="isPostgraduateUser(user)">PG</span>
+                  </span>
+                </div>
+                <div *ngIf="!isStudent(user)">
+                  <span class="staff-dept-badge">{{ user.department || user.college || 'Staff / Central' }}</span>
+                </div>
+              </td>
+              <td>
                 <select [(ngModel)]="user.isActive" [name]="'status-' + user.id" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive" (ngModelChange)="updateStatus(user.id, $event)">
                   <option [ngValue]="true">Active</option>
                   <option [ngValue]="false">Inactive</option>
@@ -280,7 +403,7 @@
               </td>
             </tr>
             <tr *ngIf="!isLoadingUsers && !paginatedUsers.length">
-              <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
+              <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
                 No users found.
               </td>
             </tr>
@@ -324,7 +447,15 @@
     <div *ngIf="activeTab === 'clearance'" class="tab-content">
       <div class="section-header">
         <h3>All Clearance Requests (Total: {{ clearanceRequests.length }})</h3>
-        <input type="text" [(ngModel)]="requestSearchTerm" (ngModelChange)="onRequestFilterChange()" placeholder="Search requests..." class="search-input">
+        <div class="header-actions">
+          <input type="text" [(ngModel)]="requestSearchTerm" (ngModelChange)="onRequestFilterChange()" placeholder="Search requests..." class="search-input">
+          <select [(ngModel)]="requestStatusFilter" name="requestStatusFilter" (ngModelChange)="onRequestFilterChange()" title="Filter requests by status" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="COMPLETED">Completed / Cleared</option>
+            <option value="PENDING">Pending</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
       </div>
       <div class="table-container">
         <table>
@@ -332,6 +463,7 @@
             <tr>
               <th>Student Name</th>
               <th>Reg No</th>
+              <th>College</th>
               <th>Department</th>
               <th>Status</th>
               <th>Current Stage</th>
@@ -342,13 +474,14 @@
             <tr *ngFor="let req of paginatedRequests; trackBy: trackByRequestId">
               <td>{{ req.student?.fullName || req.studentName || '-' }}</td>
               <td>{{ req.student?.registrationNumber || req.registrationNumber || '-' }}</td>
-              <td>{{ req.department || '-' }}</td>
+              <td>{{ req.college || req.student?.college || '-' }}</td>
+              <td>{{ req.department || req.student?.department || '-' }}</td>
               <td><span class="status-pill" [class]="(req.status || 'PENDING').toLowerCase()">{{ req.status || 'PENDING' }}</span></td>
               <td>{{ req.currentStage || 'Clearance Process' }}</td>
               <td>{{ (req.submittedAt || req.requestDate) | date:'short' }}</td>
             </tr>
             <tr *ngIf="!filteredRequests.length">
-              <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">
+              <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">
                 No clearance requests found.
               </td>
             </tr>
@@ -429,7 +562,7 @@
       <div *ngIf="uploadCategory === 'STUDENT'" style="margin-top: 14px; padding: 12px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; border-radius: 8px;">
         <strong style="color: #003b5c; font-size: 0.88rem;"><i class="bi bi-mortarboard-fill"></i> Student Clearance Template Specification:</strong>
         <p style="margin: 4px 0 0; color: #475569; font-size: 0.83rem; line-height: 1.5;">
-          Columns: <code>First Name</code>, <code>Middle Name</code>, <code>Last Name</code>, <code>Email</code>, <code>Role (STUDENT)</code>, <code>Registration Number</code>, <code>Password</code>, <code>College</code>, <code>Department</code>, <code>Programme</code>, <code>Phone</code>
+          Columns: <code>First Name</code>, <code>Middle Name</code>, <code>Last Name</code>, <code>Email</code>, <code>Role (STUDENT)</code>, <code>Registration Number</code>, <code>Password</code>, <code>College</code>, <code>Department</code>, <code>Programme</code>, <code>Award</code>, <code>Phone</code>
         </p>
       </div>
 
@@ -446,7 +579,7 @@
         </p>
 
         <div class="file-input-group" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 16px 0; padding: 16px 20px; background: #f8fafc; border: 1.5px dashed #94a3b8; border-radius: 8px;">
-          <input type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.88rem;">
+          <input #bulkUploadInput type="file" (change)="onFileSelected($event)" accept=".csv, .xlsx, .xls" style="font-size: 0.88rem;">
           <button class="btn-primary" [disabled]="!selectedFile || isUploading" (click)="uploadFile()" style="padding: 10px 22px; font-weight: 700;">
             <span *ngIf="!isUploading">⬆ Upload &amp; Register {{ uploadCategory === 'STAFF' ? 'Staff' : 'Students' }}</span>
             <span *ngIf="isUploading">Processing {{ uploadCategory === 'STAFF' ? 'Staff' : 'Students' }} Upload...</span>
@@ -466,7 +599,9 @@
           <div class="form-group"><label>Name</label><input [(ngModel)]="newDashboard.name" name="dashboardName" required></div>
           <div class="form-group"><label>Description</label><input [(ngModel)]="newDashboard.description" name="dashboardDescription"></div>
         </div>
-        <button type="submit" class="btn-primary">Add Dashboard</button>
+        <button type="submit" class="btn-primary" [disabled]="isSavingDashboard">
+          {{ isSavingDashboard ? 'Saving...' : 'Add Dashboard' }}
+        </button>
       </form>
       <div class="table-container">
         <table>
@@ -489,8 +624,8 @@
               </td>
               <td style="text-align: right;">
                 <div class="actions-cell">
-                  <button class="btn-success btn-sm" (click)="updateDashboard(dashboard)">Save</button>
-                  <button class="btn-danger btn-sm" (click)="deleteDashboard(dashboard.id)">Delete</button>
+                  <button class="btn-success btn-sm" [disabled]="isSavingDashboard" (click)="updateDashboard(dashboard)">Save</button>
+                  <button class="btn-danger btn-sm" [disabled]="isSavingDashboard" (click)="deleteDashboard(dashboard.id)">Delete</button>
                 </div>
               </td>
             </tr>
@@ -581,7 +716,9 @@
           <small class="field-hint">Changes to footer links will be applied globally after you click "Save Theme".</small>
         </div>
 
-        <button type="submit" class="btn-primary" style="margin-top: 24px;">Save Theme</button>
+        <button type="submit" class="btn-primary" [disabled]="isSavingTheme" style="margin-top: 24px;">
+          {{ isSavingTheme ? 'Saving Theme...' : 'Save Theme' }}
+        </button>
       </form>
     </div>
 
@@ -716,8 +853,8 @@
             >
           </div>
           <div>
-            <button type="button" class="btn-primary" (click)="addSponsor()" [disabled]="!newSponsorName.trim()">
-              + Add Sponsor
+            <button type="button" class="btn-primary" (click)="addSponsor()" [disabled]="!newSponsorName.trim() || isSavingSponsor">
+              {{ isSavingSponsor ? 'Adding...' : '+ Add Sponsor' }}
             </button>
           </div>
         </div>
@@ -795,8 +932,8 @@
               </td>
               <td style="text-align: right;">
                 <ng-container *ngIf="editingSponsorId === (sponsor.id || sponsor.name); else sponsorActions">
-                  <button type="button" class="btn-primary btn-sm" (click)="saveSponsorEdit()">Save</button>
-                  <button type="button" class="btn-secondary btn-sm" (click)="cancelEditSponsor()">Cancel</button>
+                  <button type="button" class="btn-primary btn-sm" [disabled]="isSavingSponsor" (click)="saveSponsorEdit()">Save</button>
+                  <button type="button" class="btn-secondary btn-sm" [disabled]="isSavingSponsor" (click)="cancelEditSponsor()">Cancel</button>
                 </ng-container>
                 <ng-template #sponsorActions>
                   <button type="button" class="btn-secondary btn-sm" (click)="startEditSponsor(sponsor)">Edit</button>

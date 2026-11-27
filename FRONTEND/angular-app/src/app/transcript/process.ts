@@ -1,15 +1,16 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { TranscriptPaymentStatus } from './transcript-payment.model';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
 
 @Component({
   selector: 'app-transcript-process',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './process.html',
   styleUrl: './process.css'
 })

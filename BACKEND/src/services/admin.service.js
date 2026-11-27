@@ -4,6 +4,7 @@ const path = require('path');
 const { getDb } = require('../config/database');
 const { hashPassword } = require('../utils/password');
 const { ROLES, ALL_ROLES } = require('../constants/roles');
+const { isPostgraduateRecord } = require('../utils/postgraduate');
 const AuditService = require('./audit.service');
 const {
   parseCsvBuffer,
@@ -52,8 +53,16 @@ const STRICT_ROLE_ALIAS_MAP = {
   DUS: ROLES.DIRECTOR_OF_UNDERGRADUATE_STUDIES,
   DIRECTOR_OF_UNDERGRADUATE_STUDIES: ROLES.DIRECTOR_OF_UNDERGRADUATE_STUDIES,
   DIRECTOR_OF_UNDEGRADUATE_STUDIES: ROLES.DIRECTOR_OF_UNDERGRADUATE_STUDIES,
+  DPGS: ROLES.DIRECTOR_OF_POSTGRADUATE_STUDIES,
+  DIRECTOR_POSTGRADUATE: ROLES.DIRECTOR_OF_POSTGRADUATE_STUDIES,
+  POSTGRADUATE_DIRECTOR: ROLES.DIRECTOR_OF_POSTGRADUATE_STUDIES,
+  DIRECTOR_OF_POSTGRADUATE_STUDIES: ROLES.DIRECTOR_OF_POSTGRADUATE_STUDIES,
+  DUS_EXAMINATION_OFFICE: ROLES.DUS_SECRETARY,
   DUS_SECRETARY: ROLES.DUS_SECRETARY,
   STATION_SECRETARY: ROLES.DUS_SECRETARY,
+  SUPERVISOR: ROLES.SUPERVISOR,
+  RESEARCH_SUPERVISOR: ROLES.SUPERVISOR,
+  SUPERVISOR_OFFICER: ROLES.SUPERVISOR,
   ADMIN: ROLES.ADMINISTRATOR,
   ADMINISTRATOR: ROLES.ADMINISTRATOR,
   SUPERUSER: ROLES.SUPERUSER
@@ -87,6 +96,8 @@ function formatAdminUser(row) {
     graduationYear: row.graduation_year || null,
     semester: row.semester || null,
     yearOfStudy: row.year_of_study || null,
+    award: row.award || null,
+    isPostgraduate: isPostgraduateRecord(row),
     phoneNumber: row.phone_number || null,
     hall: row.hall || null,
     wing: row.wing || null,
@@ -110,10 +121,92 @@ function formatAdminUser(row) {
   };
 }
 
+const ADMIN_USER_LIST_COLUMNS = [
+  'id',
+  'username',
+  'email',
+  'full_name',
+  'first_name',
+  'middle_name',
+  'last_name',
+  'registration_number',
+  'programme',
+  'college',
+  'department',
+  'academic_year',
+  'graduation_year',
+  'semester',
+  'year_of_study',
+  'award',
+  'is_postgraduate',
+  'phone_number',
+  'hall',
+  'wing',
+  'block',
+  'room_number',
+  'address',
+  'physical_address',
+  'sponsor',
+  'role',
+  'is_active',
+  'is_email_verified',
+  'is_locked',
+  'project_id',
+  'station_code',
+  'station_name',
+  'last_login',
+  'created_at',
+  'updated_at'
+];
+
 class AdminService {
-  static async getAllUsers() {
+  /**
+   * Fetch users with lightweight column projection (excludes password hashes,
+   * base64 photos, and LONGTEXT certificates). Supports optional server-side
+   * pagination (?page=&limit=&search=&role=) while staying backward compatible
+   * (returns plain array when no pagination params are provided).
+   */
+  static async getAllUsers(options = {}) {
     const db = getDb();
-    const rows = await db('users').orderBy('created_at', 'desc');
+    let qb = db('users');
+
+    if (options.role && String(options.role).trim() && String(options.role).toUpperCase() !== 'ALL') {
+      const resolved = resolveRoleStrict(String(options.role));
+      qb = qb.where({ role: resolved || String(options.role).trim().toUpperCase() });
+    }
+
+    if (options.search && String(options.search).trim()) {
+      const pattern = `%${String(options.search).trim().toLowerCase()}%`;
+      qb = qb.where(function () {
+        this.whereRaw('LOWER(COALESCE(full_name, "")) LIKE ?', [pattern])
+          .orWhereRaw('LOWER(COALESCE(email, "")) LIKE ?', [pattern])
+          .orWhereRaw('LOWER(COALESCE(registration_number, "")) LIKE ?', [pattern])
+          .orWhereRaw('LOWER(COALESCE(college, "")) LIKE ?', [pattern])
+          .orWhereRaw('LOWER(COALESCE(department, "")) LIKE ?', [pattern]);
+      });
+    }
+
+    const hasPagination = options.page !== undefined || options.limit !== undefined;
+    if (hasPagination) {
+      const page = Math.max(1, parseInt(options.page, 10) || 1);
+      const limit = Math.max(1, Math.min(200, parseInt(options.limit, 10) || 50));
+      const offset = (page - 1) * limit;
+
+      const [countRow, rows] = await Promise.all([
+        qb.clone().count('id as total').first(),
+        qb.clone().select(ADMIN_USER_LIST_COLUMNS).orderBy('created_at', 'desc').limit(limit).offset(offset)
+      ]);
+      const total = parseInt(countRow?.total || 0, 10);
+      return {
+        items: rows.map(formatAdminUser),
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit))
+      };
+    }
+
+    const rows = await qb.select(ADMIN_USER_LIST_COLUMNS).orderBy('created_at', 'desc');
     return rows.map(formatAdminUser);
   }
 
@@ -191,6 +284,10 @@ class AdminService {
     const phone = payload.phone || payload.phoneNumber || null;
     const yearOfStudy = payload.yearOfStudy || null;
     const academicYear = payload.academicYear || null;
+    const award = payload.award ? String(payload.award).trim() : null;
+    const isPostgrad = resolvedRole === ROLES.STUDENT
+      ? (isPostgraduateRecord({ isPostgraduate: payload.isPostgraduate, award, programme }) ? 1 : 0)
+      : 0;
 
     const hashedPassword = await hashPassword(rawPassword);
     const userId = crypto.randomUUID();
@@ -212,6 +309,8 @@ class AdminService {
         department,
         academic_year: academicYear,
         year_of_study: yearOfStudy,
+        award,
+        is_postgraduate: isPostgrad,
         phone_number: phone,
         station_code: payload.stationCode || null,
         station_name: payload.stationName || null,
@@ -242,6 +341,8 @@ class AdminService {
             department,
             year_of_study: yearOfStudy,
             academic_year: academicYear,
+            award,
+            is_postgraduate: isPostgrad,
             user_id: userId,
             is_final_year: yearOfStudy ? String(yearOfStudy).toLowerCase() === 'final year' : 1,
             clearance_status: 'PENDING',
@@ -252,6 +353,8 @@ class AdminService {
         } else if (!existingStudent.user_id) {
           await trx('students').where({ id: existingStudent.id }).update({
             user_id: userId,
+            award: award || existingStudent.award || null,
+            is_postgraduate: isPostgrad || existingStudent.is_postgraduate || 0,
             updated_at: now
           });
         }
@@ -603,6 +706,10 @@ class AdminService {
         programme: request.programme || null,
         phone_number: request.phone || null,
         year_of_study: request.yearOfStudy || null,
+        award: request.award || null,
+        is_postgraduate: finalRole === ROLES.STUDENT
+          ? (isPostgraduateRecord({ isPostgraduate: request.isPostgraduate, award: request.award, programme: request.programme }) ? 1 : 0)
+          : 0,
         role: finalRole,
         is_active: 1,
         is_email_verified: 1,
@@ -632,9 +739,20 @@ class AdminService {
       if (request.college) updates.college = request.college;
       if (request.department) updates.department = request.department;
       if (request.programme) updates.programme = request.programme;
+      if (request.award) updates.award = request.award;
       if (request.phone) updates.phone_number = request.phone;
       if (request.yearOfStudy) updates.year_of_study = request.yearOfStudy;
       if (request.password) updates.password = await hashPassword(request.password);
+
+      if (user.role === ROLES.STUDENT && (request.award !== undefined || request.programme !== undefined || request.isPostgraduate !== undefined)) {
+        const nextAward = request.award || user.award || null;
+        const nextProgramme = request.programme || user.programme || null;
+        updates.is_postgraduate = isPostgraduateRecord({
+          isPostgraduate: request.isPostgraduate !== undefined ? request.isPostgraduate : user.is_postgraduate,
+          award: nextAward,
+          programme: nextProgramme
+        }) ? 1 : 0;
+      }
 
       await db('users').where({ id: user.id }).update(updates);
       user = await db('users').where({ id: user.id }).first();
@@ -663,6 +781,8 @@ class AdminService {
           department: user.department,
           programme: user.programme,
           year_of_study: user.year_of_study,
+          award: user.award || null,
+          is_postgraduate: user.is_postgraduate ? 1 : 0,
           clearance_status: 'PENDING',
           is_final_year: 1,
           project_id: user.project_id || null,
@@ -681,6 +801,8 @@ class AdminService {
           department: user.department,
           programme: user.programme,
           year_of_study: user.year_of_study,
+          award: user.award || null,
+          is_postgraduate: user.is_postgraduate ? 1 : 0,
           updated_at: now
         });
       }

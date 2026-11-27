@@ -1,0 +1,901 @@
+<section class="supervisor-page office-page" [class.sidebar-open]="sidebarOpen">
+
+  <!-- MOBILE OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" [class.open]="sidebarOpen" [class.sidebar-open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="brand">
+        <a routerLink="/dashboard/supervisor" (click)="closeSidebar()">
+          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="UDSM Institutional Logo" />
+        </a>
+        <div class="brand-text">
+          <strong>SUPERVISOR</strong>
+          <small>{{ supervisorDepartment }}</small>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        title="Close navigation menu"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <nav>
+      <a
+        routerLink="/dashboard/supervisor"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeSidebar()"
+      >
+        <i class="bi bi-mortarboard-fill" aria-hidden="true"></i>
+        <span>Postgraduate Clearance</span>
+        <span class="nav-badge" *ngIf="pendingReviewCount > 0">{{ pendingReviewCount }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-meta">
+          <strong>{{ currentUser?.fullName || 'Supervisor' }}</strong>
+          <span>{{ supervisorCollege }}</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="content">
+
+    <app-dashboard-header
+      title="Research Supervisor Dashboard"
+      subtitle="Final academic review, dissertation verification, and entry credential confirmation for postgraduate candidates."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <button
+        header-actions
+        type="button"
+        class="header-refresh-btn"
+        (click)="loadClearanceRequests()"
+        [disabled]="isLoading"
+        title="Refresh postgraduate queue"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin]="isLoading"></i>
+        <span>{{ isLoading ? 'Syncing…' : 'Refresh' }}</span>
+      </button>
+    </app-dashboard-header>
+
+    <!-- ERROR BANNER -->
+    <div class="error-banner" *ngIf="loadError">
+      <div class="error-banner-body">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        <span>{{ loadError }}</span>
+      </div>
+      <button type="button" class="btn-retry" (click)="loadClearanceRequests()">Retry</button>
+    </div>
+
+    <!-- BANNER CONTEXT -->
+    <section class="supervisory-banner">
+      <div class="banner-icon">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <div class="banner-content">
+        <h3>Postgraduate Final Check Mandate</h3>
+        <p>
+          As the Research Supervisor, you serve as the <strong>final authority (Stage 6)</strong> for postgraduate graduation clearance.
+          Candidates enter your queue after <strong>Convocation, Parallel Offices, Department, Principal, and Finance</strong> endorsements.
+          Confirm academic completion and inspect attached <strong>Undergraduate Certificate</strong> files before granting final clearance.
+        </p>
+      </div>
+      <div class="banner-badge">
+        <span class="role-pill"><i class="bi bi-shield-check"></i> Final Reviewing Authority</span>
+      </div>
+    </section>
+
+    <!-- METRICS CARDS (4-CARD GRID) -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card total-card clickable-filter" [class.active]="activeTab === 'all'" (click)="setActiveTab('all')">
+        <div class="stat-icon">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Total Postgraduate</span>
+          <strong class="stat-value">{{ totalAssignedCount }}</strong>
+          <small class="stat-hint">{{ attachedCertsCount }} with entry cert attached</small>
+        </div>
+      </button>
+
+      <button type="button" class="stat-card pending-card clickable-filter" [class.highlight]="pendingReviewCount > 0" [class.active]="activeTab === 'pending'" (click)="setActiveTab('pending')">
+        <div class="stat-icon">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Awaiting Final Check</span>
+          <strong class="stat-value">{{ pendingReviewCount }}</strong>
+          <small class="stat-hint">{{ readyForFinalCheckCount }} Finance-cleared &amp; ready</small>
+        </div>
+      </button>
+
+      <button type="button" class="stat-card approved-card clickable-filter" [class.active]="activeTab === 'approved'" (click)="setActiveTab('approved')">
+        <div class="stat-icon">
+          <i class="bi bi-patch-check-fill"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Final Cleared</span>
+          <strong class="stat-value">{{ approvedCount }}</strong>
+          <small class="stat-hint">Clearance completed</small>
+        </div>
+      </button>
+
+      <button type="button" class="stat-card rejected-card clickable-filter" [class.active]="activeTab === 'rejected'" (click)="setActiveTab('rejected')">
+        <div class="stat-icon">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Revisions Requested</span>
+          <strong class="stat-value">{{ rejectedCount }}</strong>
+          <small class="stat-hint">Awaiting candidate action</small>
+        </div>
+      </button>
+    </section>
+
+    <!-- TOOLBAR & FILTERS -->
+    <section class="toolbar-card">
+      <div class="search-wrap">
+        <i class="bi bi-search search-icon" aria-hidden="true"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Search by student name, registration number, programme, award, or department..."
+          class="search-input"
+        />
+        <button *ngIf="searchTerm" type="button" class="clear-search-btn" (click)="clearSearch()" title="Clear search">✕</button>
+      </div>
+
+      <div class="filter-controls">
+        <div class="filter-group">
+          <label for="supervisorStatusFilter">Status:</label>
+          <select id="supervisorStatusFilter" [(ngModel)]="activeTab" (ngModelChange)="setActiveTab($event)" class="filter-select" aria-label="Filter by clearance status">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="awardFilter">Degree Level:</label>
+          <select id="awardFilter" [(ngModel)]="awardFilter" (ngModelChange)="onFilterChange()" class="filter-select">
+            <option value="ALL">All Degree Levels</option>
+            <option value="MASTER">Master Degree</option>
+            <option value="PHD">PhD Doctoral</option>
+            <option value="POSTGRAD_DIPLOMA">Postgraduate Diploma</option>
+          </select>
+        </div>
+
+        <div class="filter-group" *ngIf="availableDepartments.length > 1">
+          <label for="departmentFilter">Department:</label>
+          <select id="departmentFilter" [(ngModel)]="departmentFilter" (ngModelChange)="onFilterChange()" class="filter-select">
+            <option value="ALL">All Departments</option>
+            <option *ngFor="let dept of availableDepartments" [value]="dept">{{ dept }}</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-secondary" (click)="exportCsv()" [disabled]="filteredStudents.length === 0" title="Download CSV of filtered list">
+          <i class="bi bi-download"></i>
+          <span>Export CSV</span>
+        </button>
+
+        <button type="button" class="btn-export" (click)="exportReport()" title="Print postgraduate clearance list">
+          <i class="bi bi-printer-fill"></i>
+          <span>Print Report</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- STATUS TABS -->
+    <div class="tabs-nav">
+      <button
+        type="button"
+        class="tab-item"
+        [class.active]="activeTab === 'pending'"
+        (click)="setActiveTab('pending')"
+      >
+        <i class="bi bi-clock-history"></i>
+        <span>Awaiting Final Check</span>
+        <span class="tab-badge warning-badge">{{ pendingReviewCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-item"
+        [class.active]="activeTab === 'approved'"
+        (click)="setActiveTab('approved')"
+      >
+        <i class="bi bi-check2-circle"></i>
+        <span>Approved &amp; Cleared</span>
+        <span class="tab-badge success-badge">{{ approvedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-item"
+        [class.active]="activeTab === 'rejected'"
+        (click)="setActiveTab('rejected')"
+      >
+        <i class="bi bi-x-circle"></i>
+        <span>Revisions Requested</span>
+        <span class="tab-badge danger-badge">{{ rejectedCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-item"
+        [class.active]="activeTab === 'all'"
+        (click)="setActiveTab('all')"
+      >
+        <i class="bi bi-collection-fill"></i>
+        <span>All Postgraduate</span>
+        <span class="tab-badge default-badge">{{ totalAssignedCount }}</span>
+      </button>
+    </div>
+
+    <!-- BULK ACTIONS TOOLBAR -->
+    <div class="bulk-bar" *ngIf="selectedIds.size > 0">
+      <div class="bulk-info">
+        <i class="bi bi-check-square-fill"></i>
+        <span><strong>{{ selectedIds.size }}</strong> eligible candidate(s) selected</span>
+      </div>
+      <div class="bulk-actions">
+        <button type="button" class="btn-bulk-approve" (click)="openBulkApproveModal()" [disabled]="isProcessing">
+          <i class="bi bi-check-all"></i>
+          <span>Grant Final Clearance (Bulk)</span>
+        </button>
+        <button type="button" class="btn-bulk-clear" (click)="selectedIds.clear()">
+          Cancel Selection
+        </button>
+      </div>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Synchronizing postgraduate clearance queue from University registry...</p>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" *ngIf="!isLoading && filteredStudents.length === 0">
+      <div class="empty-icon"><i class="bi bi-folder2-open"></i></div>
+      <h3>No Postgraduate Candidates Found</h3>
+      <p *ngIf="searchTerm || awardFilter !== 'ALL' || departmentFilter !== 'ALL'">
+        No clearance requests matched your active search or filter criteria.
+      </p>
+      <p *ngIf="!searchTerm && awardFilter === 'ALL' && departmentFilter === 'ALL' && activeTab === 'pending'">
+        All postgraduate candidates in your scope are currently cleared or still completing earlier stages.
+      </p>
+      <p *ngIf="!searchTerm && awardFilter === 'ALL' && departmentFilter === 'ALL' && activeTab !== 'pending'">
+        There are no postgraduate clearance applications in this status view.
+      </p>
+      <button
+        *ngIf="activeTab !== 'all' || searchTerm || awardFilter !== 'ALL' || departmentFilter !== 'ALL'"
+        type="button"
+        class="btn-primary"
+        (click)="resetFilters()"
+      >
+        Reset Filters
+      </button>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <section class="table-card" *ngIf="!isLoading && filteredStudents.length > 0">
+      <div class="table-responsive">
+        <table class="students-table">
+          <thead>
+            <tr>
+              <th class="th-select">
+                <input
+                  type="checkbox"
+                  [checked]="isAllSelected"
+                  [disabled]="selectableFilteredStudents.length === 0"
+                  (change)="toggleSelectAll()"
+                  aria-label="Select all eligible rows"
+                />
+              </th>
+              <th>Student Candidate</th>
+              <th>Registration No</th>
+              <th>Programme &amp; Award</th>
+              <th>Prior Stages</th>
+              <th>Entry Certificate</th>
+              <th>Supervisor Decision</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let student of paginatedStudents"
+              [class.row-selected]="selectedIds.has(student.requestId)"
+              [class.row-highlight]="student.supervisorStatus === 'Pending'"
+            >
+              <!-- SELECT CHECKBOX -->
+              <td class="td-select">
+                <input
+                  type="checkbox"
+                  [checked]="selectedIds.has(student.requestId)"
+                  (change)="toggleRowSelection(student)"
+                  [disabled]="!canSelectRow(student)"
+                  aria-label="Select student"
+                />
+              </td>
+
+              <!-- STUDENT CANDIDATE -->
+              <td class="td-candidate">
+                <div class="candidate-wrap">
+                  <div class="candidate-avatar">
+                    {{ student.fullName.charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="candidate-info">
+                    <button type="button" class="candidate-name-btn" (click)="openDetails(student)">
+                      {{ student.fullName }}
+                    </button>
+                    <span class="candidate-email">{{ student.email }}</span>
+                    <span class="candidate-phone" *ngIf="student.phoneNumber && student.phoneNumber !== 'Not provided'">{{ student.phoneNumber }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- REG NO -->
+              <td class="td-reg">
+                <code class="reg-code">{{ student.registrationNumber }}</code>
+              </td>
+
+              <!-- PROGRAMME & AWARD -->
+              <td class="td-programme">
+                <div class="prog-title">{{ student.programme }}</div>
+                <div class="award-chip-wrap">
+                  <span class="award-chip" [class.phd-chip]="student.award.toLowerCase().includes('phd') || student.award.toLowerCase().includes('doctor')" [class.pgd-chip]="student.award.toLowerCase().includes('diploma')">
+                    <i class="bi bi-mortarboard"></i> {{ student.award }}
+                  </span>
+                  <span class="dept-name">{{ student.department }}</span>
+                </div>
+              </td>
+
+              <!-- PRIOR CLEARANCE TRAIL -->
+              <td class="td-trail">
+                <div class="trail-pills">
+                  <span class="trail-item" [class.trail-pass]="student.departmentStatus === 'Approved'" [class.trail-reject]="student.departmentStatus === 'Rejected'" title="Department Clearance">
+                    <i class="bi" [class.bi-check-circle-fill]="student.departmentStatus === 'Approved'" [class.bi-x-circle-fill]="student.departmentStatus === 'Rejected'" [class.bi-clock]="student.departmentStatus === 'Pending'"></i>
+                    Dept
+                  </span>
+                  <span class="trail-item" [class.trail-pass]="student.principalStatus === 'Approved'" [class.trail-reject]="student.principalStatus === 'Rejected'" title="Principal Clearance">
+                    <i class="bi" [class.bi-check-circle-fill]="student.principalStatus === 'Approved'" [class.bi-x-circle-fill]="student.principalStatus === 'Rejected'" [class.bi-clock]="student.principalStatus === 'Pending'"></i>
+                    Principal
+                  </span>
+                  <span class="trail-item" [class.trail-pass]="student.financeStatus === 'Approved'" [class.trail-reject]="student.financeStatus === 'Rejected'" title="Finance Clearance">
+                    <i class="bi" [class.bi-check-circle-fill]="student.financeStatus === 'Approved'" [class.bi-x-circle-fill]="student.financeStatus === 'Rejected'" [class.bi-clock]="student.financeStatus === 'Pending'"></i>
+                    Finance
+                  </span>
+                </div>
+              </td>
+
+              <!-- UNDERGRADUATE CERTIFICATE -->
+              <td class="td-cert">
+                <div class="cert-status-wrap">
+                  <button
+                    type="button"
+                    class="btn-cert-preview"
+                    *ngIf="student.undergraduateCertificateUrl"
+                    (click)="openCertificatePreview(student)"
+                    title="Inspect submitted Undergraduate Degree Certificate"
+                  >
+                    <i class="bi" [class.bi-file-earmark-pdf-fill]="isPdfCertificate(student.undergraduateCertificateUrl)" [class.bi-file-earmark-image-fill]="!isPdfCertificate(student.undergraduateCertificateUrl)"></i>
+                    <span>Inspect File</span>
+                  </button>
+                  <span class="cert-missing" *ngIf="!student.undergraduateCertificateUrl">
+                    <i class="bi bi-exclamation-triangle"></i> Not Attached
+                  </span>
+                </div>
+              </td>
+
+              <!-- SUPERVISOR STATUS -->
+              <td class="td-status">
+                <span
+                  class="decision-badge"
+                  [class.decision-pending]="student.supervisorStatus === 'Pending'"
+                  [class.decision-approved]="student.supervisorStatus === 'Approved'"
+                  [class.decision-rejected]="student.supervisorStatus === 'Rejected'"
+                >
+                  <i class="bi"
+                    [class.bi-hourglass-split]="student.supervisorStatus === 'Pending'"
+                    [class.bi-check-circle-fill]="student.supervisorStatus === 'Approved'"
+                    [class.bi-x-circle-fill]="student.supervisorStatus === 'Rejected'"
+                  ></i>
+                  {{ student.supervisorStatus === 'Approved' ? 'Final Cleared' : student.supervisorStatus === 'Rejected' ? 'Returned' : 'Awaiting Check' }}
+                </span>
+                <small class="rejection-note" *ngIf="student.supervisorStatus === 'Rejected' && student.supervisorComments">
+                  {{ student.supervisorComments }}
+                </small>
+                <small class="reviewer-meta" *ngIf="student.supervisorStatus !== 'Pending' && student.supervisorReviewedBy">
+                  By {{ student.supervisorReviewedBy }}
+                </small>
+              </td>
+
+              <!-- ACTIONS -->
+              <td class="td-actions">
+                <div class="action-buttons">
+                  <button
+                    type="button"
+                    class="btn-action-view"
+                    (click)="openDetails(student)"
+                    title="View candidate academic dossier and full clearance trail"
+                  >
+                    <i class="bi bi-eye-fill"></i>
+                    <span>Review</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-action-approve"
+                    *ngIf="student.supervisorStatus !== 'Approved'"
+                    [disabled]="student.financeStatus !== 'Approved' || isProcessing"
+                    (click)="openApproveModal(student)"
+                    [title]="student.financeStatus === 'Approved' ? 'Grant final supervisory clearance' : 'Awaiting Finance clearance first'"
+                  >
+                    <i class="bi bi-check-lg"></i>
+                    <span>Approve</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-action-reject"
+                    *ngIf="student.supervisorStatus !== 'Approved'"
+                    [disabled]="isProcessing"
+                    (click)="openRejectModal(student)"
+                    title="Return application for dissertation or certificate corrections"
+                  >
+                    <i class="bi bi-reply-fill"></i>
+                    <span>Return</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn-action-withdraw"
+                    *ngIf="student.supervisorStatus !== 'Pending'"
+                    [disabled]="isProcessing"
+                    (click)="openWithdrawModal(student)"
+                    title="Withdraw supervisor decision and return to Pending"
+                  >
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span>Withdraw</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-bar" *ngIf="totalPages > 1">
+        <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">&larr; Previous</button>
+        <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong> ({{ filteredStudents.length }} candidates)</span>
+        <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next &rarr;</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       STUDENT CLEARANCE DOSSIER MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showDetailsModal && selectedStudent" (click)="closeDetails()">
+    <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Postgraduate Candidate Clearance Dossier</span>
+          <h2>{{ selectedStudent.fullName }}</h2>
+          <code class="reg-pill">{{ selectedStudent.registrationNumber }}</code>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeDetails()" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- ACADEMIC PORTFOLIO -->
+        <div class="dossier-card">
+          <h4 class="dossier-title"><i class="bi bi-journal-bookmark-fill"></i> Postgraduate Academic Portfolio</h4>
+          <div class="dossier-grid">
+            <div class="dossier-item">
+              <span class="label">Programme</span>
+              <strong class="value">{{ selectedStudent.programme }}</strong>
+            </div>
+            <div class="dossier-item">
+              <span class="label">Degree Level &amp; Award</span>
+              <strong class="value highlight-text">{{ selectedStudent.award }}</strong>
+            </div>
+            <div class="dossier-item">
+              <span class="label">Department</span>
+              <span class="value">{{ selectedStudent.department }}</span>
+            </div>
+            <div class="dossier-item">
+              <span class="label">College</span>
+              <span class="value">{{ selectedStudent.college }}</span>
+            </div>
+            <div class="dossier-item">
+              <span class="label">Institutional Email</span>
+              <span class="value">{{ selectedStudent.email }}</span>
+            </div>
+            <div class="dossier-item">
+              <span class="label">Contact Phone</span>
+              <span class="value">{{ selectedStudent.phoneNumber }}</span>
+            </div>
+            <div class="dossier-item" *ngIf="selectedStudent.requestDate">
+              <span class="label">Submitted On</span>
+              <span class="value">{{ selectedStudent.requestDate | date:'medium' }}</span>
+            </div>
+            <div class="dossier-item">
+              <span class="label">Current Workflow Stage</span>
+              <strong class="value">{{ selectedStudent.currentStage }}</strong>
+            </div>
+          </div>
+
+          <div class="thesis-box" *ngIf="selectedStudent.thesisTitle">
+            <span class="thesis-label"><i class="bi bi-book"></i> Recorded Dissertation / Thesis Title</span>
+            <p class="thesis-title">"{{ selectedStudent.thesisTitle }}"</p>
+          </div>
+
+          <div class="thesis-box" *ngIf="selectedStudent.studentRemarks">
+            <span class="thesis-label"><i class="bi bi-chat-left-text"></i> Candidate Submission Notes</span>
+            <p class="thesis-title">{{ selectedStudent.studentRemarks }}</p>
+          </div>
+        </div>
+
+        <!-- UNDERGRADUATE CERTIFICATE CARD -->
+        <div class="dossier-card cert-verification-card">
+          <div class="card-header-flex">
+            <h4 class="dossier-title"><i class="bi bi-mortarboard"></i> Undergraduate Degree Certificate</h4>
+            <span class="status-chip" [class.verified-chip]="!!selectedStudent.undergraduateCertificateUrl">
+              {{ selectedStudent.undergraduateCertificateUrl ? 'Document Attached' : 'Not Attached' }}
+            </span>
+          </div>
+          <p class="section-desc">
+            Inspect the candidate's submitted Bachelor / entry degree certificate before granting final postgraduate clearance.
+          </p>
+
+          <div class="cert-preview-inline" *ngIf="selectedStudent.undergraduateCertificateUrl">
+            <div class="cert-thumbnail" *ngIf="!isPdfCertificate(selectedStudent.undergraduateCertificateUrl) && !certLoadFailed">
+              <img
+                [src]="selectedStudent.undergraduateCertificateUrl"
+                alt="Undergraduate Certificate Scan"
+                (error)="certLoadFailed = true"
+              />
+            </div>
+            <div class="cert-thumbnail cert-pdf-placeholder" *ngIf="isPdfCertificate(selectedStudent.undergraduateCertificateUrl) || certLoadFailed">
+              <i class="bi" [class.bi-file-earmark-pdf-fill]="isPdfCertificate(selectedStudent.undergraduateCertificateUrl)" [class.bi-file-earmark-text-fill]="!isPdfCertificate(selectedStudent.undergraduateCertificateUrl)"></i>
+              <span>{{ isPdfCertificate(selectedStudent.undergraduateCertificateUrl) ? 'PDF' : 'FILE' }}</span>
+            </div>
+            <div class="cert-meta">
+              <strong>Undergraduate Degree Certificate Document</strong>
+              <small>Submitted with postgraduate clearance application</small>
+              <div class="cert-btn-group">
+                <button type="button" class="btn-view-doc" (click)="openCertificatePreview(selectedStudent)">
+                  <i class="bi bi-arrows-fullscreen"></i> Full Document Preview
+                </button>
+                <a
+                  [href]="selectedStudent.undergraduateCertificateUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn-view-doc"
+                >
+                  <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="cert-empty-box" *ngIf="!selectedStudent.undergraduateCertificateUrl">
+            <i class="bi bi-exclamation-triangle-fill warning-icon"></i>
+            <div>
+              <strong>No Undergraduate Certificate Attached</strong>
+              <p>The candidate has not attached an Undergraduate Degree Certificate file. You may return this application requesting upload.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE CLEARANCE AUDIT TRAIL -->
+        <div class="dossier-card">
+          <h4 class="dossier-title"><i class="bi bi-shield-check"></i> Live Clearance Endorsement Audit Trail</h4>
+          <div class="audit-timeline" *ngIf="selectedStudent.approvalTrail.length > 0">
+            <div
+              class="timeline-step"
+              *ngFor="let step of selectedStudent.approvalTrail"
+              [class.passed]="step.status === 'Approved'"
+              [class.rejected]="step.status === 'Rejected'"
+              [class.pending]="step.status === 'Pending'"
+            >
+              <div class="step-marker">
+                {{ step.status === 'Approved' ? '✓' : step.status === 'Rejected' ? '✕' : '•' }}
+              </div>
+              <div class="step-detail">
+                <div class="step-detail-top">
+                  <strong>{{ step.office }}</strong>
+                  <span class="trail-status-label" [class.approved]="step.status === 'Approved'" [class.rejected]="step.status === 'Rejected'">
+                    {{ step.status }}
+                  </span>
+                </div>
+                <small *ngIf="step.reviewedBy || step.reviewedAt">
+                  <ng-container *ngIf="step.reviewedBy">Reviewed by {{ step.reviewedBy }}</ng-container>
+                  <ng-container *ngIf="step.reviewedBy && step.reviewedAt"> · </ng-container>
+                  <ng-container *ngIf="step.reviewedAt">{{ step.reviewedAt | date:'medium' }}</ng-container>
+                </small>
+                <small *ngIf="step.comment" class="step-comment">{{ step.comment }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeDetails()">Close</button>
+        <button
+          type="button"
+          class="btn-withdraw-modal"
+          *ngIf="selectedStudent.supervisorStatus !== 'Pending'"
+          (click)="openWithdrawModal(selectedStudent)"
+        >
+          <i class="bi bi-arrow-counterclockwise"></i> Withdraw Decision
+        </button>
+        <button
+          type="button"
+          class="btn-reject-modal"
+          *ngIf="selectedStudent.supervisorStatus !== 'Approved'"
+          (click)="openRejectModal(selectedStudent)"
+        >
+          <i class="bi bi-reply"></i> Return for Corrections
+        </button>
+        <button
+          type="button"
+          class="btn-approve-modal"
+          *ngIf="selectedStudent.supervisorStatus !== 'Approved'"
+          [disabled]="selectedStudent.financeStatus !== 'Approved'"
+          (click)="openApproveModal(selectedStudent)"
+        >
+          <i class="bi bi-patch-check-fill"></i> Grant Final Clearance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APPROVAL MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showApproveModal && selectedStudent" (click)="closeApproveModal()">
+    <div class="modal-dialog modal-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Final Supervisory Endorsement</span>
+          <h2>Grant Postgraduate Final Clearance</h2>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeApproveModal()" [disabled]="isProcessing" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="prompt-box">
+          <p>You are about to issue the <strong>final Stage 6 clearance approval</strong> for:</p>
+          <div class="student-highlight">
+            <strong>{{ selectedStudent.fullName }}</strong> (<code>{{ selectedStudent.registrationNumber }}</code>)<br />
+            <span>{{ selectedStudent.programme }} · {{ selectedStudent.award }}</span>
+          </div>
+          <p class="final-note">
+            Upon confirmation, this candidate's graduation clearance will transition immediately to <strong>COMPLETED</strong>.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="approveComments">Supervisor Endorsement Remarks:</label>
+          <textarea
+            id="approveComments"
+            rows="4"
+            [(ngModel)]="approveComments"
+            class="form-control"
+            placeholder="Enter official supervisor verification remarks..."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeApproveModal()" [disabled]="isProcessing">Cancel</button>
+        <button type="button" class="btn-primary-confirm" (click)="confirmApproval()" [disabled]="isProcessing">
+          <span *ngIf="!isProcessing"><i class="bi bi-shield-check"></i> Confirm &amp; Grant Final Clearance</span>
+          <span *ngIf="isProcessing">Submitting Approval…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       REJECTION / CORRECTION REQUEST MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showRejectModal && selectedStudent" (click)="closeRejectModal()">
+    <div class="modal-dialog modal-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header danger-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Academic Revision Request</span>
+          <h2>Return Clearance Application</h2>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeRejectModal()" [disabled]="isProcessing" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert-box">
+          <i class="bi bi-info-circle-fill"></i>
+          <span>
+            Specify why final clearance cannot be granted yet. <strong>{{ selectedStudent.fullName }}</strong> will be notified with your instructions.
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="rejectReasonSelect">Primary Reason:</label>
+          <select id="rejectReasonSelect" [(ngModel)]="rejectReason" (ngModelChange)="rejectValidationError = ''" class="form-control">
+            <option *ngFor="let reason of rejectReasons" [value]="reason">{{ reason }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="rejectCommentsInput">Detailed Supervisor Instructions:</label>
+          <textarea
+            id="rejectCommentsInput"
+            rows="4"
+            [(ngModel)]="rejectComments"
+            (ngModelChange)="rejectValidationError = ''"
+            class="form-control"
+            placeholder="Describe the exact corrections or documents required from the candidate..."
+          ></textarea>
+          <small class="field-error" *ngIf="rejectValidationError">{{ rejectValidationError }}</small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isProcessing">Cancel</button>
+        <button type="button" class="btn-danger-confirm" (click)="confirmRejection()" [disabled]="isProcessing">
+          <span *ngIf="!isProcessing"><i class="bi bi-send-fill"></i> Send Correction Request</span>
+          <span *ngIf="isProcessing">Submitting Decision…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       WITHDRAW DECISION MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showWithdrawModal && selectedStudent" (click)="closeWithdrawModal()">
+    <div class="modal-dialog modal-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Decision Reversal</span>
+          <h2>Withdraw Supervisor Decision</h2>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeWithdrawModal()" [disabled]="isProcessing" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="prompt-box">
+          <p>Are you sure you want to withdraw your <strong>{{ selectedStudent.supervisorStatus }}</strong> decision for:</p>
+          <div class="student-highlight">
+            <strong>{{ selectedStudent.fullName }}</strong> (<code>{{ selectedStudent.registrationNumber }}</code>)<br />
+            <span>{{ selectedStudent.programme }} · {{ selectedStudent.award }}</span>
+          </div>
+          <p class="final-note">
+            The request will return to <strong>Pending</strong> at the Supervisor stage so it can be re-evaluated.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeWithdrawModal()" [disabled]="isProcessing">Cancel</button>
+        <button type="button" class="btn-primary-confirm" (click)="confirmWithdraw()" [disabled]="isProcessing">
+          <span *ngIf="!isProcessing"><i class="bi bi-arrow-counterclockwise"></i> Confirm Withdrawal</span>
+          <span *ngIf="isProcessing">Withdrawing…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       BULK APPROVE MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showBulkApproveModal" (click)="closeBulkApproveModal()">
+    <div class="modal-dialog modal-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Bulk Final Endorsement</span>
+          <h2>Confirm Bulk Final Clearance</h2>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeBulkApproveModal()" [disabled]="isProcessing" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="prompt-box">
+          <p>
+            You are about to grant <strong>final Stage 6 postgraduate clearance</strong> to
+            <strong>{{ selectedIds.size }}</strong> selected candidate(s).
+          </p>
+          <p class="final-note">
+            Each eligible candidate's clearance will transition to <strong>COMPLETED</strong> and they will be notified immediately.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeBulkApproveModal()" [disabled]="isProcessing">Cancel</button>
+        <button type="button" class="btn-primary-confirm" (click)="confirmBulkApprove()" [disabled]="isProcessing">
+          <span *ngIf="!isProcessing"><i class="bi bi-check-all"></i> Confirm Bulk Approval ({{ selectedIds.size }})</span>
+          <span *ngIf="isProcessing">Processing Bulk Clearance…</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       CERTIFICATE PREVIEW MODAL
+  ============================================================ -->
+  <div class="modal-backdrop" *ngIf="showCertificatePreviewModal && selectedStudent" (click)="closeCertificatePreview()">
+    <div class="modal-dialog modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-titles">
+          <span class="modal-eyebrow">Credential Inspection</span>
+          <h2>Undergraduate Degree Certificate Preview</h2>
+          <small>{{ selectedStudent.fullName }} ({{ selectedStudent.registrationNumber }})</small>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeCertificatePreview()" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body cert-preview-body">
+        <div class="document-viewer" *ngIf="selectedStudent.undergraduateCertificateUrl">
+          <iframe
+            *ngIf="isPdfCertificate(selectedStudent.undergraduateCertificateUrl)"
+            [src]="getSafePdfUrl(selectedStudent.undergraduateCertificateUrl)"
+            class="full-cert-pdf"
+            title="Undergraduate Degree Certificate PDF"
+          ></iframe>
+
+          <img
+            *ngIf="!isPdfCertificate(selectedStudent.undergraduateCertificateUrl) && !certLoadFailed"
+            [src]="selectedStudent.undergraduateCertificateUrl"
+            alt="Undergraduate Degree Certificate"
+            class="full-cert-img"
+            (error)="certLoadFailed = true"
+          />
+
+          <div class="document-viewer-empty" *ngIf="!isPdfCertificate(selectedStudent.undergraduateCertificateUrl) && certLoadFailed">
+            <i class="bi bi-file-earmark-break-fill"></i>
+            <p>Unable to render an inline preview for this file format. Use "Open in New Tab" below to inspect the document.</p>
+          </div>
+        </div>
+        <div class="document-viewer-empty" *ngIf="!selectedStudent.undergraduateCertificateUrl">
+          <i class="bi bi-file-earmark-x-fill"></i>
+          <p>No document file uploaded yet.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <a
+          *ngIf="selectedStudent.undergraduateCertificateUrl"
+          [href]="selectedStudent.undergraduateCertificateUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-download"
+        >
+          <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+        </a>
+        <button type="button" class="btn-cancel" (click)="closeCertificatePreview()">Close</button>
+      </div>
+    </div>
+  </div>
+
+</section>

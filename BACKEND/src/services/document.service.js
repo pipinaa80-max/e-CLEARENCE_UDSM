@@ -5,13 +5,17 @@ const { db } = require('../config/database');
 const env = require('../config/env');
 const AuditService = require('./audit.service');
 const NotificationService = require('./notification.service');
+const { isPostgraduateRecord } = require('../utils/postgraduate');
+const { assertOfficerAcademicScope, loadAcademicCatalogs } = require('../utils/academicScope');
 
 const DEFAULT_CATEGORIES = [
   'Convocation Receipt',
   'Bank Pay-in Slip',
   'ID Card Copy',
   'Academic Transcript Attachment',
-  'Clearance Supporting Document'
+  'Clearance Supporting Document',
+  'Diploma Certificate',
+  'Undergraduate Certificate'
 ];
 
 const REQUIRED_CLEARANCE_DOCUMENTS = [
@@ -23,10 +27,12 @@ const REQUIRED_CLEARANCE_DOCUMENTS = [
 
 const TRANSCRIPT_PAYMENT_DESCRIPTION_PREFIX = 'Transcript document for payment request ';
 
-const REQUIRED_TRANSCRIPT_DOCUMENTS = [
+const ALLOWED_TRANSCRIPT_DOCUMENTS = [
   'Birth Certificate',
   'O-Level Certificate',
-  'A-Level Certificate'
+  'A-Level Certificate',
+  'Diploma Certificate',
+  'Undergraduate Certificate'
 ];
 
 function unlinkQuietly(filePath) {
@@ -90,13 +96,13 @@ class DocumentService {
         throw Object.assign(new Error('Transcript payment request ID is required in document description.'), { status: 400 });
       }
 
-      const canonicalCategory = REQUIRED_TRANSCRIPT_DOCUMENTS.find(
+      const canonicalCategory = ALLOWED_TRANSCRIPT_DOCUMENTS.find(
         reqCat => reqCat.toLowerCase() === String(category || '').trim().toLowerCase()
       );
       if (!canonicalCategory) {
         unlinkQuietly(file.path);
         throw Object.assign(
-          new Error(`Unsupported transcript document type '${category}'. Expected one of: ${REQUIRED_TRANSCRIPT_DOCUMENTS.join(', ')}.`),
+          new Error(`Unsupported transcript document type '${category}'. Expected one of: ${ALLOWED_TRANSCRIPT_DOCUMENTS.join(', ')}.`),
           { status: 400 }
         );
       }
@@ -214,26 +220,31 @@ class DocumentService {
   }
 
   /**
-   * Enforce role-based access scoping for documents:
+   * Enforce role-based access scoping for documents (acronym & catalog aware):
    * - Students: only their own documents
-   * - Department Officers: only students in their own department
+   * - Department Officers & Supervisors: only students in their own department (and college if assigned)
    * - Principals: only students in their own college
    */
-  static checkDocumentAccess(requestingUser, student) {
+  static async checkDocumentAccess(requestingUser, student) {
     if (!requestingUser || !student) return;
 
     if (requestingUser.role === 'STUDENT') {
       if (requestingUser.id !== student.user_id && requestingUser.registrationNumber !== student.registration_number) {
         throw Object.assign(new Error('Forbidden: You can only access your own documents.'), { status: 403 });
       }
-    } else if (requestingUser.role === 'DEPARTMENT_OFFICER') {
-      if (requestingUser.department && student.department && requestingUser.department !== student.department) {
-        throw Object.assign(new Error('Forbidden: Department officers can only access documents for students in their own department.'), { status: 403 });
-      }
-    } else if (requestingUser.role === 'PRINCIPAL' || requestingUser.role === 'COLLEGE_PRINCIPAL') {
-      if (requestingUser.college && student.college && requestingUser.college !== student.college) {
-        throw Object.assign(new Error('Forbidden: Principals can only access documents for students in their own college.'), { status: 403 });
-      }
+      return;
+    }
+
+    if (['DEPARTMENT_OFFICER', 'SUPERVISOR', 'PRINCIPAL', 'COLLEGE_PRINCIPAL'].includes(requestingUser.role)) {
+      const catalogs = await loadAcademicCatalogs(db, requestingUser);
+      assertOfficerAcademicScope(
+        requestingUser,
+        {
+          college: (student.college || '').trim(),
+          department: (student.department || '').trim()
+        },
+        { ...catalogs, actionLabel: 'access documents' }
+      );
     }
   }
 
@@ -247,7 +258,7 @@ class DocumentService {
     }
 
     // Role and institutional scope enforcement
-    this.checkDocumentAccess(requestingUser, student);
+    await this.checkDocumentAccess(requestingUser, student);
 
     const pageNum = Math.max(0, parseInt(page, 10) || 0);
     const pageSize = Math.max(1, Math.min(100, parseInt(size, 10) || 10));
@@ -307,7 +318,7 @@ class DocumentService {
     const student = await db('students').where({ id: doc.student_id }).first();
 
     // Role and institutional scope enforcement
-    this.checkDocumentAccess(requestingUser, student);
+    await this.checkDocumentAccess(requestingUser, student);
 
     const studentName = student ? (student.full_name || `${student.first_name || ''} ${student.last_name || ''}`.trim() || doc.student_id) : doc.student_id;
 
@@ -444,6 +455,8 @@ class DocumentService {
       return DEFAULT_CATEGORIES;
     }
 
+    await this.checkDocumentAccess(requestingUser, student);
+
     const existing = await db('documents')
       .where({ student_id: student.id })
       .distinct('document_category')
@@ -472,12 +485,17 @@ class DocumentService {
       throw Object.assign(new Error(`Student not found for identifier '${studentId}'.`), { status: 404 });
     }
 
-    this.checkDocumentAccess(requestingUser, student);
+    await this.checkDocumentAccess(requestingUser, student);
 
     const docs = await db('documents').where({ student_id: student.id });
-    return REQUIRED_CLEARANCE_DOCUMENTS.filter(
-      reqName => !docs.some(doc => this.matchesRequiredDocument(doc, reqName))
-    );
+    const missing = [];
+    if (!docs.some(doc => this.matchesRequiredDocument(doc, 'Transcript'))) missing.push('Transcript');
+    if (!docs.some(doc => this.matchesRequiredDocument(doc, 'O-Level Certificate'))) missing.push('O-Level Certificate');
+    if (!docs.some(doc => this.matchesRequiredDocument(doc, 'A-Level Certificate') || this.matchesRequiredDocument(doc, 'Diploma Certificate'))) {
+      missing.push('A-Level or Diploma Certificate');
+    }
+    if (!docs.some(doc => this.matchesRequiredDocument(doc, 'Identity Document'))) missing.push('Identity Document');
+    return missing;
   }
 
   /**
@@ -489,7 +507,7 @@ class DocumentService {
       throw Object.assign(new Error(`Student not found for identifier '${studentId}'.`), { status: 404 });
     }
 
-    this.checkDocumentAccess(requestingUser, student);
+    await this.checkDocumentAccess(requestingUser, student);
 
     const rows = await db('documents')
       .where({ student_id: student.id })
@@ -534,9 +552,13 @@ class DocumentService {
   /**
    * Check if student has required clearance documents
    */
-  static async hasRequiredDocuments(studentId) {
+  static async hasRequiredDocuments(studentId, requestingUser = null) {
     const student = await this.resolveStudent(studentId);
     if (!student) return false;
+
+    if (requestingUser) {
+      await this.checkDocumentAccess(requestingUser, student);
+    }
 
     const count = await db('documents')
       .where({ student_id: student.id, is_verified: 1 })
@@ -562,7 +584,7 @@ class DocumentService {
       .select('document_category', 'file_type');
 
     const matched = [];
-    for (const reqName of REQUIRED_TRANSCRIPT_DOCUMENTS) {
+    for (const reqName of ALLOWED_TRANSCRIPT_DOCUMENTS) {
       if (docs.some(d => this.matchesRequiredDocument(d, reqName))) {
         matched.push(reqName);
       }
@@ -571,11 +593,28 @@ class DocumentService {
   }
 
   /**
-   * Check if student has uploaded all 3 required transcript documents for a specific payment request
+   * Check if student has uploaded all required transcript documents for a specific payment request:
+   * - Birth Certificate + O-Level Certificate + (A-Level Certificate OR Diploma Certificate)
+   * - Plus Undergraduate Certificate for Postgraduate students
    */
   static async hasRequiredTranscriptDocuments(studentIdOrUserId, paymentRequestId) {
+    const student = await this.resolveStudent(studentIdOrUserId);
+    if (!student) return false;
+
     const categories = await this.getTranscriptDocumentCategories(studentIdOrUserId, paymentRequestId);
-    return REQUIRED_TRANSCRIPT_DOCUMENTS.every(reqName => categories.includes(reqName));
+    const hasBirth = categories.includes('Birth Certificate');
+    const hasOLevel = categories.includes('O-Level Certificate');
+    const hasEntry = categories.includes('A-Level Certificate') || categories.includes('Diploma Certificate');
+
+    let isPostgrad = isPostgraduateRecord(student);
+    if (!isPostgrad && student.user_id) {
+      const linkedUser = await db('users').where({ id: student.user_id }).first();
+      if (linkedUser) {
+        isPostgrad = isPostgraduateRecord(linkedUser);
+      }
+    }
+    const hasUndergrad = !isPostgrad || categories.includes('Undergraduate Certificate');
+    return hasBirth && hasOLevel && hasEntry && hasUndergrad;
   }
 
   /**
@@ -606,7 +645,7 @@ class DocumentService {
     const student = await db('students').where({ id: doc.student_id }).first();
 
     // Role and institutional scope enforcement
-    this.checkDocumentAccess(requestingUser, student);
+    await this.checkDocumentAccess(requestingUser, student);
 
     const diskPath = this.resolveDocumentDiskPath(doc);
 

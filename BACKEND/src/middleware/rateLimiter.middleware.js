@@ -31,7 +31,23 @@ const authLimiter = rateLimit({
   }
 });
 
+const apiSpikeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute rolling window
+  max: env.NODE_ENV === 'test' ? 10000 : 180, // 180 req/min per IP protects against runaway floods while allowing shared campus NAT
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    return res.status(429).json({
+      success: false,
+      status: 429,
+      error: 'TooManyRequests',
+      message: 'Request rate limit exceeded. Please wait a moment before retrying.'
+    });
+  }
+});
+
 module.exports = {
   loginLimiter,
-  authLimiter
+  authLimiter,
+  apiSpikeLimiter
 };

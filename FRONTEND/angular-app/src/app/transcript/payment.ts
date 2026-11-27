@@ -1,17 +1,18 @@
 import { Component, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { ToastService } from '../core/services/toast.service';
 import { TranscriptPaymentRequest } from './transcript-payment.model';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
 
 @Component({
   selector: 'app-transcript-payment',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './payment.html',
   styleUrl: './payment.css'
 })
@@ -107,20 +108,27 @@ export class TranscriptPaymentComponent implements OnDestroy {
     this.refreshStatusWhilePending();
   }
 
+  private isPollingStatus = false;
+
   private refreshStatusWhilePending(): void {
     if (this.request?.status !== 'Receipt Submitted' || this.statusRefreshTimer) return;
 
     this.statusRefreshTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (this.isPollingStatus) return;
       const user = this.authService.getCurrentUser();
       if (!user || !this.request) return;
+      this.isPollingStatus = true;
       void this.paymentService.refreshStudentControlNumberRequests().then(() => {
         const latestRequest = this.paymentService.getStudentRequests(user.id)
           .filter(item => item.serverManaged)
           .find(item => item.paymentBatchId === this.request?.paymentBatchId);
         if (latestRequest) this.request = latestRequest;
         if (this.request?.status !== 'Receipt Submitted') this.clearStatusRefreshTimer();
-      }).catch(() => {});
-    }, 5000);
+      }).catch(() => {}).finally(() => {
+        this.isPollingStatus = false;
+      });
+    }, 15000);
   }
 
   private clearStatusRefreshTimer(): void {

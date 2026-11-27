@@ -2,16 +2,18 @@
 import { Component, inject, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Subscription, timer } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { Subscription, firstValueFrom, timer } from 'rxjs';
 import { filter, switchMap } from 'rxjs/operators';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
+import { CertificateService } from '../../core/services/certificate.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationItem } from '../../core/models/notification.model';
 import { ClearanceOffice } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../../shared/components/student-sidebar/student-sidebar';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { StudentDebtService } from '../../core/services/student-debt.service';
@@ -19,6 +21,7 @@ import { StudentDebtFlag } from '../../core/models/student-debt.model';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { environment } from '../../environments/environment';
 import { DocumentService } from '../../core/services/document.service';
+import { isExplicitUndergraduateDoctor, isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 
 type StudentSystemType = 'clearance' | 'transcript';
 
@@ -40,13 +43,14 @@ interface TranscriptDashboardStep {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
 export class StudentDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
+  private readonly certificateService = inject(CertificateService);
   private readonly notificationService = inject(NotificationService);
   private readonly studentDebtService = inject(StudentDebtService);
   private readonly transcriptService = inject(TranscriptPaymentService);
@@ -69,6 +73,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
   isSubmittingReceipt = false;
   receiptSuccessMessage = '';
   receiptErrorMessage = '';
+  selectedReceiptFile: File | null = null;
+  receiptFileName = '';
+  receiptFileSizeText = '';
+  receiptPreviewUrl: string | null = null;
 
   openReceiptModal(): void {
     this.showReceiptModal = true;
@@ -79,6 +87,57 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.showReceiptModal = false;
   }
 
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.receiptErrorMessage = 'Receipt file must be an image (PNG, JPG) or PDF document.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.receiptErrorMessage = 'Receipt file size must be less than 10MB.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedReceiptFile = file;
+    this.receiptFileName = file.name;
+    const sizeKb = Math.round(file.size / 1024);
+    this.receiptFileSizeText = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+    this.receiptErrorMessage = '';
+    this.receiptSuccessMessage = '';
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.receiptPreviewUrl = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      this.receiptPreviewUrl = null;
+    }
+  }
+
+  viewReceiptFile(): void {
+    if (this.receiptPreviewUrl) {
+      window.open(this.receiptPreviewUrl, '_blank');
+    } else if (this.selectedReceiptFile) {
+      const fileUrl = URL.createObjectURL(this.selectedReceiptFile);
+      window.open(fileUrl, '_blank');
+    }
+  }
+
+  removeReceiptFile(): void {
+    this.selectedReceiptFile = null;
+    this.receiptPreviewUrl = null;
+    this.receiptFileName = '';
+    this.receiptFileSizeText = '';
+    this.receiptErrorMessage = '';
+  }
   async submitRejectionReceipt(): Promise<void> {
     const controlNumber = this.receiptNote.trim();
     if (!/^[A-Za-z0-9-]{4,40}$/.test(controlNumber)) {
@@ -96,26 +155,38 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.receiptSuccessMessage = '';
 
     try {
-      const success = this.clearanceService.submitFinanceReceiptAfterRejection(
+      await firstValueFrom(this.clearanceService.submitFinanceReceiptToServer(controlNumber));
+
+      this.clearanceService.submitFinanceReceiptAfterRejection(
         this.currentRequest.id,
         '',
         `Payment_Control_Number_${controlNumber}.txt`,
         controlNumber
       );
 
-      if (success) {
-        this.receiptSuccessMessage = 'Payment control number submitted successfully! Your clearance request has returned to Finance for review.';
-        this.receiptNote = '';
-        this.showReceiptModal = false;
-        this.notificationService.getStudentNotifications().subscribe();
-      } else {
-        this.receiptErrorMessage = 'Could not submit control number. Please try again.';
-      }
+      this.receiptSuccessMessage = 'Payment control number submitted successfully! Your clearance request has returned to Finance for review.';
+      this.toastService.success('Control Number Submitted', 'Payment control number submitted and returned to Finance for review.');
+      this.receiptNote = '';
+      this.showReceiptModal = false;
+      this.clearanceService.fetchMyRequest().subscribe();
+      this.notificationService.getStudentNotifications().subscribe();
     } catch (err: any) {
-      this.receiptErrorMessage = err?.message || 'Unable to submit the control number.';
+      this.receiptErrorMessage = err?.error?.message || err?.message || 'Unable to submit the control number.';
     } finally {
       this.isSubmittingReceipt = false;
     }
+  }
+
+  downloadCertificate(): void {
+    this.certificateService.downloadMyCertificate().subscribe({
+      next: () => {
+        this.toastService.success('Downloaded', 'Clearance certificate downloaded successfully.');
+      },
+      error: (err: any) => {
+        const msg = err?.error?.message || err?.message || 'Unable to download certificate.';
+        this.toastService.error('Download Failed', msg);
+      }
+    });
   }
 
   get hasReportedReceiptUnderReview(): boolean {
@@ -161,7 +232,56 @@ export class StudentDashboard implements OnInit, OnDestroy {
     }
   }
 
+  showWelcomePopup = true;
+  private welcomeTimer?: any;
+
+  get studentHeaderEyebrow(): string {
+    const regNo = (this.currentUser?.registrationNumber || this.currentRequest?.registrationNumber || '').trim();
+    const portalLabel = this.isTranscriptSystem
+      ? 'Student Transcript Portal'
+      : 'Student Clearance Portal';
+    return regNo ? `${portalLabel} · ${regNo}` : portalLabel;
+  }
+
+  get studentHeaderTitle(): string {
+    const name = (this.currentUser?.fullName || this.currentRequest?.studentName || '').trim();
+    return name ? `Welcome back, ${name}` : 'Welcome back';
+  }
+
+  get studentHeaderSubtitle(): string {
+    const college = (this.currentUser?.college || this.currentRequest?.college || '').trim();
+    const course = (this.currentUser?.programme || this.currentRequest?.programme || '').trim();
+    const department = (this.currentUser?.department || this.currentRequest?.department || '').trim();
+
+    const parts: string[] = [];
+    if (college) parts.push(college);
+    if (course) parts.push(course);
+    else if (department) parts.push(department);
+
+    if (parts.length > 0) {
+      return parts.join(' · ');
+    }
+    return this.isTranscriptSystem
+      ? 'Track your official transcript request, payment verification, and collection status.'
+      : 'Track your graduation clearance progress, office approvals, and certificate status.';
+  }
+
+  get headerUser(): any {
+    const user = this.currentUser;
+    if (!user) return null;
+    const resolvedPhoto = this.getPhotoSource();
+    if (resolvedPhoto && !user.photo) {
+      return { ...user, photo: resolvedPhoto };
+    }
+    return user;
+  }
+
   ngOnInit(): void {
+    this.showWelcomePopup = true;
+    this.welcomeTimer = setTimeout(() => {
+      this.showWelcomePopup = false;
+    }, 3500);
+
     this.loadProfilePhoto();
     this.loadActiveStudentDebtFlag();
     this.clearanceService.fetchMyRequest().subscribe();
@@ -174,7 +294,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       });
     }
     this.notificationService.getStudentNotifications().subscribe();
-    this.pollSubscription = timer(5000, 15000).pipe(
+    this.pollSubscription = timer(30000, 30000).pipe(
       filter(() => typeof document === 'undefined' || document.visibilityState === 'visible'),
       switchMap(() => {
         this.refreshTranscriptPaymentStatus();
@@ -192,7 +312,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       void this.transcriptService.refreshStudentControlNumberRequests().then(() => {
         this.refreshTranscriptDocumentsStatus();
       }).catch(() => {});
-    } else {
+    } else if (!this.transcriptDocumentsVerified) {
       this.refreshTranscriptDocumentsStatus();
     }
   }
@@ -210,6 +330,9 @@ export class StudentDashboard implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.welcomeTimer) {
+      clearTimeout(this.welcomeTimer);
+    }
     this.pollSubscription?.unsubscribe();
   }
 
@@ -354,7 +477,10 @@ export class StudentDashboard implements OnInit, OnDestroy {
           note = 'Principal approval';
           break;
         case 'Finance':
-          note = 'Final financial clearance';
+          note = this.isPostgraduate ? 'Financial clearance' : 'Final financial clearance';
+          break;
+        case 'Supervisor':
+          note = 'Supervisor final check';
           break;
       }
 
@@ -404,12 +530,22 @@ export class StudentDashboard implements OnInit, OnDestroy {
 
   get awardType(): 'degree' | 'diploma' | 'certificate' | 'postgraduate' | 'masters' | 'phd' {
     const award = this.studentAward.toLowerCase();
-    if (award.includes('phd') || award.includes('doctor')) return 'phd';
+    if (!isExplicitUndergraduateDoctor(award) && (award.includes('phd') || award.includes('doctor of philosophy') || award.includes('doctorate'))) return 'phd';
     if (award.includes('master')) return 'masters';
     if (award.includes('postgraduate')) return 'postgraduate';
     if (award.includes('diploma')) return 'diploma';
     if (award.includes('certificate')) return 'certificate';
     return 'degree';
+  }
+
+  get isPostgraduate(): boolean {
+    const r = this.currentRequest;
+    const u = this.currentUser;
+    return isPostgraduateEntity({
+      isPostgraduate: r?.isPostgraduate || u?.isPostgraduate,
+      award: r?.award || u?.award,
+      programme: r?.programme || u?.programme
+    });
   }
 
   get dashboardEyebrow(): string {
@@ -459,6 +595,13 @@ export class StudentDashboard implements OnInit, OnDestroy {
   get isClearanceCompleted(): boolean {
     const request = this.currentRequest;
     if (!request) return false;
+    if (this.isPostgraduate) {
+      return (
+        request.status === 'Completed' ||
+        request.currentStage === 'Completed' ||
+        this.getOfficeStatus('Supervisor') === 'Approved'
+      );
+    }
     return (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
@@ -508,6 +651,23 @@ export class StudentDashboard implements OnInit, OnDestroy {
   transcriptStatusLoaded = false;
   transcriptStatusLoadError = '';
   transcriptDocumentsVerified = false;
+  transcriptCopies = 1;
+  uploadedTranscriptReceipts: {
+    file: File;
+    fileName: string;
+    previewUrl: string | null;
+    sizeText: string;
+    receiptData: string;
+  }[] = [];
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  }
 
   openTranscriptModal(): void {
     if (!this.transcriptStatusLoaded) {
@@ -531,6 +691,106 @@ export class StudentDashboard implements OnInit, OnDestroy {
     this.transcriptSuccessMessage = '';
   }
 
+  triggerReceiptUpload(input: HTMLInputElement): void {
+    if (this.uploadedTranscriptReceipts.length >= this.transcriptCopies) {
+      this.transcriptErrorMessage = `You selected ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}. Increase the number of copies above if you wish to upload more receipts.`;
+      return;
+    }
+    this.transcriptErrorMessage = '';
+    input.click();
+  }
+
+  incrementCopies(): void {
+    if (this.transcriptCopies < 10) {
+      this.transcriptCopies++;
+      this.transcriptErrorMessage = '';
+    }
+  }
+
+  decrementCopies(): void {
+    if (this.transcriptCopies > 1) {
+      this.transcriptCopies--;
+      if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+        this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+      }
+      this.transcriptErrorMessage = '';
+    }
+  }
+
+  onCopiesCountChange(): void {
+    if (!this.transcriptCopies || this.transcriptCopies < 1) {
+      this.transcriptCopies = 1;
+    } else if (this.transcriptCopies > 10) {
+      this.transcriptCopies = 10;
+    }
+    if (this.uploadedTranscriptReceipts.length > this.transcriptCopies) {
+      this.uploadedTranscriptReceipts = this.uploadedTranscriptReceipts.slice(0, this.transcriptCopies);
+    }
+    this.transcriptErrorMessage = '';
+  }
+
+  getEstimatedTranscriptCost(): number {
+    const copies = Math.max(1, Math.floor(this.transcriptCopies || 1));
+    return 15000 + (copies - 1) * 5000;
+  }
+
+  async onTranscriptReceiptsSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    this.transcriptErrorMessage = '';
+    const availableSlots = Math.max(0, this.transcriptCopies - this.uploadedTranscriptReceipts.length);
+    if (availableSlots <= 0) {
+      this.transcriptErrorMessage = `Maximum limit of ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'receipt' : 'receipts'} reached for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+      input.value = '';
+      return;
+    }
+
+    const allFiles: File[] = Array.from(input.files);
+    if (allFiles.length > availableSlots) {
+      this.transcriptErrorMessage = `You selected ${allFiles.length} files, but only ${availableSlots} more ${availableSlots === 1 ? 'receipt is' : 'receipts are'} allowed for ${this.transcriptCopies} ${this.transcriptCopies === 1 ? 'copy' : 'copies'}.`;
+    }
+
+    const files: File[] = allFiles.slice(0, availableSlots);
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        this.transcriptErrorMessage = `File ${file.name} exceeds 10MB limit.`;
+        continue;
+      }
+      const sizeText = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`;
+
+      try {
+        const receiptData = await this.readFileAsDataUrl(file);
+        const isImage = file.type.startsWith('image/');
+        this.uploadedTranscriptReceipts.push({
+          file,
+          fileName: file.name,
+          previewUrl: isImage ? receiptData : null,
+          sizeText,
+          receiptData
+        });
+      } catch {
+        this.transcriptErrorMessage = `Failed to process ${file.name}.`;
+      }
+    }
+    input.value = '';
+  }
+
+  viewTranscriptReceipt(index: number): void {
+    const item = this.uploadedTranscriptReceipts[index];
+    if (!item) return;
+    if (item.previewUrl) {
+      window.open(item.previewUrl, '_blank');
+    } else if (item.receiptData) {
+      window.open(item.receiptData, '_blank');
+    }
+  }
+
+  removeTranscriptReceipt(index: number): void {
+    this.uploadedTranscriptReceipts.splice(index, 1);
+  }
   async submitTranscriptRequest(): Promise<void> {
     const user = this.currentUser;
     if (!user) {
@@ -666,6 +926,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
         'Workshop': { email: 'workshop@udsm.ac.tz', phone: '+255 22 2410590' },
         'Laboratory': { email: 'lab@udsm.ac.tz', phone: '+255 22 2410595' },
         'Convocation': { email: 'convocation@udsm.ac.tz', phone: '+255 22 2410505' },
+        'Supervisor': { email: 'postgraduate.clearance@udsm.ac.tz', phone: '+255 22 2410600' },
       };
       const def = defaultContacts[office] || { email: 'clearance@udsm.ac.tz', phone: '+255 22 2410500' };
       email = email || def.email;
@@ -712,6 +973,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
         this.currentRequest?.currentStage === 'Department' ||
         this.currentRequest?.currentStage === 'Principal' ||
         this.currentRequest?.currentStage === 'Finance' ||
+        this.currentRequest?.currentStage === 'Supervisor' ||
         this.currentRequest?.status === 'Completed') {
       return 100;
     }
@@ -728,13 +990,9 @@ export class StudentDashboard implements OnInit, OnDestroy {
     if (
       request.status === 'Completed' ||
       request.currentStage === 'Completed' ||
-      this.getOfficeStatus('Finance') === 'Approved'
+      (!this.isPostgraduate && this.getOfficeStatus('Finance') === 'Approved') ||
+      (this.isPostgraduate && this.getOfficeStatus('Supervisor') === 'Approved')
     ) {
-      if (request.status !== 'Completed' || request.currentStage !== 'Completed') {
-        request.status = 'Completed';
-        request.currentStage = 'Completed';
-        this.clearanceService.save(request);
-      }
       return 'Clearance completed';
     }
     if (request.status === 'Rejected') {
@@ -754,6 +1012,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       case 'Department': return 'Department';
       case 'Principal': return 'Principal';
       case 'Finance': return 'Finance';
+      case 'Supervisor': return 'Supervisor (Final Check)';
       default: return 'Clearance completed';
     }
   }
@@ -771,6 +1030,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       convocationStatus = 'Approved';
@@ -792,6 +1052,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
       request.currentStage === 'Department' ||
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       officesStatus = 'Approved';
@@ -811,6 +1072,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     if (
       request.currentStage === 'Principal' ||
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       departmentStatus = 'Approved';
@@ -827,6 +1089,7 @@ export class StudentDashboard implements OnInit, OnDestroy {
     let principalStatus = this.getApproval('Principal')?.status ?? 'Pending';
     if (
       request.currentStage === 'Finance' ||
+      request.currentStage === 'Supervisor' ||
       request.status === 'Completed'
     ) {
       principalStatus = 'Approved';
@@ -841,16 +1104,34 @@ export class StudentDashboard implements OnInit, OnDestroy {
 
     // STEP 5 — FINANCE
     let financeStatus = this.getApproval('Finance')?.status ?? 'Pending';
-    if (request.status === 'Completed') {
+    if (
+      request.currentStage === 'Supervisor' ||
+      request.status === 'Completed'
+    ) {
       financeStatus = 'Approved';
     }
     steps.push({
       number: 5,
       label: 'Finance',
       office: 'Finance',
-      detail: 'Final financial clearance approval.',
+      detail: this.isPostgraduate ? 'Financial clearance approval.' : 'Final financial clearance approval.',
       status: financeStatus
     });
+
+    // STEP 6 — SUPERVISOR (Postgraduate Only)
+    if (this.isPostgraduate) {
+      let supervisorStatus = this.getApproval('Supervisor')?.status ?? 'Pending';
+      if (request.status === 'Completed') {
+        supervisorStatus = 'Approved';
+      }
+      steps.push({
+        number: 6,
+        label: 'Supervisor',
+        office: 'Supervisor',
+        detail: 'Postgraduate supervisor final thesis & academic clearance check.',
+        status: supervisorStatus
+      });
+    }
 
     return steps;
   }

@@ -8,7 +8,7 @@ const EXPORT_HEADERS = [
 
 const STUDENT_TEMPLATE_HEADERS = [
   'First Name', 'Middle Name', 'Last Name', 'Email', 'Role',
-  'Registration Number', 'Password', 'College', 'Department', 'Programme', 'Phone'
+  'Registration Number', 'Password', 'College', 'Department', 'Programme', 'Award', 'Phone'
 ];
 
 const STAFF_TEMPLATE_HEADERS = [
@@ -77,6 +77,10 @@ function mapHeaders(headers) {
       if (map.department === undefined) map.department = i;
     } else if (h.includes('prog') || h.includes('course') || h.includes('degree') || h.includes('major')) {
       if (map.programme === undefined) map.programme = i;
+    } else if (h.includes('award') || h.includes('qualification') || h === 'level' || h.includes('studylevel') || h.includes('degreetype')) {
+      if (map.award === undefined) map.award = i;
+    } else if (h.includes('postgrad') || h === 'ispostgraduate' || h === 'pg') {
+      if (map.isPostgraduate === undefined) map.isPostgraduate = i;
     } else if (h.includes('phone') || h.includes('mobile') || h.includes('tel') || h.includes('contact')) {
       if (map.phone === undefined) map.phone = i;
     } else if (h.includes('year') || h.includes('cohort')) {
@@ -105,7 +109,9 @@ function getDefaultUnitName(roleUpper) {
   if (roleUpper.includes('DARUSO')) return 'DARUSO Student Union';
   if (roleUpper.includes('DEAN')) return 'Dean of Students Office';
   if (roleUpper.includes('SMART')) return 'Smart Card Unit';
+  if (roleUpper.includes('POSTGRADUATE') || roleUpper.includes('DPGS')) return 'Directorate of Postgraduate Studies';
   if (roleUpper.includes('DUS') || roleUpper.includes('UNDERGRADUATE')) return 'Directorate of Undergraduate Studies';
+  if (roleUpper.includes('SUPERVISOR')) return 'Postgraduate Research Studies';
   return 'University Administration';
 }
 
@@ -160,6 +166,11 @@ function buildUserRequestFromRow(data, headerMap, uploadType = 'STUDENT') {
     req.faculty = req.college;
     req.department = getVal(data, headerMap.department);
     req.programme = getVal(data, headerMap.programme);
+    req.award = getVal(data, headerMap.award);
+    const rawPgFlag = getVal(data, headerMap.isPostgraduate);
+    if (rawPgFlag) {
+      req.isPostgraduate = /^(true|1|yes|y|pg|postgraduate)$/i.test(rawPgFlag);
+    }
     req.phone = getVal(data, headerMap.phone);
     req.yearOfStudy = getVal(data, headerMap.year);
   } else {
@@ -175,7 +186,12 @@ function buildUserRequestFromRow(data, headerMap, uploadType = 'STUDENT') {
     req.faculty = req.college;
     req.department = getVal(data, 8);
     req.programme = getVal(data, 9);
-    if (data.length > 10) req.phone = getVal(data, 10);
+    if (data.length > 11) {
+      req.award = getVal(data, 10);
+      req.phone = getVal(data, 11);
+    } else if (data.length > 10) {
+      req.phone = getVal(data, 10);
+    }
   }
 
   // Auto-generate email if missing
@@ -200,6 +216,8 @@ function buildUserRequestFromRow(data, headerMap, uploadType = 'STUDENT') {
       else if (reg.includes('PRN') || reg.includes('PRIN')) req.role = 'PRINCIPAL';
       else if (reg.includes('FIN') || reg.includes('BUR')) req.role = 'FINANCE';
       else if (reg.includes('LEC')) req.role = 'LECTURER';
+      else if (reg.includes('SUP')) req.role = 'SUPERVISOR';
+      else if (reg.includes('DPG')) req.role = 'DPGS';
       else if (reg.includes('DUS')) req.role = 'DUS';
       else if (reg.includes('ADM')) req.role = 'ADMIN';
       else req.role = 'ACADEMIC_STAFF';
@@ -218,6 +236,7 @@ function buildUserRequestFromRow(data, headerMap, uploadType = 'STUDENT') {
     roleUpper.includes('WARDEN') || roleUpper.includes('USAB') ||
     roleUpper.includes('DARUSO') || roleUpper.includes('DEAN') ||
     roleUpper.includes('SMART') || roleUpper.includes('DUS') ||
+    roleUpper.includes('DPGS') || roleUpper.includes('POSTGRADUATE') ||
     roleUpper.includes('ADMIN');
 
   if (isCentralOffice) {
@@ -492,14 +511,14 @@ function buildDebtFlagFromRow(data, headerMap) {
   const studentName = getVal(data, headerMap.name) || null;
   const category = getVal(data, headerMap.category) || 'Equipment / Item Rental';
   const rawAmount = getVal(data, headerMap.amount).replace(/[^0-9.]/g, '');
-  let amount = 10000;
+  let amount = 0;
   if (rawAmount) {
     const parsed = Number(rawAmount);
     if (!Number.isNaN(parsed) && parsed > 0) {
       amount = parsed;
     }
   }
-  const reason = getVal(data, headerMap.reason) || 'Outstanding liability / rented course item';
+  const reason = getVal(data, headerMap.reason);
   const dueDate = getVal(data, headerMap.dueDate) || null;
   const negotiationNotes = getVal(data, headerMap.notes) || null;
 

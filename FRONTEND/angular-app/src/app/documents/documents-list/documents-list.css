@@ -1,67 +1,17 @@
 :host {
   display: block;
-}
-
-.documents-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px;
-  background:
-    linear-gradient(
-      rgba(5, 63, 112, 0.65),
-      rgba(5, 63, 112, 0.7)
-    ),
-    var(--app-bg-url, url('/background.png'));
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  animation: fadeIn 0.8s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  min-height: 100dvh;
 }
 
 .documents-card {
-  width: min(100%, 980px);
-  overflow-x: auto;
-  padding: 30px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-  animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition: transform 0.3s ease;
-}
-
-.documents-card:hover {
-  transform: translateY(-4px);
-}
-
-.header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 22px;
-}
-
-.header-row h1 {
-  margin: 0;
-  color: var(--udsm-blue-dark);
-  font-size: 1.7rem;
+  width: 100%;
+  margin-top: 18px;
+  padding: 24px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border-soft, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
 }
 
 .primary-link {
@@ -69,61 +19,89 @@
   align-items: center;
   justify-content: center;
   min-height: 42px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   border-radius: 8px;
-  background: var(--udsm-blue);
+  background: var(--udsm-blue, #053f70);
   color: #ffffff;
   text-decoration: none;
-  font-weight: 800;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .primary-link:hover {
-  background: var(--udsm-blue-dark);
+  background: var(--udsm-blue-dark, #032847);
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
-  min-width: 680px;
+  min-width: 600px;
   border-collapse: collapse;
 }
 
 th,
 td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-soft);
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--border-soft, #e2e8f0);
   text-align: left;
+  font-size: 0.88rem;
 }
 
 th {
-  background: var(--surface-soft);
-  color: var(--udsm-blue-dark);
-  font-size: 0.82rem;
+  background: var(--surface-soft, #f8fafc);
+  color: var(--udsm-blue-dark, #032847);
+  font-size: 0.78rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 td {
-  color: var(--text-dark);
+  color: var(--text-dark, #0f172a);
 }
 
 .status {
   display: inline-flex;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.76rem;
+  padding: 5px 10px;
+  font-size: 0.74rem;
   font-weight: 800;
 }
 
 .status.pending {
-  background: color-mix(in srgb, var(--udsm-gold) 20%, #ffffff);
-  color: var(--warning);
+  background: #fef3c7;
+  color: #b45309;
 }
 
-.status.approved { background:color-mix(in srgb,var(--success) 14%,#fff);color:var(--success); }.status.rejected{background:color-mix(in srgb,var(--danger) 12%,#fff);color:var(--danger);}.empty-state{padding:24px;border:1px dashed var(--border-soft);border-radius:var(--radius-control);color:var(--text-muted);text-align:center;}
+.status.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.error-banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.empty-state {
+  padding: 32px 20px;
+  border: 1px dashed var(--border-soft, #cbd5e1);
+  border-radius: 10px;
+  color: var(--text-muted, #64748b);
+  text-align: center;
+}
 
 @media (max-width: 640px) {
-  .header-row {
-    align-items: stretch;
-    flex-direction: column;
+  .documents-card {
+    padding: 16px;
   }
 }

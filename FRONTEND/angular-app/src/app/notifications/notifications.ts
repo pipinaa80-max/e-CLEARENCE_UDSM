@@ -1,15 +1,28 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { NotificationService } from '../core/services/notification.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
-import { UserRole } from '../core/models/user.model';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
+import {
+  StaffSidebarNavItem,
+  getStaffDashboardRoute,
+  getStaffPortalMeta,
+  getStaffSidebarNavItems
+} from '../core/utils/staff-sidebar-nav.util';
+
+export interface NotificationBadgeMeta {
+  label: string;
+  cssClass: string;
+  icon: string;
+}
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './notifications.html',
   styleUrl: './notifications.css'
 })
@@ -19,11 +32,49 @@ export class NotificationListComponent implements OnInit {
   private readonly router = inject(Router);
 
   sidebarOpen = false;
+  isLoading = true;
   notificationsList: any[] = [];
+
+  // Filter, Search & Pagination
+  activeFilter: 'ALL' | 'UNREAD' | 'READ' = 'ALL';
+  searchTerm = '';
+  currentPage = 1;
+  readonly pageSize = 15;
 
   get user() { return this.authService.getCurrentUser(); }
   get currentUser() { return this.user; }
   get notifications() { return this.notificationsList; }
+
+  get unreadCount(): number {
+    return this.notificationsList.filter(n => !n?.read).length;
+  }
+
+  get readCount(): number {
+    return this.notificationsList.filter(n => Boolean(n?.read)).length;
+  }
+
+  get filteredNotifications(): any[] {
+    const q = (this.searchTerm || '').trim().toLowerCase();
+    return this.notificationsList.filter(item => {
+      if (this.activeFilter === 'UNREAD' && item?.read) return false;
+      if (this.activeFilter === 'READ' && !item?.read) return false;
+      if (q) {
+        const hay = `${item?.title || ''} ${item?.message || ''} ${item?.type || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredNotifications.length / this.pageSize));
+  }
+
+  get paginatedNotifications(): any[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredNotifications.slice(start, start + this.pageSize);
+  }
 
   get isStudent(): boolean {
     return !this.currentUser || this.currentUser.role === 'Student';
@@ -34,88 +85,101 @@ export class NotificationListComponent implements OnInit {
   }
 
   get isSecretary(): boolean {
-    return this.currentUser?.role === 'DUS Secretary' || this.isStationSecretary;
+    return this.currentUser?.role === 'DUS Examination Office' || this.currentUser?.role === 'DUS Secretary' || this.isStationSecretary;
+  }
+
+  get staffNavItems(): StaffSidebarNavItem[] {
+    return getStaffSidebarNavItems(this.currentUser);
   }
 
   get dashboardRoute(): string {
-    const role: UserRole | undefined = this.currentUser?.role;
-    switch (role) {
-      case 'DUS Secretary':
-        return '/dashboard/dus-secretary';
-      case 'Station Secretary':
-        return '/dashboard/station-secretary';
-      case 'Director of Undergraduate Studies':
-        return '/dashboard/director-undergraduate-studies';
-      case 'Administrator':
-        return '/dashboard/admin';
-      case 'Finance':
-        return '/dashboard/finance';
-      case 'Library':
-        return '/dashboard/library';
-      case 'Department':
-        return '/department/dashboard';
-      case 'Principal':
-        return '/dashboard/principal';
-      case 'Academic Staff':
-        return '/dashboard/academic';
-      case 'Lecturer':
-        return '/dashboard/lecturer';
-      case 'Games Coach':
-        return '/dashboard/games-coach';
-      case 'Hall Warden':
-        return '/dashboard/hall-warden';
-      case 'USAB':
-        return '/dashboard/usab';
-      case 'DARUSO':
-        return '/dashboard/daruso';
-      case 'Dean of Students':
-        return '/dashboard/dean-of-students';
-      case 'Smart Card':
-        return '/dashboard/smart-card';
-      case 'Workshop':
-        return '/dashboard/workshop';
-      case 'Laboratory':
-        return '/dashboard/laboratory';
-      case 'Student':
-      default:
-        return '/dashboard';
-    }
+    return getStaffDashboardRoute(this.currentUser?.role);
   }
 
   get portalTitle(): string {
-    const role = this.currentUser?.role;
-    if (!role || role === 'Student') return 'STUDENT PORTAL';
-    if (role === 'Station Secretary') return 'STATION DUS PORTAL';
-    return `${role.toUpperCase()} PORTAL`;
+    return getStaffPortalMeta(this.currentUser?.role).title;
   }
 
   get portalSubtitle(): string {
-    const role = this.currentUser?.role;
-    if (role === 'DUS Secretary') return 'Undergraduate Studies';
-    if (role === 'Station Secretary') return 'Receiving & Handover Hub';
-    if (role === 'Director of Undergraduate Studies') return 'Directorate Office';
-    if (!role || role === 'Student') return 'University of Dar es Salaam';
-    return `${role} Office`;
+    return getStaffPortalMeta(this.currentUser?.role).subtitle;
   }
 
   get dashboardLabel(): string {
-    const role = this.currentUser?.role;
-    if (role === 'DUS Secretary') return 'Main Campus Dispatch';
-    if (role === 'Station Secretary') return 'Station Vault & Intake';
-    return 'Dashboard';
+    return getStaffPortalMeta(this.currentUser?.role).dashboardLabel;
   }
 
   ngOnInit(): void {
-    this.notificationsList = this.user ? this.notificationService.getNotifications(this.user.id) : [];
+    this.loadNotifications();
+  }
+
+  loadNotifications(): void {
+    this.isLoading = true;
+    const uid = this.user?.id || this.user?.userId;
+    if (uid && !this.notificationsList.length) {
+      this.notificationsList = this.notificationService.getNotifications(uid);
+    }
     this.notificationService.getStudentNotifications().subscribe({
       next: serverItems => {
-        const localItems = this.user ? this.notificationService.getNotifications(this.user.id) : [];
-        this.notificationsList = [...serverItems, ...localItems];
+        const seen = new Set<string>();
+        const merged: any[] = [];
+        for (const item of serverItems || []) {
+          const key = String(item?.id ?? `${item?.title}|${item?.message}|${item?.createdAt}`);
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(item);
+          }
+        }
+        this.notificationsList = merged;
+        if (this.currentPage > this.totalPages) {
+          this.currentPage = 1;
+        }
+        this.isLoading = false;
       },
       error: (err) => {
         console.warn('Could not fetch server notifications:', err);
+        this.isLoading = false;
       }
     });
+  }
+
+  setFilter(filter: 'ALL' | 'UNREAD' | 'READ'): void {
+    this.activeFilter = filter;
+    this.currentPage = 1;
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  getNotificationBadge(notification: any): NotificationBadgeMeta {
+    const raw = `${notification?.type || ''} ${notification?.title || ''}`.toUpperCase();
+    if (raw.includes('APPROV') || raw.includes('CLEAR') || raw.includes('ISSUED') || raw.includes('HANDOVER')) {
+      return { label: 'Approval', cssClass: 'badge-approval', icon: 'bi-check-circle-fill' };
+    }
+    if (raw.includes('REJECT') || raw.includes('FLAG') || raw.includes('DEBT') || raw.includes('LIABILIT')) {
+      return { label: 'Action Needed', cssClass: 'badge-rejection', icon: 'bi-exclamation-triangle-fill' };
+    }
+    if (raw.includes('PAYMENT') || raw.includes('RECEIPT') || raw.includes('CONTROL') || raw.includes('CONVOCATION')) {
+      return { label: 'Payment', cssClass: 'badge-reminder', icon: 'bi-receipt-cutoff' };
+    }
+    if (raw.includes('DISPATCH') || raw.includes('STATION') || raw.includes('RELEASE') || raw.includes('CERTIFICATE')) {
+      return { label: 'Release', cssClass: 'badge-ready', icon: 'bi-patch-check-fill' };
+    }
+    return { label: 'System', cssClass: 'badge-system', icon: 'bi-bell-fill' };
   }
 
   toggleSidebar(): void {
@@ -132,16 +196,17 @@ export class NotificationListComponent implements OnInit {
   }
 
   markAllRead(): void {
-    if (this.user) this.notificationService.markAllAsRead(this.user.id);
-    this.notificationService.markAllStudentNotificationsRead();
+    const uid = this.user?.id || this.user?.userId;
+    if (uid) {
+      this.notificationService.markAllAsRead(uid);
+    }
     this.notificationsList = this.notificationsList.map(item => ({ ...item, read: true }));
   }
 
   markRead(id: string): void {
+    const target = this.notificationsList.find(item => item.id === id);
+    if (!target || target.read) return;
     this.notificationService.markAsRead(id);
-    if (!this.notificationService.getNotifications(this.user?.id ?? '').some(item => item.id === id)) {
-      this.notificationService.markStudentNotificationRead(id);
-    }
     this.notificationsList = this.notificationsList.map(item => item.id === id ? { ...item, read: true } : item);
   }
 }

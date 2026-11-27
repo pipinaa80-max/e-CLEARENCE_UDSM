@@ -2,16 +2,18 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 import { DocumentService } from '../../core/services/document.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../../shared/components/student-sidebar/student-sidebar';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-transcript-documents',
   standalone: true,
-  imports: [CommonModule, RouterLink, DashboardHeaderComponent],
+  imports: [CommonModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './transcript-documents.html',
   styleUrl: './transcript-documents.css'
 })
@@ -24,11 +26,39 @@ export class TranscriptDocumentsComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   sidebarOpen = false;
-  readonly requiredDocuments = [
-    'Birth Certificate',
-    'O-Level Certificate',
-    'A-Level Certificate'
-  ];
+
+  get isPostgraduate(): boolean {
+    return isPostgraduateEntity(this.currentUser);
+  }
+
+  entryQualificationType: 'A-Level' | 'Diploma' = 'A-Level';
+
+  get requiredDocuments(): string[] {
+    const entryDoc = this.entryQualificationType === 'Diploma'
+      ? 'Diploma Certificate'
+      : 'A-Level Certificate';
+
+    const list = [
+      'Birth Certificate',
+      'O-Level Certificate',
+      entryDoc
+    ];
+    if (this.isPostgraduate) {
+      list.push('Undergraduate Certificate');
+    }
+    return list;
+  }
+
+  setEntryQualificationType(type: 'A-Level' | 'Diploma'): void {
+    if (this.isSubmitted) return;
+    this.entryQualificationType = type;
+    const user = this.currentUser;
+    if (user) {
+      localStorage.setItem(`udsm-entry-qualification-${user.id}`, type);
+    }
+    this.changeDetector.detectChanges();
+  }
+
   selectedFiles: Record<string, File | null> = {};
   uploaded: Record<string, boolean> = {};
   message = '';
@@ -52,19 +82,39 @@ export class TranscriptDocumentsComponent implements OnInit {
       return;
     }
 
+    // Auto-detect entry qualification from past selection
+    const savedEntry = localStorage.getItem(`udsm-entry-qualification-${user.id}`);
+    if (savedEntry === 'Diploma') {
+      this.entryQualificationType = 'Diploma';
+    } else {
+      this.entryQualificationType = 'A-Level';
+    }
+
     try {
       await this.paymentService.refreshStudentControlNumberRequests();
       const payment = this.paymentService.getStudentRequests(user.id)
         .filter(request => request.serverManaged && request.status === 'Paid')
         .at(-1);
       if (!payment?.paymentBatchId) {
-        this.router.navigate(['/dashboard/student']);
+        this.router.navigate(['/dashboard']);
         return;
       }
       this.paymentId = payment.paymentBatchId;
       const categories = await firstValueFrom(this.documentService.getTranscriptDocumentCategories(this.paymentId));
       const uploadedCategories = new Set(categories.map(category => String(category).trim().toLowerCase()));
-      for (const category of this.requiredDocuments) this.uploaded[category] = uploadedCategories.has(category.toLowerCase());
+
+      if (uploadedCategories.has('diploma certificate') && !uploadedCategories.has('a-level certificate')) {
+        this.entryQualificationType = 'Diploma';
+      }
+
+      for (const category of ['Birth Certificate', 'O-Level Certificate', 'A-Level Certificate', 'Diploma Certificate', 'Undergraduate Certificate']) {
+        this.uploaded[category] = uploadedCategories.has(category.toLowerCase());
+      }
+
+      if (this.allUploaded) {
+        localStorage.setItem(`udsm-transcript-documents-${user.id}`, 'Uploaded');
+      }
+
       this.loading = false;
       this.changeDetector.detectChanges();
     } catch {
@@ -98,6 +148,22 @@ export class TranscriptDocumentsComponent implements OnInit {
     }
 
     this.uploading = category;
+
+    // Cache undergraduate certificate for Research Supervisor review
+    if (category === 'Undergraduate Certificate') {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const certUrl = reader.result as string;
+        if (user) {
+          user.undergraduateCertificateUrl = certUrl;
+          try {
+            localStorage.setItem(`udsm-pg-cert-${user.id}`, certUrl);
+          } catch {}
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
     this.documentService.uploadDocument({
       studentId: user.id,
       fileName: file.name,
@@ -142,10 +208,88 @@ export class TranscriptDocumentsComponent implements OnInit {
   }
 
   get allUploaded(): boolean {
-    return this.requiredDocuments.every(category => this.uploaded[category]);
+    const hasBirth = !!this.uploaded['Birth Certificate'];
+    const hasOLevel = !!this.uploaded['O-Level Certificate'];
+    const hasEntry = this.entryQualificationType === 'Diploma'
+      ? !!this.uploaded['Diploma Certificate']
+      : !!this.uploaded['A-Level Certificate'];
+    const hasUndergrad = !this.isPostgraduate || !!this.uploaded['Undergraduate Certificate'];
+
+    return hasBirth && hasOLevel && hasEntry && hasUndergrad;
+  }
+
+  getDocumentDescription(category: string): string {
+    if (this.uploaded[category]) {
+      return 'Document uploaded and attached successfully.';
+    }
+    if (this.isSubmitted) {
+      return 'Documentation review in progress.';
+    }
+    switch (category) {
+      case 'Birth Certificate':
+        return 'Official Certificate of Birth issued by RITA or designated civil registration authority.';
+      case 'O-Level Certificate':
+        return 'National Examinations Council of Tanzania (NECTA) CSEE / Form IV Certificate.';
+      case 'A-Level Certificate':
+        return 'Advanced Certificate of Secondary Education Examination (ACSEE / Form VI) for Direct Entry students.';
+      case 'Diploma Certificate':
+        return 'Ordinary Diploma Certificate (NACTE / NTA Level 6 or equivalent) for Equivalent Entry students.';
+      case 'Undergraduate Certificate':
+        return 'Prior Bachelor Degree / Undergraduate Certificate for Research Supervisor verification.';
+      default:
+        return 'Choose the required document to continue.';
+    }
+  }
+
+  viewDocument(category: string): void {
+    const file = this.selectedFiles[category];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      window.open(url, '_blank');
+    } else {
+      this.toastService.info('Document Verified', `${category} is on file and ready.`);
+    }
+  }
+
+  removeDocument(category: string): void {
+    if (this.isSubmitted) return;
+    this.uploaded[category] = false;
+    delete this.selectedFiles[category];
+    const user = this.currentUser;
+    if (user) {
+      const set = this.getLocalCategories(user.id, this.paymentId);
+      set.delete(category.toLowerCase());
+      localStorage.setItem(`udsm-transcript-doc-cats-${user.id}-${this.paymentId}`, JSON.stringify(Array.from(set)));
+      localStorage.removeItem(`udsm-transcript-documents-${user.id}`);
+      if (category === 'Undergraduate Certificate') {
+        user.undergraduateCertificateUrl = '';
+        try {
+          localStorage.removeItem(`udsm-pg-cert-${user.id}`);
+        } catch {}
+      }
+    }
+    this.toastService.info('Document Removed', `${category} has been removed.`);
+    this.changeDetector.detectChanges();
+  }
+
+  private getLocalCategories(userId: string, paymentId: string): Set<string> {
+    try {
+      const raw = localStorage.getItem(`udsm-transcript-doc-cats-${userId}-${paymentId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.map((c: any) => String(c).toLowerCase()));
+        }
+      }
+    } catch {}
+    return new Set<string>();
   }
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
   }
 }

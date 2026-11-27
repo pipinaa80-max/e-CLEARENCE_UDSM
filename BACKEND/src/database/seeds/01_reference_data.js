@@ -21,11 +21,13 @@ exports.seed = async function(knex) {
     { id: 'col-udbs', code: 'UDBS', name: 'University of Dar es Salaam Business School', description: 'Main Campus - Accounting, Finance, Marketing and Management', is_active: 1 },
     { id: 'col-soed', code: 'SoED', name: 'School of Education', description: 'Main Campus - Educational Foundations and Curriculum', is_active: 1 },
     { id: 'col-udsol', code: 'UDSoL', name: 'University of Dar es Salaam School of Law', description: 'Main Campus - Legal Studies, Public and Private Law', is_active: 1 },
+    { id: 'col-udse', code: 'UDSE', name: 'University of Dar es Salaam School of Economics', description: 'Main Campus - Economics and Applied Statistics', is_active: 1 },
     { id: 'col-somg', code: 'SoMG', name: 'College of Mines and Geosciences', description: 'Main Campus - Geosciences, Mining and Petroleum Engineering', is_active: 1 },
     { id: 'col-sjmc', code: 'SJMC', name: 'School of Journalism and Mass Communication', description: 'Mikocheni Campus - Journalism, Media and PR', is_active: 1 },
     { id: 'col-ids', code: 'IDS', name: 'Institute of Development Studies', description: 'Main Campus - Development Studies and Research', is_active: 1 },
     { id: 'col-coaf', code: 'CoAF', name: 'College of Agricultural Sciences and Food Technology', description: 'Main Campus - Agriculture, Food and Bio-resources', is_active: 1 },
     { id: 'col-mchas', code: 'MCHAS', name: 'Mbeya College of Health and Allied Sciences', description: 'Mbeya Campus - Health, Medicine and Clinical Sciences', is_active: 1 },
+    { id: 'col-mri', code: 'MRI', name: 'Mineral Resources Institute', description: 'Dodoma / Affiliated Institute - Mining, Geology and Surveying', is_active: 1 },
     { id: 'col-duce', code: 'DUCE', name: 'Dar es Salaam University College of Education', description: 'Chang\'ombe Campus - Constituent College of Education', is_active: 1 },
     { id: 'col-muce', code: 'MUCE', name: 'Mkwawa University College of Education', description: 'Iringa Campus - Constituent College of Education', is_active: 1 },
     { id: 'col-soaf', code: 'SoAF', name: 'School of Aquatic Sciences and Fisheries Technology', description: 'Kunduchi Campus - Marine and Aquatic Sciences', is_active: 1 },
@@ -67,6 +69,7 @@ exports.seed = async function(knex) {
     { id: 'dept-conas-geo', college_id: 'col-conas', code: 'GEO', name: 'Geology', description: 'Geosciences and Earth Systems' },
     { id: 'dept-conas-mth', college_id: 'col-conas', code: 'MTH', name: 'Mathematics', description: 'Pure and Applied Mathematics, Statistics' },
     { id: 'dept-conas-mbb', college_id: 'col-conas', code: 'MBB', name: 'Molecular Biology and Biotechnology', description: 'Genetics, Biochemistry and Biotechnology' },
+    { id: 'dept-conas-nas', college_id: 'col-conas', code: 'NAS', name: 'Natural and Applied Sciences', description: 'Interdisciplinary Natural and Applied Sciences with Education' },
     { id: 'dept-conas-phy', college_id: 'col-conas', code: 'PHY', name: 'Physics', description: 'Applied Physics, Materials and Renewable Energy' },
     { id: 'dept-conas-zwc', college_id: 'col-conas', code: 'ZWC', name: 'Zoology and Wildlife Conservation', description: 'Animal Biology, Ecology and Wildlife Management' },
 
@@ -81,7 +84,9 @@ exports.seed = async function(knex) {
     // CoSS
     { id: 'dept-coss-econ', college_id: 'col-coss', code: 'ECON', name: 'Economics', description: 'Applied, Development and Financial Economics' },
     { id: 'dept-coss-geo', college_id: 'col-coss', code: 'GEO-SS', name: 'Geography', description: 'Human Geography, GIS and Environmental Management' },
+    { id: 'dept-coss-is', college_id: 'col-coss', code: 'IS-SS', name: 'Information Studies', description: 'Library and Information Studies' },
     { id: 'dept-coss-pspa', college_id: 'col-coss', code: 'PSPA', name: 'Political Science and Public Administration', description: 'Governance, Policy and Public Administration' },
+    { id: 'dept-coss-ss', college_id: 'col-coss', code: 'SS', name: 'Social Sciences', description: 'Interdisciplinary Social Sciences and Arts with Education' },
     { id: 'dept-coss-soc', college_id: 'col-coss', code: 'SOC', name: 'Sociology', description: 'Social Development and Anthropology' },
     { id: 'dept-coss-stat', college_id: 'col-coss', code: 'STAT', name: 'Statistics', description: 'Official Statistics and Data Analytics' },
 
@@ -115,7 +120,24 @@ exports.seed = async function(knex) {
     // MCHAS
     { id: 'dept-mchas-med', college_id: 'col-mchas', code: 'MED', name: 'Clinical Medicine', description: 'Internal Medicine and Clinical Practice' },
     { id: 'dept-mchas-pharm', college_id: 'col-mchas', code: 'PHARM', name: 'Pharmacy', description: 'Pharmaceutical Sciences and Therapeutics' },
-    { id: 'dept-mchas-nurs', college_id: 'col-mchas', code: 'NURS', name: 'Nursing', description: 'Nursing Sciences and Community Health' }
+    { id: 'dept-mchas-nurs', college_id: 'col-mchas', code: 'NURS', name: 'Nursing', description: 'Nursing Sciences and Community Health' },
+
+    // UDSE
+    { id: 'dept-udse-econ', college_id: 'col-udse', code: 'ECON-SE', name: 'Economics', description: 'Economics and Applied Statistics' },
+
+    // IDS, IKS, IMS, SJMC, SoAF
+    { id: 'dept-ids-ds', college_id: 'col-ids', code: 'DS', name: 'Development Studies', description: 'Development Studies and Research' },
+    { id: 'dept-iks-kis', college_id: 'col-iks', code: 'KIS', name: 'Kiswahili', description: 'Kiswahili Language, Literature and Linguistics' },
+    { id: 'dept-ims-ms', college_id: 'col-ims', code: 'MS', name: 'Marine Sciences', description: 'Oceanography and Marine Sciences' },
+    { id: 'dept-sjmc-jmc', college_id: 'col-sjmc', code: 'JMC', name: 'Journalism and Mass Communication', description: 'Journalism, Mass Communication and Public Relations' },
+    { id: 'dept-soaf-asft', college_id: 'col-soaf', code: 'ASFT', name: 'Aquatic Sciences and Fisheries Technology', description: 'Aquatic Sciences and Fisheries Technology' },
+
+    // MRI
+    { id: 'dept-mri-eem', college_id: 'col-mri', code: 'EEM', name: 'Environmental Engineering and Management', description: 'Environmental Engineering and Management in Mines' },
+    { id: 'dept-mri-gme', college_id: 'col-mri', code: 'GME', name: 'Geology and Mineral Exploration', description: 'Geology and Mineral Exploration' },
+    { id: 'dept-mri-lms', college_id: 'col-mri', code: 'LMS', name: 'Land and Mine Surveying', description: 'Land and Mine Surveying' },
+    { id: 'dept-mri-me', college_id: 'col-mri', code: 'ME', name: 'Mining Engineering', description: 'Mining Engineering and Mineral Extraction' },
+    { id: 'dept-mri-pge', college_id: 'col-mri', code: 'PGE', name: 'Petroleum Geosciences and Exploration', description: 'Petroleum Geosciences and Exploration' }
   ];
 
   for (const d of departments) {

@@ -1,35 +1,5 @@
-<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
-
-  <!-- =========================
-       SIDEBAR OVERLAY
-  ========================== -->
-
-  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
-
-  <!-- =========================
-       SIDEBAR
-  ========================== -->
-
-  <aside class="sidebar">
-    <div class="brand">
-      <img src="/udsm-logo.png" alt="UDSM Logo" />
-      <div>
-        <strong>STUDENT PORTAL</strong>
-        <small>University of Dar es Salaam</small>
-      </div>
-    </div>
-
-    <nav>
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5zM0 11.5A1.5 1.5 0 0 1 1.5 10h1A1.5 1.5 0 0 1 4 11.5v1A1.5 1.5 0 0 1 2.5 14h-1A1.5 1.5 0 0 1 0 12.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
-        <span>Clearance Process</span>
-      </a>
-    </nav>
-  </aside>
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
   <!-- =========================
        MAIN CONTENT
@@ -38,14 +8,14 @@
   <main class="content-panel">
 
     <app-dashboard-header
-      eyebrow="Graduation Clearance"
       title="Clearance Process"
+      [subtitle]="(currentUser?.college || request?.college || '') + ((currentUser?.programme || request?.programme) ? ' · ' + (currentUser?.programme || request?.programme) : '')"
       [user]="currentUser"
-      [showProfile]="false"
+      [showProfile]="true"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
-      <div header-actions style="display: flex; align-items: center; gap: 14px;">
+      <div header-actions style="display: flex; align-items: center; gap: 10px;">
         <span
           *ngIf="request"
           class="final-status"
@@ -53,51 +23,6 @@
         >
           {{ request.status }}
         </span>
-
-        <!-- Dropdown menu with Profile and Notifications -->
-        <div class="header-user-dropdown-container">
-          <button
-            type="button"
-            class="header-avatar-button"
-            (click)="toggleUserDropdown($event)"
-            title="Account menu"
-            aria-haspopup="true"
-            [attr.aria-expanded]="userDropdownOpen"
-          >
-            <img
-              *ngIf="hasPhoto(); else profileInitial"
-              [src]="getPhotoSource()"
-              [alt]="currentUser?.fullName || 'Student profile photo'"
-              (error)="onImageError()"
-            />
-            <ng-template #profileInitial>
-              <span class="profile-initial">{{ currentUser?.fullName?.charAt(0) || 'S' }}</span>
-            </ng-template>
-            <span class="profile-notification-dot" *ngIf="unreadNotifications > 0" aria-label="Unread notifications"></span>
-          </button>
-
-          <div class="header-user-dropdown-menu" *ngIf="userDropdownOpen" (click)="$event.stopPropagation()">
-            <div class="dropdown-user-header">
-              <strong>{{ currentUser?.fullName || 'Student' }}</strong>
-              <small>{{ currentUser?.registrationNumber || currentUser?.email || 'Student' }}</small>
-            </div>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" routerLink="/profile" (click)="closeUserDropdown()">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
-                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
-              </svg>
-              <span>Profile</span>
-            </a>
-            <a class="dropdown-item" routerLink="/notifications" (click)="closeUserDropdown()">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/>
-              </svg>
-              <span>Notifications</span>
-              <span class="dropdown-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-            </a>
-          </div>
-        </div>
       </div>
     </app-dashboard-header>
 
@@ -230,7 +155,8 @@
           </div>
 
           <div *ngIf="receiptErrorMessage" class="receipt-alert error">
-            ⚠️ {{ receiptErrorMessage }}
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <span>{{ receiptErrorMessage }}</span>
           </div>
 
           <!-- WRITTEN CONTROL NUMBER FIELD (MANDATORY / PRIMARY) -->
@@ -282,7 +208,10 @@
                   <strong>{{ receiptFileName }}</strong>
                   <small>{{ receiptFileSizeText }}</small>
                 </div>
-                <button type="button" class="remove-file-btn" (click)="removeReceiptFile()" title="Remove file">✕</button>
+                <div class="file-action-buttons">
+                  <button type="button" class="btn-simple-view" (click)="viewReceiptFile()">View</button>
+                  <button type="button" class="btn-simple-remove" (click)="removeReceiptFile()">Remove</button>
+                </div>
               </div>
             </ng-container>
           </div>
@@ -297,7 +226,8 @@
               [disabled]="!receiptNote.trim() || isSubmittingReceipt"
               (click)="submitRejectionReceipt()"
             >
-              {{ isSubmittingReceipt ? 'Submitting to Finance...' : '📤 Submit Control Number to Finance' }}
+              <i class="bi bi-send-fill" aria-hidden="true" style="margin-right: 6px;"></i>
+              {{ isSubmittingReceipt ? 'Submitting to Finance...' : 'Submit Control Number to Finance' }}
             </button>
           </div>
         </div>
@@ -419,7 +349,7 @@
         </div>
 
 
-        <!-- ALL SEVEN APPROVED -->
+        <!-- ALL PARALLEL OFFICES APPROVED -->
 
         <div
           *ngIf="allClearanceOfficesApproved"
@@ -427,12 +357,11 @@
         >
 
           <p>
-            All seven parallel offices have approved
-            your request.
+            All required parallel offices have approved your request.
           </p>
 
           <span class="success-text">
-            ✓ Step 2 completed
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Parallel clearance completed
           </span>
 
         </div>
@@ -446,8 +375,7 @@
         >
 
           <p>
-            All seven offices must approve your request
-            before the Department stage can begin.
+            All required parallel offices must approve your request before the Department stage can begin.
           </p>
 
         </div>
@@ -580,6 +508,42 @@
 
 
       <!-- =================================================
+           STEP 6 — SUPERVISOR (POSTGRADUATE FINAL CHECK)
+      ================================================== -->
+
+      <section
+        *ngIf="request.currentStage === 'Supervisor'"
+        class="waiting-card"
+      >
+
+        <h2>
+          Step 6: Research Supervisor (Final Check)
+        </h2>
+
+        <p>
+          Your clearance request is currently undergoing final academic verification, dissertation/thesis clearance, and undergraduate certificate review by your Research Supervisor.
+        </p>
+
+        <div *ngIf="getOfficeStatus('Supervisor') === 'Rejected'" style="margin: 14px 0; padding: 14px; border-radius: 8px; background: #fff5f5; border: 1px solid #fecaca; border-left: 4px solid #dc2626;">
+          <p class="rejection-comment" style="margin: 0; color: #991b1b; font-size: 13px;">
+            <strong style="display: inline; color: #991b1b; font-size: 13px; font-weight: 700;">Supervisor Feedback:</strong>
+            <span style="color: #991b1b; font-weight: 600; margin-left: 6px;">{{ getRejectionReason('Supervisor') }}</span>
+          </p>
+          <small *ngIf="getReviewerContact('Supervisor').name" class="reviewer-contact" style="display: block; margin-top: 5px; color: #4b5563; font-size: 0.75rem;">
+            Reviewed by: {{ getReviewerContact('Supervisor').name }}
+            <span *ngIf="getReviewerContact('Supervisor').phone"> &middot; Phone: {{ getReviewerContact('Supervisor').phone }}</span>
+            <span *ngIf="getReviewerContact('Supervisor').email"> &middot; Email: {{ getReviewerContact('Supervisor').email }}</span>
+          </small>
+        </div>
+
+        <div class="step-navigation">
+          <button type="button" class="back-button" (click)="goBack()">Back</button>
+        </div>
+
+      </section>
+
+
+      <!-- =================================================
            COMPLETED
       ================================================== -->
 
@@ -601,10 +565,10 @@
           <button
             type="button"
             (click)="downloadCertificate()"
-            class="back-button"
-            style="background: #166534; color: #fff; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; margin-right: 12px;"
+            class="certificate-download-btn"
           >
-            📜 Download Official Clearance Certificate
+            <i class="bi bi-file-earmark-arrow-down-fill" aria-hidden="true"></i>
+            <span>Download Official Clearance Certificate</span>
           </button>
           <a
             routerLink="/dashboard"

@@ -2,7 +2,6 @@
 import { Routes } from '@angular/router';
 
 import { Login } from './auth/login/login';
-import { Register } from './auth/register/register';
 import { StudentDashboard } from './dashboard/student/student';
 import { LibraryDashboard } from './dashboard/library/library';
 import { FinanceDashboard } from './dashboard/finance/finance';
@@ -10,21 +9,18 @@ import { AcademicDashboard } from './dashboard/academic/academic';
 import { AdminDashboard } from './dashboard/admin/admin';
 import { ClearanceRequestComponent } from './clearance/request/request';
 import { ClearanceStatusComponent } from './clearance/status/status';
-import { ClearanceConfirmationComponent } from './clearance/confirmation/confirmation';
 import { ClearanceHistoryComponent } from './clearance/history/history';
-import { ClearanceReportComponent } from './clearance/report/report';
 import { CertificateVerifyComponent } from './clearance/verify/verify';
 import { DocumentsListComponent } from './documents/documents-list/documents-list';
 import { DocumentUploadComponent } from './documents/upload/upload';
 import { NotificationListComponent } from './notifications/notifications';
 import { ProfileComponent } from './profile/profile';
 import { Landing } from './landing/landing';
-import { SignupOptions } from './auth/signup-options/signup-options';
-import { StaffRegister } from './auth/staff-register/staff-register';
 import { ForgotPassword } from './auth/forgot-password/forgot-password';
 import { ResetPassword } from './auth/reset-password/reset-password';
 import { VerifyEmail } from './auth/verify-email/verify-email';
 import { ConvocationComponent } from './clearenceapproval/convocation/convocation';
+import { ConvocationDashboardComponent } from './dashboard/convocation/convocation-dashboard';
 import { GamesCoachComponent } from './dashboard/games_coach/games_coach';
 import { HallWardenComponent } from './dashboard/hall_warden/hall_warden';
 import { UsabComponent } from './dashboard/usab/usab';
@@ -40,6 +36,7 @@ import { LecturerDashboard } from './dashboard/lecturer/lecturer';
 import { DirectorUndergraduateStudiesDashboard } from './dashboard/director_undergraduate_studies/director-undergraduate-studies';
 import { DusSecretaryDashboardComponent } from './dashboard/dus_secretary/dus-secretary';
 import { StationSecretaryDashboardComponent } from './dashboard/station-secretary/station-secretary';
+import { SupervisorDashboardComponent } from './dashboard/supervisor/supervisor.component';
 import { TranscriptComponent } from './transcript/transcript';
 import { TranscriptProcessComponent } from './transcript/process';
 import { TranscriptPaymentComponent } from './transcript/payment';
@@ -65,6 +62,11 @@ export const routes: Routes = [
     path: 'dashboard',
     component: StudentDashboard,
     canActivate: [authGuard, roleGuard(['Student'])]
+  },
+  {
+    path: 'dashboard/student',
+    redirectTo: 'dashboard',
+    pathMatch: 'full'
   },
 
   // Office Dashboards
@@ -96,7 +98,12 @@ export const routes: Routes = [
   {
     path: 'dashboard/director-undergraduate-studies',
     component: DirectorUndergraduateStudiesDashboard,
-    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies'])]
+    canActivate: [authGuard, roleGuard(['Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/director-postgraduate-studies',
+    component: DirectorUndergraduateStudiesDashboard,
+    canActivate: [authGuard, roleGuard(['Director of Postgraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/admin',
@@ -144,37 +151,57 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Laboratory'])]
   },
   {
+    path: 'dashboard/dus-examination-office',
+    component: DusSecretaryDashboardComponent,
+    canActivate: [authGuard, roleGuard(['DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
     path: 'dashboard/dus-secretary',
     component: DusSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/station-secretary',
     component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
   },
   {
     path: 'dashboard/campus-dus-secretary', component: StationSecretaryDashboardComponent,
-    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+    canActivate: [authGuard, roleGuard(['Station Secretary', 'DUS Examination Office', 'DUS Secretary', 'Director of Undergraduate Studies', 'Administrator'])]
+  },
+  {
+    path: 'dashboard/supervisor',
+    component: SupervisorDashboardComponent,
+    canActivate: [authGuard, roleGuard(['Supervisor', 'Administrator'])]
+  },
+  {
+    path: 'supervisor/dashboard',
+    redirectTo: 'dashboard/supervisor',
+    pathMatch: 'full'
+  },
+  {
+    path: 'supervisor',
+    redirectTo: 'dashboard/supervisor',
+    pathMatch: 'full'
   },
 
-  // Clearance Routes
-  { path: 'clearance/request', component: ClearanceRequestComponent, canActivate: [authGuard] },
-  { path: 'clearance/status', component: ClearanceStatusComponent, canActivate: [authGuard] },
+  // Clearance Routes (Student workflows)
+  { path: 'clearance/request', component: ClearanceRequestComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'clearance/status', component: ClearanceStatusComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
   { path: 'clearance/confirmation', redirectTo: 'clearance/status', pathMatch: 'full' },
-  { path: 'clearance/history', component: ClearanceHistoryComponent, canActivate: [authGuard] },
-  { path: 'clearance/report', component: ClearanceReportComponent, canActivate: [authGuard] },
+  { path: 'clearance/history', component: ClearanceHistoryComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'clearance/report', redirectTo: 'clearance/status', pathMatch: 'full' },
 
-  { path: 'transcript', component: TranscriptComponent, canActivate: [authGuard] },
-  { path: 'transcript/process', component: TranscriptProcessComponent, canActivate: [authGuard] },
-  { path: 'transcript/payment', component: TranscriptPaymentComponent, canActivate: [authGuard] },
-  { path: 'transcript/collection', component: TranscriptCollectionComponent, canActivate: [authGuard] },
-  { path: 'documents/transcript', component: TranscriptDocumentsComponent, canActivate: [authGuard] },
+  { path: 'transcript', component: TranscriptComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'transcript/process', component: TranscriptProcessComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'transcript/payment', component: TranscriptPaymentComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'transcript/collection', component: TranscriptCollectionComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'documents/transcript', component: TranscriptDocumentsComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
   { path: 'dashboard/finance/transcript-payments', redirectTo: 'dashboard/finance', pathMatch: 'full' },
 
   // Documents & Notifications
-  { path: 'documents', component: DocumentsListComponent, canActivate: [authGuard] },
-  { path: 'documents/upload', component: DocumentUploadComponent, canActivate: [authGuard] },
+  { path: 'documents', component: DocumentsListComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
+  { path: 'documents/upload', component: DocumentUploadComponent, canActivate: [authGuard, roleGuard(['Student', 'Administrator'])] },
   { path: 'notifications', component: NotificationListComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
@@ -193,7 +220,15 @@ export const routes: Routes = [
   { path: 'dashboard/department', component: DepartmentOfficerComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
   { path: 'department/review/:id', component: DepartmentReviewComponent, canActivate: [authGuard, roleGuard(['Department', 'Administrator'])] },
 
-  // Legacy Convocation staff URLs now open the Finance dashboard.
-  { path: 'convocation/dashboard', redirectTo: 'dashboard/finance', pathMatch: 'full' },
-  { path: 'convocation/requests', redirectTo: 'dashboard/finance', pathMatch: 'full' }
+  // Convocation Officer Dashboard
+  {
+    path: 'dashboard/convocation',
+    component: ConvocationDashboardComponent,
+    canActivate: [authGuard, roleGuard(['Convocation', 'Finance', 'Administrator'])]
+  },
+  { path: 'convocation/dashboard', redirectTo: 'dashboard/convocation', pathMatch: 'full' },
+  { path: 'convocation/requests', redirectTo: 'dashboard/convocation', pathMatch: 'full' },
+
+  // Wildcard fallback prevents NG04002 errors on unknown URLs
+  { path: '**', redirectTo: '' }
 ];

@@ -11,39 +11,74 @@ class ConvocationService {
    */
   static async submitReceipt(user, data, file = null, reqContext = {}) {
     const db = getDb();
-    const studentId = data.studentId || String(user.id);
+    const rawStudentId = data.studentId || String(user.id);
+    const controlNumber = String(data.controlNumber || '').trim();
+
+    if (!controlNumber || !/^[A-Za-z0-9-]{4,40}$/.test(controlNumber)) {
+      const err = new Error('Enter a valid payment control number (4 to 40 letters, numbers, or hyphens).');
+      err.statusCode = 400;
+      throw err;
+    }
 
     return db.transaction(async (trx) => {
-      // Look up student record
-      let student = await trx('students').where({ id: studentId }).first();
-      if (!student && user.registrationNumber) {
-        student = await trx('students').whereRaw('LOWER(registration_number) = ?', [user.registrationNumber.toLowerCase()]).first();
-      }
-      if (!student) {
+      // Look up canonical student record (for STUDENT role, always bind to req.user)
+      let student = null;
+      if (user.role === 'STUDENT') {
         student = await trx('students').where({ user_id: user.id }).first();
+        if (!student && user.registrationNumber) {
+          student = await trx('students')
+            .whereRaw('LOWER(registration_number) = ?', [user.registrationNumber.toLowerCase()])
+            .first();
+        }
+      } else {
+        student = await trx('students').where({ id: rawStudentId }).first();
+        if (!student) {
+          student = await trx('students').where({ user_id: rawStudentId }).first();
+        }
       }
 
+      if (!student) {
+        const err = new Error('Student profile not found.');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      const clearanceRequest = await trx('clearance_requests')
+        .where({ student_id: student.id })
+        .orderBy('submitted_at', 'desc')
+        .forUpdate()
+        .first();
+
+      if (!clearanceRequest) {
+        const err = new Error('No active clearance request found. Please submit your clearance request first.');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      const canonicalStudentId = String(student.id);
       const now = new Date();
-      const receiptNumber = data.receiptNumber?.trim() || `REC-${Date.now()}`;
-      const controlNumber = data.controlNumber?.trim() || 'DIRECT-PAYMENT';
+      const receiptNumber = data.receiptNumber?.trim() || `CN-${controlNumber}`;
       const paymentDate = data.paymentDate?.trim() || now.toISOString().split('T')[0];
 
-      // File metadata (supports file upload or JSON receipt payload)
-      const fileName = file?.originalname || data.fileName || 'convocation-receipt.pdf';
-      const fileType = file?.mimetype || data.fileType || 'application/pdf';
-      const fileSize = file?.size || data.fileSize || 1024;
+      // File metadata (supports optional file upload or clean JSON control-number submission)
+      const fileName = file?.originalname || data.fileName || `Control_Number_${controlNumber}.txt`;
+      const fileType = file?.mimetype || data.fileType || 'text/plain';
+      const fileSize = file?.size || data.fileSize || 0;
 
-      const autoApprovalComment = 'Convocation was auto-approved on submission; Finance reviews the control number at final clearance.';
+      const autoApprovalComment = `Control number (${controlNumber}) submitted; Convocation auto-approved and Finance verifies at final clearance.`;
 
-      // Check for existing pending receipt (update in place if present, otherwise insert)
-      const existingPending = await trx('convocation_receipts')
-        .where({ student_id: studentId, status: 'PENDING' })
+      // Update an existing PENDING/REJECTED receipt in place, otherwise insert a fresh record
+      const existingEditable = await trx('convocation_receipts')
+        .whereIn('student_id', Array.from(new Set([canonicalStudentId, String(user.id)])))
+        .whereIn('status', ['PENDING', 'REJECTED'])
+        .orderBy('submitted_at', 'desc')
         .first();
 
       let receipt;
-      if (existingPending) {
-        const fileUrl = file?.path ? `/uploads/convocation/${file.filename}` : (data.fileUrl || existingPending.file_url);
-        await trx('convocation_receipts').where({ id: existingPending.id }).update({
+      if (existingEditable) {
+        const fileUrl = file?.path ? `/uploads/convocation/${file.filename}` : (data.fileUrl || existingEditable.file_url || null);
+        await trx('convocation_receipts').where({ id: existingEditable.id }).update({
+          student_id: canonicalStudentId,
           control_number: controlNumber,
           receipt_number: receiptNumber,
           payment_date: paymentDate,
@@ -55,15 +90,16 @@ class ConvocationService {
           approved_by: 'System (Control Number Submission)',
           approved_at: now,
           comments: autoApprovalComment,
-          submitted_at: now
+          submitted_at: now,
+          updated_at: now
         });
-        receipt = await trx('convocation_receipts').where({ id: existingPending.id }).first();
+        receipt = await trx('convocation_receipts').where({ id: existingEditable.id }).first();
       } else {
         const receiptId = crypto.randomUUID();
-        const fileUrl = file?.path ? `/uploads/convocation/${file.filename}` : (data.fileUrl || `/uploads/convocation/${receiptId}.pdf`);
+        const fileUrl = file?.path ? `/uploads/convocation/${file.filename}` : (data.fileUrl || null);
         receipt = {
           id: receiptId,
-          student_id: studentId,
+          student_id: canonicalStudentId,
           control_number: controlNumber,
           receipt_number: receiptNumber,
           payment_date: paymentDate,
@@ -75,65 +111,84 @@ class ConvocationService {
           approved_by: 'System (Control Number Submission)',
           approved_at: now,
           comments: autoApprovalComment,
-          submitted_at: now
+          submitted_at: now,
+          updated_at: now
         };
         await trx('convocation_receipts').insert(receipt);
       }
 
       // Auto-approve Stage 1 (Convocation) on student's latest clearance request and advance to Parallel
-      if (student) {
-        const clearanceRequest = await trx('clearance_requests')
-          .where({ student_id: student.id })
-          .orderBy('submitted_at', 'desc')
-          .forUpdate()
-          .first();
+      await trx('department_approvals')
+        .where({
+          clearance_request_id: clearanceRequest.id,
+          department: 'Convocation'
+        })
+        .update({
+          status: 'APPROVED',
+          approved_by: 'System (Auto-Approved on Control Number Submission)',
+          approval_date: now,
+          comments: `Control number submitted; Finance review is pending: ${controlNumber}`
+        });
 
-        if (clearanceRequest) {
-          await trx('department_approvals')
-            .where({
-              clearance_request_id: clearanceRequest.id,
-              department: 'Convocation'
-            })
-            .update({
-              status: 'APPROVED',
-              approved_by: 'System (Auto-Approved on Control Number Submission)',
-              approval_date: now,
-              comments: controlNumber
-                ? `Control number submitted; Finance review is pending: ${controlNumber}`
-                : 'Control number submitted; Finance review is pending.'
-            });
+      const remainingRejections = await trx('department_approvals')
+        .where({ clearance_request_id: clearanceRequest.id, status: 'REJECTED' })
+        .first();
 
-          const remainingRejections = await trx('department_approvals')
-            .where({ clearance_request_id: clearanceRequest.id, status: 'REJECTED' })
-            .first();
-
-          if (clearanceRequest.current_stage === 'Convocation' || !remainingRejections) {
-            const updates = {
-              status: remainingRejections ? 'REJECTED' : 'PENDING'
-            };
-            if (clearanceRequest.current_stage === 'Convocation') {
-              updates.current_stage = 'Parallel';
-              updates.current_office = 'Parallel';
-            }
-            await trx('clearance_requests').where({ id: clearanceRequest.id }).update(updates);
-          }
+      if (clearanceRequest.current_stage === 'Convocation' || !remainingRejections) {
+        const updates = {
+          status: remainingRejections ? 'REJECTED' : 'PENDING'
+        };
+        if (clearanceRequest.current_stage === 'Convocation') {
+          updates.current_stage = 'Parallel';
+          updates.current_office = 'Parallel';
         }
+        await trx('clearance_requests').where({ id: clearanceRequest.id }).update(updates);
       }
 
       await NotificationService.sendNotification({
         userId: user.id,
-        studentId: student ? String(student.id) : studentId,
-        title: 'Convocation Auto-Approved',
+        studentId: canonicalStudentId,
+        title: 'Convocation Control Number Submitted',
         message: `Control number (${controlNumber}) submitted. Convocation is complete automatically, and Finance will verify it at final clearance.`,
         type: 'CLEARANCE_UPDATE',
         trx
       });
 
+      // Notify the next eligible office in Stage 2 (Smart Card first; if already approved, remaining pending parallel offices)
+      const stageApprovals = await trx('department_approvals')
+        .where({ clearance_request_id: clearanceRequest.id });
+      const smartCardApp = stageApprovals.find(
+        a => String(a.department || '').replace(/[_\s]+/g, ' ').trim().toLowerCase() === 'smart card'
+      );
+      if (smartCardApp && smartCardApp.status === 'PENDING') {
+        await NotificationService.notifyOfficePendingApproval({
+          office: 'Smart Card',
+          student,
+          clearanceRequest,
+          trx
+        });
+      } else if (smartCardApp && smartCardApp.status === 'APPROVED') {
+        const pendingOtherParallels = stageApprovals
+          .filter(a => {
+            const norm = String(a.department || '').replace(/[_\s]+/g, ' ').trim().toLowerCase();
+            return a.status === 'PENDING' && !['convocation', 'smart card', 'department', 'principal', 'finance', 'supervisor'].includes(norm);
+          })
+          .map(a => a.department);
+        if (pendingOtherParallels.length > 0) {
+          await NotificationService.notifyOfficesPendingApproval({
+            offices: pendingOtherParallels,
+            student,
+            clearanceRequest,
+            trx
+          });
+        }
+      }
+
       await AuditService.logAction({
         userId: user.id,
         username: user.email || user.username,
         action: 'SUBMIT_CONVOCATION_RECEIPT',
-        details: `Student submitted convocation receipt #${receiptNumber} (Control: ${controlNumber}) — auto-approved for Parallel stage`,
+        details: `Student ${student.registration_number || canonicalStudentId} submitted convocation control number ${controlNumber} — auto-approved for Parallel stage`,
         ipAddress: reqContext.ip,
         userAgent: reqContext.userAgent,
         trx
@@ -269,6 +324,22 @@ class ConvocationService {
         trx
       );
 
+      if (clearanceRequest && student) {
+        const stageApprovals = await trx('department_approvals')
+          .where({ clearance_request_id: clearanceRequest.id });
+        const smartCardApp = stageApprovals.find(
+          a => String(a.department || '').replace(/[_\s]+/g, ' ').trim().toLowerCase() === 'smart card'
+        );
+        if (smartCardApp && smartCardApp.status === 'PENDING') {
+          await NotificationService.notifyOfficePendingApproval({
+            office: 'Smart Card',
+            student,
+            clearanceRequest,
+            trx
+          });
+        }
+      }
+
       await AuditService.logAction({
         userId: officer.id,
         username: officer.email || officer.username,
@@ -383,8 +454,27 @@ class ConvocationService {
   /**
    * Get receipt status for a student
    */
-  static async getReceiptStatus(studentId) {
+  static async getReceiptStatus(studentId, requester = null) {
     const db = getDb();
+
+    // Enforce ownership check for STUDENT role (prevents IDOR)
+    if (requester && requester.role === 'STUDENT') {
+      let ownStudent = await db('students').where({ user_id: requester.id }).first();
+      if (!ownStudent && requester.registrationNumber) {
+        ownStudent = await db('students')
+          .whereRaw('LOWER(registration_number) = ?', [requester.registrationNumber.toLowerCase()])
+          .first();
+      }
+      const allowedIds = new Set(
+        [requester.id, ownStudent?.id, ownStudent?.user_id].filter(Boolean).map(String)
+      );
+      if (!allowedIds.has(String(studentId))) {
+        const err = new Error('Forbidden: You can only view your own convocation receipt status.');
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+
     let student = await db('students').where({ id: studentId }).first();
     if (!student) {
       student = await db('students').where({ user_id: studentId }).first();

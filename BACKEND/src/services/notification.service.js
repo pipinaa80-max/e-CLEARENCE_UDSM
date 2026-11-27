@@ -1,17 +1,43 @@
 const crypto = require('crypto');
 const { getDb } = require('../config/database');
 const EmailService = require('./email.service');
+const academicScope = require('../utils/academicScope');
+
+const OFFICE_NOTIFICATION_MAP = {
+  convocation: { role: 'CONVOCATION_OFFICER', label: 'Convocation', link: '/dashboard/convocation', scoped: false },
+  'smart card': { role: 'SMART_CARD_OFFICER', label: 'Smart Card', link: '/dashboard/smart-card', scoped: false },
+  library: { role: 'LIBRARY_OFFICER', label: 'Library', link: '/dashboard/library', scoped: false },
+  'hall warden': { role: 'HALL_WARDEN', label: 'Hall Warden', link: '/dashboard/hall-warden', scoped: false },
+  usab: { role: 'USAB_OFFICER', label: 'USAB', link: '/dashboard/usab', scoped: false },
+  daruso: { role: 'DARUSO_OFFICER', label: 'DARUSO', link: '/dashboard/daruso', scoped: false },
+  'games coach': { role: 'GAMES_COACH', label: 'Games Coach', link: '/dashboard/games-coach', scoped: false },
+  'dean of students': { role: 'DEAN_OF_STUDENTS', label: 'Dean of Students', link: '/dashboard/dean-of-students', scoped: false },
+  workshop: { role: 'WORKSHOP_OFFICER', label: 'Workshop', link: '/dashboard/workshop', scoped: false },
+  laboratory: { role: 'LABORATORY_OFFICER', label: 'Laboratory', link: '/dashboard/laboratory', scoped: false },
+  department: { role: 'DEPARTMENT_OFFICER', label: 'Department', link: '/department/dashboard', scoped: true },
+  principal: { role: 'PRINCIPAL', label: 'Principal', link: '/dashboard/principal', scoped: true },
+  finance: { role: 'FINANCE_OFFICER', label: 'Finance', link: '/dashboard/finance', scoped: false },
+  supervisor: { role: 'SUPERVISOR', label: 'Research Supervisor', link: '/dashboard/supervisor', scoped: true }
+};
 
 /**
  * Service for creating, dispatching, and managing student/staff notifications.
  * Fully compatible with original Spring Boot StudentNotificationController and Angular NotificationService.
  */
 class NotificationService {
+  static normalizeOfficeKey(office) {
+    return String(office || '').replace(/[_\s]+/g, ' ').trim().toLowerCase();
+  }
+
   /**
-   * Helper to resolve student record for a user
+   * Helper to resolve student record for a user.
+   * Strictly limited to STUDENT accounts so staff accounts never inherit student notifications.
    */
   static async resolveStudent(user) {
     if (!user) return null;
+    if (user.role && String(user.role).toUpperCase() !== 'STUDENT') {
+      return null;
+    }
     const db = getDb();
     const userId = user.userId || user.id;
 
@@ -172,6 +198,131 @@ class NotificationService {
 
   static async notify(params) {
     return this.sendNotification(params);
+  }
+
+  /**
+   * Dispatch an office-scoped notification to the active staff officer(s) responsible
+   * for approving a student's clearance at a specific stage.
+   *
+   * Uses student_id = null so staff notifications NEVER bleed into the student's inbox,
+   * and applies college/department scope filtering for Department, Principal, and Supervisor.
+   */
+  static async notifyOfficePendingApproval({
+    office,
+    student,
+    clearanceRequest = null,
+    customTitle = null,
+    customMessage = null,
+    trx = null
+  }) {
+    const db = trx || getDb();
+    const key = this.normalizeOfficeKey(office);
+    const meta = OFFICE_NOTIFICATION_MAP[key];
+    if (!meta) return [];
+
+    try {
+      const candidates = await db('users')
+        .where({ role: meta.role })
+        .andWhere(builder => {
+          builder.where({ is_active: 1 })
+            .orWhere({ is_active: true })
+            .orWhereNull('is_active');
+        })
+        .select('id', 'role', 'college', 'department', 'email', 'full_name');
+
+      if (!candidates || candidates.length === 0) {
+        return [];
+      }
+
+      const targetCollege = String(student?.college || clearanceRequest?.college || '').trim();
+      const targetDepartment = String(student?.department || clearanceRequest?.department || student?.programme || clearanceRequest?.programme || '').trim();
+
+      let recipients = candidates;
+      if (meta.scoped) {
+        const [activeColleges, activeDepartments] = await Promise.all([
+          db('colleges').where({ is_active: 1 }).select('code', 'name'),
+          db('departments').where({ is_active: 1 }).select('code', 'name')
+        ]);
+        const catalogs = { activeColleges, activeDepartments };
+        recipients = candidates.filter(officer =>
+          academicScope.matchesUserAcademicScope(
+            officer,
+            { college: targetCollege, department: targetDepartment },
+            catalogs
+          )
+        );
+      }
+
+      if (recipients.length === 0) {
+        return [];
+      }
+
+      const studentName = String(student?.full_name || student?.fullName || clearanceRequest?.full_name || 'A student').trim();
+      const regNo = String(student?.registration_number || student?.registrationNumber || clearanceRequest?.registration_number || '').trim();
+      const programme = String(student?.programme || clearanceRequest?.programme || '').trim();
+      const identityLabel = regNo ? `${studentName} (${regNo})` : studentName;
+      const programmeSuffix = programme ? ` — ${programme}` : '';
+
+      const title = customTitle || `${meta.label} Clearance Approval Required`;
+      const message = customMessage || `${identityLabel}${programmeSuffix} is ready for ${meta.label} clearance review and approval.`;
+
+      const createdIds = [];
+      for (const officer of recipients) {
+        const officerId = String(officer.id);
+        const duplicate = await db('notifications')
+          .where({ user_id: officerId, title, message })
+          .andWhere(builder => {
+            builder.where({ is_read: false })
+              .orWhere({ is_read: 0 })
+              .orWhereNull('is_read');
+          })
+          .first();
+
+        if (duplicate) continue;
+
+        const id = await this.sendNotification({
+          userId: officerId,
+          studentId: null,
+          title,
+          message,
+          type: 'CLEARANCE_UPDATE',
+          link: meta.link,
+          trx: db
+        });
+        if (id) createdIds.push(id);
+      }
+
+      return createdIds;
+    } catch (err) {
+      console.warn(`[NotificationService.notifyOfficePendingApproval] Failed for ${office}:`, err.message);
+      return [];
+    }
+  }
+
+  /**
+   * Dispatch office-scoped notifications to multiple offices individually.
+   */
+  static async notifyOfficesPendingApproval({
+    offices = [],
+    student,
+    clearanceRequest = null,
+    trx = null
+  }) {
+    const results = [];
+    const seen = new Set();
+    for (const office of offices) {
+      const key = this.normalizeOfficeKey(office);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      const ids = await this.notifyOfficePendingApproval({
+        office,
+        student,
+        clearanceRequest,
+        trx
+      });
+      results.push(...ids);
+    }
+    return results;
   }
 
   static async sendApprovalNotification(studentId, officeName, officerName, trx = null) {

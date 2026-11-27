@@ -1,4 +1,4 @@
-const { verifyToken, isTokenRevoked } = require('../utils/token');
+const { verifyToken, checkSessionValidity } = require('../utils/token');
 const { db } = require('../config/database');
 const { ROLES, normalizeRole } = require('../constants/roles');
 
@@ -31,20 +31,45 @@ async function authenticate(req, res, next) {
       });
     }
 
-    // Persistent MySQL-backed token and session revocation check
-    const revoked = await isTokenRevoked(decoded.jti, decoded.sessionId);
-    if (revoked) {
+    // Persistent MySQL-backed token, session revocation, and inactivity timeout check
+    const validity = await checkSessionValidity(decoded.jti, decoded.sessionId);
+    if (!validity.valid) {
+      const isIdle = validity.reason === 'inactivity_timeout';
+      const isExpired = validity.reason === 'session_expired';
       return res.status(401).json({
         success: false,
         status: 401,
-        error: 'Unauthorized',
-        message: 'Token has been revoked. Please log in again.'
+        error: isIdle ? 'InactivityTimeout' : isExpired ? 'SessionExpired' : 'SessionRevoked',
+        message: isIdle
+          ? 'Your session expired due to inactivity. Please log in again.'
+          : isExpired
+            ? 'Your authentication session has expired. Please log in again.'
+            : 'Token has been revoked. Please log in again.'
       });
     }
 
-    // Verify user exists and is active in database
+    // Verify user exists and is active in database (lightweight projection: excludes photo/password)
     const user = await db('users')
       .where({ id: decoded.userId })
+      .select(
+        'id',
+        'email',
+        'username',
+        'full_name',
+        'registration_number',
+        'role',
+        'project_id',
+        'college',
+        'department',
+        'programme',
+        'award',
+        'is_postgraduate',
+        'station_code',
+        'station_name',
+        'is_active',
+        'is_locked',
+        'lock_reason'
+      )
       .first();
 
     if (!user) {
@@ -86,6 +111,8 @@ async function authenticate(req, res, next) {
       college: user.college,
       department: user.department,
       programme: user.programme,
+      award: user.award || null,
+      isPostgraduate: Boolean(user.is_postgraduate),
       stationCode: user.station_code,
       stationName: user.station_name,
       token

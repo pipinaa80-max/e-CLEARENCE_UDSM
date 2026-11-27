@@ -1,14 +1,17 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { CollectionStationService, CollectionStation } from '../../core/services/collection-station.service';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ConfigService } from '../../core/services/config.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 
 @Component({
   selector: 'app-station-secretary-dashboard',
@@ -17,15 +20,19 @@ import { ConfigService } from '../../core/services/config.service';
   templateUrl: './station-secretary.html',
   styleUrl: './station-secretary.css'
 })
-export class StationSecretaryDashboardComponent implements OnInit {
+export class StationSecretaryDashboardComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly stationService = inject(CollectionStationService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly notificationService = inject(NotificationService);
+  private unreadSub?: Subscription;
 
   sidebarOpen = false;
+  unreadNotifications = 0;
   requests: TranscriptPaymentRequest[] = [];
   stations: CollectionStation[] = [];
   selectedStationCode: string = 'ALL';
@@ -36,6 +43,10 @@ export class StationSecretaryDashboardComponent implements OnInit {
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
+  isLoading = false;
+  loadError = '';
+  isSubmitting = false;
+  remindingId: string | null = null;
 
   // Barcode / Scanner simulation
   scannerActive = false;
@@ -99,9 +110,46 @@ export class StationSecretaryDashboardComponent implements OnInit {
     return this.currentStation?.code || this.currentUser?.stationCode || this.selectedStationCode;
   }
 
+  get userInitials(): string {
+    const name = String(this.currentUser?.fullName || 'SS');
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase() || '')
+      .join('') || 'SS';
+  }
+
   ngOnInit(): void {
-    this.loadStations();
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['ALL', 'IN_TRANSIT', 'IN_VAULT', 'COLLECTED', 'ISSUES'].includes(initialTab)) {
+      this.filterTab = initialTab as any;
+    }
+    this.unreadSub = this.notificationService.unreadCount$.subscribe(count => {
+      this.unreadNotifications = count;
+    });
+    this.notificationService.refreshUnreadCount().subscribe();
+
+    // Resolve station assignment first so station-scoped consignments load cleanly without race
+    this.loadStations(true);
+  }
+
+  ngOnDestroy(): void {
+    this.unreadSub?.unsubscribe();
+  }
+
+  refreshAll(): void {
     this.loadRequests();
+    this.notificationService.refreshUnreadCount().subscribe();
+  }
+
+  setFilterTab(tab: 'ALL' | 'IN_TRANSIT' | 'IN_VAULT' | 'COLLECTED' | 'ISSUES'): void {
+    this.filterTab = tab;
+    this.currentPage = 1;
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
   }
 
   toggleSidebar(): void {
@@ -128,7 +176,7 @@ export class StationSecretaryDashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  loadStations(): void {
+  loadStations(loadAfter = false): void {
     this.stationService.getActiveStations().subscribe({
       next: (list) => {
         this.stations = (list || []).map(s => ({
@@ -154,8 +202,16 @@ export class StationSecretaryDashboardComponent implements OnInit {
             }
           }
         }
+        if (loadAfter) {
+          this.loadRequests();
+        }
       },
-      error: (err) => console.error('Failed to load collection stations:', err)
+      error: (err) => {
+        console.error('Failed to load collection stations:', err);
+        if (loadAfter) {
+          this.loadRequests();
+        }
+      }
     });
   }
 
@@ -163,10 +219,13 @@ export class StationSecretaryDashboardComponent implements OnInit {
     if (this.isStationSecretary) return; // Locked to assigned station for Station Secretaries
     this.selectedStationCode = code;
     this.currentStation = this.stations.find(s => s.code === code) || null;
+    this.currentPage = 1;
     this.loadRequests();
   }
 
   loadRequests(): void {
+    this.isLoading = true;
+    this.loadError = '';
     const stationParam = this.isStationSecretary ? this.activeStationCode : this.selectedStationCode;
     const query = stationParam !== 'ALL' ? `?stationCode=${encodeURIComponent(stationParam)}` : '';
     const url = `${this.config.apiUrl}/dus-secretary/station/consignments${query}`;
@@ -175,6 +234,7 @@ export class StationSecretaryDashboardComponent implements OnInit {
 
     this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
       next: (backendStudents) => {
+        this.isLoading = false;
         if (backendStudents && backendStudents.length > 0) {
           this.requests = backendStudents.map(bs => this.mapStudentToRequest(bs));
         } else {
@@ -182,10 +242,16 @@ export class StationSecretaryDashboardComponent implements OnInit {
         }
       },
       error: (err) => {
+        this.isLoading = false;
+        this.loadError = err?.error?.message || 'Unable to load station consignments from the server.';
         console.error('Failed to load station consignments from backend:', err);
         this.requests = [];
       }
     });
+  }
+
+  isPostgraduateReceipt(req: TranscriptPaymentRequest | null): boolean {
+    return !!req && isPostgraduateEntity(req);
   }
 
   private mapStudentToRequest(s: any): TranscriptPaymentRequest {
@@ -194,14 +260,16 @@ export class StationSecretaryDashboardComponent implements OnInit {
       studentId: s.id,
       studentName: s.fullName,
       registrationNumber: s.registrationNumber,
-      award: s.programme || 'Degree Certificate & Transcript',
-      graduationYear: s.graduationYear || '2024',
+      award: s.award || s.programme || 'Degree Certificate & Transcript',
+      programme: s.programme || '',
+      isPostgraduate: isPostgraduateEntity(s),
+      graduationYear: s.graduationYear || '',
       transcriptCount: 1,
       amount: 15000,
       currency: 'TZS',
       attemptNumber: 1,
       status: 'Paid',
-      controlNumber: '99' + Math.abs(this.hashCode(s.registrationNumber || s.id)).toString().padStart(10, '0').slice(0, 10),
+      controlNumber: s.controlNumber || '',
       requestedAt: s.createdAt || new Date().toISOString(),
       collectionMethod: 'Physical Collection',
       postingRegion: s.college || this.currentStation?.region || 'Dar es Salaam',
@@ -231,15 +299,6 @@ export class StationSecretaryDashboardComponent implements OnInit {
       handoverReceiptToken: s.handoverReceiptToken,
       transitIssueNotes: s.transitIssueNotes
     };
-  }
-
-  private hashCode(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash;
   }
 
   // Summary Metrics
@@ -280,6 +339,33 @@ export class StationSecretaryDashboardComponent implements OnInit {
       if (r.postingRegion && this.currentStation && r.postingRegion.toLowerCase() === this.currentStation.region.toLowerCase()) return true;
       return false;
     });
+  }
+
+  currentPage = 1;
+  pageSize = 25;
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+  }
+
+  get paginatedRequests(): TranscriptPaymentRequest[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   get filteredRequests(): TranscriptPaymentRequest[] {
@@ -344,7 +430,7 @@ export class StationSecretaryDashboardComponent implements OnInit {
       if (found.intakeStatus === 'Received at Station' && found.dispatchStatus !== 'Collected') {
         // Ready for student handover!
         this.openHandoverModal(found);
-      } else if (!found.intakeStatus || found.intakeStatus === 'Awaiting Intake') {
+      } else if (!found.intakeStatus || found.intakeStatus === 'Awaiting Intake' || found.intakeStatus === 'In-Transit') {
         // Needs intake into station vault
         this.openIntakeModal(found);
       } else if (found.dispatchStatus === 'Collected') {
@@ -376,21 +462,20 @@ export class StationSecretaryDashboardComponent implements OnInit {
   }
 
   confirmIntake(): void {
-    if (!this.selectedIntakeRequest) return;
+    if (!this.selectedIntakeRequest || this.isSubmitting) return;
     const req = this.selectedIntakeRequest;
-    const stationCode = this.currentStation?.code || 'MAIN';
+    const stationCode = this.currentStation?.code || this.currentUser?.stationCode || 'MAIN';
     const stationName = this.currentStation?.name || req.postingAddress || 'UDSM Station Intake Hub';
+    const vaultLocker = this.intakeForm.vaultLocker.trim();
+    const receivedBy = this.intakeForm.receivedBy.trim();
+    const packageCondition = this.intakeForm.packageCondition;
 
-    this.transcriptService.stationIntake(
-      req.id,
-      stationCode,
-      stationName,
-      this.intakeForm.vaultLocker,
-      this.intakeForm.receivedBy,
-      this.intakeForm.packageCondition
-    );
+    if (!vaultLocker || !receivedBy) {
+      this.showToast('Please provide the vault locker bin and receiving secretary name.', 'error');
+      return;
+    }
 
-    // Save to PostgreSQL Backend
+    this.isSubmitting = true;
     const url = `${this.config.apiUrl}/dus-secretary/station/intake`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
@@ -399,25 +484,37 @@ export class StationSecretaryDashboardComponent implements OnInit {
       studentId: req.registrationNumber || req.studentId,
       stationCode,
       stationName,
-      vaultLockerNumber: this.intakeForm.vaultLocker,
-      receivedBy: this.intakeForm.receivedBy,
-      packageCondition: this.intakeForm.packageCondition
+      vaultLockerNumber: vaultLocker,
+      receivedBy,
+      packageCondition
     };
 
     this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-      next: () => console.log('Station intake recorded to database.'),
-      error: (err) => console.warn('Intake saved locally; backend responded:', err.message)
+      next: () => {
+        this.isSubmitting = false;
+        this.transcriptService.stationIntake(
+          req.id,
+          stationCode,
+          stationName,
+          vaultLocker,
+          receivedBy,
+          packageCondition
+        );
+        this.showToast(`Received & sealed into Station Vault (Bin ${vaultLocker}) for ${req.studentName}.`, 'success');
+        this.closeIntakeModal();
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.showToast(err?.error?.message || 'Failed to record station intake on the server.', 'error');
+      }
     });
-
-    this.showToast(`📦 Received & Sealed into Station Vault: Bin ${this.intakeForm.vaultLocker} for ${req.studentName}!`, 'success');
-    this.closeIntakeModal();
-    this.loadRequests();
   }
 
   bulkIntakeAllIncoming(): void {
     const pendingList = this.filteredRequests.filter(r =>
       (r.dispatchStatus === 'Dispatched' || r.certificateVerified) &&
-      (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake')
+      (!r.intakeStatus || r.intakeStatus === 'Awaiting Intake' || r.intakeStatus === 'In-Transit')
     );
 
     if (pendingList.length === 0) {
@@ -425,18 +522,14 @@ export class StationSecretaryDashboardComponent implements OnInit {
       return;
     }
 
-    this.cautionTitle = '⚠️ Confirm Bulk Consignment Intake';
+    this.cautionTitle = 'Confirm Bulk Consignment Intake';
     this.cautionMessage = `Are you sure you want to acknowledge intake for ${pendingList.length} incoming consignments from Main Campus? All packages will be marked as Received at Station and stored in the station vault.`;
     this.pendingAction = () => {
-      let binCounter = 101;
-      const stationCode = this.currentStation?.code || 'MAIN';
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      const stationCode = this.currentStation?.code || this.currentUser?.stationCode || 'MAIN';
       const stationName = this.currentStation?.name || 'UDSM Station Intake Hub';
       const secretary = this.currentUser?.fullName || 'Station Intake Secretary';
-
-      pendingList.forEach(req => {
-        const locker = `BIN-${binCounter++}`;
-        this.transcriptService.stationIntake(req.id, stationCode, stationName, locker, secretary, 'Intact & Sealed');
-      });
 
       const url = `${this.config.apiUrl}/dus-secretary/station/bulk-intake`;
       const token = this.authService.getToken();
@@ -449,12 +542,21 @@ export class StationSecretaryDashboardComponent implements OnInit {
       };
 
       this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-        next: () => console.log('Bulk intake synced with backend.'),
-        error: (err) => console.warn('Bulk intake local sync complete; backend responded:', err.message)
+        next: () => {
+          this.isSubmitting = false;
+          let binCounter = 101;
+          pendingList.forEach(req => {
+            const locker = `BIN-${binCounter++}`;
+            this.transcriptService.stationIntake(req.id, stationCode, stationName, locker, secretary, 'Intact & Sealed');
+          });
+          this.showToast(`Successfully processed batch intake for ${pendingList.length} consignments.`, 'success');
+          this.loadRequests();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.showToast(err?.error?.message || 'Failed to complete bulk intake on the server.', 'error');
+        }
       });
-
-      this.showToast(`✅ Successfully processed batch intake for ${pendingList.length} consignments!`, 'success');
-      this.loadRequests();
     };
 
     this.showCautionModal = true;
@@ -493,10 +595,15 @@ export class StationSecretaryDashboardComponent implements OnInit {
   }
 
   confirmHandoverApproval(): void {
-    if (!this.selectedHandoverRequest) return;
+    if (!this.selectedHandoverRequest || this.isSubmitting) return;
     const req = this.selectedHandoverRequest;
+    const collectorName = this.handoverForm.collectorName.trim();
+    const collectorIdNumber = this.handoverForm.collectorIdNumber.trim();
+    const collectorPhone = this.handoverForm.collectorPhone.trim();
+    const collectorType = this.handoverForm.collectorType;
+    const notes = this.handoverForm.notes;
 
-    if (!this.handoverForm.collectorName.trim() || !this.handoverForm.collectorIdNumber.trim()) {
+    if (!collectorName || !collectorIdNumber) {
       this.showToast('Please enter the collector name and official ID (NIDA/Student ID).', 'error');
       return;
     }
@@ -506,47 +613,63 @@ export class StationSecretaryDashboardComponent implements OnInit {
       return;
     }
 
-    const token = 'UDSM-RCV-PASS-' + Math.floor(100000000 + Math.random() * 900000000);
+    this.isSubmitting = true;
+    const fallbackToken = 'UDSM-RCV-PASS-' + Math.floor(100000000 + Math.random() * 900000000);
     const secretary = this.currentUser?.fullName || 'Station DUS Secretary';
 
-    this.transcriptService.stationHandover(
-      req.id,
-      this.handoverForm.collectorType,
-      this.handoverForm.collectorName.trim(),
-      this.handoverForm.collectorIdNumber.trim(),
-      this.handoverForm.collectorPhone.trim(),
-      secretary,
-      token,
-      this.handoverForm.notes
-    );
-
-    // Save Handover Approval to Database
     const url = `${this.config.apiUrl}/dus-secretary/station/approve-handover`;
     const authToken = this.authService.getToken();
     const headers = authToken ? new HttpHeaders({ Authorization: `Bearer ${authToken}` }) : undefined;
 
     const payload = {
       studentId: req.registrationNumber || req.studentId,
-      collectorType: this.handoverForm.collectorType,
-      collectorName: this.handoverForm.collectorName.trim(),
-      collectorIdNumber: this.handoverForm.collectorIdNumber.trim(),
-      collectorPhone: this.handoverForm.collectorPhone.trim(),
+      collectorType,
+      collectorName,
+      collectorIdNumber,
+      collectorPhone,
       secretaryName: secretary,
-      handoverNotes: this.handoverForm.notes
+      handoverNotes: notes
     };
 
-    this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-      next: () => console.log('Handover approval permanently saved to PostgreSQL.'),
-      error: (err) => console.warn('Handover saved locally; backend responded:', err.message)
+    this.http.post<any>(url, payload, { headers, withCredentials: true }).subscribe({
+      next: (res) => {
+        this.isSubmitting = false;
+        const passToken = res?.handoverReceiptToken || res?.receiptToken || fallbackToken;
+        this.transcriptService.stationHandover(
+          req.id,
+          collectorType,
+          collectorName,
+          collectorIdNumber,
+          collectorPhone,
+          secretary,
+          passToken,
+          notes
+        );
+
+        const receiptRecord: TranscriptPaymentRequest = {
+          ...req,
+          dispatchStatus: 'Collected',
+          intakeStatus: 'Collected by Student',
+          handoverApproved: true,
+          handoverApprovedAt: res?.handoverApprovedAt || new Date().toISOString(),
+          handoverSecretary: secretary,
+          handoverCollectorType: collectorType,
+          handoverCollectorName: collectorName,
+          handoverCollectorId: collectorIdNumber,
+          handoverCollectorPhone: collectorPhone,
+          handoverReceiptToken: passToken
+        };
+
+        this.closeHandoverModal();
+        this.showToast(`Handover approved! Pass Token: ${passToken} issued to ${collectorName}.`, 'success');
+        this.openReceiptModal(receiptRecord);
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.showToast(err?.error?.message || 'Failed to record handover approval on the server.', 'error');
+      }
     });
-
-    this.closeHandoverModal();
-    this.showToast(`🎓 Handover Approved! Pass Token: ${token} issued to ${this.handoverForm.collectorName}.`, 'success');
-    this.loadRequests();
-
-    // Open Printable Receipt
-    const updated = this.transcriptService.getAllRequests().find(r => r.id === req.id) || req;
-    this.openReceiptModal(updated);
   }
 
   // =========================================================================
@@ -585,33 +708,43 @@ export class StationSecretaryDashboardComponent implements OnInit {
   }
 
   submitDiscrepancyReport(): void {
-    if (!this.selectedDiscrepancyRequest || !this.discrepancyForm.description.trim()) {
+    if (!this.selectedDiscrepancyRequest || this.isSubmitting) return;
+    if (!this.discrepancyForm.description.trim()) {
       this.showToast('Please provide a description of the discrepancy.', 'error');
       return;
     }
 
-    const note = `[${this.discrepancyForm.issueType}]: ${this.discrepancyForm.description.trim()} (Reported by ${this.discrepancyForm.reportedBy})`;
-    this.transcriptService.reportDiscrepancy(this.selectedDiscrepancyRequest.id, note);
+    this.isSubmitting = true;
+    const targetReq = this.selectedDiscrepancyRequest;
+    const description = this.discrepancyForm.description.trim();
+    const issueType = this.discrepancyForm.issueType;
+    const reportedBy = this.discrepancyForm.reportedBy;
 
     const url = `${this.config.apiUrl}/dus-secretary/station/report-discrepancy`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
     const payload = {
-      studentId: this.selectedDiscrepancyRequest.registrationNumber || this.selectedDiscrepancyRequest.studentId,
-      issueType: this.discrepancyForm.issueType,
-      description: this.discrepancyForm.description.trim(),
-      reportedBy: this.discrepancyForm.reportedBy
+      studentId: targetReq.registrationNumber || targetReq.studentId,
+      issueType,
+      description,
+      reportedBy
     };
 
     this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-      next: () => console.log('Transit discrepancy synced with Main Campus DUS.'),
-      error: (err) => console.warn('Discrepancy logged locally:', err.message)
+      next: () => {
+        this.isSubmitting = false;
+        const note = `[${issueType}]: ${description} (Reported by ${reportedBy})`;
+        this.transcriptService.reportDiscrepancy(targetReq.id, note);
+        this.showToast('Transit incident reported to Main Campus DUS Directorate.', 'success');
+        this.closeDiscrepancyModal();
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.showToast(err?.error?.message || 'Failed to submit transit incident report to the server.', 'error');
+      }
     });
-
-    this.showToast('🚨 Transit incident reported to Main Campus DUS Directorate.', 'success');
-    this.closeDiscrepancyModal();
-    this.loadRequests();
   }
 
   // =========================================================================
@@ -633,6 +766,9 @@ export class StationSecretaryDashboardComponent implements OnInit {
 
   // Send automated SMS / Email pickup reminder to student
   sendPickupReminder(req: TranscriptPaymentRequest): void {
+    if (this.remindingId) return;
+    this.remindingId = req.id;
+
     const url = `${this.config.apiUrl}/dus-secretary/notify-release`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
@@ -648,8 +784,14 @@ export class StationSecretaryDashboardComponent implements OnInit {
     };
 
     this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-      next: () => this.showToast(`📲 Pickup reminder SMS & Email sent to ${req.studentName}!`, 'success'),
-      error: () => this.showToast(`Pickup reminder notice queued for ${req.studentName}.`, 'success')
+      next: () => {
+        this.remindingId = null;
+        this.showToast(`Pickup reminder sent to ${req.studentName}.`, 'success');
+      },
+      error: (err) => {
+        this.remindingId = null;
+        this.showToast(err?.error?.message || `Failed to send pickup reminder to ${req.studentName}.`, 'error');
+      }
     });
   }
 

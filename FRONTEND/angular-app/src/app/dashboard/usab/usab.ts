@@ -1,64 +1,25 @@
+// src/app/dashboard/usab/usab.ts
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
+import { HostelDetail, HostelService } from '../../core/services/hostel.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ClearanceRequest } from '../../core/models/clearance.model';
+import { ToastService } from '../../core/services/toast.service';
+import { ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
-import { HostelService, HostelDetail } from '../../core/services/hostel.service';
-import { ToastService } from '../../core/services/toast.service';
 
-export interface HostelAnalyticsItem {
-  id: string;
-  name: string;
-  location: string;
-  capacity: number;
-  bookedCount: number;
-  occupancyPercent: number;
-  clearedCount: number;
-  pendingCount: number;
-  rejectedCount: number;
-  clearanceRate: number;
-  rank: number;
-  statusBadge: string;
-  badgeClass: string;
-}
-
-export interface YearResidencyItem {
-  yearLabel: string;
-  cohort: string;
-  total: number;
-  onCampus: number;
-  offCampus: number;
-  nonHostel: number;
-  onCampusPercent: number;
-  offCampusPercent: number;
-  clearanceRate: number;
-  barHeightPercent: number;
-}
-
-export interface PieSliceItem {
+export interface UsabBreakdownStat {
   label: string;
-  count: number;
-  percentage: number;
-  color: string;
-  svgPath: string;
-}
-
-export interface GenderResidencyStats {
-  maleTotal: number;
-  maleOnCampus: number;
-  maleOffCampus: number;
-  malePercent: number;
-  femaleTotal: number;
-  femaleOnCampus: number;
-  femaleOffCampus: number;
-  femalePercent: number;
   total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  clearanceRate: number;
 }
 
 @Component({
@@ -66,984 +27,632 @@ export interface GenderResidencyStats {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent, ParallelOfficeRequestTableComponent],
   templateUrl: './usab.html',
-  styleUrl: './usab.css'
+  styleUrl: './usab-dashboard.css'
 })
 export class UsabComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
-  private readonly notificationService = inject(NotificationService);
   private readonly hostelService = inject(HostelService);
+  private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
-
-  ngOnInit(): void {
-    this.clearanceService.fetchOfficeRequests('USAB').subscribe();
-  }
+  private readonly route = inject(ActivatedRoute);
 
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'hostels' | 'analytics' = 'requests';
+  viewMode: 'requests' | 'analytics' | 'hostels' = 'requests';
+
+  isLoading = false;
+  isSubmitting = false;
+
   selectedRequest: ClearanceRequest | null = null;
+  viewingRequest: ClearanceRequest | null = null;
+  enlargedPhotoUrl: string | null = null;
+
   rejectionComment = '';
   message = '';
   messageState: 'success' | 'error' = 'success';
 
-  // Analytics Filters & Interaction State
-  readonly Math = Math;
-  selectedAnalyticsYear: string = 'all';
-  selectedAnalyticsGender: string = 'all';
-  hoveredHostelName: string | null = null;
-  hoveredSliceLabel: string | null = null;
-
-  setViewMode(mode: 'overview' | 'requests' | 'hostels' | 'analytics'): void {
-    this.viewMode = mode;
-    this.sidebarOpen = false;
-  }
-
   searchTerm = '';
-  filterStatus = 'Pending';
+  filterStatus: 'All' | 'Pending' | 'Approved' | 'Rejected' = 'Pending';
+  residenceFilter: 'All' | 'On-Campus' | 'Off-Campus' = 'All';
   currentPage = 1;
-  pageSize = 20;
+  pageSize = 15;
 
-  // Hostel Management State
+  // Hostel Directory Management (shared HostelService)
   hostels: HostelDetail[] = [];
   hostelSearchTerm = '';
   showHostelModal = false;
-  editingHostelId: string | null = null;
-  expandedHostelIds = new Set<string>();
+  isEditingHostel = false;
+  hostelForm: HostelDetail = this.createEmptyHostel();
+  hostelBlocksInput = '';
+  hostelWingsInput = '';
 
-  toggleHostelDetails(id: string): void {
-    if (this.expandedHostelIds.has(id)) {
-      this.expandedHostelIds.delete(id);
-    } else {
-      this.expandedHostelIds.add(id);
+  private readonly studentCache = new Map<string, any>();
+
+  ngOnInit(): void {
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['requests', 'analytics', 'hostels'].includes(initialTab)) {
+      this.viewMode = initialTab as any;
     }
-  }
-
-  isHostelExpanded(id: string): boolean {
-    return this.expandedHostelIds.has(id);
-  }
-
-  hostelForm: {
-    name: string;
-    location: string;
-    capacity: number | null;
-    wardenName: string;
-    wardenContact: string;
-    hasWings: boolean;
-    wingsText: string;
-    hasBlocks: boolean;
-    blocksText: string;
-    description: string;
-  } = {
-    name: '',
-    location: '',
-    capacity: null,
-    wardenName: '',
-    wardenContact: '',
-    hasWings: false,
-    wingsText: '',
-    hasBlocks: false,
-    blocksText: '',
-    description: ''
-  };
-
-  constructor() {
     this.loadHostels();
+    this.loadRequests();
+  }
+
+  loadRequests(showToast = false): void {
+    this.isLoading = true;
+    this.clearanceService.fetchOfficeRequests('USAB').subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.clampPage();
+        if (showToast) {
+          this.toastService.success('Refreshed', 'USAB clearance queue updated.');
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        const msg = err?.error?.message || 'Unable to load USAB clearance requests.';
+        this.toastService.error('Load Failed', msg);
+      }
+    });
   }
 
   loadHostels(): void {
     this.hostels = this.hostelService.getHostelsSnapshot();
   }
 
-  get filteredHostels(): HostelDetail[] {
-    const s = this.hostelSearchTerm.trim().toLowerCase();
-    if (!s) return this.hostels;
-    return this.hostels.filter(h =>
-      h.name.toLowerCase().includes(s) ||
-      (h.location && h.location.toLowerCase().includes(s)) ||
-      (h.wardenName && h.wardenName.toLowerCase().includes(s)) ||
-      (h.description && h.description.toLowerCase().includes(s))
-    );
-  }
-
-  openAddHostelModal(): void {
-    this.editingHostelId = null;
-    this.hostelForm = {
-      name: '',
-      location: '',
-      capacity: null,
-      wardenName: '',
-      wardenContact: '',
-      hasWings: false,
-      wingsText: '',
-      hasBlocks: false,
-      blocksText: '',
-      description: ''
-    };
-    this.showHostelModal = true;
-  }
-
-  openEditHostelModal(hostel: HostelDetail): void {
-    this.editingHostelId = hostel.id;
-    this.hostelForm = {
-      name: hostel.name,
-      location: hostel.location || '',
-      capacity: hostel.capacity ?? null,
-      wardenName: hostel.wardenName || '',
-      wardenContact: hostel.wardenContact || '',
-      hasWings: !!hostel.hasWings || (hostel.wings && hostel.wings.length > 0) || false,
-      wingsText: (hostel.wings || []).join(', '),
-      hasBlocks: !!hostel.hasBlocks || (hostel.blocks && hostel.blocks.length > 0) || false,
-      blocksText: (hostel.blocks || []).join(', '),
-      description: hostel.description || ''
-    };
-    this.showHostelModal = true;
-  }
-
-  closeHostelModal(): void {
-    this.showHostelModal = false;
-    this.editingHostelId = null;
-  }
-
-  saveHostel(): void {
-    const name = this.hostelForm.name.trim();
-    if (!name) {
-      this.toastService.warning('Validation', 'Hostel name is required.');
-      return;
-    }
-
-    const wings = this.hostelForm.hasWings
-      ? this.hostelForm.wingsText.split(',').map(w => w.trim()).filter(Boolean)
-      : [];
-
-    const blocks = this.hostelForm.hasBlocks
-      ? this.hostelForm.blocksText.split(',').map(b => b.trim()).filter(Boolean)
-      : [];
-
-    const id = this.editingHostelId || name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-
-    const hostel: HostelDetail = {
-      id,
-      name,
-      location: this.hostelForm.location.trim() || undefined,
-      capacity: this.hostelForm.capacity ? Number(this.hostelForm.capacity) : undefined,
-      wardenName: this.hostelForm.wardenName.trim() || undefined,
-      wardenContact: this.hostelForm.wardenContact.trim() || undefined,
-      hasWings: wings.length > 0,
-      wings,
-      hasBlocks: blocks.length > 0,
-      blocks,
-      description: this.hostelForm.description.trim() || undefined
-    };
-
-    this.hostelService.saveHostel(hostel);
-    this.loadHostels();
-    this.closeHostelModal();
-    this.toastService.success('Success', `Hostel "${name}" details saved and updated throughout the system.`);
-    this.messageState = 'success';
-    this.message = `Hostel details for "${name}" updated successfully.`;
-    setTimeout(() => { this.message = ''; }, 4000);
-  }
-
-  deleteHostel(hostel: HostelDetail): void {
-    if (!confirm(`Are you sure you want to remove "${hostel.name}"?`)) {
-      return;
-    }
-    this.hostelService.deleteHostel(hostel.id);
-    this.loadHostels();
-    this.toastService.info('Removed', `Hostel "${hostel.name}" was removed.`);
-  }
-
-
-
-  get paginatedRequests(): ClearanceRequest[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRequests.slice(start, start + this.pageSize);
-  }
-
-  get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
-  }
-
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  prevPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  onFilterChange(): void {
-    this.currentPage = 1;
-  }
-
   get currentUser() {
     return this.authService.getCurrentUser();
   }
 
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
-
-  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
   }
 
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('USAB');
   }
 
+  get totalRequestCount(): number {
+    return this.requests.length;
+  }
+
   get pendingRequestCount(): number {
-    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'USAB') === 'Pending').length;
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Pending').length;
+  }
+
+  get approvedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Approved').length;
+  }
+
+  get rejectedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Rejected').length;
+  }
+
+  get onCampusCount(): number {
+    return this.requests.filter(r => !this.isOffCampus(r)).length;
+  }
+
+  get offCampusCount(): number {
+    return this.requests.filter(r => this.isOffCampus(r)).length;
+  }
+
+  get clearanceRatePercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.approvedRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get pendingPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.pendingRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get rejectedPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.rejectedRequestCount / this.totalRequestCount) * 100);
   }
 
   get filteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
+    let result = this.requests;
 
-    if (this.searchTerm.trim()) {
-      const s = this.searchTerm.toLowerCase();
-      list = list.filter(r =>
-        this.getStudentName(r).toLowerCase().includes(s) ||
-        this.getStudentRegNumber(r).toLowerCase().includes(s) ||
-        r.programme.toLowerCase().includes(s)
+    if (this.filterStatus !== 'All') {
+      result = result.filter(r => this.getRequestOfficeStatus(r) === this.filterStatus);
+    }
+
+    if (this.residenceFilter === 'On-Campus') {
+      result = result.filter(r => !this.isOffCampus(r));
+    } else if (this.residenceFilter === 'Off-Campus') {
+      result = result.filter(r => this.isOffCampus(r));
+    }
+
+    const q = this.searchTerm.trim().toLowerCase();
+    if (q) {
+      result = result.filter(r =>
+        (r.studentName || '').toLowerCase().includes(q) ||
+        (r.registrationNumber || '').toLowerCase().includes(q) ||
+        (r.programme || '').toLowerCase().includes(q) ||
+        (r.college || '').toLowerCase().includes(q) ||
+        this.getStudentHall(r).toLowerCase().includes(q) ||
+        this.getStudentRoom(r).toLowerCase().includes(q)
       );
     }
 
-    return list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === this.filterStatus);
+    return result;
   }
 
-  // Cache for student data to avoid repeated lookups
-  private studentCache: Map<string, any> = new Map();
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+  }
 
-  private getStudentData(studentId: string): any | null {
-    if (this.studentCache.has(studentId)) {
-      return this.studentCache.get(studentId);
+  get paginatedRequests(): ClearanceRequest[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  get residenceBreakdown(): UsabBreakdownStat[] {
+    const map = new Map<string, { total: number; approved: number; pending: number; rejected: number }>();
+
+    for (const req of this.requests) {
+      const label = this.isOffCampus(req)
+        ? 'Off-Campus / Private Residence'
+        : this.getStudentHall(req);
+
+      const entry = map.get(label) || { total: 0, approved: 0, pending: 0, rejected: 0 };
+      entry.total += 1;
+      const st = this.getRequestOfficeStatus(req);
+      if (st === 'Approved') entry.approved += 1;
+      else if (st === 'Rejected') entry.rejected += 1;
+      else entry.pending += 1;
+      map.set(label, entry);
     }
+
+    return Array.from(map.entries())
+      .map(([label, stats]) => ({
+        label,
+        ...stats,
+        clearanceRate: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  get collegeBreakdown(): UsabBreakdownStat[] {
+    const map = new Map<string, { total: number; approved: number; pending: number; rejected: number }>();
+
+    for (const req of this.requests) {
+      const label = (req.college || '').trim() || 'Unspecified College';
+      const entry = map.get(label) || { total: 0, approved: 0, pending: 0, rejected: 0 };
+      entry.total += 1;
+      const st = this.getRequestOfficeStatus(req);
+      if (st === 'Approved') entry.approved += 1;
+      else if (st === 'Rejected') entry.rejected += 1;
+      else entry.pending += 1;
+      map.set(label, entry);
+    }
+
+    return Array.from(map.entries())
+      .map(([label, stats]) => ({
+        label,
+        ...stats,
+        clearanceRate: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  get filteredHostels(): HostelDetail[] {
+    const q = this.hostelSearchTerm.trim().toLowerCase();
+    if (!q) return this.hostels;
+    return this.hostels.filter(h =>
+      (h.name || '').toLowerCase().includes(q) ||
+      (h.location || '').toLowerCase().includes(q) ||
+      (h.wardenName || '').toLowerCase().includes(q) ||
+      (h.description || '').toLowerCase().includes(q)
+    );
+  }
+
+  get totalHostelCapacity(): number {
+    return this.hostels.reduce((sum, h) => sum + (Number(h.capacity) || 0), 0);
+  }
+
+  setViewMode(mode: 'requests' | 'analytics' | 'hostels'): void {
+    this.viewMode = mode;
+    this.closeSidebar();
+  }
+
+  filterByCard(status: 'All' | 'Pending' | 'Approved' | 'Rejected'): void {
+    this.viewMode = 'requests';
+    this.filterStatus = status;
+    this.currentPage = 1;
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  clampPage(): void {
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  /* =========================
+     STUDENT & RESIDENCE HELPERS
+  ========================= */
+
+  private getStudentProfile(request: ClearanceRequest): any {
+    const key = request.studentId || request.registrationNumber || request.id;
+    if (this.studentCache.has(key)) {
+      return this.studentCache.get(key);
+    }
+
     try {
-      const usersJson = localStorage.getItem('udsm-local-users');
-      if (usersJson) {
-        const users = JSON.parse(usersJson);
-        const user = users.find((u: any) => u.id === studentId);
-        if (user) {
-          this.studentCache.set(studentId, user);
-          return user;
+      const raw = localStorage.getItem('udsm-local-users');
+      if (raw) {
+        const users = JSON.parse(raw);
+        if (Array.isArray(users)) {
+          const match = users.find((u: any) =>
+            (request.studentId && u.id === request.studentId) ||
+            (request.registrationNumber && u.registrationNumber === request.registrationNumber)
+          ) || null;
+          this.studentCache.set(key, match);
+          return match;
         }
       }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
+    } catch {
+      // Ignore storage access errors
+    }
+
+    this.studentCache.set(key, null);
+    return null;
+  }
+
+  isOffCampus(request: ClearanceRequest): boolean {
+    const type = (request.residenceType || '').trim().toLowerCase();
+    if (type.includes('off') || type.includes('private') || type.includes('non')) {
+      return true;
+    }
+    if (type.includes('hostel') || type.includes('hall') || type.includes('campus')) {
+      return false;
+    }
+    const rawHall = (request.hall || this.getStudentProfile(request)?.hall || '').trim().toLowerCase();
+    if (!rawHall || rawHall.includes('off campus') || rawHall === 'off-campus' || rawHall === 'none') {
+      return true;
+    }
+    return false;
+  }
+
+  getResidenceLabel(request: ClearanceRequest): string {
+    return this.isOffCampus(request) ? 'Off-Campus / Private Residence' : 'On-Campus Hostel Resident';
+  }
+
+  getStudentHall(request: ClearanceRequest): string {
+    if (this.isOffCampus(request)) return 'Off-Campus (No University Hostel)';
+    return request.hall || this.getStudentProfile(request)?.hall || 'On-Campus (Hall Not Specified)';
+  }
+
+  getStudentWing(request: ClearanceRequest): string {
+    if (this.isOffCampus(request)) return 'N/A';
+    return request.wing || this.getStudentProfile(request)?.wing || 'Not specified';
+  }
+
+  getStudentBlock(request: ClearanceRequest): string {
+    if (this.isOffCampus(request)) return 'N/A';
+    return request.block || this.getStudentProfile(request)?.block || 'Not specified';
+  }
+
+  getStudentRoom(request: ClearanceRequest): string {
+    if (this.isOffCampus(request)) return 'N/A';
+    return request.roomNumber || this.getStudentProfile(request)?.roomNumber || 'Not specified';
+  }
+
+  getResidenceEvidenceUrl(request: ClearanceRequest): string | null {
+    const raw = (request.residenceEvidence || '').trim();
+    if (!raw) return null;
+    if (raw.startsWith('data:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('/')) {
+      return raw;
     }
     return null;
   }
 
-  getStudentName(request: ClearanceRequest): string {
-    if (request.studentName) return request.studentName;
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
+  viewResidenceEvidence(request: ClearanceRequest): void {
+    const url = this.getResidenceEvidenceUrl(request);
+    if (!url) {
+      this.toastService.info('No Proof Attached', 'No residence evidence document was uploaded for this student.');
+      return;
     }
-    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
-  }
-
-  getStudentRegNumber(request: ClearanceRequest): string {
-    return request.registrationNumber || request.studentId;
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   getStudentPhoto(request: ClearanceRequest): string | null {
-    let photo = request.photo;
-    if (!photo) {
-      const user = this.getStudentData(request.studentId);
-      if (user) {
-        photo = user.photo || user.profilePhoto || user.profileImageUrl;
-      }
+    if (request.photo) {
+      return this.authService.getProfilePhotoSource({ photo: request.photo });
     }
-    if (!photo) return null;
-
-    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
-      return photo;
-    }
-    if (photo.length > 50) {
-      return 'data:image/jpeg;base64,' + photo;
-    }
-    return photo;
+    const student = this.getStudentProfile(request);
+    return student ? this.authService.getProfilePhotoSource(student) : null;
   }
 
-  getStudentInitials(request: ClearanceRequest): string {
-    const name = this.getStudentName(request);
-    if (!name || name === 'Student') return 'ST';
-    const parts = name.split(' ');
-    let initials = '';
-    for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) initials += parts[i].charAt(0);
-    }
-    return initials.toUpperCase();
+  getStudentInitials(name?: string): string {
+    if (!name) return 'ST';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   }
 
-  hasPhoto(request: ClearanceRequest): boolean {
-    const photo = this.getStudentPhoto(request);
-    return !!photo;
+  getOfficeApproval(request: ClearanceRequest): OfficeApproval | undefined {
+    return request.approvals?.find(a => a.office === 'USAB');
   }
 
-  enlargedPhotoUrl: string | null = null;
-
-  openEnlargedPhoto(photoUrl: string | null): void {
-    if (photoUrl) {
-      this.enlargedPhotoUrl = photoUrl;
-    }
+  getRequestOfficeStatus(request: ClearanceRequest): 'Pending' | 'Approved' | 'Rejected' {
+    return this.getOfficeApproval(request)?.status || 'Pending';
   }
 
-  closeEnlargedPhoto(): void {
+  getRequestReviewer(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request)?.reviewedBy || 'Not reviewed yet';
+  }
+
+  getRequestReviewedAt(request: ClearanceRequest): string | null {
+    return this.getOfficeApproval(request)?.reviewedAt || null;
+  }
+
+  getRequestComment(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request)?.comment || '';
+  }
+
+  /* =========================
+     MODALS & CLEARANCE ACTIONS
+  ========================= */
+
+  openStudentDetails(request: ClearanceRequest): void {
+    this.viewingRequest = request;
+  }
+
+  closeStudentDetails(): void {
+    this.viewingRequest = null;
+  }
+
+  openPhotoLightbox(url: string | null): void {
+    if (url) this.enlargedPhotoUrl = url;
+  }
+
+  closePhotoLightbox(): void {
     this.enlargedPhotoUrl = null;
   }
 
-  async approve(request: ClearanceRequest): Promise<void> {
-    const staff = this.authService.getCurrentUser();
+  openRejectModal(request: ClearanceRequest): void {
+    this.viewingRequest = null;
+    this.selectedRequest = request;
+    this.rejectionComment = '';
+    this.message = '';
+  }
 
+  closeRejectModal(): void {
+    if (this.isSubmitting) return;
+    this.selectedRequest = null;
+    this.rejectionComment = '';
+  }
+
+  async approve(request: ClearanceRequest): Promise<void> {
+    if (this.isSubmitting) return;
+
+    const staff = this.currentUser;
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
-    const studentName = this.getStudentName(request);
-    if (!await this.clearanceService.approveRequest(
-      request.id,
-      'USAB',
-      staff.fullName
-    )) {
-      this.messageState = 'error';
-      this.message = 'USAB approval could not be completed. Refresh the dashboard and try again.';
-      return;
+
+    this.isSubmitting = true;
+    try {
+      const ok = await this.clearanceService.approveRequest(request.id, 'USAB', staff.fullName || 'USAB Officer');
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'USAB approval could not be completed. Refresh the dashboard and try again.';
+        this.toastService.error('Approval Failed', this.message);
+        return;
+      }
+
+      this.viewingRequest = null;
+      this.messageState = 'success';
+      this.message = `USAB clearance approved for ${request.studentName} (${request.registrationNumber}).`;
+      this.toastService.success('USAB Cleared', `${request.studentName} has been cleared by USAB.`);
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
     }
-
-    this.notificationService.createNotification(
-      request.studentId,
-      'USAB clearance approved',
-      'USAB has approved your clearance request.',
-      'success'
-    );
-
-    this.toastService.success('Approved', `USAB clearance approved for ${studentName}.`);
-    this.messageState = 'success';
-    this.message = 'Student clearance was approved successfully.';
-    setTimeout(() => { this.message = ''; }, 4000);
-  }
-
-  openRejectForm(request: ClearanceRequest): void {
-    this.selectedRequest = request;
-    this.rejectionComment = '';
-    this.message = '';
-    this.messageState = 'success';
   }
 
   async reject(): Promise<void> {
-    const staff = this.authService.getCurrentUser();
+    if (!this.selectedRequest || this.isSubmitting) return;
 
-    if (!staff || !this.selectedRequest) return;
-
-    if (!this.rejectionComment.trim()) {
-      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+    const staff = this.currentUser;
+    if (!staff) {
+      this.router.navigate(['/login']);
       return;
     }
-    const studentName = this.getStudentName(this.selectedRequest);
-    if (!await this.clearanceService.rejectRequest(
-      this.selectedRequest.id,
-      'USAB',
-      staff.fullName,
-      this.rejectionComment.trim()
-    )) {
+
+    const trimmed = this.rejectionComment.trim();
+    if (trimmed.length < 5) {
       this.messageState = 'error';
-      this.message = 'The USAB return could not be processed. Refresh the dashboard and try again.';
+      this.message = 'Please enter a clear rejection reason (at least 5 characters).';
       return;
     }
 
-    this.notificationService.createNotification(
-      this.selectedRequest.studentId,
-      'USAB action required',
-      this.rejectionComment.trim(),
-      'warning'
-    );
-
-    this.toastService.warning('Returned', `USAB clearance request returned for ${studentName}.`);
-    this.messageState = 'success';
-    this.message = 'The student has been notified about the required action.';
-    this.selectedRequest = null;
-    this.rejectionComment = '';
-    setTimeout(() => { this.message = ''; }, 4000);
-  }
-
-  // =====================================================
-  // STUDENT DETAILS MODAL FOR USAB ACCOMMODATION
-  // =====================================================
-  viewingRequest: ClearanceRequest | null = null;
-
-  openStudentDetailsModal(request: ClearanceRequest): void {
-    this.viewingRequest = request;
-  }
-
-  closeStudentDetailsModal(): void {
-    this.viewingRequest = null;
-  }
-
-  getStudentResidenceType(request: ClearanceRequest): string {
-    if (request.residenceType) return request.residenceType;
-    const user = this.getStudentData(request.studentId);
-    if (user?.hall) {
-      return (user.hall === 'Non-Hostel Dwellers' || user.hall === 'Off Campus')
-        ? 'Non-Hostel Dwellers'
-        : 'Hostel Dwellers';
-    }
-    return request.hall ? 'Hostel Dwellers' : 'Non-Hostel Dwellers';
-  }
-
-  getStudentHall(request: ClearanceRequest): string {
-    if (request.hall && request.hall !== 'Non-Hostel Dwellers' && request.hall !== 'Off Campus') {
-      return request.hall;
-    }
-    const user = this.getStudentData(request.studentId);
-    if (user?.hall && user.hall !== 'Non-Hostel Dwellers' && user.hall !== 'Off Campus') {
-      return user.hall;
-    }
-    return '—';
-  }
-
-  getStudentWing(request: ClearanceRequest): string {
-    return request.wing || this.getStudentData(request.studentId)?.wing || '—';
-  }
-
-  getStudentBlock(request: ClearanceRequest): string {
-    return request.block || this.getStudentData(request.studentId)?.block || '—';
-  }
-
-  getStudentRoom(request: ClearanceRequest): string {
-    const room = request.roomNumber ?? this.getStudentData(request.studentId)?.roomNumber;
-    return room !== undefined && room !== null && room !== '' ? String(room) : '—';
-  }
-
-  getStudentProgramme(request: ClearanceRequest): string {
-    return request.programme || this.getStudentData(request.studentId)?.programme || '—';
-  }
-
-  getStudentDepartment(request: ClearanceRequest): string {
-    return request.department || this.getStudentData(request.studentId)?.department || '—';
-  }
-
-  getStudentCollege(request: ClearanceRequest): string {
-    return request.college || this.getStudentData(request.studentId)?.college || '—';
-  }
-
-  getStudentSponsor(request: ClearanceRequest): string {
-    return request.sponsor || this.getStudentData(request.studentId)?.sponsor || '—';
-  }
-
-  getStudentEmail(request: ClearanceRequest): string {
-    return request.email || this.getStudentData(request.studentId)?.email || '—';
-  }
-
-  getStudentPhone(request: ClearanceRequest): string {
-    return request.phoneNumber || this.getStudentData(request.studentId)?.phoneNumber || this.getStudentData(request.studentId)?.phone || '—';
-  }
-
-  // =========================================================================
-  // ACCOMMODATION & HOSTEL ANALYTICS ENGINE
-  // =========================================================================
-
-  setHoveredHostel(name: string | null): void {
-    this.hoveredHostelName = name;
-  }
-
-  setHoveredSlice(label: string | null): void {
-    this.hoveredSliceLabel = label;
-  }
-
-  getStudentGender(request: ClearanceRequest): 'Male' | 'Female' {
-    const user = this.getStudentData(request.studentId);
-    if (user && user.gender) {
-      const g = String(user.gender).trim().toLowerCase();
-      if (g.startsWith('f')) return 'Female';
-      if (g.startsWith('m')) return 'Male';
-    }
-    const name = (this.getStudentName(request) || '').toLowerCase();
-    const femaleIndicators = [
-      'amina', 'fatuma', 'grace', 'mary', 'jane', 'zainab', 'neema', 'rehema',
-      'halima', 'rose', 'hellen', 'esther', 'faith', 'doris', 'irene', 'mwajuma',
-      'asha', 'hadija', 'salma', 'mariam', 'beatrice', 'lucy', 'joyce', 'sarah',
-      'glory', 'mercy', 'catherine', 'judith', 'anna', 'magdalena', 'victoria',
-      'veronica', 'jackline', 'doreen', 'fadhila', 'subira', 'tumaini', 'upendo'
-    ];
-    for (const femaleName of femaleIndicators) {
-      if (name.includes(femaleName)) return 'Female';
-    }
-    const idStr = request.registrationNumber || request.studentId || name;
-    let sum = 0;
-    for (let i = 0; i < idStr.length; i++) {
-      sum += idStr.charCodeAt(i);
-    }
-    return sum % 2 === 0 ? 'Male' : 'Female';
-  }
-
-  getStudentYear(request: ClearanceRequest): string {
-    const reg = request.registrationNumber || '';
-    const match = reg.match(/\b(202[0-9])\b/);
-    if (match) return match[1];
-    const user = this.getStudentData(request.studentId);
-    if (user?.yearOfStudy) {
-      const yr = Number(user.yearOfStudy);
-      if (yr === 1) return '2024';
-      if (yr === 2) return '2023';
-      if (yr === 3) return '2022';
-      if (yr === 4) return '2021';
-    }
-    if (request.requestDate) {
-      const dateMatch = request.requestDate.match(/\b(202[0-9])\b/);
-      if (dateMatch) return dateMatch[1];
-    }
-    return '2024';
-  }
-
-  getStudentResidenceCategory(request: ClearanceRequest): 'Hostel Dwellers' | 'Off Campus' | 'Non-Hostel Dwellers' {
-    if (request.residenceType === 'Off Campus' || request.hall === 'Off Campus') {
-      return 'Off Campus';
-    }
-    if (request.residenceType === 'Non-Hostel Dwellers' || request.hall === 'Non-Hostel Dwellers') {
-      return 'Non-Hostel Dwellers';
-    }
-    if (request.residenceType === 'Hostel Dwellers' || (request.hall && request.hall !== '—' && request.hall.trim().length > 0)) {
-      return 'Hostel Dwellers';
-    }
-    const user = this.getStudentData(request.studentId);
-    if (user?.hall) {
-      if (user.hall === 'Off Campus') return 'Off Campus';
-      if (user.hall === 'Non-Hostel Dwellers') return 'Non-Hostel Dwellers';
-      return 'Hostel Dwellers';
-    }
-    return 'Off Campus';
-  }
-
-  getAssignedHostelName(request: ClearanceRequest): string {
-    const hall = this.getStudentHall(request);
-    if (hall && hall !== '—' && hall !== 'Off Campus' && hall !== 'Non-Hostel Dwellers') {
-      return hall;
-    }
-    if (this.getStudentResidenceCategory(request) === 'Hostel Dwellers') {
-      const names = this.hostels.map(h => h.name);
-      if (names.length) {
-        const idStr = request.registrationNumber || request.studentId;
-        let sum = 0;
-        for (let i = 0; i < idStr.length; i++) sum += idStr.charCodeAt(i);
-        return names[sum % names.length];
-      }
-    }
-    return 'Off Campus';
-  }
-
-  get analyticsFilteredRequests(): ClearanceRequest[] {
-    let list = this.clearanceService.getAllRequests();
-    if (!list.length) {
-      list = this.requests;
-    }
-    if (this.selectedAnalyticsYear !== 'all') {
-      list = list.filter(r => this.getStudentYear(r) === this.selectedAnalyticsYear);
-    }
-    if (this.selectedAnalyticsGender !== 'all') {
-      list = list.filter(r => this.getStudentGender(r) === this.selectedAnalyticsGender);
-    }
-    return list;
-  }
-
-  get totalStudentsAnalyzed(): number {
-    return this.analyticsFilteredRequests.length;
-  }
-
-  get totalHostelDwellers(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getStudentResidenceCategory(r) === 'Hostel Dwellers').length;
-  }
-
-  get totalOffCampus(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getStudentResidenceCategory(r) === 'Off Campus').length;
-  }
-
-  get totalNonHostel(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getStudentResidenceCategory(r) === 'Non-Hostel Dwellers').length;
-  }
-
-  get totalHostelCapacity(): number {
-    return this.hostels.reduce((sum, h) => sum + (h.capacity || 0), 0) || 9340;
-  }
-
-  get totalHostelOccupancyPercent(): number {
-    const total = Math.max(1, this.totalStudentsAnalyzed);
-    return Math.round((this.totalHostelDwellers / total) * 100);
-  }
-
-  get usabClearanceRate(): number {
-    const list = this.analyticsFilteredRequests;
-    if (!list.length) return 0;
-    const approved = list.filter(r => this.getRequestOfficeStatus(r, 'USAB') === 'Approved').length;
-    return Math.round((approved / list.length) * 100);
-  }
-
-  get mostlyBookedHostels(): HostelAnalyticsItem[] {
-    const list = this.analyticsFilteredRequests;
-    const hostelMap = new Map<string, { booked: number; cleared: number; pending: number; rejected: number }>();
-
-    this.hostels.forEach(h => {
-      hostelMap.set(h.name.toLowerCase(), { booked: 0, cleared: 0, pending: 0, rejected: 0 });
-    });
-
-    list.forEach(r => {
-      const cat = this.getStudentResidenceCategory(r);
-      if (cat === 'Hostel Dwellers') {
-        const hName = this.getAssignedHostelName(r).toLowerCase();
-        let record = hostelMap.get(hName);
-        if (!record) {
-          record = { booked: 0, cleared: 0, pending: 0, rejected: 0 };
-          hostelMap.set(hName, record);
-        }
-        record.booked++;
-        const st = this.getRequestOfficeStatus(r, 'USAB');
-        if (st === 'Approved') record.cleared++;
-        else if (st === 'Rejected') record.rejected++;
-        else record.pending++;
-      }
-    });
-
-    const items: HostelAnalyticsItem[] = this.hostels.map(h => {
-      const stats = hostelMap.get(h.name.toLowerCase()) || { booked: 0, cleared: 0, pending: 0, rejected: 0 };
-      const cap = h.capacity || 500;
-      const booked = stats.booked;
-      const occupancy = Math.min(100, Math.round((booked / cap) * 100));
-      const totalDecisions = stats.cleared + stats.pending + stats.rejected;
-      const clrRate = totalDecisions > 0 ? Math.round((stats.cleared / totalDecisions) * 100) : 0;
-
-      let statusBadge = 'Available Spaces';
-      let badgeClass = 'badge-success';
-      if (occupancy >= 85 || booked >= 8) {
-        statusBadge = 'Highest Demand';
-        badgeClass = 'badge-danger';
-      } else if (occupancy >= 50 || booked >= 4) {
-        statusBadge = 'Nearly Full';
-        badgeClass = 'badge-warning';
-      } else if (booked > 0) {
-        statusBadge = 'Active Bookings';
-        badgeClass = 'badge-info';
+    const target = this.selectedRequest;
+    this.isSubmitting = true;
+    try {
+      const ok = await this.clearanceService.rejectRequest(target.id, 'USAB', staff.fullName || 'USAB Officer', trimmed);
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'USAB rejection could not be processed. Refresh the dashboard and try again.';
+        this.toastService.error('Rejection Failed', this.message);
+        return;
       }
 
-      return {
-        id: h.id,
-        name: h.name,
-        location: h.location || 'University Campus',
-        capacity: cap,
-        bookedCount: booked,
-        occupancyPercent: occupancy,
-        clearedCount: stats.cleared,
-        pendingCount: stats.pending,
-        rejectedCount: stats.rejected,
-        clearanceRate: clrRate,
-        rank: 0,
-        statusBadge,
-        badgeClass
-      };
-    });
-
-    // Sort descending by bookedCount, then capacity
-    items.sort((a, b) => b.bookedCount - a.bookedCount || b.capacity - a.capacity);
-    items.forEach((item, index) => {
-      item.rank = index + 1;
-    });
-
-    return items;
+      this.selectedRequest = null;
+      this.rejectionComment = '';
+      this.messageState = 'success';
+      this.message = `USAB clearance rejected for ${target.studentName}. Student has been notified.`;
+      this.toastService.warning('USAB Rejected', `${target.studentName} was flagged for accommodation follow-up.`);
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 
-  get topBookedHostel(): HostelAnalyticsItem | null {
-    const list = this.mostlyBookedHostels;
-    return list.length ? list[0] : null;
+  onBulkApproved(): void {
+    this.loadRequests();
   }
 
-  get genderStats(): GenderResidencyStats {
-    const list = this.analyticsFilteredRequests;
-    const total = Math.max(1, list.length);
+  onWithdrawn(): void {
+    this.loadRequests();
+  }
 
-    let maleTotal = 0;
-    let maleOnCampus = 0;
-    let maleOffCampus = 0;
+  /* =========================
+     HOSTEL DIRECTORY CRUD
+  ========================= */
 
-    let femaleTotal = 0;
-    let femaleOnCampus = 0;
-    let femaleOffCampus = 0;
-
-    list.forEach(r => {
-      const gender = this.getStudentGender(r);
-      const isCampus = this.getStudentResidenceCategory(r) === 'Hostel Dwellers';
-      if (gender === 'Male') {
-        maleTotal++;
-        if (isCampus) maleOnCampus++;
-        else maleOffCampus++;
-      } else {
-        femaleTotal++;
-        if (isCampus) femaleOnCampus++;
-        else femaleOffCampus++;
-      }
-    });
-
+  private createEmptyHostel(): HostelDetail {
     return {
-      maleTotal,
-      maleOnCampus,
-      maleOffCampus,
-      malePercent: Math.round((maleTotal / total) * 100),
-      femaleTotal,
-      femaleOnCampus,
-      femaleOffCampus,
-      femalePercent: Math.round((femaleTotal / total) * 100),
-      total: list.length
+      id: '',
+      name: '',
+      location: 'Main Campus (Mlimani)',
+      capacity: 0,
+      hasBlocks: false,
+      blocks: [],
+      hasWings: false,
+      wings: [],
+      wardenName: '',
+      wardenContact: '',
+      description: ''
     };
   }
 
-  get yearResidencyHistogram(): YearResidencyItem[] {
-    const list = this.analyticsFilteredRequests;
-    const years = ['2024', '2023', '2022', '2021'];
-    const cohortLabels: Record<string, string> = {
-      '2024': '1st Year (2024)',
-      '2023': '2nd Year (2023)',
-      '2022': '3rd Year (2022)',
-      '2021': '4th Year (2021)'
+  openAddHostelModal(): void {
+    this.isEditingHostel = false;
+    this.hostelForm = this.createEmptyHostel();
+    this.hostelBlocksInput = '';
+    this.hostelWingsInput = '';
+    this.showHostelModal = true;
+  }
+
+  openEditHostelModal(hostel: HostelDetail): void {
+    this.isEditingHostel = true;
+    this.hostelForm = {
+      ...hostel,
+      blocks: [...(hostel.blocks || [])],
+      wings: [...(hostel.wings || [])]
     };
-
-    const map = new Map<string, { onCampus: number; offCampus: number; nonHostel: number; cleared: number; total: number }>();
-    years.forEach(y => map.set(y, { onCampus: 0, offCampus: 0, nonHostel: 0, cleared: 0, total: 0 }));
-
-    list.forEach(r => {
-      const yr = this.getStudentYear(r);
-      let record = map.get(yr);
-      if (!record) {
-        record = { onCampus: 0, offCampus: 0, nonHostel: 0, cleared: 0, total: 0 };
-        map.set(yr, record);
-      }
-      record.total++;
-      const res = this.getStudentResidenceCategory(r);
-      if (res === 'Hostel Dwellers') record.onCampus++;
-      else if (res === 'Off Campus') record.offCampus++;
-      else record.nonHostel++;
-
-      if (this.getRequestOfficeStatus(r, 'USAB') === 'Approved') {
-        record.cleared++;
-      }
-    });
-
-    let maxVolume = 1;
-    years.forEach(y => {
-      const rec = map.get(y);
-      if (rec && rec.total > maxVolume) maxVolume = rec.total;
-    });
-
-    return years.map(y => {
-      const rec = map.get(y) || { onCampus: 0, offCampus: 0, nonHostel: 0, cleared: 0, total: 0 };
-      const tot = rec.total;
-      const onCampusPct = tot > 0 ? Math.round((rec.onCampus / tot) * 100) : 0;
-      const offCampusPct = tot > 0 ? Math.round((rec.offCampus / tot) * 100) : 0;
-      const clrRate = tot > 0 ? Math.round((rec.cleared / tot) * 100) : 0;
-      const barHeight = Math.max(12, Math.round((tot / maxVolume) * 100));
-
-      return {
-        yearLabel: y,
-        cohort: cohortLabels[y] || y,
-        total: tot,
-        onCampus: rec.onCampus,
-        offCampus: rec.offCampus,
-        nonHostel: rec.nonHostel,
-        onCampusPercent: onCampusPct,
-        offCampusPercent: offCampusPct,
-        clearanceRate: clrRate,
-        barHeightPercent: barHeight
-      };
-    });
+    this.hostelBlocksInput = (hostel.blocks || []).join(', ');
+    this.hostelWingsInput = (hostel.wings || []).join(', ');
+    this.showHostelModal = true;
   }
 
-  get histogramYAxisTicks(): string[] {
-    const list = this.yearResidencyHistogram;
-    const max = Math.max(10, ...list.map(i => i.total));
-    const step = Math.ceil(max / 3);
-    return [`${step * 3}`, `${step * 2}`, `${step}`, '0'];
+  closeHostelModal(): void {
+    this.showHostelModal = false;
   }
 
-  get hostelOccupancyHistogram(): {
-    name: string;
-    booked: number;
-    capacity: number;
-    cleared: number;
-    pending: number;
-    heightPercent: number;
-    clearedPercent: number;
-    pendingPercent: number;
-  }[] {
-    const hostels = this.mostlyBookedHostels;
-    const maxBooked = Math.max(1, ...hostels.map(h => h.bookedCount));
-
-    return hostels.map(h => {
-      const height = Math.max(10, Math.round((h.bookedCount / maxBooked) * 100));
-      const tot = Math.max(1, h.bookedCount);
-      const clrPct = Math.round((h.clearedCount / tot) * 100);
-      const pndPct = 100 - clrPct;
-
-      return {
-        name: h.name.replace(' Hostels', ''),
-        booked: h.bookedCount,
-        capacity: h.capacity,
-        cleared: h.clearedCount,
-        pending: h.pendingCount,
-        heightPercent: height,
-        clearedPercent: clrPct,
-        pendingPercent: pndPct
-      };
-    });
+  saveHostel(): void {
+    if (!this.hostelForm.name.trim()) {
+      this.toastService.warning('Validation Error', 'Hostel name is required.');
+      return;
+    }
+    const blocks = this.hostelBlocksInput.split(',').map(s => s.trim()).filter(Boolean);
+    const wings = this.hostelWingsInput.split(',').map(s => s.trim()).filter(Boolean);
+    const payload: HostelDetail = {
+      ...this.hostelForm,
+      blocks,
+      hasBlocks: blocks.length > 0,
+      wings,
+      hasWings: wings.length > 0
+    };
+    this.hostelService.saveHostel(payload);
+    this.loadHostels();
+    this.toastService.success(
+      this.isEditingHostel ? 'Hostel Updated' : 'Hostel Added',
+      `${payload.name} saved to the local USAB hostel directory.`
+    );
+    this.closeHostelModal();
   }
 
-  get accommodationPieSlices(): PieSliceItem[] {
-    const total = Math.max(1, this.totalStudentsAnalyzed);
-    const items = [
-      { label: 'On-Campus (Hostels)', count: this.totalHostelDwellers, color: '#00679b' },
-      { label: 'Off-Campus (Private)', count: this.totalOffCampus, color: '#0d9488' },
-      { label: 'Non-Hostel (Day Scholars)', count: this.totalNonHostel, color: '#f59e0b' }
-    ];
-    return this.buildPieSlices(items);
+  deleteHostel(hostel: HostelDetail): void {
+    if (confirm(`Remove "${hostel.name}" from the local USAB hostel directory?`)) {
+      this.hostelService.deleteHostel(hostel.id);
+      this.loadHostels();
+      this.toastService.info('Hostel Removed', `${hostel.name} was removed from the directory.`);
+    }
   }
 
-  get genderPieSlices(): PieSliceItem[] {
-    const gs = this.genderStats;
-    const items = [
-      { label: 'Male Students', count: gs.maleTotal, color: '#2563eb' },
-      { label: 'Female Students', count: gs.femaleTotal, color: '#ec4899' }
-    ];
-    return this.buildPieSlices(items);
-  }
-
-  get hostelSharePieSlices(): PieSliceItem[] {
-    const hostels = this.mostlyBookedHostels;
-    const colors = ['#00679b', '#059669', '#7c3aed', '#d97706', '#ea580c', '#0891b2', '#4338ca'];
-    const items = hostels.map((h, i) => ({
-      label: h.name,
-      count: h.bookedCount > 0 ? h.bookedCount : 1, // sample weighting if zero
-      color: colors[i % colors.length]
-    }));
-    return this.buildPieSlices(items);
-  }
-
-  private buildPieSlices(items: { label: string; count: number; color: string }[], cx = 120, cy = 120, R = 90, r = 52): PieSliceItem[] {
-    const total = items.reduce((sum, item) => sum + item.count, 0);
-    if (total <= 0) return [];
-
-    let currentAngle = -90;
-    const slices: PieSliceItem[] = [];
-
-    items.forEach(item => {
-      if (item.count <= 0) return;
-      const sliceAngle = (item.count / total) * 360;
-      const effectiveAngle = sliceAngle >= 359.99 ? 359.99 : sliceAngle;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + effectiveAngle;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArcFlag = effectiveAngle > 180 ? 1 : 0;
-
-      const svgPath = `M ${x1} ${y1} ` +
-        `A ${R} ${R} 0 ${largeArcFlag} 1 ${x2} ${y2} ` +
-        `L ${x3} ${y3} ` +
-        `A ${r} ${r} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
-
-      const pct = Math.round((item.count / total) * 100);
-
-      slices.push({
-        label: item.label,
-        count: item.count,
-        percentage: pct,
-        color: item.color,
-        svgPath
-      });
-
-      currentAngle += sliceAngle;
-    });
-
-    return slices;
-  }
+  /* =========================
+     CSV EXPORT & LOGOUT
+  ========================= */
 
   downloadAnalyticsCsv(): void {
     const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM - USAB ACCOMMODATION & HOSTEL STATISTICAL REPORT'],
+      ['UNIVERSITY OF DAR ES SALAAM - USAB CLEARANCE REPORT'],
       [`Generated On: ${new Date().toLocaleString()}`],
-      [`Filter Year: ${this.selectedAnalyticsYear.toUpperCase()} | Filter Gender: ${this.selectedAnalyticsGender.toUpperCase()}`],
       [],
-      ['1. EXECUTIVE KEY PERFORMANCE METRICS'],
+      ['SUMMARY METRICS'],
       ['Metric', 'Value'],
-      ['Total Students Analyzed', String(this.totalStudentsAnalyzed)],
-      ['Total On-Campus Hostel Residents', String(this.totalHostelDwellers)],
-      ['Total Off-Campus Students', String(this.totalOffCampus)],
-      ['Total Non-Hostel Day Scholars', String(this.totalNonHostel)],
-      ['Total University Bed Capacity', String(this.totalHostelCapacity)],
-      ['Campus Hostel Occupancy Proportion', `${this.totalHostelOccupancyPercent}%`],
-      ['USAB Clearance Approval Rate', `${this.usabClearanceRate}%`],
-      ['Most Booked University Hostel', this.topBookedHostel?.name || 'N/A'],
+      ['Total Requests', String(this.totalRequestCount)],
+      ['Pending Review', String(this.pendingRequestCount)],
+      ['Approved', String(this.approvedRequestCount)],
+      ['Rejected', String(this.rejectedRequestCount)],
+      ['On-Campus Residents', String(this.onCampusCount)],
+      ['Off-Campus Students', String(this.offCampusCount)],
+      ['Clearance Rate', `${this.clearanceRatePercent}%`],
       [],
-      ['2. HOSTEL BOOKINGS & CLEARANCE LEADERBOARD'],
-      ['Rank', 'Hostel Name', 'Campus Location', 'Bed Capacity', 'Booked Students', 'Occupancy %', 'Cleared', 'Pending', 'Clearance Rate %', 'Demand Status'],
-      ...this.mostlyBookedHostels.map(h => [
-        String(h.rank),
-        h.name,
-        h.location,
-        String(h.capacity),
-        String(h.bookedCount),
-        `${h.occupancyPercent}%`,
-        String(h.clearedCount),
-        String(h.pendingCount),
-        `${h.clearanceRate}%`,
-        h.statusBadge
+      ['RESIDENCE / HALL BREAKDOWN'],
+      ['Residence / Hall', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.residenceBreakdown.map(item => [
+        item.label,
+        String(item.total),
+        String(item.approved),
+        String(item.pending),
+        String(item.rejected),
+        `${item.clearanceRate}%`
       ]),
       [],
-      ['3. GENDER CLASSIFICATION IN ACCOMMODATION'],
-      ['Gender', 'Total Students', 'Share %', 'On-Campus (Hostels)', 'Off-Campus (Private)'],
-      ['Male', String(this.genderStats.maleTotal), `${this.genderStats.malePercent}%`, String(this.genderStats.maleOnCampus), String(this.genderStats.maleOffCampus)],
-      ['Female', String(this.genderStats.femaleTotal), `${this.genderStats.femalePercent}%`, String(this.genderStats.femaleOnCampus), String(this.genderStats.femaleOffCampus)],
-      [],
-      ['4. ACADEMIC COHORT / YEAR RESIDENCY BREAKDOWN'],
-      ['Academic Year / Cohort', 'Total Students', 'On-Campus Hostels', 'Off-Campus Private', 'Non-Hostel', 'Clearance Rate %'],
-      ...this.yearResidencyHistogram.map(y => [
-        y.cohort,
-        String(y.total),
-        String(y.onCampus),
-        String(y.offCampus),
-        String(y.nonHostel),
-        `${y.clearanceRate}%`
+      ['COLLEGE BREAKDOWN'],
+      ['College', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.collegeBreakdown.map(item => [
+        item.label,
+        String(item.total),
+        String(item.approved),
+        String(item.pending),
+        String(item.rejected),
+        `${item.clearanceRate}%`
       ])
     ];
 
-    const csvContent = rows
+    const csv = rows
       .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
       .join('\r\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `usab-accommodation-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.href = url;
+    link.download = `usab-clearance-report-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
-    this.toastService.success('Export Successful', 'USAB accommodation analytics report downloaded as CSV.');
-  }
-
-  printAnalytics(): void {
-    window.print();
+    URL.revokeObjectURL(url);
+    this.toastService.success('Export Ready', 'USAB clearance report downloaded as CSV.');
   }
 
   logout(): void {

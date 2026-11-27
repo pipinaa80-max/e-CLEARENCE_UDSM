@@ -1,19 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { ClearanceOffice, ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { AuthService } from '../../core/services/auth.service';
-import { ClearanceService } from '../../core/services/clearance.service';
+import { CollectionStation, CollectionStationService } from '../../core/services/collection-station.service';
 import { ConfigService } from '../../core/services/config.service';
-import { StorageService } from '../../core/services/storage.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
-import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
-import { CollectionStationService, CollectionStation } from '../../core/services/collection-station.service';
+import { isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 
 export interface OfficeStatusSummary {
   office: string;
@@ -23,9 +24,6 @@ export interface OfficeStatusSummary {
   rejected: number;
   total: number;
   clearanceRate: number;
-  clearedWidth: number;
-  pendingWidth: number;
-  rejectedWidth: number;
 }
 
 export interface BreakdownItem {
@@ -44,13 +42,12 @@ export interface StagePipelineItem {
   description: string;
   count: number;
   percentage: number;
-  tone: 'blue' | 'teal' | 'amber' | 'indigo' | 'green';
+  tone: 'blue' | 'teal' | 'amber' | 'indigo' | 'purple' | 'green';
 }
 
 export interface YearHistogramItem {
   yearLabel: string;
   shortLabel: string;
-  cohort: string;
   total: number;
   cleared: number;
   pending: number;
@@ -62,26 +59,10 @@ export interface YearHistogramItem {
   rejectedPercent: number;
 }
 
-export interface YearPieSlice {
-  yearLabel: string;
-  shortLabel: string;
-  cohort: string;
-  total: number;
-  cleared: number;
-  pending: number;
-  rejected: number;
-  percentage: number;
-  color: string;
-  svgPath: string;
-  startAngle: number;
-  endAngle: number;
-}
-
 export interface RegisteredYearBarItem {
   label: string;
   shortLabel: string;
   yearNumber: number;
-  cohort: string;
   totalRegistered: number;
   clearanceRequests: number;
   clearedRequests: number;
@@ -90,6 +71,8 @@ export interface RegisteredYearBarItem {
   color: string;
 }
 
+export type DirectorateTab = 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations';
+
 @Component({
   selector: 'app-director-undergraduate-studies',
   standalone: true,
@@ -97,26 +80,63 @@ export interface RegisteredYearBarItem {
   templateUrl: './director-undergraduate-studies.html',
   styleUrl: './director-undergraduate-studies.css'
 })
-export class DirectorUndergraduateStudiesDashboard implements OnInit {
+export class DirectorUndergraduateStudiesDashboard implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
-  private readonly clearanceService = inject(ClearanceService);
+  private readonly notificationService = inject(NotificationService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly stationService = inject(CollectionStationService);
   private readonly toastService = inject(ToastService);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
   private readonly router = inject(Router);
-  private readonly storage = new StorageService();
+  private readonly route = inject(ActivatedRoute);
 
   sidebarOpen = false;
-  activeTab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations' = 'overview';
+  activeTab: DirectorateTab = 'overview';
   isLoading = false;
+  loadError = '';
+  unreadNotifications = 0;
   generatedAt = new Date();
+
+  // Analytics & Requests Data
+  allRequests: ClearanceRequest[] = [];
+  studentYearMap = new Map<string, string>();
+  backendRegisteredStudentsByYear: Record<string, number> = {};
+  totalRegisteredStudents = 0;
+
+  // Overview expand toggles & hover
+  showAllRegisteredYears = false;
+  showAllColleges = false;
+  hoveredYear: string | null = null;
+
+  // Student Tracker Filters & Pagination
+  searchTerm = '';
+  selectedCollege = 'ALL';
+  selectedStatus: 'ALL' | 'Completed' | 'Pending' | 'Rejected' = 'ALL';
+  selectedYear = 'ALL';
+  selectedOffice = 'ALL';
+  requestsPage = 1;
+  requestsPageSize = 25;
+  selectedRequestForModal: ClearanceRequest | null = null;
+
+  // Transcript Ledger State
+  transcriptSearchTerm = '';
+  transcriptStatusFilter: 'ALL' | 'Pending' | 'Dispatched' = 'ALL';
+  transcriptPage = 1;
+  transcriptPageSize = 25;
+  issuingTranscriptId: string | null = null;
+  selectedTranscriptForModal: TranscriptPaymentRequest | null = null;
+  transcriptLoadError = '';
+  isLoadingTranscripts = false;
 
   // Collection Stations Management State
   stations: CollectionStation[] = [];
   editingStation: CollectionStation | null = null;
+  stationToDeactivate: CollectionStation | null = null;
   showStationModal = false;
+  isSavingStation = false;
+  togglingStationId: string | null = null;
+  isDeletingStation = false;
   stationSearchTerm = '';
   stationForm = {
     code: '',
@@ -130,204 +150,141 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     isActive: true
   };
 
-  allRequests: ClearanceRequest[] = [];
-  studentYearMap = new Map<string, string>();
-  backendRegisteredStudentsByYear: Record<string, number> = {};
-  totalRegisteredStudents = 0;
+  private unreadSub: Subscription | null = null;
 
-  selectedTranscriptForModal: TranscriptPaymentRequest | null = null;
-
-  get transcriptRequests(): TranscriptPaymentRequest[] {
-    return this.transcriptService.getAllRequests().filter(r => !!r.collectionMethod || !!r.receiptFileName || r.status === 'Receipt Submitted');
-  }
-
-  get dispatchedCount(): number {
-    return this.transcriptRequests.filter(r => r.dispatchStatus === 'Dispatched').length;
-  }
-
-  get pendingDispatchCount(): number {
-    return this.transcriptRequests.filter(r => r.dispatchStatus !== 'Dispatched').length;
-  }
-
-  transcriptSearchTerm = '';
-  transcriptStatusFilter: 'ALL' | 'Pending' | 'Dispatched' = 'ALL';
-
-  get filteredTranscriptRequests(): TranscriptPaymentRequest[] {
-    let requests = this.transcriptRequests;
-    const term = (this.transcriptSearchTerm || '').trim().toLowerCase();
-    if (term) {
-      requests = requests.filter(r =>
-        (r.studentName || '').toLowerCase().includes(term) ||
-        (r.registrationNumber || '').toLowerCase().includes(term) ||
-        (r.postingRegion || '').toLowerCase().includes(term) ||
-        (r.postingWard || '').toLowerCase().includes(term) ||
-        (r.postingPoBox || '').toLowerCase().includes(term) ||
-        (r.postingContactPhone || '').toLowerCase().includes(term) ||
-        (r.collectionMethod || '').toLowerCase().includes(term)
-      );
-    }
-    if (this.transcriptStatusFilter === 'Pending') {
-      requests = requests.filter(r => r.dispatchStatus !== 'Dispatched');
-    } else if (this.transcriptStatusFilter === 'Dispatched') {
-      requests = requests.filter(r => r.dispatchStatus === 'Dispatched');
-    }
-    return requests;
-  }
-
-  markDispatched(requestId: string): void {
-    if (this.transcriptService.markDispatched(requestId)) {
-      this.toastService.success('Dispatched', 'Transcript dispatch status updated to Dispatched.');
-    } else {
-      this.toastService.error('Action Failed', 'Could not update dispatch status.');
-    }
-  }
-
-  // Collection Stations Computed Helpers & Actions
-  get filteredStations(): CollectionStation[] {
-    const q = (this.stationSearchTerm || '').trim().toLowerCase();
-    if (!q) return this.stations;
-    return this.stations.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.code.toLowerCase().includes(q) ||
-      s.region.toLowerCase().includes(q) ||
-      (s.district && s.district.toLowerCase().includes(q)) ||
-      s.address.toLowerCase().includes(q)
-    );
-  }
-
-  get activeStationsCount(): number {
-    return this.stations.filter(s => s.isActive).length;
-  }
-
-  get stationRegionsCount(): number {
-    return new Set(this.stations.map(s => s.region)).size;
-  }
-
-  loadStations(): void {
-    this.stationService.getAllStations().subscribe({
-      next: list => { this.stations = list; },
-      error: err => console.error('Error loading collection stations:', err)
-    });
-  }
-
-  openCreateStationModal(): void {
-    this.editingStation = null;
-    this.stationForm = {
-      code: 'HUB-' + Math.floor(100 + Math.random() * 900),
-      name: '',
-      region: 'Dar es Salaam',
-      district: '',
-      address: '',
-      operatingHours: 'Mon - Fri: 08:00 - 16:00',
-      contactPhone: '',
-      contactEmail: '',
-      isActive: true
-    };
-    this.showStationModal = true;
-  }
-
-  openEditStationModal(st: CollectionStation): void {
-    this.editingStation = st;
-    this.stationForm = {
-      code: st.code,
-      name: st.name,
-      region: st.region,
-      district: st.district || '',
-      address: st.address,
-      operatingHours: st.operatingHours || 'Mon - Fri: 08:00 - 16:00',
-      contactPhone: st.contactPhone || '',
-      contactEmail: st.contactEmail || '',
-      isActive: st.isActive
-    };
-    this.showStationModal = true;
-  }
-
-  closeStationModal(): void {
-    this.showStationModal = false;
-    this.editingStation = null;
-  }
-
-  saveStation(): void {
-    if (!this.stationForm.name.trim() || !this.stationForm.code.trim() || !this.stationForm.address.trim()) {
-      this.toastService.error('Missing Fields', 'Station name, code, and physical address are required.');
-      return;
-    }
-
-    if (this.editingStation) {
-      this.stationService.updateStation(this.editingStation.id, this.stationForm).subscribe({
-        next: updated => {
-          this.toastService.success('Station Updated', `Updated collection station "${updated.name}".`);
-          this.closeStationModal();
-          this.loadStations();
-        },
-        error: err => this.toastService.error('Update Failed', err.error?.message || 'Failed to update station.')
-      });
-    } else {
-      this.stationService.createStation(this.stationForm).subscribe({
-        next: created => {
-          this.toastService.success('Station Created', `Created new collection hub "${created.name}".`);
-          this.closeStationModal();
-          this.loadStations();
-        },
-        error: err => this.toastService.error('Creation Failed', err.error?.message || 'Failed to create station.')
-      });
-    }
-  }
-
-  toggleStationActive(st: CollectionStation): void {
-    const newStatus = !st.isActive;
-    this.stationService.updateStation(st.id, { isActive: newStatus }).subscribe({
-      next: () => {
-        st.isActive = newStatus;
-        this.toastService.success('Status Changed', `Station "${st.name}" is now ${newStatus ? 'Active' : 'Inactive'}.`);
-      },
-      error: () => this.toastService.error('Action Failed', 'Could not toggle station status.')
-    });
-  }
-
-  deleteStation(st: CollectionStation): void {
-    if (!confirm(`Are you sure you want to deactivate station "${st.name}"?`)) return;
-    this.stationService.deleteStation(st.id).subscribe({
-      next: () => {
-        this.toastService.success('Station Deactivated', `Station "${st.name}" has been deactivated.`);
-        this.loadStations();
-      },
-      error: () => this.toastService.error('Delete Failed', 'Could not deactivate station.')
-    });
-  }
-
-  // Filters
-  searchTerm = '';
-  selectedCollege = 'ALL';
-  selectedStatus: 'ALL' | 'Completed' | 'Pending' | 'Rejected' = 'ALL';
-  selectedYear = 'ALL';
-  selectedOffice = 'ALL';
-
-  selectedRequestForModal: ClearanceRequest | null = null;
-
-  readonly allOfficesOrder: { office: ClearanceOffice; stageGroup: string }[] = [
-    { office: 'Games Coach', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'Hall Warden', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'USAB', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'DARUSO', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'Library', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'Dean of Students', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'Smart Card', stageGroup: 'Stage 1 · Clearance Offices' },
-    { office: 'Workshop', stageGroup: 'Stage 1 · College Specific' },
-    { office: 'Laboratory', stageGroup: 'Stage 1 · College Specific' },
-    { office: 'Department', stageGroup: 'Stage 2 · Academic Dept' },
-    { office: 'Principal', stageGroup: 'Stage 3 · College Principal' },
-    { office: 'Finance', stageGroup: 'Stage 4 · Final Finance' },
-    { office: 'Convocation', stageGroup: 'Stage 4 · Convocation' }
+  readonly yearColorPalette: string[] = [
+    '#00679b',
+    '#16a34a',
+    '#d97706',
+    '#7c3aed',
+    '#0284c7',
+    '#e11d48',
+    '#0d9488',
+    '#ea580c'
   ];
+
+  // =========================================================
+  // ROLE-AWARE DUS / DPGS IDENTITY HELPERS
+  // =========================================================
 
   get currentUser() {
     return this.authService.getCurrentUser();
   }
 
+  get isPostgraduateDirector(): boolean {
+    return this.currentUser?.role === 'Director of Postgraduate Studies';
+  }
+
+  get homeRoute(): string {
+    return this.isPostgraduateDirector
+      ? '/dashboard/director-postgraduate-studies'
+      : '/dashboard/director-undergraduate-studies';
+  }
+
+  get directorateShort(): string {
+    return this.isPostgraduateDirector ? 'DPGS' : 'DUS';
+  }
+
+  get directorateName(): string {
+    return this.isPostgraduateDirector
+      ? 'Directorate of Postgraduate Studies'
+      : 'Directorate of Undergraduate Studies';
+  }
+
+  get directorTitle(): string {
+    return this.isPostgraduateDirector
+      ? 'Director of Postgraduate Studies'
+      : 'Director of Undergraduate Studies';
+  }
+
+  get studentLevelLabel(): string {
+    return this.isPostgraduateDirector ? 'Postgraduate' : 'Undergraduate';
+  }
+
+  get headerEyebrow(): string {
+    return this.isPostgraduateDirector
+      ? 'DPGS Executive Oversight'
+      : 'DUS Executive Oversight';
+  }
+
+  get userInitials(): string {
+    const name = this.currentUser?.fullName?.trim();
+    if (!name) return this.isPostgraduateDirector ? 'PG' : 'DU';
+    const parts = name.split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  }
+
+  get includeSupervisorStage(): boolean {
+    if (this.isPostgraduateDirector) return true;
+    return this.allRequests.some(
+      r => r.isPostgraduate || r.currentStage === 'Supervisor' || (r.approvals || []).some(a => a.office === 'Supervisor')
+    );
+  }
+
+  get allOfficesOrder(): { office: ClearanceOffice; stageGroup: string }[] {
+    const list: { office: ClearanceOffice; stageGroup: string }[] = [
+      { office: 'Convocation', stageGroup: 'Stage 1 · Convocation' },
+      { office: 'Smart Card', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'Library', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'Hall Warden', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'USAB', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'DARUSO', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'Games Coach', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'Dean of Students', stageGroup: 'Stage 2 · Parallel Offices' },
+      { office: 'Workshop', stageGroup: 'Stage 2 · Conditional (CoET)' },
+      { office: 'Laboratory', stageGroup: 'Stage 2 · Conditional (MCHAS)' },
+      { office: 'Department', stageGroup: 'Stage 3 · Academic Department' },
+      { office: 'Principal', stageGroup: 'Stage 4 · College Principal' },
+      { office: 'Finance', stageGroup: 'Stage 5 · Finance Clearance' }
+    ];
+    if (this.includeSupervisorStage) {
+      list.push({ office: 'Supervisor', stageGroup: 'Stage 6 · Research Supervisor' });
+    }
+    return list;
+  }
+
   ngOnInit(): void {
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['overview', 'process', 'offices', 'students', 'transcripts', 'stations'].includes(initialTab)) {
+      this.activeTab = initialTab as any;
+    }
+    this.unreadSub = this.notificationService.unreadCount$.subscribe(count => {
+      this.unreadNotifications = count;
+    });
+    this.notificationService.refreshUnreadCount().subscribe();
+    this.refreshAllData();
+  }
+
+  ngOnDestroy(): void {
+    this.unreadSub?.unsubscribe();
+    this.unreadSub = null;
+  }
+
+  refreshAllData(): void {
     this.loadAnalyticsData();
     this.loadStations();
+    this.loadTranscriptLedger();
+  }
+
+  loadTranscriptLedger(): void {
+    this.isLoadingTranscripts = true;
+    this.transcriptLoadError = '';
+    this.transcriptService.refreshDirectorateControlNumberRequests()
+      .then(() => {
+        this.isLoadingTranscripts = false;
+      })
+      .catch(err => {
+        this.isLoadingTranscripts = false;
+        if (err?.status === 404) {
+          this.transcriptLoadError =
+            'Transcript ledger sync endpoint (/api/v1/transcript-payments/directorate) is not active on the running backend server yet. Restart the updated backend to enable live transcript sync.';
+        } else {
+          this.transcriptLoadError =
+            err?.error?.message ||
+            'Unable to synchronize transcript requests from the server right now.';
+        }
+      });
   }
 
   toggleSidebar(): void {
@@ -336,6 +293,16 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
   closeSidebar(): void {
     this.sidebarOpen = false;
+  }
+
+  setTab(tab: DirectorateTab): void {
+    this.activeTab = tab;
+    this.closeSidebar();
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   onLogoError(event: Event): void {
@@ -349,78 +316,61 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     }
   }
 
-  setTab(tab: 'overview' | 'process' | 'offices' | 'students' | 'transcripts' | 'stations'): void {
-    this.activeTab = tab;
-    this.closeSidebar();
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
+  // =========================================================
+  // AUTHORITATIVE BACKEND ANALYTICS LOADING
+  // =========================================================
 
   loadAnalyticsData(): void {
     this.isLoading = true;
+    this.loadError = '';
     this.generatedAt = new Date();
-
-    // Load local storage requests & users first
-    const localRequests = this.clearanceService.getAllRequests() || [];
-    const localUsers = this.storage.get<any[]>('udsm-users') || [];
-    localUsers.forEach(u => {
-      let yrLabel = '';
-      if (u?.yearOfStudy) {
-        const str = String(u.yearOfStudy).trim();
-        const m4 = str.match(/\b(20\d{2})\b/);
-        if (m4) {
-          yrLabel = `Year ${m4[1]}`;
-        } else {
-          const num = parseInt(str.replace(/\D+/g, ''), 10);
-          if (!isNaN(num) && num > 0) {
-            const calYear = 2026 - num + 1;
-            yrLabel = `Year ${calYear}`;
-          }
-        }
-      }
-      if (!yrLabel && u?.registrationNumber) {
-        const m4 = String(u.registrationNumber).match(/\b(20\d{2})\b/);
-        if (m4) yrLabel = `Year ${m4[1]}`;
-      }
-      if (yrLabel) {
-        if (u?.id) this.studentYearMap.set(String(u.id), yrLabel);
-        if (u?.registrationNumber) this.studentYearMap.set(String(u.registrationNumber), yrLabel);
-      }
-    });
-
-    const localStudentCount = localUsers.filter(u => String(u?.role || '').toUpperCase() === 'STUDENT').length;
-    this.totalRegisteredStudents = Math.max(localStudentCount, localRequests.length);
-
-    // Instant local render (0ms latency for charts & graphs)
-    this.allRequests = localRequests;
 
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
     this.http.get<any>(`${this.config.apiUrl}/clearance/analytics-summary`, headers ? { headers } : {}).subscribe({
-      next: (summary) => {
+      next: summary => {
+        this.studentYearMap.clear();
         const rawRequests = Array.isArray(summary?.requests)
           ? summary.requests
-          : (Array.isArray(summary?.requestList) ? summary.requestList : []);
-        const backendRequests: ClearanceRequest[] = rawRequests.map((r: any) => this.normalizeBackendRequest(r));
-        this.allRequests = this.mergeRequests(localRequests, backendRequests);
-        if (summary?.registeredStudentsByYear && typeof summary.registeredStudentsByYear === 'object') {
-          this.backendRegisteredStudentsByYear = summary.registeredStudentsByYear;
-        }
-        if (typeof summary?.totalRegisteredStudents === 'number') {
-          this.totalRegisteredStudents = Math.max(localStudentCount, summary.totalRegisteredStudents, this.allRequests.length);
-        } else {
-          this.totalRegisteredStudents = Math.max(localStudentCount, this.allRequests.length);
+          : Array.isArray(summary?.requestList)
+            ? summary.requestList
+            : [];
+
+        const normalized = rawRequests.map((r: any) => this.normalizeBackendRequest(r));
+        const role = this.currentUser?.role;
+        const scoped =
+          role === 'Director of Postgraduate Studies'
+            ? normalized.filter((r: ClearanceRequest) => isPostgraduateEntity(r))
+            : role === 'Director of Undergraduate Studies'
+              ? normalized.filter((r: ClearanceRequest) => !isPostgraduateEntity(r))
+              : normalized;
+
+        this.allRequests = scoped.sort(
+          (a: ClearanceRequest, b: ClearanceRequest) =>
+            new Date(b.requestDate || 0).getTime() - new Date(a.requestDate || 0).getTime()
+        );
+
+        this.backendRegisteredStudentsByYear =
+          summary?.registeredStudentsByYear && typeof summary.registeredStudentsByYear === 'object'
+            ? { ...summary.registeredStudentsByYear }
+            : {};
+
+        this.totalRegisteredStudents =
+          typeof summary?.totalRegisteredStudents === 'number'
+            ? Math.max(summary.totalRegisteredStudents, this.allRequests.length)
+            : this.allRequests.length;
+
+        if (this.requestsPage > this.requestsTotalPages) {
+          this.requestsPage = 1;
         }
         this.isLoading = false;
       },
-      error: () => {
-        this.allRequests = localRequests;
-        this.totalRegisteredStudents = Math.max(localStudentCount, this.allRequests.length);
+      error: err => {
         this.isLoading = false;
+        this.loadError =
+          err?.error?.message ||
+          `Unable to synchronize ${this.directorateShort} analytics from the server. Please try refreshing.`;
       }
     });
   }
@@ -439,11 +389,12 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
           const st = String(a?.status || 'PENDING').toUpperCase();
           return {
             office: (a?.office || 'Department') as ClearanceOffice,
-            status: st === 'APPROVED' || st === 'CLEARED' || st === 'COMPLETED'
-              ? 'Approved'
-              : st === 'REJECTED'
-                ? 'Rejected'
-                : 'Pending',
+            status:
+              st === 'APPROVED' || st === 'CLEARED' || st === 'COMPLETED'
+                ? 'Approved'
+                : st === 'REJECTED'
+                  ? 'Rejected'
+                  : 'Pending',
             comment: a?.comment || undefined,
             reviewedBy: a?.reviewedBy || undefined,
             reviewedAt: a?.reviewedAt || undefined
@@ -451,6 +402,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         })
       : [];
 
+    const currentYear = new Date().getFullYear();
     let rawYr = '';
     if (raw?.yearOfStudy) {
       const str = String(raw.yearOfStudy).trim();
@@ -459,8 +411,8 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         rawYr = `Year ${m4[1]}`;
       } else {
         const num = parseInt(str.replace(/\D+/g, ''), 10);
-        if (!isNaN(num) && num > 0) {
-          rawYr = `Year ${2026 - num + 1}`;
+        if (!Number.isNaN(num) && num > 0) {
+          rawYr = `Year ${currentYear - num + 1}`;
         } else {
           rawYr = `Year ${str}`;
         }
@@ -469,10 +421,19 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
       const m4 = String(raw.registrationNumber).match(/\b(20\d{2})\b/);
       if (m4) rawYr = `Year ${m4[1]}`;
     }
+
     if (rawYr) {
       if (raw?.studentId) this.studentYearMap.set(String(raw.studentId), rawYr);
       if (raw?.registrationNumber) this.studentYearMap.set(String(raw.registrationNumber), rawYr);
     }
+
+    const award = raw?.award || undefined;
+    const programme = raw?.programme || `${this.studentLevelLabel} Programme`;
+    const isPostgraduate = isPostgraduateEntity({
+      isPostgraduate: raw?.isPostgraduate ?? raw?.is_postgraduate,
+      award,
+      programme
+    });
 
     return {
       id: String(raw?.id || crypto.randomUUID()),
@@ -482,26 +443,15 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
       email: raw?.email || '',
       college: raw?.college || 'Unspecified College',
       department: raw?.department || 'Unspecified Department',
-      programme: raw?.programme || 'Undergraduate Programme',
-      requestDate: raw?.requestDate || new Date().toISOString(),
+      programme,
+      award,
+      isPostgraduate,
+      requestDate: raw?.requestDate || '',
       status: normalizedStatus,
       currentOffice: (raw?.currentOffice || 'Convocation') as ClearanceOffice,
       currentStage: (raw?.currentStage || (normalizedStatus === 'Completed' ? 'Completed' : 'Convocation')) as any,
       approvals
     };
-  }
-
-  private mergeRequests(localList: ClearanceRequest[], backendList: ClearanceRequest[]): ClearanceRequest[] {
-    const byKey = new Map<string, ClearanceRequest>();
-    for (const req of [...backendList, ...localList]) {
-      const key = (req.registrationNumber && req.registrationNumber !== 'N/A')
-        ? `reg:${req.registrationNumber.toLowerCase()}`
-        : `id:${req.id}`;
-      byKey.set(key, req);
-    }
-    return Array.from(byKey.values()).sort(
-      (a, b) => new Date(b.requestDate || 0).getTime() - new Date(a.requestDate || 0).getTime()
-    );
   }
 
   // =========================================================
@@ -525,52 +475,16 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   }
 
   get overallClearanceRate(): number {
-    return this.totalRequestsCount > 0
-      ? Math.round((this.clearedCount / this.totalRequestsCount) * 100)
-      : 0;
+    return this.totalRequestsCount > 0 ? Math.round((this.clearedCount / this.totalRequestsCount) * 100) : 0;
   }
 
   get pendingRate(): number {
-    return this.totalRequestsCount > 0
-      ? Math.round((this.pendingCount / this.totalRequestsCount) * 100)
-      : 0;
+    return this.totalRequestsCount > 0 ? Math.round((this.pendingCount / this.totalRequestsCount) * 100) : 0;
   }
 
   get rejectedRate(): number {
-    return this.totalRequestsCount > 0
-      ? Math.round((this.rejectedCount / this.totalRequestsCount) * 100)
-      : 0;
+    return this.totalRequestsCount > 0 ? Math.round((this.rejectedCount / this.totalRequestsCount) * 100) : 0;
   }
-
-  // Donut SVG Stroke Dasharray helpers (circumference = 2 * pi * 42 ≈ 263.89)
-  readonly donutCircumference = 263.89;
-
-  get clearedDashArray(): string {
-    const len = (this.overallClearanceRate / 100) * this.donutCircumference;
-    return `${len} ${this.donutCircumference}`;
-  }
-
-  get pendingDashArray(): string {
-    const len = (this.pendingRate / 100) * this.donutCircumference;
-    return `${len} ${this.donutCircumference}`;
-  }
-
-  get pendingDashOffset(): number {
-    return -((this.overallClearanceRate / 100) * this.donutCircumference);
-  }
-
-  get rejectedDashArray(): string {
-    const len = (this.rejectedRate / 100) * this.donutCircumference;
-    return `${len} ${this.donutCircumference}`;
-  }
-
-  get rejectedDashOffset(): number {
-    return -(((this.overallClearanceRate + this.pendingRate) / 100) * this.donutCircumference);
-  }
-
-  // =========================================================
-  // COLLEGE, YEAR, PROGRAMME & STUDENT RANKINGS
-  // =========================================================
 
   getYearLabel(req: ClearanceRequest): string {
     if (req.studentId && this.studentYearMap.has(req.studentId)) {
@@ -580,28 +494,37 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
       return this.studentYearMap.get(req.registrationNumber)!;
     }
     const regMatch = String(req.registrationNumber || '').match(/\b(20\d{2})\b/);
-    if (regMatch) {
-      return `Year ${regMatch[1]}`;
-    }
-    const reqYear = new Date(req.requestDate).getFullYear();
-    return Number.isNaN(reqYear) ? 'Year 2026' : `Year ${reqYear}`;
+    if (regMatch) return `Year ${regMatch[1]}`;
+    const reqYear = req.requestDate ? new Date(req.requestDate).getFullYear() : NaN;
+    return Number.isNaN(reqYear) ? `Year ${new Date().getFullYear()}` : `Year ${reqYear}`;
+  }
+
+  getYearColor(index: number): string {
+    return this.yearColorPalette[index % this.yearColorPalette.length];
+  }
+
+  setHoveredYear(label: string | null): void {
+    this.hoveredYear = label;
   }
 
   get collegeBreakdown(): BreakdownItem[] {
     return this.buildBreakdown(req => req.college || 'Unspecified College');
   }
 
-  showAllRegisteredYears = false;
-  showAllColleges = false;
-
-  get displayedRegisteredStudentsByYear(): RegisteredYearBarItem[] {
-    const list = this.registeredStudentsByYear;
-    return this.showAllRegisteredYears ? list : list.slice(0, 4);
+  get displayedCollegeBreakdown(): BreakdownItem[] {
+    return this.showAllColleges ? this.collegeBreakdown : this.collegeBreakdown.slice(0, 5);
   }
 
-  get displayedCollegeBreakdown(): BreakdownItem[] {
-    const list = this.collegeBreakdown;
-    return this.showAllColleges ? list : list.slice(0, 4);
+  get yearBreakdown(): BreakdownItem[] {
+    return this.buildBreakdown(req => this.getYearLabel(req));
+  }
+
+  get programmeBreakdown(): BreakdownItem[] {
+    return this.buildBreakdown(req => req.programme || `${this.studentLevelLabel} Programme`);
+  }
+
+  get displayedRegisteredStudentsByYear(): RegisteredYearBarItem[] {
+    return this.showAllRegisteredYears ? this.registeredStudentsByYear : this.registeredStudentsByYear.slice(0, 5);
   }
 
   toggleRegisteredYears(): void {
@@ -610,14 +533,6 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
   toggleColleges(): void {
     this.showAllColleges = !this.showAllColleges;
-  }
-
-  get yearBreakdown(): BreakdownItem[] {
-    return this.buildBreakdown(req => this.getYearLabel(req));
-  }
-
-  get programmeBreakdown(): BreakdownItem[] {
-    return this.buildBreakdown(req => req.programme || 'Undergraduate Programme');
   }
 
   private buildBreakdown(selector: (req: ClearanceRequest) => string): BreakdownItem[] {
@@ -659,125 +574,48 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     return this.programmeBreakdown[0] || null;
   }
 
-  get topClearedStudents(): ClearanceRequest[] {
-    const cleared = this.allRequests.filter(r => r.status === 'Completed');
-    return (cleared.length ? cleared : this.allRequests).slice(0, 6);
-  }
-
-  // =========================================================
-  // CLEARANCE PROCESS STAGE PIPELINE & OFFICE STATUS MATRIX
-  // =========================================================
-
-  // =========================================================
-  // ACADEMIC YEAR HISTOGRAM & PIE CHART DATA GENERATORS
-  // =========================================================
-
-  hoveredYear: string | null = null;
-
-  readonly yearColorPalette: string[] = [
-    '#00679b', // Year 1: UDSM Classic Blue
-    '#16a34a', // Year 2: Forest Emerald
-    '#d97706', // Year 3: Amber Gold
-    '#7c3aed', // Year 4: Royal Purple
-    '#0284c7', // Year 5: Sky Blue
-    '#e11d48', // Year 6/Postgrad: Rose Crimson
-    '#0d9488', // Teal
-    '#ea580c'  // Tangerine
-  ];
-
-  getYearColor(index: number): string {
-    return this.yearColorPalette[index % this.yearColorPalette.length];
-  }
-
-  setHoveredYear(label: string | null): void {
-    this.hoveredYear = label;
-  }
-
-  filterByYear(yearLabel: string): void {
-    this.selectedYear = yearLabel;
-    const el = document.getElementById('student-tracker');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+  get recentlyClearedStudent(): ClearanceRequest | null {
+    return this.allRequests.find(r => r.status === 'Completed') || null;
   }
 
   get registeredStudentsByYear(): RegisteredYearBarItem[] {
-    const localUsers = this.storage.get<any[]>('udsm-users') || [];
-    const studentUsers = localUsers.filter(u => String(u?.role || '').toUpperCase() === 'STUDENT');
-
-    // Maps keyed by calendar year (e.g. 2026, 2025, 2024, 2023, 2022)
     const registeredCounts = new Map<number, number>();
     const requestCounts = new Map<number, { total: number; cleared: number }>();
 
-    // Baseline undergraduate calendar years
-    const baseYears = [2026, 2025, 2024, 2023, 2022];
-    for (const yr of baseYears) {
-      registeredCounts.set(yr, 0);
-      requestCounts.set(yr, { total: 0, cleared: 0 });
-    }
-
-    // 1. Tally from local registered students
-    for (const u of studentUsers) {
-      let calYr = 2026;
-      if (u?.yearOfStudy) {
-        const str = String(u.yearOfStudy).trim();
-        const m4 = str.match(/\b(20\d{2})\b/);
-        if (m4) {
-          calYr = parseInt(m4[1], 10);
-        } else {
-          const num = parseInt(str.replace(/\D+/g, ''), 10);
-          if (!isNaN(num) && num > 0) {
-            calYr = 2026 - num + 1;
-          }
-        }
-      } else if (u?.registrationNumber) {
-        const m = String(u.registrationNumber).match(/\b(20\d{2})\b/);
-        if (m) calYr = parseInt(m[1], 10);
-      }
-      registeredCounts.set(calYr, (registeredCounts.get(calYr) || 0) + 1);
-    }
-
-    // 2. Merge backend breakdown if present
     if (this.backendRegisteredStudentsByYear) {
       for (const [key, val] of Object.entries(this.backendRegisteredStudentsByYear)) {
         const m = key.match(/\b(20\d{2})\b/);
         if (m) {
           const yr = parseInt(m[1], 10);
-          const current = registeredCounts.get(yr) || 0;
-          registeredCounts.set(yr, Math.max(current, Number(val) || 0));
+          registeredCounts.set(yr, (registeredCounts.get(yr) || 0) + (Number(val) || 0));
         }
       }
     }
 
-    // 3. Tally clearance requests by calendar year
     for (const req of this.allRequests) {
-      let calYr = 2026;
       const label = this.getYearLabel(req);
       const m4 = label.match(/\b(20\d{2})\b/);
-      if (m4) {
-        calYr = parseInt(m4[1], 10);
-      } else {
-        const regMatch = String(req.registrationNumber || '').match(/\b(20\d{2})\b/);
-        if (regMatch) calYr = parseInt(regMatch[1], 10);
-      }
-
+      if (!m4) continue;
+      const calYr = parseInt(m4[1], 10);
       const entry = requestCounts.get(calYr) || { total: 0, cleared: 0 };
       entry.total += 1;
       if (req.status === 'Completed') entry.cleared += 1;
       requestCounts.set(calYr, entry);
-
-      // Student with request is registered
       if ((registeredCounts.get(calYr) || 0) < entry.total) {
         registeredCounts.set(calYr, entry.total);
       }
     }
 
-    // Visible years: baseYears plus any years with data, sorted descending (2026, 2025, 2024...)
-    const presentYears = new Set<number>(baseYears);
-    registeredCounts.forEach((cnt, yr) => { if (cnt > 0) presentYears.add(yr); });
-    requestCounts.forEach((data, yr) => { if (data.total > 0) presentYears.add(yr); });
+    const presentYears = new Set<number>();
+    registeredCounts.forEach((cnt, yr) => {
+      if (cnt > 0) presentYears.add(yr);
+    });
+    requestCounts.forEach((data, yr) => {
+      if (data.total > 0) presentYears.add(yr);
+    });
 
     const sortedYears = Array.from(presentYears).sort((a, b) => b - a);
+    if (!sortedYears.length) return [];
 
     const totalCalculated = Array.from(registeredCounts.values()).reduce((sum, n) => sum + n, 0);
     const effectiveTotal = Math.max(totalCalculated, this.totalRegisteredStudents, 1);
@@ -786,14 +624,13 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     return sortedYears.map((yr, index) => {
       const regCount = registeredCounts.get(yr) || 0;
       const reqData = requestCounts.get(yr) || { total: 0, cleared: 0 };
-      const percentage = effectiveTotal > 0 ? Math.round((regCount / effectiveTotal) * 100) : 0;
+      const percentage = Math.round((regCount / effectiveTotal) * 100);
       const barWidth = regCount > 0 ? Math.max(8, Math.round((regCount / maxInAnyYear) * 100)) : 0;
 
       return {
         label: `Year ${yr}`,
         shortLabel: `${yr}`,
         yearNumber: yr,
-        cohort: `${yr} Cohort`,
         totalRegistered: regCount,
         clearanceRequests: reqData.total,
         clearedRequests: reqData.cleared,
@@ -808,7 +645,6 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     const rawBreakdown = this.yearBreakdown;
     if (!rawBreakdown.length) return [];
 
-    // Sort years chronologically by calendar year (e.g. 2022, 2023, 2024, 2025, 2026)
     const sorted = [...rawBreakdown].sort((a, b) => {
       const matchA = a.label.match(/\b(20\d{2})\b/);
       const matchB = b.label.match(/\b(20\d{2})\b/);
@@ -828,13 +664,12 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
       return {
         yearLabel: fullLabel,
         shortLabel,
-        cohort: yearMatch ? `${yearMatch[1]} Cohort` : '',
-        total: item.total,
+        total,
         cleared: item.cleared,
         pending: item.pending,
         rejected: item.rejected,
         clearanceRate: item.rate,
-        barHeightPercent: Math.max(12, Math.round((item.total / maxCount) * 100)),
+        barHeightPercent: Math.max(12, Math.round((total / maxCount) * 100)),
         clearedPercent: total > 0 ? Math.round((item.cleared / total) * 100) : 0,
         pendingPercent: total > 0 ? Math.round((item.pending / total) * 100) : 0,
         rejectedPercent: total > 0 ? Math.round((item.rejected / total) * 100) : 0
@@ -842,154 +677,94 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     });
   }
 
-  get histogramMaxCount(): number {
-    return Math.max(1, ...this.yearHistogramData.map(i => i.total));
-  }
-
   get histogramYAxisTicks(): number[] {
-    const max = this.histogramMaxCount;
+    const max = Math.max(1, ...this.yearHistogramData.map(i => i.total));
     if (max <= 1) return [1, 0];
     if (max <= 4) return [max, Math.round(max / 2), 0];
     return [max, Math.round(max * 0.66), Math.round(max * 0.33), 0];
   }
 
-  get yearPieSlices(): YearPieSlice[] {
-    const years = this.yearHistogramData;
-    const grandTotal = years.reduce((sum, y) => sum + y.total, 0);
-    if (grandTotal === 0) return [];
-
-    const cx = 120;
-    const cy = 120;
-    const R = 95; // outer radius
-    const r = 55; // inner radius (donut hole)
-
-    if (years.length === 1 || years.filter(y => y.total > 0).length === 1) {
-      const active = years.find(y => y.total > 0) || years[0];
-      // Full ring donut using two 180-deg arcs
-      const path = `M ${cx} ${cy - R} ` +
-        `A ${R} ${R} 0 1 1 ${cx} ${cy + R} ` +
-        `A ${R} ${R} 0 1 1 ${cx} ${cy - R} ` +
-        `M ${cx} ${cy - r} ` +
-        `A ${r} ${r} 0 1 0 ${cx} ${cy + r} ` +
-        `A ${r} ${r} 0 1 0 ${cx} ${cy - r} Z`;
-      return [{
-        yearLabel: active.yearLabel,
-        shortLabel: active.shortLabel,
-        cohort: active.cohort,
-        total: active.total,
-        cleared: active.cleared,
-        pending: active.pending,
-        rejected: active.rejected,
-        percentage: 100,
-        color: this.getYearColor(0),
-        svgPath: path,
-        startAngle: 0,
-        endAngle: 360
-      }];
-    }
-
-    let currentAngle = -90; // Start at 12 o'clock
-    const slices: YearPieSlice[] = [];
-
-    years.forEach((item, index) => {
-      if (item.total === 0) return;
-      const sliceAngle = (item.total / grandTotal) * 360;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + sliceAngle;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArcFlag = sliceAngle > 180 ? 1 : 0;
-
-      const svgPath = `M ${x1} ${y1} ` +
-        `A ${R} ${R} 0 ${largeArcFlag} 1 ${x2} ${y2} ` +
-        `L ${x3} ${y3} ` +
-        `A ${r} ${r} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`;
-
-      const pct = Math.round((item.total / grandTotal) * 100);
-
-      slices.push({
-        yearLabel: item.yearLabel,
-        shortLabel: item.shortLabel,
-        cohort: item.cohort,
-        total: item.total,
-        cleared: item.cleared,
-        pending: item.pending,
-        rejected: item.rejected,
-        percentage: pct,
-        color: this.getYearColor(index),
-        svgPath,
-        startAngle,
-        endAngle
-      });
-
-      currentAngle += sliceAngle;
-    });
-
-    return slices;
-  }
+  // =========================================================
+  // ACCURATE 5-STAGE (DUS) / 6-STAGE (DPGS) PIPELINE & OFFICES
+  // =========================================================
 
   get stagePipeline(): StagePipelineItem[] {
     const total = Math.max(1, this.totalRequestsCount);
-    const parallelCount = this.allRequests.filter(r => r.status === 'Pending' && r.currentStage === 'Parallel').length;
-    const deptCount = this.allRequests.filter(r => r.status === 'Pending' && r.currentStage === 'Department').length;
-    const principalCount = this.allRequests.filter(r => r.status === 'Pending' && r.currentStage === 'Principal').length;
-    const financeCount = this.allRequests.filter(r => r.status === 'Pending' && r.currentStage === 'Finance').length;
+    const active = (stage: string) =>
+      this.allRequests.filter(r => r.status !== 'Completed' && r.currentStage === stage).length;
+
+    const convCount = active('Convocation');
+    const parallelCount = active('Parallel');
+    const deptCount = active('Department');
+    const principalCount = active('Principal');
+    const financeCount = active('Finance');
+    const supervisorCount = active('Supervisor');
     const completedCount = this.clearedCount;
 
-    return [
+    const stages: StagePipelineItem[] = [
       {
         stage: 'Stage 1',
-        title: 'Clearance Offices',
-        description: 'Library, Hall Warden, USAB, DARUSO, Sports, Dean of Students, Smart Card',
-        count: parallelCount,
-        percentage: Math.round((parallelCount / total) * 100),
+        title: 'Convocation Office',
+        description: 'Alumni registration & convocation payment control number',
+        count: convCount,
+        percentage: Math.round((convCount / total) * 100),
         tone: 'blue'
       },
       {
         stage: 'Stage 2',
+        title: 'Parallel Offices',
+        description: 'Smart Card, Library, USAB, Hall Warden, DARUSO, Sports, Dean (+ conditional Workshop/Lab)',
+        count: parallelCount,
+        percentage: Math.round((parallelCount / total) * 100),
+        tone: 'teal'
+      },
+      {
+        stage: 'Stage 3',
         title: 'Academic Department',
-        description: 'Departmental review & Lecturer debt clearance',
+        description: 'Departmental approval & Lecturer debt clearance verification',
         count: deptCount,
         percentage: Math.round((deptCount / total) * 100),
         tone: 'amber'
       },
       {
-        stage: 'Stage 3',
+        stage: 'Stage 4',
         title: 'College Principal',
-        description: 'Principal review and college endorsement',
+        description: 'Collegiate endorsement by College / School Principal',
         count: principalCount,
         percentage: Math.round((principalCount / total) * 100),
         tone: 'indigo'
       },
       {
-        stage: 'Stage 4',
-        title: 'Finance & Convocation',
-        description: 'Bursar financial clearance & Convocation fee verification',
+        stage: 'Stage 5',
+        title: 'Finance Clearance',
+        description: 'Bursar financial zero-liability verification',
         count: financeCount,
         percentage: Math.round((financeCount / total) * 100),
         tone: 'teal'
-      },
-      {
-        stage: 'Stage 5',
-        title: 'Fully Cleared & Certified',
-        description: 'All 4 stages approved; clearance certificate & transcript unlocked',
-        count: completedCount,
-        percentage: Math.round((completedCount / total) * 100),
-        tone: 'green'
       }
     ];
+
+    if (this.includeSupervisorStage) {
+      stages.push({
+        stage: 'Stage 6',
+        title: 'Research Supervisor',
+        description: 'Postgraduate dissertation & undergraduate certificate final check',
+        count: supervisorCount,
+        percentage: Math.round((supervisorCount / total) * 100),
+        tone: 'purple'
+      });
+    }
+
+    stages.push({
+      stage: 'Completed',
+      title: 'Fully Cleared',
+      description: 'All mandatory clearance stages approved; certificate & transcript unlocked',
+      count: completedCount,
+      percentage: Math.round((completedCount / total) * 100),
+      tone: 'green'
+    });
+
+    return stages;
   }
 
   get officeStatusSummaries(): OfficeStatusSummary[] {
@@ -1000,8 +775,9 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
       for (const req of this.allRequests) {
         const match = (req.approvals || []).find(
-          a => String(a.office).toLowerCase() === office.toLowerCase()
-            || (office === 'Department' && String(a.office).toLowerCase() === String(req.department || '').toLowerCase())
+          a =>
+            String(a.office).toLowerCase() === office.toLowerCase() ||
+            (office === 'Department' && String(a.office).toLowerCase() === String(req.department || '').toLowerCase())
         );
         if (!match) continue;
         if (match.status === 'Approved') cleared += 1;
@@ -1011,9 +787,6 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
       const total = cleared + pending + rejected;
       const clearanceRate = total > 0 ? Math.round((cleared / total) * 100) : 0;
-      const clearedWidth = total > 0 ? Math.round((cleared / total) * 100) : 0;
-      const pendingWidth = total > 0 ? Math.round((pending / total) * 100) : 0;
-      const rejectedWidth = total > 0 ? Math.max(0, 100 - clearedWidth - pendingWidth) : 0;
 
       return {
         office,
@@ -1022,10 +795,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         pending,
         rejected,
         total,
-        clearanceRate,
-        clearedWidth,
-        pendingWidth,
-        rejectedWidth
+        clearanceRate
       };
     });
   }
@@ -1043,7 +813,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   }
 
   // =========================================================
-  // FILTERING & STUDENT PROGRESS HELPERS
+  // STUDENT CLEARANCE TRACKER FILTERING & PAGINATION
   // =========================================================
 
   get availableColleges(): string[] {
@@ -1052,6 +822,19 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
 
   get availableYears(): string[] {
     return Array.from(new Set(this.allRequests.map(r => this.getYearLabel(r)).filter(Boolean))).sort();
+  }
+
+  onStudentFilterChange(): void {
+    this.requestsPage = 1;
+  }
+
+  resetFilters(): void {
+    this.searchTerm = '';
+    this.selectedCollege = 'ALL';
+    this.selectedStatus = 'ALL';
+    this.selectedYear = 'ALL';
+    this.selectedOffice = 'ALL';
+    this.requestsPage = 1;
   }
 
   get filteredRequests(): ClearanceRequest[] {
@@ -1073,13 +856,41 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
           req.college,
           req.department,
           req.programme,
+          req.award,
           req.currentOffice,
           req.status
-        ].join(' ').toLowerCase();
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       return true;
     });
+  }
+
+  get requestsTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.requestsPageSize));
+  }
+
+  get paginatedRequests(): ClearanceRequest[] {
+    const safePage = Math.min(this.requestsPage, this.requestsTotalPages);
+    const start = (safePage - 1) * this.requestsPageSize;
+    return this.filteredRequests.slice(start, start + this.requestsPageSize);
+  }
+
+  nextRequestsPage(): void {
+    if (this.requestsPage < this.requestsTotalPages) {
+      this.requestsPage++;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevRequestsPage(): void {
+    if (this.requestsPage > 1) {
+      this.requestsPage--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   getApprovedOfficesCount(req: ClearanceRequest): number {
@@ -1087,7 +898,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   }
 
   getTotalOfficesCount(req: ClearanceRequest): number {
-    return (req.approvals || []).length || 11;
+    return (req.approvals || []).length || (this.isPostgraduateDirector ? 12 : 11);
   }
 
   getRequestProgressPercent(req: ClearanceRequest): number {
@@ -1104,37 +915,321 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     this.selectedRequestForModal = null;
   }
 
-  resetFilters(): void {
-    this.searchTerm = '';
-    this.selectedCollege = 'ALL';
-    this.selectedStatus = 'ALL';
-    this.selectedYear = 'ALL';
-    this.selectedOffice = 'ALL';
+  // =========================================================
+  // TRANSCRIPT ISSUANCE & DISPATCH LEDGER
+  // =========================================================
+
+  get transcriptRequests(): TranscriptPaymentRequest[] {
+    const base = this.transcriptService
+      .getAllRequests()
+      .filter(r => !!r.collectionMethod || !!r.receiptFileName || r.status === 'Receipt Submitted' || r.status === 'Paid');
+
+    const role = this.currentUser?.role;
+    if (role === 'Director of Postgraduate Studies') {
+      return base.filter(r => isPostgraduateEntity(r as any));
+    }
+    if (role === 'Director of Undergraduate Studies') {
+      return base.filter(r => !isPostgraduateEntity(r as any));
+    }
+    return base;
+  }
+
+  get dispatchedCount(): number {
+    return this.transcriptRequests.filter(r => r.dispatchStatus === 'Dispatched').length;
+  }
+
+  get pendingDispatchCount(): number {
+    return this.transcriptRequests.filter(r => r.dispatchStatus !== 'Dispatched').length;
+  }
+
+  get issuedByDirectorCount(): number {
+    return this.transcriptRequests.filter(r => r.issuedByDirector).length;
+  }
+
+  onTranscriptFilterChange(): void {
+    this.transcriptPage = 1;
+  }
+
+  setTranscriptStatusFilter(status: 'ALL' | 'Pending' | 'Dispatched'): void {
+    this.transcriptStatusFilter = status;
+    this.transcriptPage = 1;
+  }
+
+  resetTranscriptFilters(): void {
+    this.transcriptSearchTerm = '';
+    this.transcriptStatusFilter = 'ALL';
+    this.transcriptPage = 1;
+  }
+
+  get filteredTranscriptRequests(): TranscriptPaymentRequest[] {
+    let requests = this.transcriptRequests;
+    const term = (this.transcriptSearchTerm || '').trim().toLowerCase();
+    if (term) {
+      requests = requests.filter(
+        r =>
+          (r.studentName || '').toLowerCase().includes(term) ||
+          (r.registrationNumber || '').toLowerCase().includes(term) ||
+          (r.postingRegion || '').toLowerCase().includes(term) ||
+          (r.postingWard || '').toLowerCase().includes(term) ||
+          (r.postingPoBox || '').toLowerCase().includes(term) ||
+          (r.postingContactPhone || '').toLowerCase().includes(term) ||
+          (r.collectionMethod || '').toLowerCase().includes(term)
+      );
+    }
+    if (this.transcriptStatusFilter === 'Pending') {
+      requests = requests.filter(r => r.dispatchStatus !== 'Dispatched');
+    } else if (this.transcriptStatusFilter === 'Dispatched') {
+      requests = requests.filter(r => r.dispatchStatus === 'Dispatched');
+    }
+    return requests;
+  }
+
+  get transcriptTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredTranscriptRequests.length / this.transcriptPageSize));
+  }
+
+  get paginatedTranscriptRequests(): TranscriptPaymentRequest[] {
+    const safePage = Math.min(this.transcriptPage, this.transcriptTotalPages);
+    const start = (safePage - 1) * this.transcriptPageSize;
+    return this.filteredTranscriptRequests.slice(start, start + this.transcriptPageSize);
+  }
+
+  nextTranscriptPage(): void {
+    if (this.transcriptPage < this.transcriptTotalPages) {
+      this.transcriptPage++;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevTranscriptPage(): void {
+    if (this.transcriptPage > 1) {
+      this.transcriptPage--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  async issueTranscript(tReq: TranscriptPaymentRequest): Promise<void> {
+    if (this.issuingTranscriptId) return;
+    if (tReq.status !== 'Paid') {
+      this.toastService.warning(
+        'Finance Verification Required',
+        'Finance must verify and approve this transcript payment before the Directorate can issue it.'
+      );
+      return;
+    }
+
+    this.issuingTranscriptId = tReq.id;
+    try {
+      const updatedList = await this.transcriptService.issueTranscriptByDirectorAsync(tReq.id, this.directorTitle);
+      const updated = updatedList.find(item => item.id === tReq.id) || updatedList[0];
+      if (this.selectedTranscriptForModal && this.selectedTranscriptForModal.id === tReq.id && updated) {
+        this.selectedTranscriptForModal = updated;
+      }
+      this.toastService.success(
+        'Transcript Issued & Forwarded',
+        `Issued by ${this.directorTitle} and forwarded to the DUS Examination Office.`
+      );
+    } catch (err: any) {
+      const msg = err?.error?.message || err?.message || 'Could not issue transcript. Please try again.';
+      this.toastService.error('Issuance Failed', msg);
+    } finally {
+      this.issuingTranscriptId = null;
+    }
+  }
+
+  markDispatched(requestId: string): void {
+    if (this.transcriptService.markDispatched(requestId)) {
+      if (this.selectedTranscriptForModal && this.selectedTranscriptForModal.id === requestId) {
+        this.selectedTranscriptForModal = {
+          ...this.selectedTranscriptForModal,
+          dispatchStatus: 'Dispatched',
+          dispatchedAt: new Date().toISOString()
+        };
+      }
+      this.toastService.success('Dispatched', 'Transcript dispatch status updated to Dispatched.');
+    } else {
+      this.toastService.error('Action Failed', 'Could not update dispatch status.');
+    }
   }
 
   // =========================================================
-  // REPORT GENERATION & DOWNLOADS (CSV + PRINTABLE PDF)
+  // COLLECTION STATIONS MANAGEMENT
+  // =========================================================
+
+  get filteredStations(): CollectionStation[] {
+    const q = (this.stationSearchTerm || '').trim().toLowerCase();
+    if (!q) return this.stations;
+    return this.stations.filter(
+      s =>
+        s.name.toLowerCase().includes(q) ||
+        s.code.toLowerCase().includes(q) ||
+        s.region.toLowerCase().includes(q) ||
+        (s.district && s.district.toLowerCase().includes(q)) ||
+        s.address.toLowerCase().includes(q)
+    );
+  }
+
+  get activeStationsCount(): number {
+    return this.stations.filter(s => s.isActive).length;
+  }
+
+  get stationRegionsCount(): number {
+    return new Set(this.stations.map(s => s.region)).size;
+  }
+
+  loadStations(): void {
+    this.stationService.getAllStations().subscribe({
+      next: list => {
+        this.stations = list || [];
+      },
+      error: err => {
+        console.warn('Error loading collection stations:', err);
+      }
+    });
+  }
+
+  openCreateStationModal(): void {
+    this.editingStation = null;
+    this.stationForm = {
+      code: 'HUB-' + Math.floor(100 + Math.random() * 900),
+      name: '',
+      region: 'Dar es Salaam',
+      district: '',
+      address: '',
+      operatingHours: 'Mon - Fri: 08:00 - 16:00',
+      contactPhone: '',
+      contactEmail: '',
+      isActive: true
+    };
+    this.showStationModal = true;
+  }
+
+  openEditStationModal(st: CollectionStation): void {
+    this.editingStation = st;
+    this.stationForm = {
+      code: st.code,
+      name: st.name,
+      region: st.region,
+      district: st.district || '',
+      address: st.address,
+      operatingHours: st.operatingHours || 'Mon - Fri: 08:00 - 16:00',
+      contactPhone: st.contactPhone || '',
+      contactEmail: st.contactEmail || '',
+      isActive: st.isActive
+    };
+    this.showStationModal = true;
+  }
+
+  closeStationModal(): void {
+    if (this.isSavingStation) return;
+    this.showStationModal = false;
+    this.editingStation = null;
+  }
+
+  saveStation(): void {
+    if (this.isSavingStation) return;
+    if (!this.stationForm.name.trim() || !this.stationForm.code.trim() || !this.stationForm.address.trim()) {
+      this.toastService.error('Missing Fields', 'Station name, code, and physical address are required.');
+      return;
+    }
+
+    this.isSavingStation = true;
+    const request$ = this.editingStation
+      ? this.stationService.updateStation(this.editingStation.id, this.stationForm)
+      : this.stationService.createStation(this.stationForm);
+
+    const isEdit = !!this.editingStation;
+    request$.subscribe({
+      next: saved => {
+        this.isSavingStation = false;
+        this.toastService.success(
+          isEdit ? 'Station Updated' : 'Station Created',
+          `${isEdit ? 'Updated' : 'Created'} collection station "${saved.name}".`
+        );
+        this.showStationModal = false;
+        this.editingStation = null;
+        this.loadStations();
+      },
+      error: err => {
+        this.isSavingStation = false;
+        this.toastService.error(
+          isEdit ? 'Update Failed' : 'Creation Failed',
+          err?.error?.message || `Failed to ${isEdit ? 'update' : 'create'} station.`
+        );
+      }
+    });
+  }
+
+  toggleStationActive(st: CollectionStation): void {
+    if (this.togglingStationId) return;
+    const newStatus = !st.isActive;
+    this.togglingStationId = st.id;
+    this.stationService.updateStation(st.id, { isActive: newStatus }).subscribe({
+      next: () => {
+        st.isActive = newStatus;
+        this.togglingStationId = null;
+        this.toastService.success('Status Changed', `Station "${st.name}" is now ${newStatus ? 'Active' : 'Inactive'}.`);
+      },
+      error: err => {
+        this.togglingStationId = null;
+        this.toastService.error('Action Failed', err?.error?.message || 'Could not toggle station status.');
+      }
+    });
+  }
+
+  openDeleteStationModal(st: CollectionStation): void {
+    this.stationToDeactivate = st;
+  }
+
+  closeDeleteStationModal(): void {
+    if (this.isDeletingStation) return;
+    this.stationToDeactivate = null;
+  }
+
+  confirmDeleteStation(): void {
+    if (!this.stationToDeactivate || this.isDeletingStation) return;
+    const st = this.stationToDeactivate;
+    this.isDeletingStation = true;
+    this.stationService.deleteStation(st.id).subscribe({
+      next: () => {
+        this.isDeletingStation = false;
+        this.stationToDeactivate = null;
+        this.toastService.success('Station Deactivated', `Station "${st.name}" has been deactivated.`);
+        this.loadStations();
+      },
+      error: err => {
+        this.isDeletingStation = false;
+        this.toastService.error('Deactivation Failed', err?.error?.message || 'Could not deactivate station.');
+      }
+    });
+  }
+
+  // =========================================================
+  // ROLE-AWARE REPORT GENERATION (CSV & PRINTABLE PDF)
   // =========================================================
 
   downloadComprehensiveReport(): void {
     const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['OFFICIAL CLEARANCE SYSTEM ANALYTICS & STATISTICAL REPORT'],
+      [`UNIVERSITY OF DAR ES SALAAM (UDSM) - ${this.directorateName.toUpperCase()}`],
+      [`OFFICIAL ${this.studentLevelLabel.toUpperCase()} CLEARANCE ANALYTICS REPORT`],
       ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
+      ['Generated By', this.currentUser?.fullName || this.directorTitle],
       [],
       ['1. EXECUTIVE CLEARANCE SUMMARY', 'VALUE'],
-      ['Total Registered Undergraduate Students', String(this.totalRegisteredStudents)],
+      [`Total Registered ${this.studentLevelLabel} Students`, String(this.totalRegisteredStudents)],
       ['Total Clearance Requests Submitted', String(this.totalRequestsCount)],
       ['Cleared / Completed Students', String(this.clearedCount)],
       ['Pending / In-Progress Students', String(this.pendingCount)],
       ['Rejected / Action Required Students', String(this.rejectedCount)],
       ['Overall System Clearance Rate (%)', `${this.overallClearanceRate}%`],
-      ['Most Frequently Cleared College', this.topClearedCollege ? `${this.topClearedCollege.label} (${this.topClearedCollege.cleared} cleared / ${this.topClearedCollege.total} total)` : 'N/A'],
-      ['Most Frequently Cleared Year / Cohort', this.topClearedYear ? `${this.topClearedYear.label} (${this.topClearedYear.cleared} cleared / ${this.topClearedYear.total} total)` : 'N/A'],
-      ['Most Frequently Cleared Programme', this.topClearedProgramme ? `${this.topClearedProgramme.label} (${this.topClearedProgramme.cleared} cleared)` : 'N/A'],
+      [
+        'Top Cleared College',
+        this.topClearedCollege
+          ? `${this.topClearedCollege.label} (${this.topClearedCollege.cleared} / ${this.topClearedCollege.total})`
+          : 'N/A'
+      ],
       [],
-      ['2. CLEARANCE STATUS BY CORRESPONDING OFFICE', 'STAGE', 'CLEARED', 'PENDING', 'REJECTED', 'TOTAL', 'CLEARANCE RATE (%)'],
+      ['2. CLEARANCE STATUS BY CORRESPONDING OFFICE', 'STAGE', 'CLEARED', 'PENDING', 'REJECTED', 'TOTAL', 'RATE (%)'],
       ...this.officeStatusSummaries.map(o => [
         o.office,
         o.stageGroup,
@@ -1144,17 +1239,8 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         String(o.total),
         `${o.clearanceRate}%`
       ]),
-      [
-        'TOTAL OFFICE APPROVAL ACTIONS',
-        'All Stages',
-        String(this.totalOfficeApprovalsCount),
-        String(this.totalOfficePendingCount),
-        String(this.totalOfficeRejectedCount),
-        String(this.totalOfficeApprovalsCount + this.totalOfficePendingCount + this.totalOfficeRejectedCount),
-        '—'
-      ],
       [],
-      ['3. CLEARANCE ANALYTICS BY COLLEGE / SCHOOL', 'CLEARED', 'PENDING', 'REJECTED', 'TOTAL', 'CLEARANCE RATE (%)'],
+      ['3. CLEARANCE ANALYTICS BY COLLEGE / SCHOOL', 'CLEARED', 'PENDING', 'REJECTED', 'TOTAL', 'RATE (%)'],
       ...this.collegeBreakdown.map(c => [
         c.label,
         String(c.cleared),
@@ -1164,17 +1250,7 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         `${c.rate}%`
       ]),
       [],
-      ['4. CLEARANCE FREQUENCY BY ACADEMIC / STUDY YEAR', 'CLEARED', 'PENDING', 'REJECTED', 'TOTAL', 'CLEARANCE RATE (%)'],
-      ...this.yearBreakdown.map(y => [
-        y.label,
-        String(y.cleared),
-        String(y.pending),
-        String(y.rejected),
-        String(y.total),
-        `${y.rate}%`
-      ]),
-      [],
-      ['5. STUDENT CLEARANCE STATUS LEDGER', 'REGISTRATION NO.', 'STUDENT NAME', 'COLLEGE', 'DEPARTMENT', 'PROGRAMME', 'YEAR', 'CURRENT STAGE / OFFICE', 'OFFICES CLEARED', 'STATUS', 'SUBMITTED DATE'],
+      ['4. STUDENT CLEARANCE LEDGER', 'REG NO.', 'STUDENT NAME', 'COLLEGE', 'DEPARTMENT', 'PROGRAMME', 'YEAR', 'STAGE', 'OFFICES CLEARED', 'STATUS'],
       ...this.filteredRequests.map((r, idx) => [
         String(idx + 1),
         r.registrationNumber || 'N/A',
@@ -1183,53 +1259,20 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         r.department || '',
         r.programme || '',
         this.getYearLabel(r),
-        r.status === 'Completed' ? 'Completed (All Offices)' : `${r.currentStage} (${r.currentOffice || 'Pending'})`,
+        r.status === 'Completed' ? 'Completed' : `${r.currentStage} (${r.currentOffice || 'Pending'})`,
         `${this.getApprovedOfficesCount(r)} / ${this.getTotalOfficesCount(r)}`,
-        r.status,
-        r.requestDate ? new Date(r.requestDate).toLocaleDateString() : ''
+        r.status
       ])
     ];
 
     this.triggerCsvDownload(
       rows,
-      `udsm-undergraduate-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`
-    );
-  }
-
-  downloadOfficeBreakdownCsv(): void {
-    const rows: string[][] = [
-      ['UDSM DIRECTORATE OF UNDERGRADUATE STUDIES - CORRESPONDING OFFICES CLEARANCE REPORT'],
-      ['Generated At', new Date().toLocaleString()],
-      [],
-      ['Office Name', 'Clearance Stage', 'Cleared (Approved)', 'Pending', 'Rejected', 'Total Requests', 'Clearance Rate (%)'],
-      ...this.officeStatusSummaries.map(o => [
-        o.office,
-        o.stageGroup,
-        String(o.cleared),
-        String(o.pending),
-        String(o.rejected),
-        String(o.total),
-        `${o.clearanceRate}%`
-      ]),
-      [
-        'TOTAL',
-        'All Offices',
-        String(this.totalOfficeApprovalsCount),
-        String(this.totalOfficePendingCount),
-        String(this.totalOfficeRejectedCount),
-        String(this.totalOfficeApprovalsCount + this.totalOfficePendingCount + this.totalOfficeRejectedCount),
-        `${this.overallClearanceRate}%`
-      ]
-    ];
-
-    this.triggerCsvDownload(
-      rows,
-      `udsm-office-clearance-breakdown-${new Date().toISOString().slice(0, 10)}.csv`
+      `udsm-${this.directorateShort.toLowerCase()}-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`
     );
   }
 
   private printReportAsPdf(docTitle: string, sectionsHtml: string): void {
-    const filename = `${docTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const filename = `${this.directorateShort.toLowerCase()}-${docTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.pdf`;
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1239,58 +1282,47 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 28px; color: #173f58; background: #ffffff; line-height: 1.5; font-size: 12px; }
     .report-wrap { max-width: 900px; margin: 0 auto; }
-    .header { text-align: center; border-bottom: 2.5px solid #00679b; padding-bottom: 14px; margin-bottom: 20px; }
-    .inst-name { font-size: 17px; font-weight: 800; color: #063f66; letter-spacing: 0.5px; text-transform: uppercase; }
-    .dir-name { font-size: 12px; font-weight: 700; color: #bf8511; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+    .header { text-align: center; border-bottom: 2.5px solid #002147; padding-bottom: 14px; margin-bottom: 20px; }
+    .inst-name { font-size: 17px; font-weight: 800; color: #002147; letter-spacing: 0.5px; text-transform: uppercase; }
+    .dir-name { font-size: 12px; font-weight: 700; color: #b45309; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
     .doc-title { font-size: 15px; font-weight: 800; color: #00679b; margin-top: 10px; text-transform: uppercase; }
-    .meta-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; color: #617381; font-weight: 600; }
+    .meta-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; color: #64748b; font-weight: 600; }
     .data-table { width: 100%; border-collapse: collapse; margin-top: 14px; margin-bottom: 18px; font-size: 11.5px; }
     .data-table th, .data-table td { padding: 8px 10px; border: 1px solid #dce4e9; text-align: left; }
     .data-table th { background: #f0f7fb; color: #064d78; font-weight: 800; font-size: 11px; text-transform: uppercase; }
     .data-table tr:nth-child(even) { background: #fbfcfd; }
-    .data-table tfoot td { font-weight: 800; background: #eaf2f7; border-top: 2px solid #00679b; color: #063f66; }
+    .data-table tfoot td { font-weight: 800; background: #eaf2f7; border-top: 2px solid #002147; color: #002147; }
     .num-col { text-align: right; }
-    .badge-cleared { color: #167344; font-weight: 700; }
+    .badge-cleared { color: #15803d; font-weight: 700; }
     .badge-pending { color: #b45309; font-weight: 700; }
-    .badge-rejected { color: #b42318; font-weight: 700; }
-    .footer { margin-top: 26px; padding-top: 12px; border-top: 1px solid #dce4e9; display: flex; justify-content: space-between; font-size: 10.5px; color: #71818b; }
+    .badge-rejected { color: #b91c1c; font-weight: 700; }
+    .footer { margin-top: 26px; padding-top: 12px; border-top: 1px solid #dce4e9; display: flex; justify-content: space-between; font-size: 10.5px; color: #64748b; }
     .no-print { text-align: center; margin-top: 20px; }
-    .btn-print { padding: 9px 20px; background: #00679b; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
-    @media print {
-      body { padding: 0; }
-      .no-print { display: none !important; }
-      @page { margin: 15mm; size: auto; }
-    }
+    .btn-print { padding: 9px 20px; background: #002147; color: #fff; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; }
+    @media print { body { padding: 0; } .no-print { display: none !important; } @page { margin: 15mm; size: auto; } }
   </style>
 </head>
 <body>
   <div class="report-wrap">
     <div class="header">
       <div class="inst-name">University of Dar es Salaam</div>
-      <div class="dir-name">Directorate of Undergraduate Studies</div>
+      <div class="dir-name">${this.directorateName} (${this.directorateShort})</div>
       <div class="doc-title">${docTitle}</div>
       <div class="meta-bar">
         <span>Generated: ${new Date().toLocaleString()}</span>
-        <span>By: ${this.currentUser?.fullName || 'Director of Undergraduate Studies'}</span>
+        <span>By: ${this.currentUser?.fullName || this.directorTitle}</span>
       </div>
     </div>
-
     ${sectionsHtml}
-
     <div class="footer">
       <span>Smart Clearance Management Information System (MIS)</span>
-      <span>Official Institutional Report · University of Dar es Salaam</span>
+      <span>Official ${this.directorateShort} Institutional Report · University of Dar es Salaam</span>
     </div>
-
     <div class="no-print">
       <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
     </div>
   </div>
-  <script>
-    window.addEventListener('load', () => {
-      setTimeout(() => { window.print(); }, 350);
-    });
-  </script>
+  <script>window.addEventListener('load', () => { setTimeout(() => { window.print(); }, 350); });</script>
 </body>
 </html>`;
 
@@ -1307,46 +1339,32 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
   }
 
   downloadRegisteredStudentsPdf(): void {
-    const tableRows = this.registeredStudentsByYear.map(y => `
+    const tableRows = this.registeredStudentsByYear
+      .map(
+        y => `
       <tr>
         <td><strong>${y.label}</strong></td>
         <td class="num-col"><strong>${y.totalRegistered}</strong></td>
         <td class="num-col">${y.percentage}%</td>
         <td class="num-col">${y.clearanceRequests}</td>
         <td class="num-col"><span class="badge-cleared">${y.clearedRequests}</span></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Academic Year</th>
-            <th class="num-col">Total Registered Students</th>
-            <th class="num-col">Enrollment Share (%)</th>
-            <th class="num-col">Clearance Requests Submitted</th>
-            <th class="num-col">Cleared Students</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL</td>
-            <td class="num-col">${this.totalRegisteredStudents}</td>
-            <td class="num-col">100%</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">${this.clearedCount}</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Total Registered Students by Study Year Report', html);
+        <thead><tr><th>Academic Year</th><th class="num-col">Total Registered</th><th class="num-col">Share (%)</th><th class="num-col">Requests</th><th class="num-col">Cleared</th></tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="5">No data available.</td></tr>'}</tbody>
+        <tfoot><tr><td>TOTAL</td><td class="num-col">${this.totalRegisteredStudents}</td><td class="num-col">100%</td><td class="num-col">${this.totalRequestsCount}</td><td class="num-col">${this.clearedCount}</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`Total Registered ${this.studentLevelLabel} Students by Cohort`, html);
   }
 
   downloadCollegesPdf(): void {
-    const tableRows = this.collegeBreakdown.map(c => `
+    const tableRows = this.collegeBreakdown
+      .map(
+        c => `
       <tr>
         <td><strong>${c.label}</strong></td>
         <td class="num-col"><span class="badge-cleared">${c.cleared}</span></td>
@@ -1354,41 +1372,23 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         <td class="num-col"><span class="badge-rejected">${c.rejected}</span></td>
         <td class="num-col"><strong>${c.total}</strong></td>
         <td class="num-col"><strong>${c.rate}%</strong></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>College / School Name</th>
-            <th class="num-col">Cleared</th>
-            <th class="num-col">Pending</th>
-            <th class="num-col">Rejected</th>
-            <th class="num-col">Total Requests</th>
-            <th class="num-col">Clearance Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL (ALL COLLEGES)</td>
-            <td class="num-col">${this.clearedCount}</td>
-            <td class="num-col">${this.pendingCount}</td>
-            <td class="num-col">${this.rejectedCount}</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">${this.overallClearanceRate}%</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Clearance Statistics by College and School', html);
+        <thead><tr><th>College / School</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="6">No data available.</td></tr>'}</tbody>
+        <tfoot><tr><td>TOTAL</td><td class="num-col">${this.clearedCount}</td><td class="num-col">${this.pendingCount}</td><td class="num-col">${this.rejectedCount}</td><td class="num-col">${this.totalRequestsCount}</td><td class="num-col">${this.overallClearanceRate}%</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`${this.studentLevelLabel} Clearance Statistics by College`, html);
   }
 
   downloadYearHistogramPdf(): void {
-    const tableRows = this.yearHistogramData.map(y => `
+    const tableRows = this.yearHistogramData
+      .map(
+        y => `
       <tr>
         <td><strong>${y.yearLabel}</strong></td>
         <td class="num-col"><span class="badge-cleared">${y.cleared}</span></td>
@@ -1396,83 +1396,23 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         <td class="num-col"><span class="badge-rejected">${y.rejected}</span></td>
         <td class="num-col"><strong>${y.total}</strong></td>
         <td class="num-col"><strong>${y.clearanceRate}%</strong></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Academic Year</th>
-            <th class="num-col">Cleared</th>
-            <th class="num-col">Pending</th>
-            <th class="num-col">Rejected</th>
-            <th class="num-col">Total Clearance Requests</th>
-            <th class="num-col">Clearance Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL (ALL COHORTS)</td>
-            <td class="num-col">${this.clearedCount}</td>
-            <td class="num-col">${this.pendingCount}</td>
-            <td class="num-col">${this.rejectedCount}</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">${this.overallClearanceRate}%</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Academic Year Clearance Distribution (Histogram Data)', html);
-  }
-
-  downloadYearPiePdf(): void {
-    const tableRows = this.yearPieSlices.map(s => `
-      <tr>
-        <td><strong>${s.yearLabel}</strong></td>
-        <td class="num-col"><strong>${s.total}</strong></td>
-        <td class="num-col"><strong>${s.percentage}%</strong></td>
-        <td class="num-col"><span class="badge-cleared">${s.cleared}</span></td>
-        <td class="num-col"><span class="badge-pending">${s.pending}</span></td>
-        <td class="num-col"><span class="badge-rejected">${s.rejected}</span></td>
-      </tr>
-    `).join('');
-
-    const html = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Academic Year</th>
-            <th class="num-col">Total Students</th>
-            <th class="num-col">Share Proportion</th>
-            <th class="num-col">Cleared</th>
-            <th class="num-col">Pending</th>
-            <th class="num-col">Rejected</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">100%</td>
-            <td class="num-col">${this.clearedCount}</td>
-            <td class="num-col">${this.pendingCount}</td>
-            <td class="num-col">${this.rejectedCount}</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Clearance Share and Cohort Proportion by Academic Year', html);
+        <thead><tr><th>Academic Year</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="6">No data available.</td></tr>'}</tbody>
+        <tfoot><tr><td>TOTAL</td><td class="num-col">${this.clearedCount}</td><td class="num-col">${this.pendingCount}</td><td class="num-col">${this.rejectedCount}</td><td class="num-col">${this.totalRequestsCount}</td><td class="num-col">${this.overallClearanceRate}%</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`${this.studentLevelLabel} Clearance Distribution by Cohort`, html);
   }
 
   downloadProgrammesPdf(): void {
-    const tableRows = this.programmeBreakdown.map(p => `
+    const tableRows = this.programmeBreakdown
+      .map(
+        p => `
       <tr>
         <td><strong>${p.label}</strong></td>
         <td class="num-col"><span class="badge-cleared">${p.cleared}</span></td>
@@ -1480,80 +1420,37 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         <td class="num-col"><span class="badge-rejected">${p.rejected}</span></td>
         <td class="num-col"><strong>${p.total}</strong></td>
         <td class="num-col"><strong>${p.rate}%</strong></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Undergraduate Programme</th>
-            <th class="num-col">Cleared</th>
-            <th class="num-col">Pending</th>
-            <th class="num-col">Rejected</th>
-            <th class="num-col">Total Requests</th>
-            <th class="num-col">Clearance Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL</td>
-            <td class="num-col">${this.clearedCount}</td>
-            <td class="num-col">${this.pendingCount}</td>
-            <td class="num-col">${this.rejectedCount}</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">${this.overallClearanceRate}%</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Undergraduate Programmes Clearance Report', html);
+        <thead><tr><th>${this.studentLevelLabel} Programme</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
+        <tbody>${tableRows || '<tr><td colspan="6">No data available.</td></tr>'}</tbody>
+        <tfoot><tr><td>TOTAL</td><td class="num-col">${this.clearedCount}</td><td class="num-col">${this.pendingCount}</td><td class="num-col">${this.rejectedCount}</td><td class="num-col">${this.totalRequestsCount}</td><td class="num-col">${this.overallClearanceRate}%</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`${this.studentLevelLabel} Programmes Clearance Report`, html);
   }
 
   downloadOverallStatusPdf(): void {
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Clearance Status</th>
-            <th class="num-col">Student Count</th>
-            <th class="num-col">Proportion (%)</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Clearance Status</th><th class="num-col">Student Count</th><th class="num-col">Proportion (%)</th></tr></thead>
         <tbody>
-          <tr>
-            <td><strong class="badge-cleared">Cleared (Completed)</strong></td>
-            <td class="num-col"><strong>${this.clearedCount}</strong></td>
-            <td class="num-col">${this.overallClearanceRate}%</td>
-          </tr>
-          <tr>
-            <td><strong class="badge-pending">Pending (In Progress)</strong></td>
-            <td class="num-col"><strong>${this.pendingCount}</strong></td>
-            <td class="num-col">${this.pendingRate}%</td>
-          </tr>
-          <tr>
-            <td><strong class="badge-rejected">Rejected (Action Needed)</strong></td>
-            <td class="num-col"><strong>${this.rejectedCount}</strong></td>
-            <td class="num-col">${this.rejectedRate}%</td>
-          </tr>
+          <tr><td><strong class="badge-cleared">Cleared (Completed)</strong></td><td class="num-col"><strong>${this.clearedCount}</strong></td><td class="num-col">${this.overallClearanceRate}%</td></tr>
+          <tr><td><strong class="badge-pending">Pending (In Progress)</strong></td><td class="num-col"><strong>${this.pendingCount}</strong></td><td class="num-col">${this.pendingRate}%</td></tr>
+          <tr><td><strong class="badge-rejected">Rejected (Action Needed)</strong></td><td class="num-col"><strong>${this.rejectedCount}</strong></td><td class="num-col">${this.rejectedRate}%</td></tr>
         </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL CLEARANCE REQUESTS</td>
-            <td class="num-col">${this.totalRequestsCount}</td>
-            <td class="num-col">100%</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Overall Institutional Clearance Status Report', html);
+        <tfoot><tr><td>TOTAL CLEARANCE REQUESTS</td><td class="num-col">${this.totalRequestsCount}</td><td class="num-col">100%</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`Overall ${this.studentLevelLabel} Clearance Status Report`, html);
   }
 
   downloadOfficeBreakdownPdf(): void {
-    const tableRows = this.officeStatusSummaries.map(o => `
+    const tableRows = this.officeStatusSummaries
+      .map(
+        o => `
       <tr>
         <td><strong>${o.office}</strong></td>
         <td>${o.stageGroup}</td>
@@ -1562,310 +1459,100 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
         <td class="num-col"><span class="badge-rejected">${o.rejected}</span></td>
         <td class="num-col"><strong>${o.total}</strong></td>
         <td class="num-col"><strong>${o.clearanceRate}%</strong></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Corresponding Office</th>
-            <th>Clearance Stage</th>
-            <th class="num-col">Cleared</th>
-            <th class="num-col">Pending</th>
-            <th class="num-col">Rejected</th>
-            <th class="num-col">Total</th>
-            <th class="num-col">Clearance Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>TOTAL (ALL OFFICES)</td>
-            <td>All Stages</td>
-            <td class="num-col">${this.totalOfficeApprovalsCount}</td>
-            <td class="num-col">${this.totalOfficePendingCount}</td>
-            <td class="num-col">${this.totalOfficeRejectedCount}</td>
-            <td class="num-col">${this.totalOfficeApprovalsCount + this.totalOfficePendingCount + this.totalOfficeRejectedCount}</td>
-            <td class="num-col">${this.overallClearanceRate}%</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Corresponding Offices Clearance Status Report', html);
+        <thead><tr><th>Corresponding Office</th><th>Stage</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot><tr><td>TOTAL (ALL OFFICES)</td><td>All Stages</td><td class="num-col">${this.totalOfficeApprovalsCount}</td><td class="num-col">${this.totalOfficePendingCount}</td><td class="num-col">${this.totalOfficeRejectedCount}</td><td class="num-col">${this.totalOfficeApprovalsCount + this.totalOfficePendingCount + this.totalOfficeRejectedCount}</td><td class="num-col">${this.overallClearanceRate}%</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`Corresponding Offices Clearance Report (${this.directorateShort})`, html);
   }
 
   downloadTranscriptLedgerPdf(): void {
-    const rows = this.transcriptRequests.map((r, i) => `
+    const rows = this.transcriptRequests
+      .map(
+        (r, i) => `
       <tr>
         <td class="num-col">${i + 1}</td>
         <td><strong>${r.studentName}</strong></td>
         <td><code>${r.registrationNumber}</code></td>
-        <td class="num-col">${r.transcriptCount} copy</td>
+        <td>${r.status}</td>
         <td>${r.collectionMethod || 'Physical Collection'}</td>
-        <td>${r.postingRegion || 'Dar es Salaam'} ${r.postingWard ? '(' + r.postingWard + ')' : ''}</td>
-        <td>${r.postingPoBox && r.postingPoBox !== '—' ? 'P.O. Box ' + r.postingPoBox : '—'}</td>
+        <td>${r.postingRegion || 'Dar es Salaam'}${r.postingWard ? ' (' + r.postingWard + ')' : ''}</td>
         <td>${r.postingContactPhone || '—'}</td>
         <td><strong class="${r.dispatchStatus === 'Dispatched' ? 'badge-cleared' : 'badge-pending'}">${r.dispatchStatus || 'Pending Dispatch'}</strong></td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       <table class="data-table">
-        <thead>
-          <tr>
-            <th class="num-col">#</th>
-            <th>Student Name</th>
-            <th>Registration No.</th>
-            <th class="num-col">Copies</th>
-            <th>Collection Method</th>
-            <th>Region / City</th>
-            <th>P.O. Box</th>
-            <th>Contact Phone</th>
-            <th>Dispatch Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows || '<tr><td colspan="9" style="text-align:center;">No transcript requests recorded yet.</td></tr>'}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">TOTAL REQUESTS: ${this.transcriptRequests.length}</td>
-            <td colspan="3">DISPATCHED: ${this.dispatchedCount}</td>
-            <td colspan="3">AWAITING DISPATCH: ${this.pendingDispatchCount}</td>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    this.printReportAsPdf('Transcript Collection & Delivery Ledger (DUS)', html);
+        <thead><tr><th class="num-col">#</th><th>Student Name</th><th>Reg No.</th><th>Payment</th><th>Collection</th><th>Region</th><th>Phone</th><th>Dispatch</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="8" style="text-align:center;">No transcript requests recorded yet.</td></tr>'}</tbody>
+        <tfoot><tr><td colspan="3">TOTAL: ${this.transcriptRequests.length}</td><td colspan="2">ISSUED: ${this.issuedByDirectorCount}</td><td colspan="3">DISPATCHED: ${this.dispatchedCount} · PENDING: ${this.pendingDispatchCount}</td></tr></tfoot>
+      </table>`;
+    this.printReportAsPdf(`Transcript Collection & Delivery Ledger (${this.directorateShort})`, html);
   }
 
   downloadComprehensivePdf(): void {
     const summaryHtml = `
       <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px;">
         <div style="padding:10px; border:1px solid #dce4e9; border-radius:6px; background:#f8fafc;">
-          <div style="font-size:10px; font-weight:800; color:#617381; text-transform:uppercase;">Total Registered</div>
-          <div style="font-size:18px; font-weight:800; color:#064d78; margin-top:2px;">${this.totalRegisteredStudents}</div>
+          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Total Registered (${this.directorateShort})</div>
+          <div style="font-size:18px; font-weight:800; color:#002147; margin-top:2px;">${this.totalRegisteredStudents}</div>
         </div>
         <div style="padding:10px; border:1px solid #dce4e9; border-radius:6px; background:#f8fafc;">
-          <div style="font-size:10px; font-weight:800; color:#617381; text-transform:uppercase;">Cleared Students</div>
-          <div style="font-size:18px; font-weight:800; color:#167344; margin-top:2px;">${this.clearedCount} (${this.overallClearanceRate}%)</div>
+          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Cleared Students</div>
+          <div style="font-size:18px; font-weight:800; color:#15803d; margin-top:2px;">${this.clearedCount} (${this.overallClearanceRate}%)</div>
         </div>
         <div style="padding:10px; border:1px solid #dce4e9; border-radius:6px; background:#f8fafc;">
-          <div style="font-size:10px; font-weight:800; color:#617381; text-transform:uppercase;">Active / Pending</div>
-          <div style="font-size:18px; font-weight:800; color:#b45309; margin-top:2px;">${this.pendingCount} (${this.pendingRate}%)</div>
+          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Pending / Rejected</div>
+          <div style="font-size:18px; font-weight:800; color:#b45309; margin-top:2px;">${this.pendingCount} / ${this.rejectedCount}</div>
         </div>
-      </div>
-    `;
+      </div>`;
 
-    const officeRows = this.officeStatusSummaries.map(o => `
+    const officeRows = this.officeStatusSummaries
+      .map(
+        o => `
       <tr>
-        <td>${o.office}</td>
-        <td>${o.stageGroup}</td>
-        <td class="num-col">${o.cleared}</td>
-        <td class="num-col">${o.pending}</td>
-        <td class="num-col">${o.rejected}</td>
-        <td class="num-col">${o.total}</td>
+        <td>${o.office}</td><td>${o.stageGroup}</td>
+        <td class="num-col">${o.cleared}</td><td class="num-col">${o.pending}</td>
+        <td class="num-col">${o.rejected}</td><td class="num-col">${o.total}</td>
         <td class="num-col">${o.clearanceRate}%</td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
-    const collegeRows = this.collegeBreakdown.map(c => `
+    const collegeRows = this.collegeBreakdown
+      .map(
+        c => `
       <tr>
         <td>${c.label}</td>
-        <td class="num-col">${c.cleared}</td>
-        <td class="num-col">${c.pending}</td>
-        <td class="num-col">${c.rejected}</td>
-        <td class="num-col">${c.total}</td>
+        <td class="num-col">${c.cleared}</td><td class="num-col">${c.pending}</td>
+        <td class="num-col">${c.rejected}</td><td class="num-col">${c.total}</td>
         <td class="num-col">${c.rate}%</td>
-      </tr>
-    `).join('');
+      </tr>`
+      )
+      .join('');
 
     const html = `
       ${summaryHtml}
-      <h3 style="font-size:13px; color:#063f66; margin: 16px 0 6px; text-transform:uppercase;">1. Clearance By Corresponding Office</h3>
+      <h3 style="font-size:13px; color:#002147; margin: 16px 0 6px; text-transform:uppercase;">1. Clearance By Corresponding Office</h3>
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>Office</th><th>Stage</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Office</th><th>Stage</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
         <tbody>${officeRows}</tbody>
       </table>
-
-      <h3 style="font-size:13px; color:#063f66; margin: 18px 0 6px; text-transform:uppercase;">2. Clearance By College / School</h3>
+      <h3 style="font-size:13px; color:#002147; margin: 18px 0 6px; text-transform:uppercase;">2. Clearance By College / School</h3>
       <table class="data-table">
-        <thead>
-          <tr>
-            <th>College / School</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th>
-          </tr>
-        </thead>
-        <tbody>${collegeRows}</tbody>
-      </table>
-    `;
+        <thead><tr><th>College / School</th><th class="num-col">Cleared</th><th class="num-col">Pending</th><th class="num-col">Rejected</th><th class="num-col">Total</th><th class="num-col">Rate</th></tr></thead>
+        <tbody>${collegeRows || '<tr><td colspan="6">No data available.</td></tr>'}</tbody>
+      </table>`;
 
-    this.printReportAsPdf('Institution-Wide Clearance Executive Report', html);
-  }
-
-  downloadRegisteredStudentsExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['TOTAL REGISTERED UNDERGRADUATE STUDENTS BY STUDY YEAR REPORT'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      ['Total Registered Students', String(this.totalRegisteredStudents)],
-      [],
-      ['Academic Year', 'Total Registered Students', 'Enrollment Share (%)', 'Clearance Requests Submitted', 'Cleared Requests'],
-      ...this.registeredStudentsByYear.map(y => [
-        y.label,
-        String(y.totalRegistered),
-        `${y.percentage}%`,
-        String(y.clearanceRequests),
-        String(y.clearedRequests)
-      ]),
-      [
-        'TOTAL',
-        String(this.totalRegisteredStudents),
-        '100%',
-        String(this.totalRequestsCount),
-        String(this.clearedCount)
-      ]
-    ];
-    this.triggerCsvDownload(rows, `udsm-registered-students-by-year-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  downloadCollegesExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['CLEARANCE STATISTICS BY COLLEGE / SCHOOL REPORT'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      [],
-      ['College / School Name', 'Cleared Requests', 'Pending Requests', 'Rejected Requests', 'Total Requests', 'Clearance Rate (%)'],
-      ...this.collegeBreakdown.map(c => [
-        c.label,
-        String(c.cleared),
-        String(c.pending),
-        String(c.rejected),
-        String(c.total),
-        `${c.rate}%`
-      ]),
-      [
-        'TOTAL',
-        String(this.clearedCount),
-        String(this.pendingCount),
-        String(this.rejectedCount),
-        String(this.totalRequestsCount),
-        `${this.overallClearanceRate}%`
-      ]
-    ];
-    this.triggerCsvDownload(rows, `udsm-college-clearance-stats-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  downloadYearHistogramExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['ACADEMIC YEAR CLEARANCE VOLUME & STATUS DISTRIBUTION (HISTOGRAM DATA)'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      [],
-      ['Academic Year', 'Cleared (Completed)', 'Pending (In Progress)', 'Rejected', 'Total Clearance Requests', 'Clearance Rate (%)'],
-      ...this.yearHistogramData.map(y => [
-        y.yearLabel,
-        String(y.cleared),
-        String(y.pending),
-        String(y.rejected),
-        String(y.total),
-        `${y.clearanceRate}%`
-      ]),
-      [
-        'TOTAL',
-        String(this.clearedCount),
-        String(this.pendingCount),
-        String(this.rejectedCount),
-        String(this.totalRequestsCount),
-        `${this.overallClearanceRate}%`
-      ]
-    ];
-    this.triggerCsvDownload(rows, `udsm-year-clearance-histogram-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  downloadYearPieExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['CLEARANCE SHARE & COHORT PROPORTION BY ACADEMIC YEAR (PIE CHART DATA)'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      [],
-      ['Academic Year', 'Total Students', 'Share Proportion (%)', 'Cleared', 'Pending', 'Rejected'],
-      ...this.yearPieSlices.map(s => [
-        s.yearLabel,
-        String(s.total),
-        `${s.percentage}%`,
-        String(s.cleared),
-        String(s.pending),
-        String(s.rejected)
-      ]),
-      [
-        'TOTAL',
-        String(this.totalRequestsCount),
-        '100%',
-        String(this.clearedCount),
-        String(this.pendingCount),
-        String(this.rejectedCount)
-      ]
-    ];
-    this.triggerCsvDownload(rows, `udsm-year-clearance-share-pie-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  downloadProgrammesExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['UNDERGRADUATE PROGRAMMES CLEARANCE STATISTICS REPORT'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      [],
-      ['Programme Name', 'Cleared', 'Pending', 'Rejected', 'Total Requests', 'Clearance Rate (%)'],
-      ...this.programmeBreakdown.map(p => [
-        p.label,
-        String(p.cleared),
-        String(p.pending),
-        String(p.rejected),
-        String(p.total),
-        `${p.rate}%`
-      ]),
-      [
-        'TOTAL',
-        String(this.clearedCount),
-        String(this.pendingCount),
-        String(this.rejectedCount),
-        String(this.totalRequestsCount),
-        `${this.overallClearanceRate}%`
-      ]
-    ];
-    this.triggerCsvDownload(rows, `udsm-programmes-clearance-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  downloadOverallStatusExcel(): void {
-    const rows: string[][] = [
-      ['UNIVERSITY OF DAR ES SALAAM (UDSM) - DIRECTORATE OF UNDERGRADUATE STUDIES'],
-      ['OVERALL INSTITUTIONAL CLEARANCE SYSTEM STATUS REPORT'],
-      ['Generated At', new Date().toLocaleString()],
-      ['Generated By', this.currentUser?.fullName || 'Director of Undergraduate Studies'],
-      [],
-      ['Clearance Status', 'Student Count', 'Percentage (%)'],
-      ['Cleared (Completed)', String(this.clearedCount), `${this.overallClearanceRate}%`],
-      ['Pending (In Progress)', String(this.pendingCount), `${this.pendingRate}%`],
-      ['Rejected (Action Needed)', String(this.rejectedCount), `${this.rejectedRate}%`],
-      ['TOTAL REQUESTS', String(this.totalRequestsCount), '100%']
-    ];
-    this.triggerCsvDownload(rows, `udsm-overall-clearance-status-${new Date().toISOString().slice(0, 10)}.csv`);
-  }
-
-  printExecutiveReport(): void {
-    window.print();
+    this.printReportAsPdf(`${this.studentLevelLabel} Clearance Executive Report`, html);
   }
 
   private triggerCsvDownload(rows: string[][], filename: string): void {
@@ -1877,7 +1564,9 @@ export class DirectorUndergraduateStudiesDashboard implements OnInit {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
 }

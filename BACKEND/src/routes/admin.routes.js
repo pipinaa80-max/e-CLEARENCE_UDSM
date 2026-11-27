@@ -29,8 +29,8 @@ router.post('/users/bulk-upload', handleSpreadsheetUpload, AdminController.bulkU
 router.post('/users/seed-sample-data', blockInProduction, AdminController.seedSampleData);
 router.delete('/users/:userId', AdminController.deleteUser);
 router.delete('/users', AdminController.deleteUsers);
-router.delete('/maintenance/students/clean-orphans', AdminController.cleanOrphanStudents);
-router.delete('/maintenance/students/purge', AdminController.purgeStudents);
+router.delete('/maintenance/students/clean-orphans', blockInProduction, AdminController.cleanOrphanStudents);
+router.delete('/maintenance/students/purge', blockInProduction, AdminController.purgeStudents);
 router.put('/users/:userId/role', AdminController.updateUserRole);
 router.get('/clearance-requests', AdminController.getAllClearanceRequests);
 router.get('/export/excel', AdminController.exportUsersToExcel);

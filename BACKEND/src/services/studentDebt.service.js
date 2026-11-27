@@ -3,14 +3,47 @@ const { getDb } = require('../config/database');
 const NotificationService = require('./notification.service');
 const AuditService = require('./audit.service');
 const {
+  matchesDepartmentScope,
+  matchesCollegeScope,
+  loadAcademicCatalogs
+} = require('../utils/academicScope');
+const {
   parseDebtFlagCsvBuffer,
   parseDebtFlagExcelBuffer,
   generateDebtFlagTemplateCsvBuffer
 } = require('../utils/spreadsheet');
 
+function formatDebtFlag(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    studentId: row.student_id,
+    registrationNumber: row.registration_number,
+    studentName: row.student_name,
+    college: row.college || '',
+    department: row.department || '',
+    programme: row.programme || '',
+    amount: Number(row.amount || 0),
+    category: row.item_category || 'Equipment / Item Rental',
+    dueDate: row.due_date ? new Date(row.due_date).toISOString() : null,
+    reason: row.reason || '',
+    negotiationNotes: row.negotiation_notes || null,
+    status: row.status || 'OPEN',
+    lecturerId: row.lecturer_id,
+    lecturerName: row.lecturer_name || '',
+    lecturerEmail: row.lecturer_email || null,
+    lecturerPhone: row.lecturer_phone || null,
+    resolutionNote: row.resolution_note || null,
+    createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    resolvedAt: row.resolved_at ? new Date(row.resolved_at).toISOString() : null
+  };
+}
+
 class StudentDebtService {
   /**
-   * Look up a student's clearance status before a lecturer flags a debt
+   * Look up any student's clearance status before a lecturer flags a debt/liability.
+   * Lecturers are allowed to look up and flag ANY student across the university;
+   * the returned college & department always reflect the student's own academic unit.
    */
   static async lookupClearance(lecturer, registrationNumber) {
     if (!registrationNumber || !registrationNumber.trim()) {
@@ -21,23 +54,22 @@ class StudentDebtService {
     const regNo = registrationNumber.trim();
     const db = getDb();
 
-    // Find student in students table or users table
+    // Find student in both students and users tables for complete authoritative info
     const student = await db('students').whereRaw('LOWER(registration_number) = ?', [regNo.toLowerCase()]).first();
-    const studentAccount = !student
-      ? await db('users').whereRaw('LOWER(registration_number) = ?', [regNo.toLowerCase()]).first()
-      : null;
+    const studentAccount = await db('users').whereRaw('LOWER(registration_number) = ?', [regNo.toLowerCase()]).first();
 
-    const studentName = student ? student.full_name
-      : studentAccount ? studentAccount.full_name
-      : `Pre-registered Student (${regNo})`;
+    if (studentAccount && studentAccount.role && studentAccount.role !== 'STUDENT') {
+      const err = new Error('The registration number does not belong to a student account.');
+      err.statusCode = 400;
+      throw err;
+    }
 
-    const college = student ? student.college
-      : studentAccount ? studentAccount.college
-      : lecturer.college || 'College of Information and Communication Technologies (CoICT)';
+    const studentName = student?.full_name
+      || studentAccount?.full_name
+      || `Pre-registered Student (${regNo})`;
 
-    const department = student ? student.department
-      : studentAccount ? studentAccount.department
-      : lecturer.department || 'Department of Computer Science & Engineering';
+    const college = (student?.college || studentAccount?.college || lecturer?.college || '').trim();
+    const department = (student?.department || studentAccount?.department || lecturer?.department || '').trim();
 
     // Find latest clearance request
     const latestRequest = await db('clearance_requests')
@@ -50,16 +82,17 @@ class StudentDebtService {
     const isCleared = (student && (student.clearance_status === 'CLEARED' || student.clearance_status === 'COMPLETED'))
       || (latestRequest && (latestRequest.status === 'CLEARED' || latestRequest.status === 'COMPLETED'));
 
-    const status = isCleared ? 'CLEARED'
+    const clearanceStatus = isCleared ? 'CLEARED'
       : !latestRequest ? 'NOT_STARTED'
       : latestRequest.status;
 
     return {
-      registrationNumber: regNo,
+      registrationNumber: student?.registration_number || studentAccount?.registration_number || regNo,
       studentName,
       college,
       department,
-      status,
+      clearanceStatus,
+      status: clearanceStatus,
       currentStage: latestRequest ? latestRequest.current_stage : null,
       cleared: Boolean(isCleared)
     };
@@ -70,25 +103,40 @@ class StudentDebtService {
    */
   static async listForLecturer(lecturerId) {
     const db = getDb();
-    return db('student_debt_flags')
+    const rows = await db('student_debt_flags')
       .where({ lecturer_id: String(lecturerId) })
       .orderBy('created_at', 'desc');
+    return rows.map(formatDebtFlag);
   }
 
   /**
-   * List open debt flags for a department
+   * List open debt flags routed to a Department Officer's department (catalog-aware).
+   * Because flags always store the student's own college & department, any flag raised
+   * by any lecturer across the university automatically surfaces here for the student's
+   * Department Officer.
    */
   static async listOpenForDepartment(user) {
     const db = getDb();
-    let query = db('student_debt_flags').where({ status: 'OPEN' });
+    const rows = await db('student_debt_flags')
+      .where({ status: 'OPEN' })
+      .orderBy('created_at', 'desc');
 
-    if (user.role === 'DEPARTMENT_OFFICER' && user.department) {
-      query = query.andWhere((builder) => {
-        builder.whereRaw('LOWER(department) LIKE ?', [`%${user.department.trim().toLowerCase()}%`]);
-      });
+    if (user.role === 'DEPARTMENT_OFFICER' && (user.department || user.college)) {
+      const { activeColleges, activeDepartments } = await loadAcademicCatalogs(db, user);
+      return rows
+        .filter((flag) => {
+          if (user.college && flag.college && !matchesCollegeScope(flag.college, user.college, activeColleges)) {
+            return false;
+          }
+          if (user.department && !matchesDepartmentScope(flag.department, user.department, activeDepartments)) {
+            return false;
+          }
+          return true;
+        })
+        .map(formatDebtFlag);
     }
 
-    return query.orderBy('created_at', 'desc');
+    return rows.map(formatDebtFlag);
   }
 
   /**
@@ -100,14 +148,18 @@ class StudentDebtService {
       return [];
     }
 
-    return db('student_debt_flags')
+    const rows = await db('student_debt_flags')
       .where({ status: 'OPEN' })
       .andWhereRaw('LOWER(registration_number) = ?', [user.registrationNumber.trim().toLowerCase()])
       .orderBy('created_at', 'desc');
+    return rows.map(formatDebtFlag);
   }
 
   /**
-   * Create a student debt/liability flag
+   * Create a student debt/liability flag.
+   * Lecturers can flag any student across the university, and the recorded flag
+   * reflects the student's own college and department so it routes to the student's
+   * Department Officer.
    */
   static async create(lecturer, data, reqContext = {}) {
     const db = getDb();
@@ -131,7 +183,7 @@ class StudentDebtService {
       throw err;
     }
 
-    // Look up student details
+    // Look up authoritative student details from both students and users tables
     const studentProfile = await db('students').whereRaw('LOWER(registration_number) = ?', [regNo.toLowerCase()]).first();
     const studentUser = await db('users').whereRaw('LOWER(registration_number) = ?', [regNo.toLowerCase()]).first();
 
@@ -141,18 +193,50 @@ class StudentDebtService {
       throw err;
     }
 
-    const studentCollege = studentUser?.college || studentProfile?.college || lecturer.college || 'CoICT';
-    const studentDepartment = studentUser?.department || studentProfile?.department || lecturer.department || 'Computer Science & Engineering';
-    const studentName = data.studentName?.trim() || studentUser?.full_name || studentProfile?.full_name || `Pre-registered Student (${regNo})`;
-    const studentId = studentUser ? String(studentUser.id) : (studentProfile ? String(studentProfile.id) : `prereg-${regNo.toLowerCase()}`);
-    const programme = studentUser?.programme || studentProfile?.programme || 'External / Pre-registered';
+    // Prevent flagging students who have already completed clearance
+    const latestRequest = studentProfile
+      ? await db('clearance_requests')
+          .where({ student_id: studentProfile.id })
+          .orderBy('submitted_at', 'desc')
+          .first()
+      : null;
+
+    const isAlreadyCleared =
+      (studentProfile && (studentProfile.clearance_status === 'CLEARED' || studentProfile.clearance_status === 'COMPLETED')) ||
+      (latestRequest && (latestRequest.status === 'CLEARED' || latestRequest.status === 'COMPLETED'));
+
+    if (isAlreadyCleared) {
+      const err = new Error('This student is already cleared. A debt flag cannot be recorded for a cleared student.');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // Always reflect the student's own college & department first so it routes to their Department Officer
+    const studentCollege = (
+      studentProfile?.college ||
+      studentUser?.college ||
+      data.college ||
+      lecturer.college ||
+      ''
+    ).trim();
+    const studentDepartment = (
+      studentProfile?.department ||
+      studentUser?.department ||
+      data.department ||
+      lecturer.department ||
+      ''
+    ).trim();
+    const canonicalRegNo = studentProfile?.registration_number || studentUser?.registration_number || regNo;
+    const studentName = studentProfile?.full_name || studentUser?.full_name || data.studentName?.trim() || `Pre-registered Student (${canonicalRegNo})`;
+    const studentId = studentUser ? String(studentUser.id) : (studentProfile ? String(studentProfile.id) : `prereg-${canonicalRegNo.toLowerCase()}`);
+    const programme = studentProfile?.programme || studentUser?.programme || 'External / Pre-registered';
 
     const id = crypto.randomUUID();
 
     const newFlag = {
       id,
       student_id: studentId,
-      registration_number: regNo,
+      registration_number: canonicalRegNo,
       student_name: studentName,
       college: studentCollege,
       department: studentDepartment,
@@ -179,7 +263,7 @@ class StudentDebtService {
         userId: studentUser.id,
         studentId: studentProfile ? String(studentProfile.id) : null,
         title: 'Clearance Flagged: Outstanding Debt / Rental Record',
-        message: `Lecturer ${lecturer.fullName || lecturer.username} recorded an outstanding liability (${newFlag.item_category}) of TZS ${newFlag.amount}: ${newFlag.reason}. Please contact your lecturer to resolve this.`,
+        message: `Lecturer ${lecturer.fullName || lecturer.username} recorded an outstanding liability (${newFlag.item_category}) of TZS ${newFlag.amount}: ${newFlag.reason}. This has been routed to ${studentDepartment || 'your department'} and locks Department clearance until resolved.`,
         type: 'CLEARANCE_UPDATE'
       });
     }
@@ -188,12 +272,12 @@ class StudentDebtService {
       userId: lecturer.id,
       username: lecturer.email || lecturer.username,
       action: 'CREATE_STUDENT_DEBT_FLAG',
-      details: `Lecturer flagged student ${regNo} with amount TZS ${newFlag.amount} for ${newFlag.reason}`,
+      details: `Lecturer flagged student ${canonicalRegNo} (${studentCollege || 'N/A'} / ${studentDepartment || 'N/A'}) with amount TZS ${newFlag.amount} for ${newFlag.reason}`,
       ipAddress: reqContext.ip,
       userAgent: reqContext.userAgent
     });
 
-    return newFlag;
+    return formatDebtFlag(newFlag);
   }
 
   /**
@@ -209,11 +293,14 @@ class StudentDebtService {
       throw err;
     }
 
-    // Role check: must be creator or lecturer in same college/department or Admin/Superuser
+    // Role check: creator, Admin/Superuser, or same-department lecturer (catalog-aware)
     const isCreator = String(lecturer.id) === String(flag.lecturer_id);
     const isAdmin = ['ADMIN', 'ADMINISTRATOR', 'SUPERUSER'].includes(lecturer.role);
-    const isSameDept = lecturer.department && flag.department &&
-      lecturer.department.toLowerCase().includes(flag.department.toLowerCase());
+    let isSameDept = false;
+    if (!isCreator && !isAdmin && lecturer.department && flag.department) {
+      const { activeDepartments } = await loadAcademicCatalogs(db, lecturer);
+      isSameDept = matchesDepartmentScope(flag.department, lecturer.department, activeDepartments);
+    }
 
     if (!isCreator && !isAdmin && !isSameDept) {
       const err = new Error('You can only resolve debt records you recorded or records in your registered department.');
@@ -253,7 +340,7 @@ class StudentDebtService {
       userAgent: reqContext.userAgent
     });
 
-    return updatedFlag;
+    return formatDebtFlag(updatedFlag);
   }
 
   /**
@@ -280,12 +367,19 @@ class StudentDebtService {
     }
 
     let count = 0;
-    for (const row of rows) {
+    const errors = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       try {
         await this.create(lecturer, row, reqContext);
         count += 1;
       } catch (err) {
         console.warn(`[StudentDebtService.bulkUpload] Failed to create flag for ${row.registrationNumber}:`, err.message);
+        errors.push({
+          row: i + 2,
+          registrationNumber: row.registrationNumber || 'Unknown',
+          message: err.message || 'Could not create debt flag'
+        });
       }
     }
 
@@ -293,12 +387,16 @@ class StudentDebtService {
       userId: lecturer.id,
       username: lecturer.email || lecturer.username,
       action: 'BULK_UPLOAD_STUDENT_DEBT_FLAGS',
-      details: `Lecturer bulk-flagged ${count} student(s) from ${file.originalname}`,
+      details: `Lecturer bulk-flagged ${count} student(s) (skipped ${errors.length}) from ${file.originalname}`,
       ipAddress: reqContext.ip,
       userAgent: reqContext.userAgent
     });
 
-    return count;
+    return {
+      count,
+      skippedCount: errors.length,
+      errors
+    };
   }
 
   static generateCsvTemplate() {

@@ -13,6 +13,7 @@ router.get(
   authenticate,
   authorize(
     'DIRECTOR_OF_UNDERGRADUATE_STUDIES',
+    'DIRECTOR_OF_POSTGRADUATE_STUDIES',
     'DUS_SECRETARY',
     'ADMINISTRATOR',
     'ADMIN',
@@ -26,7 +27,7 @@ router.get(
 router.post(
   '/',
   authenticate,
-  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
+  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DIRECTOR_OF_POSTGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
   CollectionStationController.createStation
 );
 
@@ -34,7 +35,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
+  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DIRECTOR_OF_POSTGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
   CollectionStationController.updateStation
 );
 
@@ -42,7 +43,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
+  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DIRECTOR_OF_POSTGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
   CollectionStationController.deleteStation
 );
 

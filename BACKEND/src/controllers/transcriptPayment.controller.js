@@ -67,6 +67,28 @@ class TranscriptPaymentController {
       return next(err);
     }
   }
+
+  static async directorate(req, res, next) {
+    try {
+      const list = await TranscriptPaymentService.getDirectorateRequests(req.user);
+      return res.status(200).json(list);
+    } catch (err) {
+      return next(err);
+    }
+  }
+
+  static async issue(req, res, next) {
+    try {
+      const directorTitle = req.body?.directorTitle || null;
+      const result = await TranscriptPaymentService.issueByDirector(req.user, req.params.id, directorTitle, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      return res.status(200).json(result);
+    } catch (err) {
+      return next(err);
+    }
+  }
 }
 
 module.exports = TranscriptPaymentController;

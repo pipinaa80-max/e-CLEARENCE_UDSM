@@ -1,11 +1,7 @@
-// convocation.component.ts - Fixed for students and live demo
+// convocation.component.ts — Student Step 1 (Convocation Payment Control Number)
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormsModule,
-  ReactiveFormsModule
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
@@ -14,21 +10,23 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConvocationService } from '../../core/services/convocation.service';
 import { ClearanceRequest } from '../../core/models/clearance.model';
+import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../../shared/components/student-sidebar/student-sidebar';
 
 @Component({
   selector: 'app-convocation',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     ReactiveFormsModule,
-    RouterLink
+    RouterLink,
+    DashboardHeaderComponent,
+    StudentSidebarComponent
   ],
   templateUrl: './convocation.html',
   styleUrl: './convocation.css'
 })
 export class ConvocationComponent implements OnInit {
-
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly convocationService = inject(ConvocationService);
@@ -37,151 +35,73 @@ export class ConvocationComponent implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
-  // =====================================================
-  // STUDENT FORM
-  // =====================================================
-
-  form = this.fb.nonNullable.group({
-    controlNumber: [''],
-    file: [null as File | null]
-  });
-
-  get hasControlNumber(): boolean {
-    const val = this.form.controls.controlNumber.value;
-    return !!val && val.trim().length > 0;
-  }
-
-  selectedFileName = '';
-  selectedFile: File | null = null;
+  sidebarOpen = false;
+  isFetching = true;
+  isSubmitting = false;
   message = '';
-  isLoading = false;
+  errorMessage = '';
 
   request: ClearanceRequest | null = null;
 
-  // =====================================================
-  // CURRENT USER
-  // =====================================================
+  form = this.fb.nonNullable.group({
+    controlNumber: [
+      '',
+      [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{4,40}$/)]
+    ]
+  });
 
   get currentUser() {
     return this.authService.getCurrentUser();
   }
 
-  // =====================================================
-  ngOnInit(): void {
-    this.loadData();
-  }
-
-  // =====================================================
-  // STUDENT REQUEST
-  // =====================================================
-
   get studentRequest(): ClearanceRequest | null {
     return this.request;
   }
 
-  // =====================================================
-  // CHECK IF CONVOCATION IS APPROVED
-  // =====================================================
+  get convocationApproval() {
+    return this.studentRequest?.approvals?.find(
+      approval => approval.office === 'Convocation'
+    ) ?? null;
+  }
 
   get isConvocationApproved(): boolean {
-    const req = this.studentRequest;
-    if (!req) return false;
+    return this.convocationApproval?.status === 'Approved';
+  }
 
-    const convocationApproval = req.approvals.find(
-      approval => approval.office === 'Convocation'
+  get isConvocationRejected(): boolean {
+    return this.convocationApproval?.status === 'Rejected';
+  }
+
+  get rejectionComment(): string {
+    return this.convocationApproval?.comment || 'Please verify and resubmit a valid payment control number.';
+  }
+
+  get submittedControlNumber(): string {
+    return (
+      this.studentRequest?.convocation?.submittedControlNumber ||
+      this.studentRequest?.convocation?.controlNumber ||
+      ''
     );
-
-    return convocationApproval?.status === 'Approved';
   }
 
-  // =====================================================
-  // CHECK IF CAN CONTINUE TO STEP 2
-  // =====================================================
-
-  get canContinueToStep2(): boolean {
-    return this.isConvocationApproved;
+  get isControlNumberValid(): boolean {
+    const val = this.form.controls.controlNumber.value.trim();
+    return /^[A-Za-z0-9-]{4,40}$/.test(val);
   }
 
-  // =====================================================
-  // CONTINUE TO STEP 2
-  // =====================================================
-
-  continueToStep2(): void {
-    this.isLoading = true;
-    this.message = '';
-
-    const req = this.studentRequest;
-    if (!req) {
-      this.toastService.warning('Request Missing', 'No active clearance request found.');
-      this.isLoading = false;
+  ngOnInit(): void {
+    const user = this.currentUser;
+    if (!user || user.role !== 'Student') {
+      this.router.navigate(['/login']);
       return;
     }
 
-    if (!this.isConvocationApproved) {
-      this.toastService.warning('Action Required', 'Convocation approval is required first.');
-      this.isLoading = false;
-      return;
-    }
-
-    try {
-      if (req.currentStage === 'Convocation') {
-        this.clearanceService.advanceStage(req.id, 'Parallel');
-      }
-
-      this.notificationService.createNotification(
-        req.studentId,
-        'Step 2 Started',
-        'Convocation clearance approved! You can now proceed with other clearance offices.',
-        'success'
-      );
-
-      this.toastService.success('Step 2 Started', 'Convocation clearance approved! Redirecting to clearance status...');
-      this.message = '✅ Step 2 started successfully! Redirecting...';
-
-      setTimeout(() => {
-        this.router.navigate(['/clearance/status']);
-      }, 1000);
-
-    } catch (error: any) {
-      console.error('Error continuing to step 2:', error);
-      this.toastService.error('Stage Error', 'Failed to continue to Step 2. Please try again.');
-      this.isLoading = false;
-    }
+    // Show cached request immediately if present, then always sync authoritative state from backend
+    this.loadLocalCache();
+    this.fetchLiveRequest();
   }
 
-  // =====================================================
-  // CHECK IF CONTROL NUMBER WAS REQUESTED
-  // =====================================================
-
-  get controlNumberRequested(): boolean {
-    const req = this.studentRequest;
-    if (!req) return false;
-    return !!(req.convocation?.controlNumberRequestedAt);
-  }
-
-  // =====================================================
-  // CONTROL NUMBER
-  // =====================================================
-
-  get controlNumber(): string {
-    const req = this.studentRequest;
-    return req?.convocation?.controlNumber ?? '';
-  }
-
-  // =====================================================
-  // RECEIPT SUBMITTED
-  // =====================================================
-
-  get receiptSubmitted(): boolean {
-    const req = this.studentRequest;
-    return !!(req?.convocation?.receiptSubmittedAt);
-  }
-
-  // =====================================================
-  // LOAD DATA - Student only
-  // =====================================================
-
-  loadData(): void {
+  private loadLocalCache(): void {
     const user = this.currentUser;
     if (user && user.role === 'Student') {
       const requests = this.clearanceService.getStudentRequests(user.id);
@@ -191,147 +111,84 @@ export class ConvocationComponent implements OnInit {
     }
   }
 
-  // =====================================================
-  // REFRESH DATA - Student only
-  // =====================================================
-
-  refreshData(): void {
-    this.loadData();
-    this.message = 'Data refreshed successfully.';
-
-    setTimeout(() => {
-      this.message = '';
-    }, 3000);
+  private fetchLiveRequest(): void {
+    this.isFetching = true;
+    this.clearanceService.fetchMyRequest().subscribe({
+      next: (serverRequest) => {
+        if (serverRequest) {
+          this.request = serverRequest;
+        } else {
+          this.loadLocalCache();
+        }
+        this.isFetching = false;
+      },
+      error: () => {
+        this.loadLocalCache();
+        this.isFetching = false;
+      }
+    });
   }
-
-  // =====================================================
-  // STUDENT REQUEST CONTROL NUMBER
-  // =====================================================
-
-  requestControlNumber(): void {
-    this.message = '';
-
-    const req = this.studentRequest;
-
-    if (!req) {
-      this.toastService.warning('Not Found', 'No active clearance request was found.');
-      return;
-    }
-
-    if (req.convocation?.controlNumber) {
-      this.toastService.info('Already Issued', 'You already have a control number: ' + req.convocation.controlNumber);
-      this.message = 'You already have a control number: ' + req.convocation.controlNumber;
-      return;
-    }
-
-    this.clearanceService.requestControlNumber(req.id);
-    this.loadData();
-
-    this.toastService.success('Control Number Ready', 'Control number generated. Please pay and submit your receipt.');
-    this.message = 'Control number ready. Please make payment and upload your payment receipt below.';
-  }
-
-  // =====================================================
-  // FILE SELECTED
-  // =====================================================
-
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-
-    if (!file) return;
-
-    this.selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.selectedFileName = file.name;
-      this.form.controls.file.setValue(reader.result as any);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // =====================================================
-  // SUBMIT WRITTEN CONTROL NUMBER - Student only
-  // =====================================================
 
   submit(): void {
     this.message = '';
-    this.isLoading = true;
+    this.errorMessage = '';
 
     const user = this.currentUser;
     const req = this.studentRequest;
-    const controlNum = this.form.controls.controlNumber.value?.trim();
+    const controlNum = this.form.controls.controlNumber.value.trim();
 
     if (!user || !req) {
-      this.toastService.warning('Request Required', 'No active clearance request found.');
-      this.isLoading = false;
+      this.errorMessage = 'No active clearance request found. Please start your clearance request first.';
       return;
     }
 
-    if (!controlNum) {
-      this.toastService.warning('Control Number Required', 'Please enter your written payment control number.');
-      this.isLoading = false;
+    if (!/^[A-Za-z0-9-]{4,40}$/.test(controlNum)) {
+      this.errorMessage = 'Enter a valid payment control number (4 to 40 letters, numbers, or hyphens).';
       return;
     }
 
-    const receiptData = (this.form.controls.file.value as unknown as string) || `Control Number: ${controlNum}`;
+    this.isSubmitting = true;
 
-    const completeLocalSubmission = () => {
-      this.clearanceService.submitConvocationReceipt(req.id, receiptData, controlNum);
-      this.notificationService.createNotification(
-        user.id,
-        'Payment Control Number Submitted',
-        `Your payment control number (${controlNum}) has been submitted. Proceeding to Step 2 clearance.`,
-        'success'
-      );
-      this.toastService.success('Control Number Submitted', 'Control number submitted! Proceeding to Step 2 (Parallel Offices).');
-      this.message = 'Control number submitted successfully. Proceeding to Step 2...';
-      this.isLoading = false;
-      this.loadData();
-      this.router.navigate(['/clearance/status']);
-    };
-
-    if (this.selectedFile) {
-      this.convocationService.submitReceipt({
-        studentId: user.id,
-        controlNumber: controlNum,
-        receiptNumber: `CN-${controlNum}`,
-        paymentDate: new Date().toISOString().slice(0, 10)
-      }, this.selectedFile).subscribe({
-        next: () => {
-          completeLocalSubmission();
-        },
-        error: (error) => {
-          console.warn('Backend unavailable, proceeding with local registration:', error);
-          completeLocalSubmission();
-        }
-      });
-    } else {
-      // Create lightweight blob for control number submission without requiring a physical file
-      const controlFile = new File([`Payment Control Number: ${controlNum}\nStudent: ${user.fullName || user.username}\nDate: ${new Date().toISOString()}`], `Control_Number_${controlNum}.txt`, { type: 'text/plain' });
-      this.convocationService.submitReceipt({
-        studentId: user.id,
-        controlNumber: controlNum,
-        receiptNumber: `CN-${controlNum}`,
-        paymentDate: new Date().toISOString().slice(0, 10)
-      }, controlFile).subscribe({
-        next: () => {
-          completeLocalSubmission();
-        },
-        error: (error) => {
-          console.warn('Backend upload unavailable, proceeding with registered control number:', error);
-          completeLocalSubmission();
-        }
-      });
-    }
+    this.convocationService.submitReceipt({
+      studentId: user.id,
+      controlNumber: controlNum,
+      receiptNumber: `CN-${controlNum}`,
+      paymentDate: new Date().toISOString().slice(0, 10)
+    }).subscribe({
+      next: () => {
+        this.clearanceService.submitConvocationReceipt(req.id, `Control Number: ${controlNum}`, controlNum);
+        this.clearanceService.fetchMyRequest().subscribe({
+          next: (updated) => {
+            if (updated) this.request = updated;
+          }
+        });
+        this.notificationService.getStudentNotifications().subscribe();
+        this.toastService.success(
+          'Control Number Submitted',
+          'Convocation Step 1 complete! Proceeding to Step 2 (Parallel Offices).'
+        );
+        this.message = 'Control number submitted successfully. Proceeding to Step 2...';
+        this.isSubmitting = false;
+        this.router.navigate(['/clearance/status']);
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        const msg = err?.error?.message || 'Unable to submit payment control number. Please check your connection and try again.';
+        this.errorMessage = msg;
+        this.toastService.error('Submission Failed', msg);
+      }
+    });
   }
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
+  continueToStep2(): void {
+    this.router.navigate(['/clearance/status']);
+  }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
   }
 }

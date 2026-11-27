@@ -46,4 +46,18 @@ router.put(
   TranscriptPaymentController.updateCollection
 );
 
+router.get(
+  '/directorate',
+  authenticate,
+  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DIRECTOR_OF_POSTGRADUATE_STUDIES', 'DUS_SECRETARY', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
+  TranscriptPaymentController.directorate
+);
+
+router.post(
+  '/:id/issue',
+  authenticate,
+  authorize('DIRECTOR_OF_UNDERGRADUATE_STUDIES', 'DIRECTOR_OF_POSTGRADUATE_STUDIES', 'ADMINISTRATOR', 'ADMIN', 'SUPERUSER'),
+  TranscriptPaymentController.issue
+);
+
 module.exports = router;

@@ -13,6 +13,21 @@ function createHttpError(statusCode, message) {
   return err;
 }
 
+/**
+ * Prevent regional station secretaries (DUS_SECRETARY with a regional stationCode)
+ * from invoking central Main Campus DUS verification, dispatch, or personnel CRUD.
+ */
+function assertCentralDusAuthority(actor = {}, actionLabel = 'perform this central DUS operation') {
+  const role = String(actor?.role || '').toUpperCase();
+  const actorStation = actor?.stationCode ? String(actor.stationCode).trim().toUpperCase() : '';
+  if (role === ROLES.DUS_SECRETARY && actorStation && actorStation !== 'UDSM-MAIN') {
+    throw createHttpError(
+      403,
+      `Forbidden: Regional station secretaries (${actorStation}) are not authorized to ${actionLabel}.`
+    );
+  }
+}
+
 function toIsoOrNull(val) {
   if (!val) return null;
   const d = val instanceof Date ? val : new Date(val);
@@ -34,6 +49,8 @@ function mapStudentToConsignmentResponse(s) {
     programme: s.programme || null,
     college: s.college || null,
     department: s.department || null,
+    award: s.award || null,
+    isPostgraduate: Boolean(s.is_postgraduate),
     graduationYear: s.graduation_year || null,
     clearanceStatus: s.clearance_status || 'PENDING',
     certificateVerified: Boolean(s.certificate_verified),
@@ -138,27 +155,127 @@ class DusSecretaryService {
   // =========================================================================
 
   /**
-   * GET /api/v1/dus-secretary/students?query=
+   * GET /api/v1/dus-secretary/students?query=&paginated=true&page=1&pageSize=25&section=&filterTab=
+   * Supports both legacy array mode (no paginated param) and full server-side pagination
+   * with authoritative SQL KPI counts across the entire students registry (all 5,316+ students).
    */
-  static async getStudents(query) {
+  static async getStudents(queryOrOpts) {
     const db = getDb();
-    let qb = db('students');
+    const isPaginatedObj = queryOrOpts && typeof queryOrOpts === 'object' && queryOrOpts.paginated;
 
-    if (query && String(query).trim()) {
-      const pattern = `%${String(query).trim().toLowerCase()}%`;
-      qb = qb.where(function () {
-        this.whereRaw('LOWER(COALESCE(registration_number, "")) LIKE ?', [pattern])
-          .orWhereRaw('LOWER(COALESCE(full_name, "")) LIKE ?', [pattern])
-          .orWhereRaw('LOWER(COALESCE(email, "")) LIKE ?', [pattern])
-          .orWhereRaw('LOWER(COALESCE(programme, "")) LIKE ?', [pattern])
-          .orWhereRaw('LOWER(COALESCE(college, "")) LIKE ?', [pattern]);
-      });
-      const rows = await qb.orderBy('created_at', 'desc').limit(200);
+    const applySearchAndFilters = (qb, query, section, filterTab) => {
+      if (query && String(query).trim()) {
+        const pattern = `%${String(query).trim().toLowerCase()}%`;
+        qb.where(function () {
+          this.whereRaw('LOWER(COALESCE(registration_number, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(full_name, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(email, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(programme, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(college, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(phone_number, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(digital_signature_hash, "")) LIKE ?', [pattern])
+            .orWhereRaw('LOWER(COALESCE(station_name, "")) LIKE ?', [pattern]);
+        });
+      }
+
+      const sec = String(section || '').toLowerCase();
+      const tab = String(filterTab || 'ALL').toUpperCase();
+
+      if (sec === 'verification') {
+        if (tab === 'PENDING') {
+          qb.andWhereRaw('COALESCE(certificate_verified, 0) = 0');
+        } else if (tab === 'DISPATCHED') {
+          qb.andWhere('certificate_verified', 1);
+        }
+      } else if (sec === 'dispatch') {
+        if (tab === 'PENDING') {
+          qb.andWhereRaw("COALESCE(dispatch_status, 'Pending Dispatch') NOT IN ('Dispatched', 'Collected')");
+        } else if (tab === 'DISPATCHED') {
+          qb.andWhereRaw("dispatch_status IN ('Dispatched', 'Collected')");
+        }
+      }
+      return qb;
+    };
+
+    if (!isPaginatedObj) {
+      const query = typeof queryOrOpts === 'string' ? queryOrOpts : queryOrOpts?.query;
+      let qb = db('students');
+      if (query && String(query).trim()) {
+        applySearchAndFilters(qb, query, '', 'ALL');
+        const rows = await qb.orderBy('created_at', 'desc').limit(200);
+        return rows.map(mapStudentToConsignmentResponse);
+      }
+      const rows = await qb.orderBy('created_at', 'desc').limit(500);
       return rows.map(mapStudentToConsignmentResponse);
     }
 
-    const rows = await qb.orderBy('created_at', 'desc').limit(500);
-    return rows.map(mapStudentToConsignmentResponse);
+    const { query, section, filterTab } = queryOrOpts;
+    const pageSize = Math.min(100, Math.max(1, parseInt(queryOrOpts.pageSize, 10) || 25));
+    const requestedPage = Math.max(1, parseInt(queryOrOpts.page, 10) || 1);
+
+    // 1. Authoritative KPI summary across ALL students in database
+    const [kpiRow] = await db('students').select(
+      db.raw('COUNT(*) AS totalStudents'),
+      db.raw('SUM(CASE WHEN certificate_verified = 1 THEN 1 ELSE 0 END) AS verifiedCount'),
+      db.raw('SUM(CASE WHEN COALESCE(certificate_verified, 0) = 0 THEN 1 ELSE 0 END) AS unverifiedCount'),
+      db.raw("SUM(CASE WHEN certificate_verified = 1 AND COALESCE(dispatch_status, 'Pending Dispatch') NOT IN ('Dispatched', 'Collected') THEN 1 ELSE 0 END) AS pendingDispatchCount"),
+      db.raw("SUM(CASE WHEN dispatch_status = 'Dispatched' AND COALESCE(intake_status, '') NOT IN ('Received at Station', 'Collected by Student') THEN 1 ELSE 0 END) AS inTransitCount"),
+      db.raw("SUM(CASE WHEN intake_status = 'Received at Station' THEN 1 ELSE 0 END) AS inVaultCount"),
+      db.raw("SUM(CASE WHEN dispatch_status = 'Collected' OR intake_status = 'Collected by Student' THEN 1 ELSE 0 END) AS collectedCount")
+    );
+
+    // 2. Per-station pipeline counts across ALL students
+    const stationRows = await db('students')
+      .whereNotNull('station_code')
+      .andWhere('station_code', '!=', '')
+      .groupBy('station_code')
+      .select(
+        'station_code',
+        db.raw('COUNT(*) AS total'),
+        db.raw("SUM(CASE WHEN dispatch_status = 'Dispatched' AND COALESCE(intake_status, '') NOT IN ('Received at Station', 'Collected by Student') THEN 1 ELSE 0 END) AS inTransit"),
+        db.raw("SUM(CASE WHEN intake_status = 'Received at Station' THEN 1 ELSE 0 END) AS inVault"),
+        db.raw("SUM(CASE WHEN dispatch_status = 'Collected' OR intake_status = 'Collected by Student' THEN 1 ELSE 0 END) AS collected")
+      );
+
+    // 3. Filtered total & exact paginated slice
+    const countQb = applySearchAndFilters(db('students'), query, section, filterTab);
+    const [countRow] = await countQb.count({ total: '*' });
+    const filteredTotal = Number(countRow?.total || 0);
+    const totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+    const safePage = Math.min(requestedPage, totalPages);
+    const offset = (safePage - 1) * pageSize;
+
+    const itemsQb = applySearchAndFilters(db('students'), query, section, filterTab);
+    const rows = await itemsQb
+      .orderByRaw('COALESCE(certificate_verified, 0) DESC')
+      .orderBy('updated_at', 'desc')
+      .orderBy('created_at', 'desc')
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      items: rows.map(mapStudentToConsignmentResponse),
+      total: filteredTotal,
+      page: safePage,
+      pageSize,
+      totalPages,
+      stats: {
+        totalStudents: Number(kpiRow?.totalStudents || 0),
+        verifiedCount: Number(kpiRow?.verifiedCount || 0),
+        unverifiedCount: Number(kpiRow?.unverifiedCount || 0),
+        pendingDispatchCount: Number(kpiRow?.pendingDispatchCount || 0),
+        inTransitCount: Number(kpiRow?.inTransitCount || 0),
+        inVaultCount: Number(kpiRow?.inVaultCount || 0),
+        collectedCount: Number(kpiRow?.collectedCount || 0)
+      },
+      stationStats: (stationRows || []).map(r => ({
+        stationCode: r.station_code,
+        total: Number(r.total || 0),
+        inTransit: Number(r.inTransit || 0),
+        inVault: Number(r.inVault || 0),
+        collected: Number(r.collected || 0)
+      }))
+    };
   }
 
   /**
@@ -206,6 +323,7 @@ class DusSecretaryService {
    * POST /api/v1/dus-secretary/verify-certificate
    */
   static async verifyCertificate(payload = {}, actor = {}, reqContext = {}) {
+    assertCentralDusAuthority(actor, 'verify or seal education certificates');
     const studentId = payload.studentId ? String(payload.studentId).trim() : '';
     if (!studentId) {
       throw createHttpError(400, 'Student ID or Registration Number is required.');
@@ -231,14 +349,14 @@ class DusSecretaryService {
 
     if (rawHash) {
       finalSignatureHash = rawHash;
-      finalSignedBy = rawSignedBy || 'DUS Directorate Secretary';
+      finalSignedBy = rawSignedBy || 'DUS Examination Office';
       finalSignedAt = now;
       updates.digital_signature_hash = finalSignatureHash;
       updates.signed_by = finalSignedBy;
       updates.signed_at = finalSignedAt;
     } else if (verified && (!student.digital_signature_hash || !String(student.digital_signature_hash).trim())) {
       finalSignatureHash = generateNineDigitCode('UDSM-DUS-SIG-');
-      finalSignedBy = rawSignedBy || 'DUS Directorate Secretary';
+      finalSignedBy = rawSignedBy || 'DUS Examination Office';
       finalSignedAt = now;
       updates.digital_signature_hash = finalSignatureHash;
       updates.signed_by = finalSignedBy;
@@ -289,6 +407,7 @@ class DusSecretaryService {
    * POST /api/v1/dus-secretary/update-dispatch
    */
   static async updateDispatchState(payload = {}, actor = {}, reqContext = {}) {
+    assertCentralDusAuthority(actor, 'update main campus consignment dispatch');
     const studentId = payload.studentId ? String(payload.studentId).trim() : '';
     if (!studentId) {
       throw createHttpError(400, 'Student ID is required.');
@@ -479,7 +598,7 @@ class DusSecretaryService {
 
     const instructions = payload.instructions && String(payload.instructions).trim()
       ? String(payload.instructions).trim()
-      : 'Please visit the Directorate of Undergraduate Studies (DUS) Secretary Office with your original Student ID / National ID.';
+      : 'Please visit the Directorate of Undergraduate Studies (DUS) Examination Office with your original Student ID / National ID.';
 
     const releaseDate = payload.releaseDate && String(payload.releaseDate).trim()
       ? String(payload.releaseDate).trim()
@@ -518,7 +637,7 @@ class DusSecretaryService {
     const emailResult = await EmailService.sendClearanceUpdateEmail(
       student,
       'CERTIFICATE_RELEASE',
-      'DUS Secretary Office',
+      'DUS Examination Office',
       fullMessage
     );
 
@@ -620,7 +739,7 @@ class DusSecretaryService {
       }
 
       return true;
-    }).slice(0, 100);
+    }).slice(0, 500);
 
     return filtered.map(mapStudentToConsignmentResponse);
   }
@@ -936,6 +1055,7 @@ class DusSecretaryService {
    * POST /api/v1/dus-secretary/station-secretaries
    */
   static async createStationSecretary(payload = {}, actor = {}, reqContext = {}) {
+    assertCentralDusAuthority(actor, 'create station secretary accounts');
     const fullName = payload.fullName ? String(payload.fullName).trim() : '';
     const email = payload.email ? String(payload.email).trim() : '';
     const phoneNumber = payload.phoneNumber !== undefined && payload.phoneNumber !== null
@@ -1038,6 +1158,7 @@ class DusSecretaryService {
    * PUT /api/v1/dus-secretary/station-secretaries/:id
    */
   static async updateStationSecretary(id, payload = {}, actor = {}, reqContext = {}) {
+    assertCentralDusAuthority(actor, 'update station secretary accounts');
     const db = getDb();
     const user = await db('users').where({ id }).first();
     if (!user) {
@@ -1118,6 +1239,7 @@ class DusSecretaryService {
    * DELETE /api/v1/dus-secretary/station-secretaries/:id
    */
   static async deleteStationSecretary(id, actor = {}, reqContext = {}) {
+    assertCentralDusAuthority(actor, 'deactivate station secretary accounts');
     const db = getDb();
     const user = await db('users').where({ id }).first();
     if (!user) {

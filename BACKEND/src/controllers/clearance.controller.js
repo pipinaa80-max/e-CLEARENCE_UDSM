@@ -24,7 +24,7 @@ class ClearanceController {
 
   static async getClearanceStatus(req, res, next) {
     try {
-      const response = await ClearanceService.getClearanceStatus(req.params.studentId);
+      const response = await ClearanceService.getClearanceStatus(req.params.studentId, req.user);
       return res.status(200).json(response);
     } catch (err) {
       next(err);
@@ -33,7 +33,7 @@ class ClearanceController {
 
   static async getClearanceStatusByRegistration(req, res, next) {
     try {
-      const response = await ClearanceService.getClearanceStatus(req.params.registrationNumber);
+      const response = await ClearanceService.getClearanceStatus(req.params.registrationNumber, req.user);
       return res.status(200).json(response);
     } catch (err) {
       next(err);

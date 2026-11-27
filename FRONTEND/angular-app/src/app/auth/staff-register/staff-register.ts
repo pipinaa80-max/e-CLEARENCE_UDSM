@@ -40,23 +40,23 @@ export class StaffRegister implements OnInit {
     }
   }
 
-  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'DARUSO', 'Dean of Students', 'Department', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'USAB', 'Workshop'];
+  readonly staffRoles: StaffRole[] = ['Academic Staff', 'Administrator', 'DARUSO', 'Dean of Students', 'Department', 'Director of Postgraduate Studies', 'Director of Undergraduate Studies', 'DUS Examination Office', 'Finance', 'Games Coach', 'Hall Warden', 'Laboratory', 'Lecturer', 'Library', 'Principal', 'Smart Card', 'Supervisor', 'USAB', 'Workshop'];
   readonly laboratoryDepartments = ['Anatomy laboratory', 'Pathology laboratory', 'Biochemistry', 'Microbiology & Immunology', 'Physiology', 'Parasitology & Entomology', 'Pharmacology'];
 
   readonly collegeDepartments: Record<string, string[]> = {
     'College of Agricultural Sciences and Food Technology (CoAF)': ['Agricultural Economics and Business', 'Agricultural Engineering', 'Crop Science and Beekeeping Technology', 'Food Science and Technology'],
     'College of Humanities (CoHU)': ['Archaeology and Heritage Studies', 'Creative Arts', 'Foreign Languages and Linguistics', 'History', 'Literature', 'Philosophy and Religious Studies'],
-    'College of Social Sciences (CoSS)': ['Geography', 'Political Science and Public Administration', 'Sociology', 'Statistics'],
+    'College of Social Sciences (CoSS)': ['Geography', 'Information Studies', 'Political Science and Public Administration', 'Social Sciences', 'Sociology', 'Statistics'],
     'College of Engineering and Technology (CoET)': ['Chemical and Process Engineering', 'Electrical Engineering', 'Mechanical and Industrial Engineering', 'Structural and Construction Engineering', 'Transportation and Geotechnical Engineering', 'Water Resources Engineering'],
-    'College of Natural and Applied Sciences (CoNAS)': ['Zoology and Wildlife Conservation', 'Molecular Biology and Biotechnology', 'Botany', 'Chemistry', 'Mathematics', 'Physics'],
-    'College of Information and Communication Technologies (CoICT)': ['Department of Computer Science & Engineering', 'Department of Electronics and Telecommunications Engineering'],
+    'College of Natural and Applied Sciences (CoNAS)': ['Botany', 'Chemistry', 'Mathematics', 'Molecular Biology and Biotechnology', 'Natural and Applied Sciences', 'Physics', 'Zoology and Wildlife Conservation'],
+    'College of Information and Communication Technologies (CoICT)': ['Department of Computer Science and Engineering', 'Department of Electronics and Telecommunications Engineering'],
     'College of Mines and Geosciences (SoMG)': ['Geosciences', 'Mining and Mineral Processing Engineering', 'Petroleum Science and Engineering'],
     'University of Dar es Salaam Business School (UDBS)': ['Accounting', 'Finance', 'General Management', 'Marketing'],
     'College of Education (SoED)': ['Educational Foundations, Management and Lifelong Learning', 'Educational Psychology and Curriculum Studies', 'Physical Education and Sport Sciences'],
     'University of Dar es Salaam Law School (UDSoL)': ['Public Law', 'Private Law', 'Economic Law'],
     'University of Dar es Salaam Economic School (UDSE)': ['Economics', 'Applied Economics'],
-    'Institute of Languages and Cultures (IKS)': ['Kiswahili Language and Linguistics (ILUKII)', 'Literature, Communication and Publishing (IFAMU)'],
-    'Institute of Marine Sciences (IMS)': ['Marine and Coastal Resources Management', 'Marine Technology and Innovation'],
+    'Institute of Kiswahili Studies (IKS)': ['Kiswahili', 'Kiswahili Language and Linguistics (ILUKII)', 'Literature, Communication and Publishing (IFAMU)'],
+    'Institute of Marine Sciences (IMS)': ['Marine Sciences', 'Marine and Coastal Resources Management', 'Marine Technology and Innovation'],
     'Dar es Salaam University College of Education (DUCE)': ['Educational Foundations, Management and Lifelong Learning', 'Educational Psychology and Curriculum Studies', 'Economics and Geography', 'History, Political Science and Development Studies', 'Languages and Communication Skills', 'Biology', 'Chemistry', 'Mathematics', 'Physics']
   };
 
@@ -81,10 +81,13 @@ export class StaffRegister implements OnInit {
 
   constructor() {
     this.collegeDepartments['School of Aquatic Sciences and Fisheries Technology (SoAF)'] = ['Aquatic Sciences and Fisheries Technology'];
-    this.collegeDepartments['School of Journalism and Mass Communication (SJMC)'] = ['Journalism', 'Mass Communication', 'Public Relations and Advertising'];
+    this.collegeDepartments['School of Journalism and Mass Communication (SJMC)'] = ['Journalism and Mass Communication', 'Journalism', 'Mass Communication', 'Public Relations and Advertising'];
     this.collegeDepartments['Institute of Development Studies (IDS)'] = ['Development Studies'];
     this.collegeDepartments['Mkwawa University College of Education (MUCE)'] = ['Educational Foundations', 'Languages and Literature', 'Mathematics, Science and Technical Education', 'Social Sciences'];
     this.collegeDepartments['Mbeya College of Health and Allied Sciences (MCHAS)'] = [
+      'Clinical Medicine',
+      'Pharmacy',
+      'Nursing',
       'Social Service',
       'Biochemistry & Pharmacology',
       'Microbiology & Immuniology / Parasitology & Entomology',
@@ -98,7 +101,13 @@ export class StaffRegister implements OnInit {
       'Psychiatric & Mental Health',
       'Dental & Oral Surgery'
     ];
-    this.collegeDepartments['UDSM-MRI'] = ['Geology and Mineral Exploration', 'Petroleum Geosciences', 'Mining Engineering', 'Mineral Processing Engineering', 'Environmental Engineering and Management in Mines', 'Land and Mine Surveying'];
+    this.collegeDepartments['Mineral Resources Institute (MRI)'] = [
+      'Environmental Engineering and Management',
+      'Geology and Mineral Exploration',
+      'Land and Mine Surveying',
+      'Mining Engineering',
+      'Petroleum Geosciences and Exploration'
+    ];
 
     this.form.controls.role.valueChanges.subscribe(() => this.updateDepartmentValidators());
   }
@@ -117,6 +126,10 @@ export class StaffRegister implements OnInit {
 
   get isLecturerStaff(): boolean {
     return this.form.controls.role.value === 'Lecturer';
+  }
+
+  get isSupervisorStaff(): boolean {
+    return this.form.controls.role.value === 'Supervisor';
   }
 
   get departments(): string[] {
@@ -167,7 +180,7 @@ export class StaffRegister implements OnInit {
       password: value.password,
       role: value.role,
       department: this.isDepartmentStaff || this.isLecturerStaff ? value.department : value.role,
-      college: this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff ? value.college : 'Administration',
+      college: this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff || this.isSupervisorStaff ? value.college : 'Administration',
       laboratory: this.isLaboratoryStaff ? value.laboratory : ''
     };
 
@@ -187,13 +200,13 @@ export class StaffRegister implements OnInit {
   }
 
   private updateDepartmentValidators(): void {
-    const collegeValidators = this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff ? [Validators.required] : [];
-    const departmentValidators = this.isDepartmentStaff || this.isLecturerStaff ? [Validators.required] : [];
+    const collegeValidators = this.isDepartmentStaff || this.isPrincipalStaff || this.isLecturerStaff || this.isSupervisorStaff ? [Validators.required] : [];
+    const departmentValidators = this.isDepartmentStaff || this.isLecturerStaff || this.isSupervisorStaff ? [Validators.required] : [];
     this.form.controls.college.setValidators(collegeValidators);
     this.form.controls.department.setValidators(departmentValidators);
     this.form.controls.laboratory.setValidators(this.isLaboratoryStaff ? [Validators.required] : []);
 
-    if (!this.isDepartmentStaff && !this.isPrincipalStaff && !this.isLecturerStaff) {
+    if (!this.isDepartmentStaff && !this.isPrincipalStaff && !this.isLecturerStaff && !this.isSupervisorStaff) {
       this.form.controls.college.setValue('');
       this.form.controls.department.setValue('');
     }
@@ -212,6 +225,7 @@ export class StaffRegister implements OnInit {
   private redirectPathFor(role: UserRole): string {
     const map: Record<UserRole, string> = {
       Student: '/dashboard',
+      Convocation: '/dashboard/convocation',
       'Games Coach': '/dashboard/games-coach',
       'Hall Warden': '/dashboard/hall-warden',
       USAB: '/dashboard/usab',
@@ -228,8 +242,11 @@ export class StaffRegister implements OnInit {
       Workshop: '/dashboard/workshop',
       Laboratory: '/dashboard/laboratory',
       'Director of Undergraduate Studies': '/dashboard/director-undergraduate-studies',
+      'Director of Postgraduate Studies': '/dashboard/director-postgraduate-studies',
+      'DUS Examination Office': '/dashboard/dus-secretary',
       'DUS Secretary': '/dashboard/dus-secretary',
-      'Station Secretary': '/dashboard/station-secretary'
+      'Station Secretary': '/dashboard/station-secretary',
+      Supervisor: '/dashboard/supervisor'
     };
     return map[role] ?? '/dashboard';
   }

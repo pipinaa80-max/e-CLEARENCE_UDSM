@@ -1,27 +1,18 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
-
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
-    <div class="sidebar-header">
-      <div class="brand">
-        <a routerLink="/dashboard/finance" (click)="closeSidebar()">
-          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
-        </a>
-        <div class="brand-text">
-          <strong>FINANCE</strong>
-          <small>Clearance Workspace</small>
-        </div>
+  <aside class="sidebar">
+    <div class="brand">
+      <a routerLink="/dashboard/finance" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
+      <div class="brand-text">
+        <strong>FINANCE PORTAL</strong>
+        <small>Bursar &amp; Revenue Unit</small>
       </div>
-      <button
-        type="button"
-        class="sidebar-mobile-close-btn"
-        (click)="closeSidebar()"
-        title="Close navigation menu"
-        aria-label="Close navigation menu"
-      >
-        <i class="bi bi-x-lg"></i>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -29,37 +20,34 @@
       <button
         type="button"
         class="nav-tab-btn"
-        [class.active]="viewMode === 'transcript-payments'"
-        (click)="closeSidebar(); setViewMode('transcript-payments')"
-        style="width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; color: #ccd8de; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;"
+        [class.active]="viewMode === 'requests'"
+        (click)="setViewMode('requests')"
       >
-        <span>Transcript Payment Verification</span>
+        <i class="bi bi-cash-coin" aria-hidden="true"></i>
+        <span>Clearance Requests</span>
+        <span class="nav-count-badge" *ngIf="pendingRequestCount > 0">{{ pendingRequestCount }}</span>
       </button>
 
       <button
         type="button"
         class="nav-tab-btn"
-        [class.active]="viewMode === 'all' || viewMode === 'requests'"
-        (click)="closeSidebar(); setViewMode('requests')"
-        style="width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; color: #ccd8de; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;"
+        [class.active]="viewMode === 'transcript-payments'"
+        (click)="setViewMode('transcript-payments')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
-        <span>Pending Requests</span>
+        <i class="bi bi-receipt-cutoff" aria-hidden="true"></i>
+        <span>Transcript Payments</span>
+        <span class="nav-count-badge" *ngIf="pendingTranscriptPaymentCount > 0">{{ pendingTranscriptPaymentCount }}</span>
       </button>
 
       <button
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'analytics'"
-        (click)="closeSidebar(); setViewMode('analytics')"
-        style="width: 100%; text-align: left; padding: 10px 14px; background: transparent; border: none; color: #ccd8de; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;"
+        (click)="setViewMode('analytics')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3zm5-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2z"/></svg>
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
         <span>Financial Analytics</span>
       </button>
-
-
-
     </nav>
   </aside>
 
@@ -67,358 +55,516 @@
   <main class="content">
     <app-dashboard-header
       title="Finance Dashboard"
+      subtitle="Verify tuition clearance, resubmitted payment receipts, and transcript control numbers."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadAllData(true)" [disabled]="isLoadingRequests || isTranscriptPaymentsLoading">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>{{ (isLoadingRequests || isTranscriptPaymentsLoading) ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
-    <!-- MESSAGE -->
-    <div
-      class="message"
-      *ngIf="message"
-    >
-      {{ message }}
-    </div>
+    <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <!-- =========================================================================
-         FINANCE STATISTICAL ANALYTICS SECTION
-    ========================================================================== -->
-    <section class="dashboard-board analytics-board" style="margin-bottom: 24px; border: 1px solid #dce3e8; border-radius: 12px; background: #ffffff; overflow: hidden; border-left: 4px solid #00679b; box-shadow: 0 4px 18px rgba(0,0,0,0.05);" *ngIf="viewMode === 'all' || viewMode === 'analytics'">
-      <div style="padding: 16px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 40px; height: 40px; border-radius: 9px; background: #e0f2fe; color: #0369a1; display: grid; place-items: center; font-size: 19px;"></div>
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="viewMode === 'requests' && filterStatus === 'all'" (click)="filterByCard('all')">
+        <span class="stat-label">Total Clearance</span>
+        <strong class="stat-value">{{ totalRequestCount }}</strong>
+        <small>{{ pendingTranscriptPaymentCount }} transcript payments pending</small>
+      </button>
+
+      <button type="button" class="stat-card pending" [class.active]="viewMode === 'requests' && filterStatus === 'pending'" (click)="filterByCard('pending')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingRequestCount }}</strong>
+        <small>{{ resubmittedPendingCount }} with resubmitted receipt</small>
+      </button>
+
+      <button type="button" class="stat-card approved" [class.active]="viewMode === 'requests' && filterStatus === 'approved'" (click)="filterByCard('approved')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedRequestCount }}</strong>
+        <small>{{ clearanceRatePercent }}% clearance rate</small>
+      </button>
+
+      <button type="button" class="stat-card rejected" [class.active]="viewMode === 'requests' && filterStatus === 'rejected'" (click)="filterByCard('rejected')">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedRequestCount }}</strong>
+        <small>Flagged for fee/receipt resolution</small>
+      </button>
+    </section>
+
+    <!-- VIEW 1: GRADUATION CLEARANCE REQUESTS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'requests'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
           <div>
-            <h2 style="margin: 0 0 3px; color: #003b5c; font-size: 1.12rem; font-weight: 800;">Tuition, Fee Dues &amp; Revenue Clearance Analytics</h2>
-            <p style="margin: 0; color: #64748b; font-size: 0.82rem;">Track student debt resolution, tuition fee clearance, and receipt verification throughput.</p>
-          </div>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-          <button type="button" (click)="printAnalytics()" style="padding: 8px 14px; border-radius: 7px; border: 1px solid #cbd5e1; background: #fff; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #475569;"> Print</button>
-          <button type="button" (click)="downloadAnalyticsCsv()" style="padding: 8px 14px; border-radius: 7px; border: none; background: #0066a1; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #fff;">Export CSV</button>
-        </div>
-      </div>
-
-      <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 20px;">
-        <!-- KPIS -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 42px; height: 42px; border-radius: 9px; background: #eff6ff; color: #1d4ed8; display: grid; place-items: center; font-size: 19px;"></div>
-            <div>
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Total Students</span>
-              <strong style="font-size: 1.35rem; color: #0f172a;">{{ totalFinanceStudents }}</strong>
-            </div>
-          </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 42px; height: 42px; border-radius: 9px; background: #dcfce7; color: #15803d; display: grid; place-items: center; font-size: 19px;"><i class="bi bi-check-lg"></i></div>
-            <div>
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Fees Cleared</span>
-              <strong style="font-size: 1.35rem; color: #15803d;">{{ clearedFinanceCount }}</strong>
-            </div>
-          </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 42px; height: 42px; border-radius: 9px; background: #fef3c7; color: #b45309; display: grid; place-items: center; font-size: 19px;"></div>
-            <div>
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Pending Receipts</span>
-              <strong style="font-size: 1.35rem; color: #b45309;">{{ pendingFinanceCount }}</strong>
-            </div>
-          </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 42px; height: 42px; border-radius: 9px; background: #e0f2fe; color: #0369a1; display: grid; place-items: center; font-size: 19px;"></div>
-            <div>
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; display: block;">Finance Rate</span>
-              <strong style="font-size: 1.35rem; color: #0369a1;">{{ financeClearanceRate }}%</strong>
-            </div>
+            <h2>Finance Clearance Queue</h2>
+            <p>Review student fee balances, verify resubmitted Finance receipts, and complete financial clearance.</p>
           </div>
         </div>
 
-        <!-- PICTORIAL & CHARTS -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-          <!-- GENDER PICTORIAL -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
-            <h4 style="margin: 0 0 12px; font-size: 0.92rem; font-weight: 750; color: #003b5c;">Student Gender Split (Pictorial)</h4>
-            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
-              <div style="flex: 1; padding: 12px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center;">
-                <span style="font-size: 24px; display: block;"></span>
-                <strong style="font-size: 1.2rem; color: #1d4ed8;">{{ genderStats.maleTotal }}</strong>
-                <small style="display: block; font-size: 11px; color: #1e40af; font-weight: 700;">{{ genderStats.malePercent }}% Male</small>
-              </div>
-              <div style="flex: 1; padding: 12px; background: #fdf2f8; border-radius: 8px; border: 1px solid #fbcfe8; text-align: center;">
-                <span style="font-size: 24px; display: block;"></span>
-                <strong style="font-size: 1.2rem; color: #be185d;">{{ genderStats.femaleTotal }}</strong>
-                <small style="display: block; font-size: 11px; color: #9d174d; font-weight: 700;">{{ genderStats.femalePercent }}% Female</small>
-              </div>
-            </div>
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+              placeholder="Search name, reg no, control number..."
+            />
           </div>
 
-          <!-- COHORT HISTOGRAM -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
-            <h4 style="margin: 0 0 12px; font-size: 0.92rem; font-weight: 750; color: #003b5c;">Clearances by Academic Cohort (Histogram)</h4>
-            <div style="display: flex; justify-content: space-around; align-items: flex-end; height: 110px; padding-bottom: 20px; border-bottom: 1px dashed #cbd5e1; position: relative;">
-              <div *ngFor="let y of yearFeeHistogram" style="display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; position: relative;">
-                <small style="font-size: 10px; font-weight: 800; color: #003b5c; margin-bottom: 3px;">{{ y.count }}</small>
-                <div style="width: 20px; height: 80px; background: #e2e8f0; border-radius: 4px 4px 0 0; display: flex; align-items: flex-end; overflow: hidden;">
-                  <div [style.height.%]="y.heightPercent" style="width: 100%; background: #00679b; border-radius: 4px 4px 0 0;"></div>
-                </div>
-                <span style="position: absolute; bottom: -20px; font-size: 10px; color: #475569; white-space: nowrap; font-weight: 600;">{{ y.label }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- DONUT PIE CHART -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
-            <h4 style="margin: 0 0 12px; font-size: 0.92rem; font-weight: 750; color: #003b5c;">Fee Clearance Status Share (Pie Chart)</h4>
-            <div style="display: flex; align-items: center; gap: 14px;">
-              <svg viewBox="0 0 220 220" style="width: 120px; height: 120px; flex-shrink: 0;">
-                <path *ngFor="let slice of pieSlices" [attr.d]="slice.svgPath" [attr.fill]="slice.color"></path>
-                <circle cx="110" cy="110" r="46" fill="#ffffff"></circle>
-                <text x="110" y="115" text-anchor="middle" font-size="14" font-weight="800" fill="#003b5c">{{ financeClearanceRate }}%</text>
-              </svg>
-              <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
-                <div *ngFor="let s of pieSlices" style="display: flex; align-items: center; justify-content: space-between; font-size: 11.5px;">
-                  <span style="display: flex; align-items: center; gap: 5px; color: #334155;">
-                    <i [style.background-color]="s.color" style="width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></i>
-                    {{ s.label }}
-                  </span>
-                  <strong style="color: #003b5c;">{{ s.count }}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- FILTER BAR -->
-    <section class="toolbar" *ngIf="viewMode === 'requests' && (requests.length || searchTerm)">
-      <div class="search-box">
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFilterChange()"
-          placeholder="Search name, registration number or control number..."
-        />
-      </div>
-
-      <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()">
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-      </select>
-    </section>
-
-
-    <!-- COMPACT REQUEST TABLE -->
-    <section class="compact-table-wrap" *ngIf="viewMode === 'requests' && filteredRequests.length">
-      <table class="compact-request-table">
-        <thead><tr>
-          <th>Registration Number</th><th>Full Name</th><th>Control Number</th><th>Type</th><th>Email</th><th>Actions</th>
-        </tr></thead>
-        <tbody>
-          <tr *ngFor="let request of paginatedRequests">
-            <td>{{ getStudentRegNumber(request) }}</td>
-            <td class="compact-name">{{ getStudentListName(request) }}</td>
-            <td><code class="finance-control-number">{{ getSubmittedControlNumber(request) || 'Not provided' }}</code></td>
-            <td>
-              <span class="type-badge" [style.background]="hasReceipt(request) ? '#e0f2fe' : '#f1f5f9'" [style.color]="hasReceipt(request) ? '#0369a1' : '#475569'" style="padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800;">
-                {{ hasReceipt(request) ? 'Receipt' : 'Other' }}
-              </span>
-            </td>
-            <td>{{ getStudentEmail(request) }}</td>
-            <td><div class="compact-actions">
-              <button type="button" class="compact-view" (click)="detailsRequest = request">View Details</button>
-              <ng-container *ngIf="getRequestOfficeStatus(request, 'Finance') === 'Pending'; else financeReviewed">
-                <button type="button" class="reject-button" (click)="openRejectForm(request)">Reject</button>
-                <button type="button" class="approve-button" (click)="approve(request)">Approve</button>
-              </ng-container>
-              <ng-template #financeReviewed><span class="compact-status">{{ getRequestOfficeStatus(request, 'Finance') }}</span><button type="button" class="compact-view" (click)="withdrawDecision(request)">Withdraw</button></ng-template>
-            </div></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <div class="pagination" *ngIf="viewMode === 'requests' && totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">&larr; Previous</button>
-      <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong></span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">Next &rarr;</button>
-    </div>
-
-    <section class="transcript-payment-section" *ngIf="viewMode === 'transcript-payments'">
-      <div class="transcript-payment-heading">
-        <div>
-          <h2>Transcript Payment Verification</h2>
-          <p>Verify each student submitted control number, then approve or reject the request.</p>
-        </div>
-        <div class="transcript-payment-filters">
-          <input type="search" [(ngModel)]="searchTerm" placeholder="Search registration or control number" />
-          <select [(ngModel)]="filterStatus">
+          <select class="board-select" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" aria-label="Filter by status">
+            <option value="all">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
-      </div>
-      <div class="compact-table-wrap" *ngIf="transcriptPaymentRequests.length; else noTranscriptPayments">
-        <table class="compact-request-table transcript-payment-table">
-          <thead><tr><th>Registration Number</th><th>Control Number</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let request of transcriptPaymentRequests">
-              <td>{{ request.registrationNumber }}</td>
-              <td><code class="finance-control-number">{{ request.submittedControlNumber || 'Not provided' }}</code></td>
-              <td>
-                <div class="compact-actions" *ngIf="request.status === 'Receipt Submitted'; else transcriptReviewed">
-                  <button type="button" class="reject-button" (click)="openRejectForm(transcriptAsClearanceRequest(request))">Reject</button>
-                  <button type="button" class="approve-button" (click)="approve(transcriptAsClearanceRequest(request))">Approve</button>
-                </div>
-                <ng-template #transcriptReviewed><span class="compact-status">{{ request.status === 'Paid' ? 'Approved' : 'Rejected' }}</span></ng-template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <ng-template #noTranscriptPayments>
-        <div class="empty-state"><h2>No transcript payment requests</h2><p>Submitted transcript control numbers will appear here for Finance review.</p></div>
-      </ng-template>
-    </section>
+      </header>
 
-    <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
-      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
-        <button type="button" class="compact-close" aria-label="Close" (click)="detailsRequest = null">×</button>
-        <div class="compact-details-heading">
-          <div class="student-photo">
-            <img *ngIf="hasPhoto(detailsRequest)" [src]="getStudentPhoto(detailsRequest)" alt="Student photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(detailsRequest))" />
-            <span *ngIf="!hasPhoto(detailsRequest)">{{ getStudentInitials(detailsRequest) }}</span>
-          </div>
-          <div><span class="request-label">Student Information</span><h2>{{ getStudentName(detailsRequest) }}</h2></div>
+      <div class="board-body board-table-body">
+        <div class="board-empty-state" *ngIf="isLoadingRequests && !requests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading Finance clearance requests...</h2>
+          <p>Fetching live student submissions from the server.</p>
         </div>
 
-        <dl class="compact-details-grid">
-          <div><dt>Registration Number</dt><dd>{{ getStudentRegNumber(detailsRequest) }}</dd></div>
-          <div><dt>Gender</dt><dd>{{ getStudentGender(detailsRequest) }}</dd></div>
-          <div><dt>Email</dt><dd>{{ getStudentEmail(detailsRequest) }}</dd></div>
-          <div><dt>Phone Number</dt><dd>{{ getStudentPhone(detailsRequest) }}</dd></div>
-          <div><dt>Programme</dt><dd>{{ getStudentProgramme(detailsRequest) }}</dd></div>
-          <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
-          <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
-          <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
-          <div><dt>Control Number</dt><dd>{{ getSubmittedControlNumber(detailsRequest) || 'Not provided' }}</dd></div>
-          <div><dt>Address</dt><dd>{{ detailsRequest.physicalAddress || detailsRequest.address || '—' }}</dd></div>
-          <div><dt>Residence</dt><dd>{{ detailsRequest.residenceType || '—' }}</dd></div>
-          <div><dt>Hall / Room</dt><dd>{{ detailsRequest.hall || '—' }} {{ detailsRequest.roomNumber || '' }}</dd></div>
-          <div><dt>Remarks</dt><dd>{{ detailsRequest.remarks || '—' }}</dd></div>
+        <div class="board-empty-state" *ngIf="!isLoadingRequests && !filteredRequests.length">
+          <div class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+          <h2>No matching requests</h2>
+          <p>Try adjusting the search term or status filter above.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredRequests.length">
+          <table class="office-table">
+            <thead>
+              <tr>
+                <th>Reg Number</th>
+                <th>Student Name</th>
+                <th>Control Number</th>
+                <th>Evidence</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let request of paginatedRequests">
+                <td class="mono">{{ getStudentRegNumber(request) }}</td>
+                <td>
+                  <div class="contact-cell">
+                    <strong>{{ getStudentListName(request) }}</strong>
+                    <small>{{ getStudentEmail(request) }}</small>
+                  </div>
+                </td>
+                <td>
+                  <code class="control-code">{{ getSubmittedControlNumber(request) || 'Not provided' }}</code>
+                </td>
+                <td>
+                  <span class="evidence-badge resubmitted" *ngIf="hasFinanceReceipt(request)">
+                    <i class="bi bi-file-earmark-check-fill" aria-hidden="true"></i> Finance Receipt
+                  </span>
+                  <span class="evidence-badge" *ngIf="!hasFinanceReceipt(request) && hasReceipt(request)">
+                    Convocation Ref
+                  </span>
+                  <span class="evidence-badge muted" *ngIf="!hasReceipt(request)">None</span>
+                </td>
+                <td>
+                  <span class="status-pill" [ngClass]="getRequestOfficeStatus(request, 'Finance').toLowerCase()">
+                    {{ getRequestOfficeStatus(request, 'Finance') }}
+                  </span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button type="button" class="tbl-btn view" (click)="openDetails(request)">Details</button>
+                    <ng-container *ngIf="getRequestOfficeStatus(request, 'Finance') === 'Pending'; else reviewedFinance">
+                      <button type="button" class="tbl-btn approve" (click)="approveClearance(request)" [disabled]="isSubmitting">Approve</button>
+                      <button type="button" class="tbl-btn reject" (click)="openRejectForm(request)" [disabled]="isSubmitting">Reject</button>
+                    </ng-container>
+                    <ng-template #reviewedFinance>
+                      <button type="button" class="tbl-btn withdraw" (click)="withdrawDecision(request)" [disabled]="isSubmitting">Withdraw</button>
+                    </ng-template>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" *ngIf="filteredRequests.length > pageSize">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of {{ totalPages }}</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: TRANSCRIPT PAYMENT VERIFICATION -->
+    <section class="dashboard-board" *ngIf="viewMode === 'transcript-payments'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
+          <div>
+            <h2>Transcript Payment Verification</h2>
+            <p>Verify server-submitted transcript control numbers before releasing students to transcript processing.</p>
+          </div>
+        </div>
+
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input
+              type="text"
+              [(ngModel)]="transcriptSearchTerm"
+              placeholder="Search student, reg no, control number..."
+            />
+          </div>
+
+          <select class="board-select" [(ngModel)]="transcriptFilterStatus" aria-label="Filter transcript payments">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending ({{ pendingTranscriptPaymentCount }})</option>
+            <option value="approved">Approved ({{ approvedTranscriptPaymentCount }})</option>
+            <option value="rejected">Rejected ({{ rejectedTranscriptPaymentCount }})</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="board-body board-table-body">
+        <div class="board-empty-state" *ngIf="isTranscriptPaymentsLoading && !filteredTranscriptPaymentRequests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading transcript payment submissions...</h2>
+          <p>Fetching live transcript control numbers from the server.</p>
+        </div>
+
+        <div class="board-empty-state" *ngIf="!isTranscriptPaymentsLoading && !filteredTranscriptPaymentRequests.length">
+          <div class="empty-icon"><i class="bi bi-receipt" aria-hidden="true"></i></div>
+          <h2>No matching transcript payments</h2>
+          <p>Submitted transcript payment control numbers will appear here for Finance verification.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredTranscriptPaymentRequests.length">
+          <table class="office-table">
+            <thead>
+              <tr>
+                <th>Reg Number</th>
+                <th>Student Name</th>
+                <th>Control Number</th>
+                <th>Award / Programme</th>
+                <th>Requested</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of filteredTranscriptPaymentRequests">
+                <td class="mono">{{ req.registrationNumber }}</td>
+                <td><strong>{{ req.studentName }}</strong></td>
+                <td><code class="control-code">{{ req.submittedControlNumber || req.controlNumber || 'Not provided' }}</code></td>
+                <td>{{ req.award || 'Transcript Request' }}</td>
+                <td>{{ req.requestedAt ? (req.requestedAt | date:'mediumDate') : '—' }}</td>
+                <td>
+                  <span class="status-pill" [ngClass]="getTranscriptStatusLabel(req.status).toLowerCase()">
+                    {{ getTranscriptStatusLabel(req.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="row-actions" *ngIf="req.status === 'Receipt Submitted'; else transcriptDone">
+                    <button type="button" class="tbl-btn approve" (click)="approveTranscriptPayment(req)" [disabled]="isSubmitting">Approve</button>
+                    <button type="button" class="tbl-btn reject" (click)="openTranscriptRejectForm(req)" [disabled]="isSubmitting">Reject</button>
+                  </div>
+                  <ng-template #transcriptDone>
+                    <span class="muted-label">{{ getTranscriptStatusLabel(req.status) }}</span>
+                  </ng-template>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FINANCIAL ANALYTICS -->
+    <section class="dashboard-board analytics-print-board" *ngIf="viewMode === 'analytics'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>Finance Clearance &amp; Transcript Payment Analytics</h2>
+            <p>Live throughput computed strictly from verified Finance clearance and transcript payment records.</p>
+          </div>
+        </div>
+
+        <div class="board-actions-group no-print">
+          <button type="button" class="btn-cancel" (click)="printAnalytics()" [disabled]="!totalRequestCount && !totalTranscriptPaymentCount">
+            <i class="bi bi-printer" aria-hidden="true"></i>
+            <span>Print Report</span>
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" [disabled]="!totalRequestCount && !totalTranscriptPaymentCount">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="analytics-bars">
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Approved (Graduation Clearance)</span>
+              <strong>{{ approvedRequestCount }} ({{ clearanceRatePercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill approved" [style.width.%]="clearanceRatePercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Pending Review</span>
+              <strong>{{ pendingRequestCount }} ({{ pendingPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill pending" [style.width.%]="pendingPercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Rejected / Fee Flagged</span>
+              <strong>{{ rejectedRequestCount }} ({{ rejectedPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="rejectedPercent"></div></div>
+          </div>
+        </div>
+
+        <div class="transcript-summary-grid">
+          <div class="mini-metric">
+            <span>Transcript Submissions</span>
+            <strong>{{ totalTranscriptPaymentCount }}</strong>
+          </div>
+          <div class="mini-metric">
+            <span>Transcript Pending</span>
+            <strong>{{ pendingTranscriptPaymentCount }}</strong>
+          </div>
+          <div class="mini-metric">
+            <span>Transcript Approved</span>
+            <strong>{{ approvedTranscriptPaymentCount }}</strong>
+          </div>
+          <div class="mini-metric">
+            <span>Transcript Rejected</span>
+            <strong>{{ rejectedTranscriptPaymentCount }}</strong>
+          </div>
+        </div>
+
+        <h3 class="analytics-section-title">College Breakdown (Graduation Clearance)</h3>
+        <div class="board-table-container" *ngIf="collegeBreakdown.length > 0; else emptyAnalytics">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>College / Unit</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of collegeBreakdown">
+                <td><strong>{{ item.label }}</strong></td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.approved }}</td>
+                <td>{{ item.pending }}</td>
+                <td>{{ item.rejected }}</td>
+                <td><strong>{{ item.clearanceRate }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyAnalytics>
+          <div class="board-empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></div>
+            <h2>No graduation clearance analytics yet</h2>
+            <p>Statistics will appear automatically as students reach Stage 5 Finance clearance.</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- STUDENT DETAILS MODAL -->
+    <div class="modal-backdrop" *ngIf="detailsRequest as req" (click)="closeDetails()">
+      <div class="modal-card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-student-header">
+            <button
+              type="button"
+              class="student-avatar-wrap"
+              (click)="openPhotoLightbox(getStudentPhoto(req))"
+              [disabled]="!getStudentPhoto(req)"
+              [title]="getStudentPhoto(req) ? 'Click to enlarge photo' : 'No photo uploaded'"
+            >
+              <img *ngIf="getStudentPhoto(req) as photo" [src]="photo" [alt]="getStudentName(req)" />
+              <span *ngIf="!getStudentPhoto(req)">{{ getStudentInitials(getStudentName(req)) }}</span>
+            </button>
+            <div>
+              <h3>{{ getStudentName(req) }}</h3>
+              <p>{{ getStudentRegNumber(req) }} &middot; {{ getStudentProgramme(req) }}</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeDetails()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="status-highlight-box">
+          <div class="status-highlight-head">
+            <span class="section-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ getStatusSummary(req) }}</strong>
+              <small>Reviewed by: {{ getRequestReviewer(req) }}<ng-container *ngIf="getRequestReviewedAt(req) as dt"> &middot; {{ dt | date:'medium' }}</ng-container></small>
+            </div>
+            <span class="status-pill" [ngClass]="getRequestOfficeStatus(req, 'Finance').toLowerCase()">
+              {{ getRequestOfficeStatus(req, 'Finance') }}
+            </span>
+          </div>
+
+          <div class="rejection-note-box" *ngIf="getRequestComment(req)">
+            <strong>Officer Remark:</strong> {{ getRequestComment(req) }}
+          </div>
+        </div>
+
+        <!-- PAYMENT / RECEIPT PROOF PANEL -->
+        <div class="receipt-panel" *ngIf="hasReceipt(req)">
+          <div class="receipt-panel-head">
+            <strong>
+              <i class="bi bi-file-earmark-check-fill" aria-hidden="true"></i>
+              {{ hasFinanceReceipt(req) ? 'Resubmitted Finance Payment Proof' : 'Student Payment Reference' }}
+            </strong>
+            <code class="control-code">{{ getSubmittedControlNumber(req) || 'None Provided' }}</code>
+          </div>
+
+          <div class="receipt-image-wrap" *ngIf="getReceiptImage(req) as receiptImg">
+            <img [src]="receiptImg" alt="Payment receipt proof" (click)="openPhotoLightbox(receiptImg)" title="Click to enlarge receipt" />
+          </div>
+
+          <div class="receipt-meta">
+            <span *ngIf="getReceiptFileName(req)">File: <strong>{{ getReceiptFileName(req) }}</strong></span>
+            <span *ngIf="getReceiptSubmittedAt(req) as rdt">Submitted: <strong>{{ rdt | date:'medium' }}</strong></span>
+          </div>
+          <p class="receipt-note" *ngIf="getReceiptNote(req)">
+            <strong>Student Note:</strong> {{ getReceiptNote(req) }}
+          </p>
+        </div>
+
+        <dl class="detail-grid">
+          <div>
+            <dt>College / Unit</dt>
+            <dd>{{ req.college || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ req.department || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Gender</dt>
+            <dd>{{ getStudentGender(req) }}</dd>
+          </div>
+          <div>
+            <dt>Sponsor</dt>
+            <dd>{{ req.sponsor || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Email Address</dt>
+            <dd>{{ getStudentEmail(req) }}</dd>
+          </div>
+          <div>
+            <dt>Phone Number</dt>
+            <dd>{{ getStudentPhone(req) }}</dd>
+          </div>
+          <div>
+            <dt>Submitted On</dt>
+            <dd>{{ req.requestDate ? (req.requestDate | date:'medium') : 'Not recorded' }}</dd>
+          </div>
+          <div>
+            <dt>Student Level</dt>
+            <dd>{{ req.isPostgraduate ? 'Postgraduate (Proceeds to Supervisor)' : 'Undergraduate (Final Stage)' }}</dd>
+          </div>
         </dl>
-        <section class="rejection-reason" *ngIf="getRequestOfficeStatus(detailsRequest, 'Finance') === 'Rejected'">
-          <h3>Rejection reason · Finance</h3><p>{{ getFinanceRejectionReason(detailsRequest) }}</p>
-        </section>
-        <section class="rejection-reason history-reason" *ngFor="let rejection of getRejectionHistory(detailsRequest)">
-          <h3>Previously rejected · {{ rejection.office }}<span *ngIf="detailsRequest.status === 'Pending'"> (request is now pending)</span></h3>
-          <p>{{ rejection.reason }}</p><small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
-        </section>
 
-        <!-- Payment Control Number & Verification Review Section -->
-        <div *ngIf="hasReceipt(detailsRequest)" style="margin-top: 18px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-          <h4 style="margin: 0 0 10px; color: #0369a1; font-size: 0.95rem; font-weight: 700;">Student Payment &amp; Written Control Number</h4>
-          <div style="background: #f8fafc; border: 1.5px solid #bae6fd; border-radius: 8px; padding: 14px; text-align: left;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; background: #e0f2fe; padding: 10px 14px; border-radius: 6px;">
-              <span style="font-size: 0.85rem; color: #0369a1; font-weight: 700;">Written Control Number:</span>
-              <strong style="font-size: 1.15rem; color: #075985; letter-spacing: 0.5px;">{{ getSubmittedControlNumber(detailsRequest) || 'None Provided' }}</strong>
-            </div>
-            <div *ngIf="getReceiptImage(detailsRequest)" style="margin-bottom: 10px; text-align: center;">
-              <img [src]="getReceiptImage(detailsRequest)" alt="Student receipt proof" style="max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer;" (click)="openEnlargedPhoto(getReceiptImage(detailsRequest))" title="Click to enlarge document" />
-            </div>
-            <div style="font-size: 0.85rem; color: #475569;">
-              <span *ngIf="getReceiptFileName(detailsRequest)">Evidence Document: <strong>{{ getReceiptFileName(detailsRequest) }}</strong></span>
-              <span *ngIf="detailsRequest.convocation?.receiptSubmittedAt"> · Submitted At: <strong>{{ detailsRequest.convocation?.receiptSubmittedAt | date:'medium' }}</strong></span>
-            </div>
-          </div>
+        <div class="history-box" *ngFor="let rejection of getRejectionHistory(req)">
+          <strong>Previously rejected &middot; {{ rejection.office }}</strong>
+          <p>{{ rejection.reason }}</p>
+          <small *ngIf="rejection.reviewedAt">{{ rejection.reviewedAt | date:'medium' }}</small>
         </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeDetails()">Close</button>
+          <ng-container *ngIf="getRequestOfficeStatus(req, 'Finance') === 'Pending'">
+            <button type="button" class="btn-danger" (click)="openRejectForm(req)" [disabled]="isSubmitting">Reject</button>
+            <button type="button" class="btn-approve" (click)="approveClearance(req)" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Approve Finance Clearance' }}
+            </button>
+          </ng-container>
+        </footer>
       </div>
-    </section>
-    <!-- EMPTY STATE -->
-    <section
-      class="empty-state"
-      *ngIf="viewMode === 'requests' && !filteredRequests.length"
-    >
+    </div>
 
-      <div class="empty-icon">
-        <i class="bi bi-inbox-fill"></i>
-      </div>
+    <!-- REJECT MODAL (CLEARANCE OR TRANSCRIPT PAYMENT) -->
+    <div class="modal-backdrop" *ngIf="selectedRequest || selectedTranscriptForReject" (click)="closeRejectModal()">
+      <div class="modal-card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h3>{{ selectedTranscriptForReject ? 'Reject Transcript Payment' : 'Reject Finance Clearance' }}</h3>
+            <p *ngIf="selectedRequest as target">{{ getStudentName(target) }} ({{ getStudentRegNumber(target) }})</p>
+            <p *ngIf="selectedTranscriptForReject as tTarget">{{ tTarget.studentName }} ({{ tTarget.registrationNumber }})</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
 
-      <h2>
-        {{ searchTerm ? 'No matching requests' : filterStatus === 'approved' ? 'No approved applications' : filterStatus === 'rejected' ? 'No rejected applications' : 'No pending requests' }}
-      </h2>
-
-      <p>
-        {{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'approved' ? 'There are currently no approved student applications for Finance.' : filterStatus === 'rejected' ? 'There are currently no rejected student applications for Finance.' : 'There are currently no student applications awaiting Finance approval.' }}
-      </p>
-
-    </section>
-
-
-    <!-- REJECTION MODAL -->
-    <section
-      class="reject-modal"
-      *ngIf="selectedRequest"
-    >
-
-      <div class="modal-card">
-
-        <h2>
-          Return Clearance Request
-        </h2>
-
-        <p>
-          Explain why this clearance request is being
-          returned and what the student needs to do.
+        <p class="reject-hint">
+          {{ selectedTranscriptForReject
+            ? 'Explain why this transcript payment control number cannot be verified so the student can submit a corrected control number.'
+            : 'Specify the outstanding tuition balance, missing payment receipt, or unverified control number so the student can settle and resubmit.' }}
         </p>
 
-
-        <label>
-          Reason for Rejection
+        <label class="modal-field">
+          <span>Rejection Reason *</span>
+          <textarea
+            rows="4"
+            [(ngModel)]="rejectionComment"
+            placeholder="Minimum 5 characters explaining what the student must resolve..."
+          ></textarea>
+          <small class="field-hint" *ngIf="rejectionComment.trim().length > 0 && rejectionComment.trim().length < 5">
+            Please enter at least 5 characters.
+          </small>
         </label>
 
-
-        <textarea
-          [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
-        ></textarea>
-
-
-        <div class="modal-actions">
-
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
           <button
             type="button"
-            class="cancel-button"
-            (click)="selectedRequest = null"
+            class="btn-danger"
+            (click)="confirmReject()"
+            [disabled]="isSubmitting || rejectionComment.trim().length < 5"
           >
-            Cancel
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
           </button>
-
-
-          <button
-            type="button"
-            class="return-button"
-            (click)="reject()"
-            [disabled]="rejectionComment.trim().length < 5"
-          >
-            Submit Reason
-          </button>
-
-        </div>
-
+        </footer>
       </div>
-
-    </section>
-  </main>
-
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
     </div>
-  </div>
 
+    <!-- PHOTO / RECEIPT LIGHTBOX -->
+    <div class="modal-backdrop lightbox" *ngIf="enlargedPhotoUrl as photoUrl" (click)="closePhotoLightbox()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close-btn lightbox-close" (click)="closePhotoLightbox()" aria-label="Close image">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <img [src]="photoUrl" alt="Enlarged Document or Photo" />
+      </div>
+    </div>
+  </main>
 </section>

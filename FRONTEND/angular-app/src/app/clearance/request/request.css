@@ -157,3 +157,121 @@
   .request-actions { flex-direction: column-reverse; gap: 12px; }
   .request-actions button { width: 100%; }
 }
+
+/* Attached File Simple Card & Preview */
+.attached-file-simple-card {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 6px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attached-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attached-file-icon {
+  font-size: 1.6rem;
+  color: #15803d;
+}
+
+.attached-file-details strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #002147;
+}
+
+.attached-file-details small {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.photo-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* Lightbox Document Viewer Modal */
+.document-viewer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 21, 48, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.document-viewer-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+}
+
+.document-viewer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.document-viewer-header strong {
+  font-size: 1rem;
+  color: #002147;
+}
+
+.btn-close-viewer {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.document-viewer-body {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #f1f5f9;
+  min-height: 250px;
+}
+
+.document-viewer-body img {
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.document-viewer-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+

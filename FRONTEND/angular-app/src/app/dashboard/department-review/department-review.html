@@ -1,11 +1,10 @@
 <!-- department-review.html - Fixed all status comparisons -->
 <section class="review-page">
     <app-dashboard-header
-      title="HoD review"
+      title="Department Clearance Review"
       [subtitle]="departmentName"
       [user]="currentUser"
-      [showToggle]="true"
-      (toggleSidebar)="toggleSidebar()"
+      [showToggle]="false"
     >
       <div header-actions>
         <button type="button" class="back-btn" (click)="goBack()">
@@ -24,7 +23,7 @@
         <!-- Student Profile Card -->
         <section class="student-profile-card">
             <div class="student-photo">
-                <img *ngIf="hasPhoto()" [src]="getStudentPhoto()" [alt]="getStudentName()" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto())" title="Click to view enlarged photo" (error)="getStudentPhoto()" />
+                <img *ngIf="hasPhoto()" [src]="getStudentPhoto()" [alt]="getStudentName()" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto())" title="Click to view enlarged photo" (error)="onPhotoError()" />
                 <span *ngIf="!hasPhoto()">{{ getStudentInitials() }}</span>
             </div>
 
@@ -197,7 +196,12 @@
             <div class="approvals-list" *ngIf="decisionApprovals.length; else noDecisionApprovals">
                 <div class="approval-item" *ngFor="let approval of decisionApprovals">
                     <div class="approval-info">
-                        <strong>{{ approval.office }}</strong>
+                        <div>
+                            <strong>{{ approval.office }}</strong>
+                            <small *ngIf="approval.reviewedBy" style="display: block; color: #64748b; font-size: 0.78rem; margin-top: 2px;">
+                                Reviewed by {{ approval.reviewedBy }}<ng-container *ngIf="approval.reviewedAt"> &middot; {{ approval.reviewedAt | date:'medium' }}</ng-container>
+                            </small>
+                        </div>
                         <span class="approval-status" [class.approved]="approval.status === 'Approved'" [class.rejected]="approval.status === 'Rejected'">
                             {{ approval.status }}
                         </span>
@@ -229,9 +233,9 @@
                     type="button"
                     class="btn-action btn-reject"
                     (click)="reject()"
-                    [disabled]="!rejectionComment.trim() || isProcessing"
+                    [disabled]="rejectionComment.trim().length < 5 || isProcessing"
                 >
-                    Confirm Rejection
+                    {{ isProcessing ? 'Submitting...' : 'Confirm Rejection' }}
                 </button>
             </div>
         </div>

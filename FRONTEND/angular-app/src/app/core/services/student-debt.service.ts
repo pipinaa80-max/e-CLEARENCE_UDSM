@@ -27,10 +27,22 @@ export class StudentDebtService {
     return this.http.post<StudentDebtFlag>(this.endpoint, data, { headers: this.headers() });
   }
 
-  bulkUpload(file: File): Observable<{ success: boolean; message: string }> {
+  bulkUpload(file: File): Observable<{
+    success: boolean;
+    count?: number;
+    skippedCount?: number;
+    errors?: Array<{ row: number; registrationNumber: string; message: string }>;
+    message: string;
+  }> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<{ success: boolean; message: string }>(`${this.endpoint}/bulk-upload`, formData, { headers: this.headers() });
+    return this.http.post<{
+      success: boolean;
+      count?: number;
+      skippedCount?: number;
+      errors?: Array<{ row: number; registrationNumber: string; message: string }>;
+      message: string;
+    }>(`${this.endpoint}/bulk-upload`, formData, { headers: this.headers() });
   }
 
   resolve(id: string, resolutionNote: string): Observable<StudentDebtFlag> {

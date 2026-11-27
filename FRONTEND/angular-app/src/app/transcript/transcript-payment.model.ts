@@ -11,6 +11,7 @@ export interface TranscriptPaymentRequest {
   studentName: string;
   registrationNumber: string;
   award: string;
+  programme?: string;
   graduationYear: string;
   transcriptCount: number;
   amount: number;
@@ -39,6 +40,13 @@ export interface TranscriptPaymentRequest {
   postingContactEmail?: string;
   dispatchStatus?: 'Pending Dispatch' | 'Dispatched' | 'Collected';
   dispatchedAt?: string;
+
+  // Issuance and Directorate verification
+  issuedByDirector?: boolean;
+  issuedByDirectorTitle?: string;
+  issuedAt?: string;
+  isPostgraduate?: boolean;
+
   certificateVerified?: boolean;
   certificateVerifiedAt?: string;
   digitalSignature?: string;

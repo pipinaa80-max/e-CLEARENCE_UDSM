@@ -39,6 +39,7 @@ export class ParallelOfficeRequestTableComponent implements OnInit {
   @Output() reject = new EventEmitter<ClearanceRequest>();
   @Output() view = new EventEmitter<ClearanceRequest>();
   @Output() bulkApproved = new EventEmitter<void>();
+  @Output() withdrawn = new EventEmitter<ClearanceRequest>();
 
   private readonly studentCache = new Map<string, StudentProfile | null>();
 
@@ -46,6 +47,7 @@ export class ParallelOfficeRequestTableComponent implements OnInit {
   selectedIds = new Set<string>();
   openDebtRegistrations = new Set<string>();
   isProcessingBulk = false;
+  withdrawingId: string | null = null;
 
   ngOnInit(): void {
     this.loadOpenDebtFlags();
@@ -139,16 +141,35 @@ export class ParallelOfficeRequestTableComponent implements OnInit {
   }
 
   async withdraw(request: ClearanceRequest): Promise<void> {
-    if (await this.clearanceService.withdrawOfficeDecision(request.id, this.office)) {
-      request.approvals = request.approvals.map(approval => approval.office === this.office
-        ? { ...approval, status: 'Pending', comment: undefined, reviewedBy: undefined, reviewedAt: undefined }
-        : approval);
-      request.status = 'Pending';
-      request.currentStage = this.office === 'Department' ? 'Department'
-        : this.office === 'Principal' ? 'Principal'
-        : this.office === 'Finance' ? 'Finance'
-        : this.office === 'Convocation' ? 'Convocation' : 'Parallel';
-      request.currentOffice = this.office;
+    if (this.withdrawingId) return;
+    const studentName = this.getStudentName(request);
+    if (!confirm(`Withdraw ${this.office} decision for ${studentName} and return it to Pending?`)) {
+      return;
+    }
+
+    this.withdrawingId = request.id;
+    try {
+      const ok = await this.clearanceService.withdrawOfficeDecision(request.id, this.office);
+      if (ok) {
+        request.approvals = request.approvals.map(approval => approval.office === this.office
+          ? { ...approval, status: 'Pending', comment: undefined, reviewedBy: undefined, reviewedAt: undefined }
+          : approval);
+        request.status = 'Pending';
+        request.currentStage = this.office === 'Department' ? 'Department'
+          : this.office === 'Principal' ? 'Principal'
+          : this.office === 'Finance' ? 'Finance'
+          : this.office === 'Convocation' ? 'Convocation' : 'Parallel';
+        request.currentOffice = this.office;
+        this.toastService.info('Decision Withdrawn', `${this.office} decision for ${studentName} was returned to Pending.`);
+        this.clearanceService.fetchOfficeRequests(this.office).subscribe({
+          next: () => this.withdrawn.emit(request),
+          error: () => this.withdrawn.emit(request)
+        });
+      } else {
+        this.toastService.error('Withdraw Failed', 'Unable to withdraw this decision. Please refresh and try again.');
+      }
+    } finally {
+      this.withdrawingId = null;
     }
   }
 

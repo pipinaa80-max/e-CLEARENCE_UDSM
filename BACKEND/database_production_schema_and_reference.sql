@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Target Engine : MySQL 8.0+ (InnoDB, utf8mb4 / utf8mb4_unicode_ci)
 -- Source of Truth:
---   - Knex migrations 20261111000001 through 20261124000008 (all 26 tables + view)
+--   - Knex migrations 20261111000001 through 20261126000009 (all 26 tables + view)
 --   - Seed file: src/database/seeds/01_reference_data.js
 --
 -- SECURITY NOTICE:
@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `graduation_year` VARCHAR(255) NULL,
   `semester` VARCHAR(255) NULL,
   `year_of_study` VARCHAR(255) NULL,
+  `award` VARCHAR(255) NULL,
+  `is_postgraduate` TINYINT(1) NOT NULL DEFAULT 0,
   `phone_number` VARCHAR(255) NULL,
   `hall` VARCHAR(255) NULL,
   `wing` VARCHAR(50) NULL,
@@ -114,6 +116,9 @@ CREATE TABLE IF NOT EXISTS `students` (
   `sponsor` VARCHAR(255) NULL,
   `photo` LONGTEXT NULL,
   `graduation_year` VARCHAR(255) NULL,
+  `award` VARCHAR(255) NULL,
+  `is_postgraduate` TINYINT(1) NOT NULL DEFAULT 0,
+  `undergraduate_certificate_url` LONGTEXT NULL,
   `semester` VARCHAR(255) NULL,
   `is_final_year` TINYINT(1) DEFAULT 1,
   `clearance_status` VARCHAR(255) NULL,
@@ -173,6 +178,9 @@ CREATE TABLE IF NOT EXISTS `clearance_requests` (
   `block` VARCHAR(50) NULL,
   `address` VARCHAR(255) NULL,
   `physical_address` VARCHAR(255) NULL,
+  `award` VARCHAR(255) NULL,
+  `is_postgraduate` TINYINT(1) NOT NULL DEFAULT 0,
+  `undergraduate_certificate_url` LONGTEXT NULL,
   `project_id` VARCHAR(100) NULL,
   `certificate_verified` TINYINT(1) DEFAULT 0,
   `certificate_verified_at` DATETIME(6) NULL,
@@ -491,6 +499,9 @@ CREATE TABLE IF NOT EXISTS `transcript_payment_requests` (
   `posting_po_box` VARCHAR(100) NULL,
   `contact_phone` VARCHAR(40) NULL,
   `contact_email` VARCHAR(255) NULL,
+  `issued_by_director` TINYINT(1) NOT NULL DEFAULT 0,
+  `issued_by_director_title` VARCHAR(255) NULL,
+  `issued_at` DATETIME(6) NULL,
   `version` BIGINT NOT NULL DEFAULT 0,
   `project_id` VARCHAR(100) NULL,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -665,6 +676,9 @@ SELECT
   u.is_active,
   u.is_email_verified,
   u.project_id,
+  COALESCE(s.award, u.award) AS award,
+  COALESCE(s.is_postgraduate, u.is_postgraduate, 0) AS is_postgraduate,
+  s.undergraduate_certificate_url,
   s.id AS student_id,
   s.registration_number,
   s.programme,
@@ -690,7 +704,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Mirrors src/database/seeds/01_reference_data.js
 -- ============================================================================
 
--- 3.1 Colleges (18 UDSM Colleges, Schools & Institutes)
+-- 3.1 Colleges (20 UDSM Colleges, Schools & Institutes)
 INSERT INTO `colleges` (`id`, `code`, `name`, `description`, `is_active`) VALUES
   ('col-coict', 'CoICT', 'College of Information and Communication Technologies', 'Kijitonyama Campus - Computing, Software, and Telecommunications', 1),
   ('col-coet',  'CoET',  'College of Engineering and Technology', 'Main Campus - Engineering, Architecture and Technology', 1),
@@ -700,11 +714,13 @@ INSERT INTO `colleges` (`id`, `code`, `name`, `description`, `is_active`) VALUES
   ('col-udbs',  'UDBS',  'University of Dar es Salaam Business School', 'Main Campus - Accounting, Finance, Marketing and Management', 1),
   ('col-soed',  'SoED',  'School of Education', 'Main Campus - Educational Foundations and Curriculum', 1),
   ('col-udsol', 'UDSoL', 'University of Dar es Salaam School of Law', 'Main Campus - Legal Studies, Public and Private Law', 1),
+  ('col-udse',  'UDSE',  'University of Dar es Salaam School of Economics', 'Main Campus - Economics and Applied Statistics', 1),
   ('col-somg',  'SoMG',  'College of Mines and Geosciences', 'Main Campus - Geosciences, Mining and Petroleum Engineering', 1),
   ('col-sjmc',  'SJMC',  'School of Journalism and Mass Communication', 'Mikocheni Campus - Journalism, Media and PR', 1),
   ('col-ids',   'IDS',   'Institute of Development Studies', 'Main Campus - Development Studies and Research', 1),
   ('col-coaf',  'CoAF',  'College of Agricultural Sciences and Food Technology', 'Main Campus - Agriculture, Food and Bio-resources', 1),
   ('col-mchas', 'MCHAS', 'Mbeya College of Health and Allied Sciences', 'Mbeya Campus - Health, Medicine and Clinical Sciences', 1),
+  ('col-mri',   'MRI',   'Mineral Resources Institute', 'Dodoma / Affiliated Institute - Mining, Geology and Surveying', 1),
   ('col-duce',  'DUCE',  'Dar es Salaam University College of Education', 'Chang''ombe Campus - Constituent College of Education', 1),
   ('col-muce',  'MUCE',  'Mkwawa University College of Education', 'Iringa Campus - Constituent College of Education', 1),
   ('col-soaf',  'SoAF',  'School of Aquatic Sciences and Fisheries Technology', 'Kunduchi Campus - Marine and Aquatic Sciences', 1),
@@ -715,7 +731,7 @@ ON DUPLICATE KEY UPDATE
   `description` = VALUES(`description`),
   `is_active` = VALUES(`is_active`);
 
--- 3.2 Departments (47 Departments)
+-- 3.2 Departments (61 Departments across all UDSM Colleges, Schools & Institutes)
 INSERT INTO `departments` (`id`, `college_id`, `code`, `name`, `description`, `is_active`) VALUES
   -- CoICT
   ('dept-coict-cse', 'col-coict', 'CSE', 'Department of Computer Science and Engineering', 'Software Engineering, Computer Science, AI and Computer Networks', 1),
@@ -734,6 +750,7 @@ INSERT INTO `departments` (`id`, `college_id`, `code`, `name`, `description`, `i
   ('dept-conas-geo', 'col-conas', 'GEO', 'Geology', 'Geosciences and Earth Systems', 1),
   ('dept-conas-mth', 'col-conas', 'MTH', 'Mathematics', 'Pure and Applied Mathematics, Statistics', 1),
   ('dept-conas-mbb', 'col-conas', 'MBB', 'Molecular Biology and Biotechnology', 'Genetics, Biochemistry and Biotechnology', 1),
+  ('dept-conas-nas', 'col-conas', 'NAS', 'Natural and Applied Sciences', 'Interdisciplinary Natural and Applied Sciences with Education', 1),
   ('dept-conas-phy', 'col-conas', 'PHY', 'Physics', 'Applied Physics, Materials and Renewable Energy', 1),
   ('dept-conas-zwc', 'col-conas', 'ZWC', 'Zoology and Wildlife Conservation', 'Animal Biology, Ecology and Wildlife Management', 1),
   -- CoHU
@@ -746,7 +763,9 @@ INSERT INTO `departments` (`id`, `college_id`, `code`, `name`, `description`, `i
   -- CoSS
   ('dept-coss-econ', 'col-coss',  'ECON',   'Economics', 'Applied, Development and Financial Economics', 1),
   ('dept-coss-geo',  'col-coss',  'GEO-SS', 'Geography', 'Human Geography, GIS and Environmental Management', 1),
+  ('dept-coss-is',   'col-coss',  'IS-SS',  'Information Studies', 'Library and Information Studies', 1),
   ('dept-coss-pspa', 'col-coss',  'PSPA',   'Political Science and Public Administration', 'Governance, Policy and Public Administration', 1),
+  ('dept-coss-ss',   'col-coss',  'SS',     'Social Sciences', 'Interdisciplinary Social Sciences and Arts with Education', 1),
   ('dept-coss-soc',  'col-coss',  'SOC',    'Sociology', 'Social Development and Anthropology', 1),
   ('dept-coss-stat', 'col-coss',  'STAT',   'Statistics', 'Official Statistics and Data Analytics', 1),
   -- UDBS
@@ -762,6 +781,8 @@ INSERT INTO `departments` (`id`, `college_id`, `code`, `name`, `description`, `i
   ('dept-udsol-publ',  'col-udsol', 'PUB-L',  'Public Law', 'Constitutional, Human Rights and Administrative Law', 1),
   ('dept-udsol-privl', 'col-udsol', 'PRIV-L', 'Private Law', 'Commercial, Contract and Family Law', 1),
   ('dept-udsol-econl', 'col-udsol', 'ECON-L', 'Economic Law', 'Trade, Tax and Intellectual Property Law', 1),
+  -- UDSE
+  ('dept-udse-econ', 'col-udse',  'ECON-SE', 'Economics', 'Economics and Applied Statistics', 1),
   -- SoMG
   ('dept-somg-gs',   'col-somg',  'GS',   'Geosciences', 'Geology, Geophysics and Earth Sciences', 1),
   ('dept-somg-mmpe', 'col-somg',  'MMPE', 'Mining and Mineral Processing Engineering', 'Mining, Mineral Processing and Metallurgy', 1),
@@ -774,7 +795,19 @@ INSERT INTO `departments` (`id`, `college_id`, `code`, `name`, `description`, `i
   -- MCHAS
   ('dept-mchas-med',   'col-mchas', 'MED',   'Clinical Medicine', 'Internal Medicine and Clinical Practice', 1),
   ('dept-mchas-pharm', 'col-mchas', 'PHARM', 'Pharmacy', 'Pharmaceutical Sciences and Therapeutics', 1),
-  ('dept-mchas-nurs',  'col-mchas', 'NURS',  'Nursing', 'Nursing Sciences and Community Health', 1)
+  ('dept-mchas-nurs',  'col-mchas', 'NURS',  'Nursing', 'Nursing Sciences and Community Health', 1),
+  -- IDS, IKS, IMS, SJMC, SoAF
+  ('dept-ids-ds',    'col-ids',   'DS',   'Development Studies', 'Development Studies and Research', 1),
+  ('dept-iks-kis',   'col-iks',   'KIS',  'Kiswahili', 'Kiswahili Language, Literature and Linguistics', 1),
+  ('dept-ims-ms',    'col-ims',   'MS',   'Marine Sciences', 'Oceanography and Marine Sciences', 1),
+  ('dept-sjmc-jmc',  'col-sjmc',  'JMC',  'Journalism and Mass Communication', 'Journalism, Mass Communication and Public Relations', 1),
+  ('dept-soaf-asft', 'col-soaf',  'ASFT', 'Aquatic Sciences and Fisheries Technology', 'Aquatic Sciences and Fisheries Technology', 1),
+  -- MRI (Mineral Resources Institute)
+  ('dept-mri-eem',   'col-mri',   'EEM',  'Environmental Engineering and Management', 'Environmental Engineering and Management in Mines', 1),
+  ('dept-mri-gme',   'col-mri',   'GME',  'Geology and Mineral Exploration', 'Geology and Mineral Exploration', 1),
+  ('dept-mri-lms',   'col-mri',   'LMS',  'Land and Mine Surveying', 'Land and Mine Surveying', 1),
+  ('dept-mri-me',    'col-mri',   'ME',   'Mining Engineering', 'Mining Engineering and Mineral Extraction', 1),
+  ('dept-mri-pge',   'col-mri',   'PGE',  'Petroleum Geosciences and Exploration', 'Petroleum Geosciences and Exploration', 1)
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `description` = VALUES(`description`),
@@ -817,11 +850,13 @@ INSERT INTO `ref_colleges` (`id`, `code`, `name`) VALUES
   ('col-udbs',  'UDBS',  'University of Dar es Salaam Business School'),
   ('col-soed',  'SoED',  'School of Education'),
   ('col-udsol', 'UDSoL', 'University of Dar es Salaam School of Law'),
+  ('col-udse',  'UDSE',  'University of Dar es Salaam School of Economics'),
   ('col-somg',  'SoMG',  'College of Mines and Geosciences'),
   ('col-sjmc',  'SJMC',  'School of Journalism and Mass Communication'),
   ('col-ids',   'IDS',   'Institute of Development Studies'),
   ('col-coaf',  'CoAF',  'College of Agricultural Sciences and Food Technology'),
   ('col-mchas', 'MCHAS', 'Mbeya College of Health and Allied Sciences'),
+  ('col-mri',   'MRI',   'Mineral Resources Institute'),
   ('col-duce',  'DUCE',  'Dar es Salaam University College of Education'),
   ('col-muce',  'MUCE',  'Mkwawa University College of Education'),
   ('col-soaf',  'SoAF',  'School of Aquatic Sciences and Fisheries Technology'),
@@ -845,6 +880,7 @@ INSERT INTO `ref_departments` (`id`, `college_id`, `code`, `name`) VALUES
   ('dept-conas-geo',   'col-conas', 'GEO',    'Geology'),
   ('dept-conas-mth',   'col-conas', 'MTH',    'Mathematics'),
   ('dept-conas-mbb',   'col-conas', 'MBB',    'Molecular Biology and Biotechnology'),
+  ('dept-conas-nas',   'col-conas', 'NAS',    'Natural and Applied Sciences'),
   ('dept-conas-phy',   'col-conas', 'PHY',    'Physics'),
   ('dept-conas-zwc',   'col-conas', 'ZWC',    'Zoology and Wildlife Conservation'),
   ('dept-cohu-ash',    'col-cohu',  'ASH',    'Archaeology and Heritage Studies'),
@@ -855,7 +891,9 @@ INSERT INTO `ref_departments` (`id`, `college_id`, `code`, `name`) VALUES
   ('dept-cohu-lcm',    'col-cohu',  'LCM',    'Literature, Communication and Media'),
   ('dept-coss-econ',   'col-coss',  'ECON',   'Economics'),
   ('dept-coss-geo',    'col-coss',  'GEO-SS', 'Geography'),
+  ('dept-coss-is',     'col-coss',  'IS-SS',  'Information Studies'),
   ('dept-coss-pspa',   'col-coss',  'PSPA',   'Political Science and Public Administration'),
+  ('dept-coss-ss',     'col-coss',  'SS',     'Social Sciences'),
   ('dept-coss-soc',    'col-coss',  'SOC',    'Sociology'),
   ('dept-coss-stat',   'col-coss',  'STAT',   'Statistics'),
   ('dept-udbs-acct',   'col-udbs',  'ACCT',   'Accounting'),
@@ -868,6 +906,7 @@ INSERT INTO `ref_departments` (`id`, `college_id`, `code`, `name`) VALUES
   ('dept-udsol-publ',  'col-udsol', 'PUB-L',  'Public Law'),
   ('dept-udsol-privl', 'col-udsol', 'PRIV-L', 'Private Law'),
   ('dept-udsol-econl', 'col-udsol', 'ECON-L', 'Economic Law'),
+  ('dept-udse-econ',   'col-udse',  'ECON-SE','Economics'),
   ('dept-somg-gs',     'col-somg',  'GS',     'Geosciences'),
   ('dept-somg-mmpe',   'col-somg',  'MMPE',   'Mining and Mineral Processing Engineering'),
   ('dept-somg-pse',    'col-somg',  'PSE',    'Petroleum Science and Engineering'),
@@ -877,7 +916,17 @@ INSERT INTO `ref_departments` (`id`, `college_id`, `code`, `name`) VALUES
   ('dept-coaf-fst',    'col-coaf',  'FST',    'Food Science and Technology'),
   ('dept-mchas-med',   'col-mchas', 'MED',    'Clinical Medicine'),
   ('dept-mchas-pharm', 'col-mchas', 'PHARM',  'Pharmacy'),
-  ('dept-mchas-nurs',  'col-mchas', 'NURS',   'Nursing')
+  ('dept-mchas-nurs',  'col-mchas', 'NURS',   'Nursing'),
+  ('dept-ids-ds',      'col-ids',   'DS',     'Development Studies'),
+  ('dept-iks-kis',     'col-iks',   'KIS',    'Kiswahili'),
+  ('dept-ims-ms',      'col-ims',   'MS',     'Marine Sciences'),
+  ('dept-sjmc-jmc',    'col-sjmc',  'JMC',    'Journalism and Mass Communication'),
+  ('dept-soaf-asft',   'col-soaf',  'ASFT',   'Aquatic Sciences and Fisheries Technology'),
+  ('dept-mri-eem',     'col-mri',   'EEM',    'Environmental Engineering and Management'),
+  ('dept-mri-gme',     'col-mri',   'GME',    'Geology and Mineral Exploration'),
+  ('dept-mri-lms',     'col-mri',   'LMS',    'Land and Mine Surveying'),
+  ('dept-mri-me',      'col-mri',   'ME',     'Mining Engineering'),
+  ('dept-mri-pge',     'col-mri',   'PGE',    'Petroleum Geosciences and Exploration')
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `code` = VALUES(`code`),
@@ -897,6 +946,48 @@ INSERT INTO `ref_halls` (`id`, `name`) VALUES
   ('hall-offcampus', 'Off Campus')
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`);
+
+-- 3.5b Reference Postgraduate Programmes Catalog (ref_programmes)
+INSERT INTO `ref_programmes` (`id`, `department_id`, `code`, `name`) VALUES
+  ('prog-pg-coict-msc-cs',   'dept-coict-cse',  'MSC-CS',   'Master of Science in Computer Science'),
+  ('prog-pg-coict-msc-hi',   'dept-coict-is',   'MSC-HI',   'Master of Science in Health Informatics'),
+  ('prog-pg-coict-msc-tel',  'dept-coict-ete',  'MSC-TEL',  'Master of Science in Telecommunications Engineering'),
+  ('prog-pg-coict-phd-cse',  'dept-coict-cse',  'PHD-CSE',  'PhD in Computer Science and Engineering'),
+  ('prog-pg-coet-msc-ce',    'dept-coet-sce',   'MSC-CE',   'Master of Science in Structural Engineering'),
+  ('prog-pg-coet-msc-ee',    'dept-coet-ee',    'MSC-EE',   'Master of Science in Power Systems and High Voltage Engineering'),
+  ('prog-pg-coet-msc-me',    'dept-coet-mie',   'MSC-ME',   'Master of Science in Production Engineering'),
+  ('prog-pg-coet-msc-wre',   'dept-coet-wre',   'MSC-WRE',  'Master of Science in Water Resources Engineering'),
+  ('prog-pg-coet-phd-eng',   'dept-coet-sce',   'PHD-ENG',  'PhD in Engineering'),
+  ('prog-pg-conas-msc-mth',  'dept-conas-mth',  'MSC-MTH',  'Master of Science in Mathematics'),
+  ('prog-pg-conas-msc-chm',  'dept-conas-chm',  'MSC-CHM',  'Master of Science in Chemistry'),
+  ('prog-pg-conas-msc-phy',  'dept-conas-phy',  'MSC-PHY',  'Master of Science in Physics'),
+  ('prog-pg-conas-phd-sci',  'dept-conas-mth',  'PHD-SCI',  'PhD in Natural and Applied Sciences'),
+  ('prog-pg-cohu-ma-his',    'dept-cohu-his',   'MA-HIS',   'Master of Arts in History'),
+  ('prog-pg-cohu-ma-ling',   'dept-cohu-fll',   'MA-LING',  'Master of Arts in Linguistics'),
+  ('prog-pg-cohu-phd-hum',   'dept-cohu-his',   'PHD-HUM',  'PhD in Humanities'),
+  ('prog-pg-coss-ma-soc',    'dept-coss-soc',   'MA-SOC',   'Master of Arts in Sociology'),
+  ('prog-pg-coss-ma-pspa',   'dept-coss-pspa',  'MA-PSPA',  'Master of Arts in Public Administration'),
+  ('prog-pg-coss-ma-stat',   'dept-coss-stat',  'MA-STAT',  'Master of Arts in Statistics'),
+  ('prog-pg-udse-ma-econ',   'dept-udse-econ',  'MA-ECON',  'Master of Arts in Economics'),
+  ('prog-pg-udbs-mba',       'dept-udbs-gm',    'MBA',      'Master of Business Administration (MBA)'),
+  ('prog-pg-udbs-mfin',      'dept-udbs-fin',   'MSC-FIN',  'Master of Science in Finance'),
+  ('prog-pg-udbs-phd-bus',   'dept-udbs-gm',    'PHD-BUS',  'PhD in Business Administration'),
+  ('prog-pg-soed-med',       'dept-soed-efml',  'MED',      'Master of Education (MEd)'),
+  ('prog-pg-soed-pgde',      'dept-soed-epcs',  'PGDE',     'Postgraduate Diploma in Education (PGDE)'),
+  ('prog-pg-udsol-llm',      'dept-udsol-publ', 'LLM',      'Master of Laws (LL.M)'),
+  ('prog-pg-udsol-phd-law',  'dept-udsol-publ', 'PHD-LAW',  'PhD in Law'),
+  ('prog-pg-somg-msc-geo',   'dept-somg-gs',    'MSC-GEO',  'Master of Science in Geology'),
+  ('prog-pg-coaf-msc-fst',   'dept-coaf-fst',   'MSC-FST',  'Master of Science in Food Science and Technology'),
+  ('prog-pg-mchas-mmed',     'dept-mchas-med',  'MMED',     'Master of Medicine (MMed)'),
+  ('prog-pg-ids-ma-ds',      'dept-ids-ds',     'MA-DS',    'Master of Arts in Development Studies'),
+  ('prog-pg-iks-ma-kis',     'dept-iks-kis',    'MA-KIS',   'Master of Arts in Kiswahili'),
+  ('prog-pg-ims-msc-ms',     'dept-ims-ms',     'MSC-MS',   'Master of Science in Marine Sciences'),
+  ('prog-pg-sjmc-ma-mc',     'dept-sjmc-jmc',   'MA-MC',    'Master of Arts in Mass Communication'),
+  ('prog-pg-soaf-msc-asft',  'dept-soaf-asft',  'MSC-ASFT', 'Master of Science in Aquatic Sciences')
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `code` = VALUES(`code`),
+  `department_id` = VALUES(`department_id`);
 
 -- 3.6 Default System Branding (project_settings)
 INSERT INTO `project_settings` (
@@ -918,7 +1009,7 @@ INSERT INTO `project_settings` (
   '/public/background.png',
   '#123c69',
   'Georgia',
-  '[{"id":"academic-staff","name":"Academic Staff","description":"Academic Staff clearance office","enabled":true},{"id":"administrator","name":"Administrator","description":"Administrator clearance office","enabled":true},{"id":"convocation","name":"Convocation","description":"Convocation clearance office","enabled":true},{"id":"daruso","name":"DARUSO","description":"DARUSO clearance office","enabled":true},{"id":"dean-of-students","name":"Dean of Students","description":"Dean of Students clearance office","enabled":true},{"id":"department","name":"Department","description":"Department clearance office","enabled":true},{"id":"finance","name":"Finance","description":"Finance clearance office","enabled":true},{"id":"games-coach","name":"Games Coach","description":"Games Coach clearance office","enabled":true},{"id":"hall-warden","name":"Hall Warden","description":"Hall Warden clearance office","enabled":true},{"id":"laboratory","name":"Laboratory","description":"Laboratory clearance office","enabled":true},{"id":"lecturer","name":"Lecturer","description":"Lecturer clearance office","enabled":true},{"id":"library","name":"Library","description":"Library clearance office","enabled":true},{"id":"principal","name":"Principal","description":"Principal clearance office","enabled":true},{"id":"smart-card","name":"Smart Card","description":"Smart Card clearance office","enabled":true},{"id":"usab","name":"USAB","description":"USAB clearance office","enabled":true},{"id":"workshop","name":"Workshop","description":"Workshop clearance office","enabled":true}]',
+  '[{"id":"academic-staff","name":"Academic Staff","description":"Academic Staff clearance office","enabled":true},{"id":"administrator","name":"Administrator","description":"Administrator clearance office","enabled":true},{"id":"convocation","name":"Convocation","description":"Convocation clearance office","enabled":true},{"id":"daruso","name":"DARUSO","description":"DARUSO clearance office","enabled":true},{"id":"dean-of-students","name":"Dean of Students","description":"Dean of Students clearance office","enabled":true},{"id":"department","name":"Department","description":"Department clearance office","enabled":true},{"id":"director-undergraduate-studies","name":"Director of Undergraduate Studies","description":"DUS Undergraduate clearance & transcript directorate","enabled":true},{"id":"director-postgraduate-studies","name":"Director of Postgraduate Studies","description":"DPGS Postgraduate clearance & transcript directorate","enabled":true},{"id":"dus-secretary","name":"DUS Examination Office","description":"Central certificate verification, sealing & dispatch","enabled":true},{"id":"station-secretary","name":"Station Secretary","description":"Regional collection station vault custody & handover","enabled":true},{"id":"finance","name":"Finance","description":"Finance clearance office","enabled":true},{"id":"games-coach","name":"Games Coach","description":"Games Coach clearance office","enabled":true},{"id":"hall-warden","name":"Hall Warden","description":"Hall Warden clearance office","enabled":true},{"id":"laboratory","name":"Laboratory","description":"Laboratory clearance office","enabled":true},{"id":"lecturer","name":"Lecturer","description":"Lecturer clearance office","enabled":true},{"id":"library","name":"Library","description":"Library clearance office","enabled":true},{"id":"principal","name":"Principal","description":"Principal clearance office","enabled":true},{"id":"smart-card","name":"Smart Card","description":"Smart Card clearance office","enabled":true},{"id":"supervisor","name":"Research Supervisor","description":"Postgraduate Stage 6 Research Supervisor clearance","enabled":true},{"id":"usab","name":"USAB","description":"USAB clearance office","enabled":true},{"id":"workshop","name":"Workshop","description":"Workshop clearance office","enabled":true}]',
   '[{"label":"ARIS 3","url":"https://aris3.udsm.ac.tz/"},{"label":"UDSM","url":"https://www.udsm.ac.tz/"}]',
   '[]'
 )

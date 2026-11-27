@@ -14,6 +14,18 @@ class DusSecretaryController {
 
   static async getStudents(req, res, next) {
     try {
+      const paginated = String(req.query.paginated || '').toLowerCase() === 'true' || req.query.page !== undefined;
+      if (paginated) {
+        const result = await DusSecretaryService.getStudents({
+          paginated: true,
+          query: req.query.query,
+          page: req.query.page,
+          pageSize: req.query.pageSize,
+          section: req.query.section,
+          filterTab: req.query.filterTab
+        });
+        return res.status(200).json(result);
+      }
       const students = await DusSecretaryService.getStudents(req.query.query);
       return res.status(200).json(students);
     } catch (err) {

@@ -49,7 +49,7 @@ class ConvocationController {
 
   static async getReceiptStatus(req, res, next) {
     try {
-      const response = await ConvocationService.getReceiptStatus(req.params.studentId);
+      const response = await ConvocationService.getReceiptStatus(req.params.studentId, req.user);
       return res.status(200).json(response);
     } catch (err) {
       next(err);

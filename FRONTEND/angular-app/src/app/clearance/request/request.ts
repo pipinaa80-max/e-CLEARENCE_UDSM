@@ -6,13 +6,15 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { ClearanceService } from '../../core/services/clearance.service';
 import { AuthService } from '../../core/services/auth.service';
+import { isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../../shared/components/student-sidebar/student-sidebar';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { HostelService } from '../../core/services/hostel.service';
 import { SponsorService } from '../../core/services/sponsor.service';
@@ -32,9 +34,8 @@ interface AcademicUnitData {
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    RouterLink,
-    RouterLinkActive,
-    DashboardHeaderComponent
+    DashboardHeaderComponent,
+    StudentSidebarComponent
   ],
   templateUrl: './request.html',
   styleUrl: './request.css'
@@ -72,10 +73,13 @@ export class ClearanceRequestComponent implements OnInit {
     residenceEvidence: [''],
     sponsor: ['', Validators.required],
     photo: [''],
+    undergraduateCertificate: [''],
     confirm: [false, Validators.requiredTrue]
   });
 
   photoPreview: string | null = null;
+  residenceEvidenceFileName: string | null = null;
+  undergraduateCertificateFileName: string | null = null;
   isSubmitting = false;
   hasSubmittedRequest = false;
 
@@ -185,6 +189,9 @@ export class ClearanceRequestComponent implements OnInit {
         'BSc in Microbiology',
         'BSc in Applied Microbiology and Chemistry'
       ],
+      'Natural and Applied Sciences': [
+        'BSc with Education'
+      ],
       'Physics': [
         'BSc in Physics (Medical Physics)',
         'BSc in Meteorology'
@@ -198,10 +205,16 @@ export class ClearanceRequestComponent implements OnInit {
       'Geography': [
         'BA in Geography and Environmental Studies'
       ],
+      'Information Studies': [
+        'BA in Library and Information Studies'
+      ],
       'Political Science and Public Administration': [
         'BA in Political Science and Public Administration'
       ],
-      'Sociology and Anthropology': [
+      'Social Sciences': [
+        'BA with Education'
+      ],
+      'Sociology': [
         'BA in Anthropology',
         'BA in Psychology',
         'BA in Sociology',
@@ -209,9 +222,6 @@ export class ClearanceRequestComponent implements OnInit {
       ],
       'Statistics': [
         'BA in Statistics'
-      ],
-      'Information Studies Unit': [
-        'BA in Library and Information Studies'
       ]
     },
     'University of Dar es Salaam Business School (UDBS)': {
@@ -303,8 +313,25 @@ export class ClearanceRequestComponent implements OnInit {
       ]
     },
     'Institute of Marine Sciences (IMS)': {
-      'Marine and Coastal Resources / Marine Sciences': [
+      'Marine Sciences': [
         'Bachelor of Science in Marine Sciences'
+      ]
+    },
+    'Mineral Resources Institute (MRI)': {
+      'Environmental Engineering and Management': [
+        'Diploma in Environmental Engineering and Management in Mines'
+      ],
+      'Geology and Mineral Exploration': [
+        'Diploma in Geology and Mineral Exploration'
+      ],
+      'Land and Mine Surveying': [
+        'Diploma in Land and Mine Surveying'
+      ],
+      'Mining Engineering': [
+        'Diploma in Mining Engineering'
+      ],
+      'Petroleum Geosciences and Exploration': [
+        'Diploma in Petroleum Geosciences and Exploration'
       ]
     },
     'Dar es Salaam University College of Education (DUCE)': {
@@ -322,9 +349,15 @@ export class ClearanceRequestComponent implements OnInit {
       ]
     },
     'Mbeya College of Health and Allied Sciences (MCHAS)': {
-      'Health Sciences': [
+      'Clinical Medicine': [
         'Doctor of Medicine (MD)',
         'Doctor of Dental Surgery (DDS)'
+      ],
+      'Pharmacy': [
+        'Bachelor of Pharmacy'
+      ],
+      'Nursing': [
+        'Bachelor of Science in Nursing'
       ]
     }
   };
@@ -442,17 +475,31 @@ export class ClearanceRequestComponent implements OnInit {
 
     this.loadStudentData();
 
-    if (this.hasExistingRequest()) {
+    const applyExistingRequestState = (notifyIfLocked: boolean): void => {
+      if (!this.hasExistingRequest()) return;
       this.loadExistingRequest();
 
       if (this.revisionRequest) {
         this.hasSubmittedRequest = false;
+        this.requestForm.enable();
       } else {
+        const wasLocked = this.hasSubmittedRequest;
         this.hasSubmittedRequest = true;
-        this.toastService.info('Already Submitted', 'You have already submitted a clearance request.');
+        if (notifyIfLocked && !wasLocked) {
+          this.toastService.info('Already Submitted', 'You have already submitted a clearance request.');
+        }
         this.requestForm.disable();
       }
-    }
+    };
+
+    applyExistingRequestState(true);
+
+    // Always sync authoritative clearance request from MySQL (handles fresh login / cleared cache)
+    this.clearanceService.fetchMyRequest().subscribe(serverReq => {
+      if (serverReq) {
+        applyExistingRequestState(true);
+      }
+    });
   }
 
   private hasExistingRequest(): boolean {
@@ -593,7 +640,11 @@ export class ClearanceRequestComponent implements OnInit {
       block: block,
       roomNumber: roomNumber,
       sponsor: sponsorValue,
-      photo: user.photo || ''
+      photo: user.photo || '',
+      undergraduateCertificate:
+        user.undergraduateCertificateUrl ||
+        this.requestForm.controls.undergraduateCertificate.value ||
+        ''
     });
 
     // Set photo preview if exists
@@ -601,7 +652,9 @@ export class ClearanceRequestComponent implements OnInit {
       this.photoPreview = user.photo;
     }
 
-    console.log('Form patched with user data:', this.requestForm.value);
+    if (user.undergraduateCertificateUrl && !this.undergraduateCertificateFileName) {
+      this.undergraduateCertificateFileName = 'Existing Undergraduate Certificate';
+    }
   }
 
   private loadExistingRequest(): void {
@@ -650,11 +703,19 @@ export class ClearanceRequestComponent implements OnInit {
       residenceEvidence: request.residenceEvidence || '',
       sponsor: sponsorVal,
       photo: request.photo || this.requestForm.controls.photo.value,
+      undergraduateCertificate:
+        request.undergraduateCertificateUrl ||
+        this.requestForm.controls.undergraduateCertificate.value ||
+        '',
       confirm: true
     });
 
     if (request.photo) {
       this.photoPreview = request.photo;
+    }
+
+    if (request.undergraduateCertificateUrl && !this.undergraduateCertificateFileName) {
+      this.undergraduateCertificateFileName = 'Existing Undergraduate Certificate';
     }
   }
 
@@ -734,6 +795,7 @@ export class ClearanceRequestComponent implements OnInit {
 
     const reader = new FileReader();
     reader.onload = () => {
+      this.residenceEvidenceFileName = file.name;
       this.requestForm.controls.residenceEvidence.setValue(reader.result as string);
     };
     reader.onerror = () => {
@@ -741,6 +803,96 @@ export class ClearanceRequestComponent implements OnInit {
       input.value = '';
     };
     reader.readAsDataURL(file);
+  }
+
+  get isPostgraduate(): boolean {
+    const user = this.currentUser;
+    if (!user) return false;
+    return isPostgraduateEntity({
+      isPostgraduate: user.isPostgraduate,
+      award: user.award,
+      programme: user.programme || this.requestForm.controls.programme.value
+    });
+  }
+
+  onUndergraduateCertificateSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    this.requestForm.controls.undergraduateCertificate.setValue('');
+    this.undergraduateCertificateFileName = null;
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      this.toastService.warning('Invalid File', 'Undergraduate certificate must be an image or PDF file.');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.undergraduateCertificateFileName = file.name;
+      this.requestForm.controls.undergraduateCertificate.setValue(reader.result as string);
+      this.toastService.success('File Attached', `${file.name} ready for upload.`);
+    };
+    reader.onerror = () => {
+      this.toastService.error('Read Error', 'Failed to read undergraduate certificate file.');
+      input.value = '';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  viewingDocumentUrl: string | null = null;
+  viewingDocumentTitle: string = '';
+
+  viewUndergraduateCertificate(): void {
+    const val = this.requestForm.controls.undergraduateCertificate.value;
+    if (val) {
+      this.viewingDocumentUrl = val;
+      this.viewingDocumentTitle = this.undergraduateCertificateFileName || 'Undergraduate Certificate';
+    }
+  }
+
+  removeUndergraduateCertificate(input?: HTMLInputElement): void {
+    this.requestForm.controls.undergraduateCertificate.setValue('');
+    this.undergraduateCertificateFileName = null;
+    if (input) input.value = '';
+    this.toastService.info('File Removed', 'Undergraduate certificate removed.');
+  }
+
+  viewPassportPhoto(): void {
+    if (this.photoPreview) {
+      this.viewingDocumentUrl = this.photoPreview;
+      this.viewingDocumentTitle = 'Passport Photo';
+    }
+  }
+
+  removePassportPhoto(input?: HTMLInputElement): void {
+    this.photoPreview = null;
+    this.requestForm.patchValue({ photo: '' });
+    if (input) input.value = '';
+    this.toastService.info('Photo Removed', 'Passport photo removed.');
+  }
+
+  viewResidenceEvidence(): void {
+    const val = this.requestForm.controls.residenceEvidence.value;
+    if (val) {
+      this.viewingDocumentUrl = val;
+      this.viewingDocumentTitle = this.residenceEvidenceFileName || 'Residence Evidence';
+    }
+  }
+
+  removeResidenceEvidence(input?: HTMLInputElement): void {
+    this.requestForm.controls.residenceEvidence.setValue('');
+    this.residenceEvidenceFileName = null;
+    if (input) input.value = '';
+    this.toastService.info('File Removed', 'Residence evidence removed.');
+  }
+
+  closeDocumentViewer(): void {
+    this.viewingDocumentUrl = null;
+    this.viewingDocumentTitle = '';
   }
 
   // =====================================================
@@ -917,6 +1069,15 @@ export class ClearanceRequestComponent implements OnInit {
       return;
     }
 
+    if (this.isPostgraduate && !value.undergraduateCertificate) {
+      this.toastService.warning(
+        'Undergraduate Certificate Required',
+        'Postgraduate candidates must attach their prior Undergraduate Degree Certificate for Research Supervisor verification.'
+      );
+      this.isSubmitting = false;
+      return;
+    }
+
     const finalHall = value.residenceType === 'Hostel Dwellers' ? value.hostelHall : 'Non-Hostel Dwellers';
     const finalWing = (value.residenceType === 'Hostel Dwellers' && this.isCoictHostel) ? value.wing : '';
     const finalBlock = (value.residenceType === 'Hostel Dwellers' && this.isBlockHostel) ? value.block : '';
@@ -941,7 +1102,10 @@ export class ClearanceRequestComponent implements OnInit {
           residenceType: value.residenceType as 'Hostel Dwellers' | 'Non-Hostel Dwellers',
           residenceEvidence: value.residenceEvidence,
           sponsor: value.sponsor,
-          photo: value.photo
+          photo: value.photo,
+          award: user.award,
+          isPostgraduate: this.isPostgraduate,
+          undergraduateCertificateUrl: value.undergraduateCertificate
         });
 
         if (!resubmitted) {
@@ -1025,7 +1189,10 @@ export class ClearanceRequestComponent implements OnInit {
         block: finalBlock,
         roomNumber: finalRoomNumber,
         sponsor: value.sponsor,
-        photo: value.photo
+        photo: value.photo,
+        award: user.award,
+        isPostgraduate: this.isPostgraduate,
+        undergraduateCertificate: value.undergraduateCertificate
       }));
 
       this.clearanceService.createFullRequest({
@@ -1046,7 +1213,10 @@ export class ClearanceRequestComponent implements OnInit {
         residenceType: value.residenceType as 'Hostel Dwellers' | 'Non-Hostel Dwellers',
         residenceEvidence: value.residenceEvidence,
         sponsor: value.sponsor,
-        photo: value.photo
+        photo: value.photo,
+        award: user.award,
+        isPostgraduate: this.isPostgraduate,
+        undergraduateCertificate: value.undergraduateCertificate
       });
 
       this.hasSubmittedRequest = true;

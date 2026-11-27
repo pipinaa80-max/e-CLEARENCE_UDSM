@@ -34,14 +34,22 @@ class StudentDebtController {
 
   static async bulkUpload(req, res, next) {
     try {
-      const count = await StudentDebtService.bulkUpload(req.user, req.file, {
+      const result = await StudentDebtService.bulkUpload(req.user, req.file, {
         ip: req.ip,
         userAgent: req.headers['user-agent']
       });
+      const count = typeof result === 'number' ? result : result.count;
+      const skippedCount = typeof result === 'number' ? 0 : result.skippedCount;
+      const errors = typeof result === 'number' ? [] : result.errors;
+      const message = skippedCount > 0
+        ? `Flagged ${count} student(s); skipped ${skippedCount} row(s).`
+        : `Successfully flagged ${count} student(s) in bulk.`;
       return res.status(200).json({
         success: true,
         count,
-        message: `Successfully flagged ${count} students in bulk.`
+        skippedCount,
+        errors,
+        message
       });
     } catch (err) {
       next(err);

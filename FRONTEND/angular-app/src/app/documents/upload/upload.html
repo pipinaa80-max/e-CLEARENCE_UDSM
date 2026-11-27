@@ -1,42 +1,60 @@
-<section class="upload-page">
-<div class="upload-card">
-        <header>
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-              <img src="/udsm-logo.png" alt="University of Dar es Salaam" style="width: 44px; height: 44px; object-fit: contain;" />
-              <div>
-                <strong style="color: var(--udsm-blue-dark); font-size: 1.1rem; display: block;">University of Dar es Salaam</strong>
-                <small style="color: var(--text-muted);">Student Clearance Documents</small>
-              </div>
-            </div>
-            <h1>Required Clearance Documents</h1><p>Step 2 of 2: upload all four documents. Your profile is updated automatically when they are complete.</p>
-        </header>
-    <div class="checklist">
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
+
+  <main class="content-panel">
+    <app-dashboard-header
+      title="Upload Document"
+      subtitle="Upload your required academic and birth certificates (PDF, JPG, or PNG)."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <a routerLink="/documents" class="documents-nav-link">View Uploaded Documents</a>
+      </div>
+    </app-dashboard-header>
+
+    <div class="upload-card">
+      <header>
+        <h2>Document Checklist</h2>
+        <p>Select a category below and attach a clear scan or photo of your certificate.</p>
+      </header>
+
+      <div class="checklist">
         <div *ngFor="let category of categories" [class.complete]="!missingCategories.includes(category)">
-            <span>
-              <i *ngIf="!missingCategories.includes(category)" class="bi bi-check-circle-fill"></i>
-              <i *ngIf="missingCategories.includes(category)" class="bi bi-circle"></i>
-            </span>
-            <div>
-                <strong>{{ category }}</strong>
-                <small *ngIf="category === 'Identity Document'">{{ identityHelp }}</small>
-            </div>
+          <span>
+            <i *ngIf="!missingCategories.includes(category)" class="bi bi-check-circle-fill"></i>
+            <i *ngIf="missingCategories.includes(category)" class="bi bi-circle"></i>
+          </span>
+          <div>
+            <strong>{{ category }}</strong>
+            <small>{{ !missingCategories.includes(category) ? 'Uploaded' : 'Pending upload' }}</small>
+          </div>
         </div>
-    </div>
-    <form [formGroup]="uploadForm" (ngSubmit)="submit()">
+      </div>
+
+      <form [formGroup]="uploadForm" (ngSubmit)="submit()">
         <label class="field">
-            <span>Document Category</span>
-            <select formControlName="category">
-                <option *ngFor="let category of missingCategories" [value]="category">{{ category }}</option>
-            </select>
+          <span>Document Category</span>
+          <select formControlName="category">
+            <option *ngFor="let category of missingCategories" [value]="category">{{ category }}</option>
+            <option *ngIf="!missingCategories.length" value="" disabled>All listed categories uploaded</option>
+          </select>
         </label>
-        
+
         <label class="field file-field">
-            <span>Choose File</span>
-            <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
+          <span>Choose File (PDF, JPG, PNG)</span>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onFileSelected($event)" />
+          <small *ngIf="selectedFile" style="color: #0369a1; font-weight: 600;">Selected: {{ selectedFile.name }}</small>
         </label>
-        <button type="submit" [disabled]="!missingCategories.length">Upload Document</button>
-    </form>
-    
-    <a routerLink="/documents" class="documents-link">View uploaded documents</a>
-</div>
+
+        <div class="upload-actions">
+          <button type="submit" [disabled]="isSubmitting || !missingCategories.length || !selectedFile">
+            {{ isSubmitting ? 'Uploading...' : 'Upload Document' }}
+          </button>
+          <a routerLink="/documents" class="documents-link">View Uploaded Documents</a>
+        </div>
+      </form>
+    </div>
+  </main>
 </section>

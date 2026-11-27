@@ -127,7 +127,7 @@ class DocumentController {
   static async hasRequiredDocuments(req, res, next) {
     try {
       const { studentId } = req.params;
-      const hasReq = await DocumentService.hasRequiredDocuments(studentId);
+      const hasReq = await DocumentService.hasRequiredDocuments(studentId, req.user);
       return res.status(200).json(hasReq);
     } catch (err) {
       next(err);

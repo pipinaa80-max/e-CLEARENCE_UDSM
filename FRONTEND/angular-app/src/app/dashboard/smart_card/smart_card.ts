@@ -1,107 +1,67 @@
 // src/app/dashboard/smart_card/smart_card.ts
-
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ClearanceRequest } from '../../core/models/clearance.model';
+import { ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ParallelOfficeRequestTableComponent } from '../../shared/components/parallel-office-request-table/parallel-office-request-table';
 
-export interface CardStationItem {
+export interface SmartCardDeskGuide {
   id: string;
   name: string;
-  category: string;
-  capacity: number;
+  campus: string;
   location: string;
-  officerName: string;
-  officerContact: string;
   services: string[];
   description: string;
 }
 
-export interface CollegeCardRankingItem {
-  rank: number;
-  collegeCode: string;
-  fullName: string;
-  studentCount: number;
-  clearedCount: number;
+export interface CollegeSmartCardStat {
+  college: string;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
   clearanceRate: number;
-  activityLevel: string;
-  badgeClass: string;
 }
 
-const DEFAULT_STATIONS: CardStationItem[] = [
+const UDSM_CARD_DESKS: SmartCardDeskGuide[] = [
   {
-    id: 'central-admin-dus',
-    name: 'Central Admin Smart Card Center (DUS Desk)',
-    category: 'Central Issuance & Deactivation',
-    capacity: 28000,
-    location: 'Main Administration Block Ground Floor Room 12',
-    officerName: 'Chief Registrar Officer J. Mtei',
-    officerContact: '+255 22 241 0801',
-    services: ['Undergraduate Smart ID Surrender', 'Biometric Record Archival', 'Lost Card Penalty Verification'],
-    description: 'Central Directorate of Undergraduate Studies smart card clearance, surrender desk, and electronic profile closure.'
+    id: 'central-dus-desk',
+    name: 'Central Smart Card & ID Desk (Main Campus)',
+    campus: 'Mwalimu J.K. Nyerere Campus',
+    location: 'Main Administration Block, Ground Floor',
+    services: ['Physical Student ID Surrender', 'RFID & Turnstile Deactivation', 'Lost Card Penalty Receipt Verification'],
+    description: 'Primary university desk for final-year smart ID handover, electronic access revocation, and biometric archival.'
   },
   {
-    id: 'coict-card-unit',
-    name: 'CoICT Biometric & Smart ID Station',
-    category: 'Collegiate Biometric Center',
-    capacity: 4500,
-    location: 'Kijitonyama Campus Block A Room 104',
-    officerName: 'Officer F. Mtambo',
-    officerContact: '+255 22 241 0802',
-    services: ['RFID Chip Deactivation', 'Lab Access Revocation', 'Final Clearance Endorsement'],
-    description: 'Handles smart cards, lab door RFID access tokens, and computing facilities access deactivation.'
+    id: 'coict-card-desk',
+    name: 'CoICT Biometric & Access Control Desk',
+    campus: 'Kijitonyama Campus',
+    location: 'CoICT Block A, Ground Floor',
+    services: ['Smart ID Handover', 'Computer Lab RFID Revocation', 'Clearance Confirmation'],
+    description: 'Handles CoICT student smart cards and specialized laboratory door access deactivation.'
   },
   {
     id: 'coet-card-desk',
-    name: 'CoET Engineering Student Card Unit',
-    category: 'Collegiate Issuance Center',
-    capacity: 5500,
-    location: 'Engineering Complex Block B Room 16',
-    officerName: 'Officer R. Lyimo',
-    officerContact: '+255 22 241 0803',
-    services: ['Student ID Handover', 'Workshop Access Deactivation', 'Fee Penalty Clearance'],
-    description: 'Coordinates smart ID card recovery for engineering candidates and specialized workshop badges.'
+    name: 'CoET Engineering Card Desk',
+    campus: 'Mwalimu J.K. Nyerere Campus',
+    location: 'Engineering Complex, Block B',
+    services: ['Student ID Surrender', 'Workshop Access Deactivation', 'Lost Card Verification'],
+    description: 'Coordinates smart ID recovery and workshop access pass deactivation for engineering students.'
   },
   {
-    id: 'mabibo-card-desk',
-    name: 'Mabibo Complex Smart Card Service Desk',
-    category: 'Residential Satellite Desk',
-    capacity: 5000,
-    location: 'Mabibo Administration Block Ground Floor',
-    officerName: 'Officer E. Mgaya',
-    officerContact: '+255 22 241 0804',
-    services: ['Hostel Turnstile Access Revocation', 'Meal Wallet Verification', 'Off-Campus Surrender'],
-    description: 'Manages student ID card surrender for residential scholars and turnstile gate clearance at Mabibo.'
-  },
-  {
-    id: 'udbs-card-desk',
-    name: 'UDBS Business School Smart ID Desk',
-    category: 'Business Campus Unit',
-    capacity: 4200,
-    location: 'Business School Tower Level 1',
-    officerName: 'Officer S. Masanja',
-    officerContact: '+255 22 241 0805',
-    services: ['ID Card Return', 'Library RFID Verification', 'E-Wallet Settlement'],
-    description: 'Business school dedicated smart identity clearance desk verifying zero balance on card electronic wallets.'
-  },
-  {
-    id: 'library-turnstile-unit',
-    name: 'Library Turnstiles & Access Verification Desk',
-    category: 'Campus Access Integration',
-    capacity: 35000,
+    id: 'library-turnstile-desk',
+    name: 'Main Library Turnstile & Access Desk',
+    campus: 'Mwalimu J.K. Nyerere Campus',
     location: 'Main Library Foyer Reception',
-    officerName: 'Officer P. Mndeme',
-    officerContact: '+255 22 241 0806',
-    services: ['Turnstile Barcode Scanning', 'Security Barrier De-registration', 'Lost Card Police Verification'],
-    description: 'Verifies physical turnstile security passes and confirms identity card surrender before graduation.'
+    services: ['Turnstile Barcode Verification', 'Security Barrier De-registration', 'Police Loss Report Check'],
+    description: 'Confirms library turnstile pass deactivation and validates police loss reports when a physical ID is missing.'
   }
 ];
 
@@ -118,264 +78,205 @@ export class SmartCardComponent implements OnInit {
   private readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
-  ngOnInit(): void {
-    this.clearanceService.fetchOfficeRequests('Smart Card').subscribe();
-  }
-
-  readonly Math = Math;
   sidebarOpen = false;
-  viewMode: 'overview' | 'requests' | 'stations' | 'analytics' = 'requests';
+  viewMode: 'requests' | 'analytics' | 'desks' = 'requests';
+
+  isLoading = false;
+  isSubmitting = false;
 
   selectedRequest: ClearanceRequest | null = null;
   viewingRequest: ClearanceRequest | null = null;
+  enlargedPhotoUrl: string | null = null;
+
   rejectionComment = '';
   message = '';
   messageState: 'success' | 'error' = 'success';
 
   searchTerm = '';
-  filterStatus = 'Pending';
+  filterStatus: 'All' | 'Pending' | 'Approved' | 'Rejected' = 'Pending';
   currentPage = 1;
-  pageSize = 20;
+  pageSize = 15;
 
-  // Analytics Filters & State
-  selectedAnalyticsYear = 'all';
-  selectedAnalyticsGender = 'all';
-  hoveredStationName: string | null = null;
-  hoveredSliceLabel: string | null = null;
+  readonly cardDesks: SmartCardDeskGuide[] = UDSM_CARD_DESKS;
+  deskSearchTerm = '';
 
-  // Stations Directory State
-  stations: CardStationItem[] = [];
-  stationSearchTerm = '';
-  showStationModal = false;
-  editingStationId: string | null = null;
-  expandedStationIds = new Set<string>();
+  private readonly studentCache = new Map<string, any>();
 
-  stationForm = {
-    name: '',
-    category: 'Central Issuance & Deactivation',
-    capacity: null as number | null,
-    location: 'Main Campus',
-    officerName: '',
-    officerContact: '',
-    servicesText: '',
-    description: ''
-  };
-
-  constructor() {
-    this.loadStations();
+  ngOnInit(): void {
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['requests', 'analytics', 'desks'].includes(initialTab)) {
+      this.viewMode = initialTab as any;
+    }
+    this.loadRequests();
   }
 
-  setViewMode(mode: 'overview' | 'requests' | 'stations' | 'analytics'): void {
-    this.viewMode = mode;
-    this.sidebarOpen = false;
-  }
-
-  loadStations(): void {
-    const saved = localStorage.getItem('udsm-smartcard-stations');
-    if (saved) {
-      try {
-        this.stations = JSON.parse(saved);
-      } catch {
-        this.stations = [...DEFAULT_STATIONS];
+  loadRequests(showToast = false): void {
+    this.isLoading = true;
+    this.clearanceService.fetchOfficeRequests('Smart Card').subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.clampPage();
+        if (showToast) {
+          this.toastService.success('Refreshed', 'Smart Card clearance queue updated.');
+        }
+      },
+      error: (err) => {
+        this.isLoading = false;
+        const msg = err?.error?.message || 'Unable to load Smart Card clearance requests.';
+        this.toastService.error('Load Failed', msg);
       }
-    } else {
-      this.stations = [...DEFAULT_STATIONS];
-      this.saveStationsToStorage();
-    }
-  }
-
-  saveStationsToStorage(): void {
-    localStorage.setItem('udsm-smartcard-stations', JSON.stringify(this.stations));
-  }
-
-  get filteredStations(): CardStationItem[] {
-    const s = this.stationSearchTerm.trim().toLowerCase();
-    if (!s) return this.stations;
-    return this.stations.filter(st =>
-      st.name.toLowerCase().includes(s) ||
-      st.category.toLowerCase().includes(s) ||
-      st.location.toLowerCase().includes(s) ||
-      st.officerName.toLowerCase().includes(s) ||
-      st.services.some(srv => srv.toLowerCase().includes(s))
-    );
-  }
-
-  toggleStationDetails(id: string): void {
-    if (this.expandedStationIds.has(id)) {
-      this.expandedStationIds.delete(id);
-    } else {
-      this.expandedStationIds.add(id);
-    }
-  }
-
-  isStationExpanded(id: string): boolean {
-    return this.expandedStationIds.has(id);
-  }
-
-  openAddStationModal(): void {
-    this.editingStationId = null;
-    this.stationForm = {
-      name: '',
-      category: 'Central Issuance & Deactivation',
-      capacity: null,
-      location: 'Main Campus',
-      officerName: '',
-      officerContact: '',
-      servicesText: '',
-      description: ''
-    };
-    this.showStationModal = true;
-  }
-
-  openEditStationModal(station: CardStationItem): void {
-    this.editingStationId = station.id;
-    this.stationForm = {
-      name: station.name,
-      category: station.category,
-      capacity: station.capacity,
-      location: station.location,
-      officerName: station.officerName,
-      officerContact: station.officerContact,
-      servicesText: (station.services || []).join(', '),
-      description: station.description
-    };
-    this.showStationModal = true;
-  }
-
-  closeStationModal(): void {
-    this.showStationModal = false;
-    this.editingStationId = null;
-  }
-
-  saveStation(): void {
-    const name = this.stationForm.name.trim();
-    if (!name) {
-      this.toastService.warning('Validation', 'Station name is required.');
-      return;
-    }
-
-    const services = this.stationForm.servicesText.split(',').map(s => s.trim()).filter(Boolean);
-    const id = this.editingStationId || name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-
-    const station: CardStationItem = {
-      id,
-      name,
-      category: this.stationForm.category.trim() || 'Smart ID Station',
-      capacity: this.stationForm.capacity ? Number(this.stationForm.capacity) : 5000,
-      location: this.stationForm.location.trim() || 'Main Campus',
-      officerName: this.stationForm.officerName.trim() || 'Card Officer',
-      officerContact: this.stationForm.officerContact.trim() || '+255 22 241 0800',
-      services: services.length ? services : ['Smart Card Deactivation'],
-      description: this.stationForm.description.trim() || 'Smart card and electronic identity processing station.'
-    };
-
-    const index = this.stations.findIndex(s => s.id === id);
-    if (index >= 0) {
-      this.stations[index] = station;
-    } else {
-      this.stations.push(station);
-    }
-
-    this.saveStationsToStorage();
-    this.closeStationModal();
-    this.toastService.success('Saved', `Station "${name}" saved successfully.`);
-  }
-
-  deleteStation(station: CardStationItem): void {
-    if (!confirm(`Are you sure you want to remove "${station.name}"?`)) return;
-    this.stations = this.stations.filter(s => s.id !== station.id);
-    this.saveStationsToStorage();
-    this.toastService.info('Removed', `Station "${station.name}" removed.`);
-  }
-
-  resetStations(): void {
-    if (!confirm('Reset all smart card stations to standard defaults?')) return;
-    this.stations = [...DEFAULT_STATIONS];
-    this.saveStationsToStorage();
-    this.toastService.success('Reset', 'Smart card stations restored to standard defaults.');
-  }
-
-  // Table & Requests
-  get paginatedRequests(): ClearanceRequest[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRequests.slice(start, start + this.pageSize);
-  }
-
-  get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
-  }
-
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  prevPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }
-
-  onFilterChange(): void {
-    this.currentPage = 1;
+    });
   }
 
   get currentUser() {
     return this.authService.getCurrentUser();
   }
 
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
-
-  closeSidebar(): void {
-    this.sidebarOpen = false;
-  }
-
-  onLogoError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img && !img.dataset['fallback']) {
-      img.dataset['fallback'] = '1';
-      img.src = '/udsm-logo.jpg';
-    } else if (img && img.dataset['fallback'] === '1') {
-      img.dataset['fallback'] = '2';
-      img.src = 'assets/udsm-logo.png';
-    }
-  }
-
-  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
   }
 
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Smart Card');
   }
 
+  get totalRequestCount(): number {
+    return this.requests.length;
+  }
+
   get pendingRequestCount(): number {
-    return this.requests.filter(request => this.getRequestOfficeStatus(request, 'Smart Card') === 'Pending').length;
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Pending').length;
+  }
+
+  get approvedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Approved').length;
+  }
+
+  get rejectedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r) === 'Rejected').length;
+  }
+
+  get clearanceRatePercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.approvedRequestCount / this.totalRequestCount) * 100);
   }
 
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
 
-    if (this.searchTerm.trim()) {
-      const s = this.searchTerm.toLowerCase();
+    if (this.filterStatus !== 'All') {
+      list = list.filter(r => this.getRequestOfficeStatus(r) === this.filterStatus);
+    }
+
+    const s = this.searchTerm.trim().toLowerCase();
+    if (s) {
       list = list.filter(r =>
         this.getStudentName(r).toLowerCase().includes(s) ||
         this.getStudentRegNumber(r).toLowerCase().includes(s) ||
-        r.programme.toLowerCase().includes(s)
+        this.getStudentProgramme(r).toLowerCase().includes(s) ||
+        this.getStudentCollege(r).toLowerCase().includes(s) ||
+        this.getStudentDepartment(r).toLowerCase().includes(s)
       );
     }
 
-    return list.filter(r => this.getRequestOfficeStatus(r, 'Smart Card') === this.filterStatus);
+    return list;
   }
 
-  // Student Data Cache
-  private studentCache: Map<string, any> = new Map();
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+  }
+
+  get paginatedRequests(): ClearanceRequest[] {
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  get filteredDesks(): SmartCardDeskGuide[] {
+    const s = this.deskSearchTerm.trim().toLowerCase();
+    if (!s) return this.cardDesks;
+    return this.cardDesks.filter(d =>
+      d.name.toLowerCase().includes(s) ||
+      d.campus.toLowerCase().includes(s) ||
+      d.location.toLowerCase().includes(s) ||
+      d.services.some(srv => srv.toLowerCase().includes(s))
+    );
+  }
+
+  get collegeBreakdown(): CollegeSmartCardStat[] {
+    const map = new Map<string, { college: string; total: number; approved: number; pending: number; rejected: number }>();
+    for (const req of this.requests) {
+      const college = this.getStudentCollege(req) !== '—' ? this.getStudentCollege(req) : 'Unassigned College';
+      const rec = map.get(college) || { college, total: 0, approved: 0, pending: 0, rejected: 0 };
+      rec.total += 1;
+      const st = this.getRequestOfficeStatus(req);
+      if (st === 'Approved') rec.approved += 1;
+      else if (st === 'Rejected') rec.rejected += 1;
+      else rec.pending += 1;
+      map.set(college, rec);
+    }
+
+    return Array.from(map.values())
+      .map(rec => ({
+        ...rec,
+        clearanceRate: rec.total > 0 ? Math.round((rec.approved / rec.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  setViewMode(mode: 'requests' | 'analytics' | 'desks'): void {
+    this.viewMode = mode;
+    this.closeSidebar();
+  }
+
+  selectStatusFilter(status: 'All' | 'Pending' | 'Approved' | 'Rejected'): void {
+    this.viewMode = 'requests';
+    this.filterStatus = status;
+    this.currentPage = 1;
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  onTableMutated(): void {
+    this.clampPage();
+  }
+
+  private clampPage(): void {
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  getSmartCardApproval(request: ClearanceRequest): OfficeApproval | undefined {
+    return request.approvals.find(a => a.office === 'Smart Card');
+  }
+
+  getRequestOfficeStatus(request: ClearanceRequest, office: string = 'Smart Card'): string {
+    return request.approvals.find(a => a.office === office)?.status ?? 'Pending';
+  }
+
+  getSmartCardStatusSummary(request: ClearanceRequest): string {
+    const status = this.getRequestOfficeStatus(request);
+    if (status === 'Approved') return 'Smart ID Card Cleared · Remaining Parallel Offices Unlocked';
+    if (status === 'Rejected') return 'Action Required · Returned to Student';
+    return 'Awaiting Physical Card Surrender Verification';
+  }
 
   private getStudentData(studentId: string): any | null {
     if (this.studentCache.has(studentId)) {
@@ -385,15 +286,14 @@ export class SmartCardComponent implements OnInit {
       const usersJson = localStorage.getItem('udsm-local-users');
       if (usersJson) {
         const users = JSON.parse(usersJson);
-        const user = users.find((u: any) => u.id === studentId);
-        if (user) {
-          this.studentCache.set(studentId, user);
-          return user;
-        }
+        const user = Array.isArray(users) ? users.find((u: any) => u.id === studentId) : null;
+        this.studentCache.set(studentId, user ?? null);
+        return user ?? null;
       }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
+    } catch {
+      // Ignore local storage errors
     }
+    this.studentCache.set(studentId, null);
     return null;
   }
 
@@ -401,9 +301,9 @@ export class SmartCardComponent implements OnInit {
     if (request.studentName) return request.studentName;
     const user = this.getStudentData(request.studentId);
     if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
+      return user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || user.registrationNumber || 'Student';
     }
-    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
+    return request.registrationNumber || 'Student';
   }
 
   getStudentRegNumber(request: ClearanceRequest): string {
@@ -414,43 +314,34 @@ export class SmartCardComponent implements OnInit {
     let photo = request.photo;
     if (!photo) {
       const user = this.getStudentData(request.studentId);
-      if (user) {
-        photo = user.photo || user.profilePhoto || user.profileImageUrl;
-      }
+      photo = user?.photo || user?.profilePhoto || user?.profileImageUrl;
     }
     if (!photo) return null;
-
     if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
       return photo;
     }
-    if (photo.length > 50) {
-      return 'data:image/jpeg;base64,' + photo;
-    }
-    return photo;
+    return photo.length > 50 ? `data:image/jpeg;base64,${photo}` : photo;
   }
 
   getStudentInitials(request: ClearanceRequest): string {
     const name = this.getStudentName(request);
-    if (!name || name === 'Student') return 'ST';
-    const parts = name.split(' ');
-    let initials = '';
-    for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) initials += parts[i].charAt(0);
-    }
-    return initials.toUpperCase();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'ST';
+    return parts.slice(0, 2).map(p => p.charAt(0).toUpperCase()).join('');
   }
 
   hasPhoto(request: ClearanceRequest): boolean {
     return !!this.getStudentPhoto(request);
   }
 
-  enlargedPhotoUrl: string | null = null;
   openEnlargedPhoto(photoUrl: string | null): void {
     if (photoUrl) this.enlargedPhotoUrl = photoUrl;
   }
+
   closeEnlargedPhoto(): void {
     this.enlargedPhotoUrl = null;
   }
+
   openStudentDetailsModal(request: ClearanceRequest): void {
     this.viewingRequest = request;
   }
@@ -480,56 +371,44 @@ export class SmartCardComponent implements OnInit {
   }
 
   getStudentPhone(request: ClearanceRequest): string {
-    return request.phoneNumber || this.getStudentData(request.studentId)?.phoneNumber || this.getStudentData(request.studentId)?.phone || '—';
-  }
-
-  getStudentCardNumber(request: ClearanceRequest): string {
-    const reg = request.registrationNumber || request.studentId;
-    let hash = 0;
-    for (let i = 0; i < reg.length; i++) hash = (hash * 31 + reg.charCodeAt(i)) & 0xffffffff;
-    const num = Math.abs(hash) % 9000000 + 1000000;
-    return `UDSM-SC-${num}`;
-  }
-
-  getStudentCardStatus(request: ClearanceRequest): string {
-    const status = this.getRequestOfficeStatus(request, 'Smart Card');
-    if (status === 'Approved') return 'Physical Card Surrendered & RFID Chip Deactivated';
-    if (status === 'Rejected') return 'Card Not Returned / Lost Card Replacement Fee Pending';
-    return 'Physical Card Surrender Awaiting Verification';
-  }
-
-  getStudentReplacementFee(request: ClearanceRequest): string {
-    const status = this.getRequestOfficeStatus(request, 'Smart Card');
-    if (status === 'Rejected') return 'TZS 20,000 (Lost Card Replacement Penalty)';
-    return 'TZS 0.00 (Standard Surrender)';
+    const u = this.getStudentData(request.studentId);
+    return request.phoneNumber || u?.phoneNumber || u?.phone || '—';
   }
 
   async approve(request: ClearanceRequest): Promise<void> {
+    if (this.isSubmitting) return;
     const staff = this.authService.getCurrentUser();
     if (!staff) {
       this.router.navigate(['/login']);
       return;
     }
+
+    this.isSubmitting = true;
     const studentName = this.getStudentName(request);
-    if (!await this.clearanceService.approveRequest(
-      request.id,
-      'Smart Card',
-      staff.fullName
-    )) {
-      this.messageState = 'error';
-      this.message = 'Smart Card approval could not be completed. Refresh the dashboard and try again.';
-      return;
+    try {
+      const ok = await this.clearanceService.approveRequest(request.id, 'Smart Card', staff.fullName);
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'Smart Card approval could not be completed. Refresh the dashboard and try again.';
+        this.toastService.error('Approval Failed', this.message);
+        return;
+      }
+
+      this.notificationService.createNotification(
+        request.studentId,
+        'Smart Card clearance approved',
+        'The Smart Card office has confirmed your ID card clearance and unlocked the remaining clearance offices.',
+        'success'
+      );
+      this.toastService.success('Approved', `Smart Card clearance approved for ${studentName}.`);
+      this.messageState = 'success';
+      this.message = `Smart Card clearance approved for ${studentName}. Remaining parallel offices are now unlocked.`;
+      this.viewingRequest = null;
+      this.clampPage();
+      setTimeout(() => { this.message = ''; }, 4000);
+    } finally {
+      this.isSubmitting = false;
     }
-    this.notificationService.createNotification(
-      request.studentId,
-      'Smart Card clearance approved',
-      'The Smart Card office has received your student ID card and approved clearance.',
-      'success'
-    );
-    this.toastService.success('Approved', `Smart Card clearance approved for ${studentName}.`);
-    this.messageState = 'success';
-    this.message = 'Smart Card clearance was approved successfully.';
-    setTimeout(() => { this.message = ''; }, 4000);
   }
 
   openRejectForm(request: ClearanceRequest): void {
@@ -539,404 +418,106 @@ export class SmartCardComponent implements OnInit {
     this.messageState = 'success';
   }
 
+  closeRejectForm(): void {
+    this.selectedRequest = null;
+    this.rejectionComment = '';
+  }
+
   async reject(): Promise<void> {
+    if (this.isSubmitting) return;
     const staff = this.authService.getCurrentUser();
     if (!staff || !this.selectedRequest) return;
 
-    if (!this.rejectionComment.trim()) {
-      this.toastService.warning('Comment Required', 'Please provide a reason for rejection.');
+    const reason = this.rejectionComment.trim();
+    if (reason.length < 5) {
+      this.toastService.warning('Comment Required', 'Enter a rejection reason of at least 5 characters.');
       return;
     }
-    const studentName = this.getStudentName(this.selectedRequest);
-    if (!await this.clearanceService.rejectRequest(
-      this.selectedRequest.id,
-      'Smart Card',
-      staff.fullName,
-      this.rejectionComment
-    )) {
-      this.messageState = 'error';
-      this.message = 'Smart Card return could not be processed. Refresh the dashboard and try again.';
-      return;
-    }
-    this.notificationService.createNotification(
-      this.selectedRequest.studentId,
-      'Smart Card action required',
-      this.rejectionComment.trim(),
-      'warning'
-    );
 
-    this.toastService.warning('Returned', `Smart Card clearance request returned for ${studentName}.`);
-    this.messageState = 'success';
-    this.message = 'The student has been notified regarding physical ID surrender or loss fee payment.';
-    this.selectedRequest = null;
-    this.rejectionComment = '';
-    setTimeout(() => { this.message = ''; }, 4000);
-  }
-
-  // =========================================================================
-  // SMART CARD STATISTICAL ANALYTICS ENGINE
-  // =========================================================================
-
-  setHoveredStation(name: string | null): void {
-    this.hoveredStationName = name;
-  }
-
-  setHoveredSlice(label: string | null): void {
-    this.hoveredSliceLabel = label;
-  }
-
-  getStudentGender(request: ClearanceRequest): 'Male' | 'Female' {
-    const user = this.getStudentData(request.studentId);
-    if (user && user.gender) {
-      const g = String(user.gender).trim().toLowerCase();
-      if (g.startsWith('f')) return 'Female';
-      if (g.startsWith('m')) return 'Male';
-    }
-    const name = (this.getStudentName(request) || '').toLowerCase();
-    const femaleIndicators = [
-      'amina', 'fatuma', 'grace', 'mary', 'jane', 'zainab', 'neema', 'rehema',
-      'halima', 'rose', 'hellen', 'esther', 'faith', 'doris', 'irene', 'mwajuma',
-      'asha', 'hadija', 'salma', 'mariam', 'beatrice', 'lucy', 'joyce', 'sarah',
-      'glory', 'mercy', 'catherine', 'judith', 'anna', 'magdalena', 'victoria',
-      'veronica', 'jackline', 'doreen', 'fadhila', 'subira', 'tumaini', 'upendo'
-    ];
-    for (const femaleName of femaleIndicators) {
-      if (name.includes(femaleName)) return 'Female';
-    }
-    const idStr = request.registrationNumber || request.studentId || name;
-    let sum = 0;
-    for (let i = 0; i < idStr.length; i++) sum += idStr.charCodeAt(i);
-    return sum % 2 === 0 ? 'Male' : 'Female';
-  }
-
-  getStudentYear(request: ClearanceRequest): string {
-    const reg = request.registrationNumber || '';
-    const match = reg.match(/\b(202[0-9])\b/);
-    if (match) return match[1];
-    const user = this.getStudentData(request.studentId);
-    if (user?.yearOfStudy) {
-      const yr = Number(user.yearOfStudy);
-      if (yr === 1) return '2024';
-      if (yr === 2) return '2023';
-      if (yr === 3) return '2022';
-      if (yr === 4) return '2021';
-    }
-    if (request.requestDate) {
-      const dateMatch = request.requestDate.match(/\b(202[0-9])\b/);
-      if (dateMatch) return dateMatch[1];
-    }
-    return '2024';
-  }
-
-  get analyticsFilteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
-    if (this.selectedAnalyticsYear !== 'all') {
-      list = list.filter(r => this.getStudentYear(r) === this.selectedAnalyticsYear);
-    }
-    if (this.selectedAnalyticsGender !== 'all') {
-      list = list.filter(r => this.getStudentGender(r) === this.selectedAnalyticsGender);
-    }
-    return list;
-  }
-
-  get totalCardStudents(): number {
-    return this.analyticsFilteredRequests.length;
-  }
-
-  get clearedCardsCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Smart Card') === 'Approved').length;
-  }
-
-  get pendingCardsCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Smart Card') === 'Pending').length;
-  }
-
-  get flaggedCardsCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Smart Card') === 'Rejected').length;
-  }
-
-  get smartCardClearanceRate(): number {
-    const tot = Math.max(1, this.totalCardStudents);
-    return Math.round((this.clearedCardsCount / tot) * 100);
-  }
-
-  get totalStationCapacity(): number {
-    return this.stations.reduce((sum, s) => sum + (s.capacity || 0), 0) || 82200;
-  }
-
-  get genderStats() {
-    const list = this.analyticsFilteredRequests;
-    const total = Math.max(1, list.length);
-    let maleTotal = 0;
-    let femaleTotal = 0;
-    list.forEach(r => {
-      if (this.getStudentGender(r) === 'Male') maleTotal++;
-      else femaleTotal++;
-    });
-
-    return {
-      maleTotal,
-      malePercent: Math.round((maleTotal / total) * 100),
-      femaleTotal,
-      femalePercent: Math.round((femaleTotal / total) * 100),
-      total: list.length
-    };
-  }
-
-  get stationHistogram(): { label: string; count: number; cleared: number; heightPercent: number; clearedPercent: number; pendingPercent: number }[] {
-    const stationNames = [
-      'DUS Central Desk',
-      'CoICT Station',
-      'CoET Desk',
-      'Mabibo Desk',
-      'UDBS Desk',
-      'Library Unit'
-    ];
-    const total = Math.max(1, this.totalCardStudents);
-    const weights = [0.34, 0.22, 0.18, 0.12, 0.08, 0.06];
-
-    return stationNames.map((name, index) => {
-      const estimated = Math.max(1, Math.round(total * weights[index]));
-      const clrPct = this.smartCardClearanceRate;
-      const cleared = Math.round(estimated * (clrPct / 100));
-
-      return {
-        label: name,
-        count: estimated,
-        cleared,
-        heightPercent: Math.max(14, Math.round(weights[index] * 280)),
-        clearedPercent: clrPct,
-        pendingPercent: 100 - clrPct
-      };
-    });
-  }
-
-  get yearResidencyHistogram(): { yearLabel: string; cohort: string; total: number; cleared: number; heightPercent: number; clearanceRate: number }[] {
-    const years = ['2024', '2023', '2022', '2021'];
-    const cohortLabels: Record<string, string> = {
-      '2024': '1st Year (2024)',
-      '2023': '2nd Year (2023)',
-      '2022': '3rd Year (2022)',
-      '2021': '4th Year (2021)'
-    };
-
-    const map = new Map<string, { total: number; cleared: number }>();
-    years.forEach(y => map.set(y, { total: 0, cleared: 0 }));
-
-    this.analyticsFilteredRequests.forEach(r => {
-      const y = this.getStudentYear(r);
-      let rec = map.get(y);
-      if (!rec) {
-        rec = { total: 0, cleared: 0 };
-        map.set(y, rec);
-      }
-      rec.total++;
-      if (this.getRequestOfficeStatus(r, 'Smart Card') === 'Approved') {
-        rec.cleared++;
-      }
-    });
-
-    const maxVol = Math.max(1, ...Array.from(map.values()).map(v => v.total));
-
-    return years.map(y => {
-      const rec = map.get(y) || { total: 0, cleared: 0 };
-      const tot = rec.total;
-      const clrRate = tot > 0 ? Math.round((rec.cleared / tot) * 100) : 0;
-      return {
-        yearLabel: y,
-        cohort: cohortLabels[y] || y,
-        total: tot,
-        cleared: rec.cleared,
-        clearanceRate: clrRate,
-        heightPercent: Math.max(14, Math.round((tot / maxVol) * 100))
-      };
-    });
-  }
-
-  get cardStatusPieSlices() {
-    const tot = Math.max(1, this.totalCardStudents);
-    const items = [
-      { label: 'Smart IDs Surrendered & Cleared', count: this.clearedCardsCount, color: '#10b981' },
-      { label: 'Pending Physical Handover', count: this.pendingCardsCount, color: '#f59e0b' },
-      { label: 'Lost Cards / Penalty Receipt Needed', count: this.flaggedCardsCount, color: '#ef4444' }
-    ];
-
-    let currentAngle = -90;
-    return items.map(item => {
-      const sliceAngle = (item.count / tot) * 360;
-      const effectiveAngle = sliceAngle >= 359.99 ? 359.99 : sliceAngle;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + effectiveAngle;
-      const R = 85;
-      const r = 48;
-      const cx = 110;
-      const cy = 110;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArc = effectiveAngle > 180 ? 1 : 0;
-      const svgPath = `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-      currentAngle += sliceAngle;
-
-      return {
-        ...item,
-        percentage: Math.round((item.count / tot) * 100),
-        svgPath
-      };
-    });
-  }
-
-  get stationSharePieSlices() {
-    const stations = this.stations.slice(0, 6);
-    const colors = ['#00679b', '#059669', '#7c3aed', '#d97706', '#ea580c', '#0891b2'];
-    const totalCap = Math.max(1, stations.reduce((sum, s) => sum + (s.capacity || 0), 0));
-
-    let currentAngle = -90;
-    return stations.map((s, i) => {
-      const count = s.capacity || 5000;
-      const sliceAngle = (count / totalCap) * 360;
-      const effectiveAngle = sliceAngle >= 359.99 ? 359.99 : sliceAngle;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + effectiveAngle;
-      const R = 85;
-      const r = 48;
-      const cx = 110;
-      const cy = 110;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArc = effectiveAngle > 180 ? 1 : 0;
-      const svgPath = `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-      currentAngle += sliceAngle;
-
-      return {
-        label: s.name.replace(' Smart Card Center', '').replace(' Student Card Unit', '').replace(' Desk', ''),
-        count,
-        color: colors[i % colors.length],
-        percentage: Math.round((count / totalCap) * 100),
-        svgPath
-      };
-    });
-  }
-
-  get collegeCardRankings(): CollegeCardRankingItem[] {
-    const colleges = [
-      { code: 'CoET', name: 'College of Engineering and Technology' },
-      { code: 'CoICT', name: 'College of Information & Communication Technologies' },
-      { code: 'UDBS', name: 'University of Dar es Salaam Business School' },
-      { code: 'CoNAS', name: 'College of Natural and Applied Sciences' },
-      { code: 'CoSS', name: 'College of Social Sciences' },
-      { code: 'SoED', name: 'School of Education' }
-    ];
-
-    const map = new Map<string, { studentCount: number; clearedCount: number }>();
-    colleges.forEach(c => map.set(c.code, { studentCount: 0, clearedCount: 0 }));
-
-    this.analyticsFilteredRequests.forEach(r => {
-      const col = (r.college || 'CoET').toUpperCase();
-      const matched = colleges.find(c => col.includes(c.code))?.code || 'CoET';
-      const rec = map.get(matched)!;
-      rec.studentCount++;
-      if (this.getRequestOfficeStatus(r, 'Smart Card') === 'Approved') {
-        rec.clearedCount++;
-      }
-    });
-
-    const list: CollegeCardRankingItem[] = colleges.map(c => {
-      const rec = map.get(c.code) || { studentCount: 0, clearedCount: 0 };
-      const tot = rec.studentCount;
-      const clrRate = tot > 0 ? Math.round((rec.clearedCount / tot) * 100) : 0;
-
-      let activityLevel = 'Normal Surrender';
-      let badgeClass = 'badge-info';
-      if (clrRate >= 75) {
-        activityLevel = 'High Clearance';
-        badgeClass = 'badge-success';
-      } else if (clrRate < 45) {
-        activityLevel = 'Surrender Pending';
-        badgeClass = 'badge-danger';
+    this.isSubmitting = true;
+    const target = this.selectedRequest;
+    const studentName = this.getStudentName(target);
+    try {
+      const ok = await this.clearanceService.rejectRequest(target.id, 'Smart Card', staff.fullName, reason);
+      if (!ok) {
+        this.messageState = 'error';
+        this.message = 'Smart Card return could not be processed. Refresh the dashboard and try again.';
+        this.toastService.error('Return Failed', this.message);
+        return;
       }
 
-      return {
-        rank: 0,
-        collegeCode: c.code,
-        fullName: c.name,
-        studentCount: tot,
-        clearedCount: rec.clearedCount,
-        clearanceRate: clrRate,
-        activityLevel,
-        badgeClass
-      };
-    });
+      this.notificationService.createNotification(
+        target.studentId,
+        'Smart Card action required',
+        reason,
+        'warning'
+      );
+      this.toastService.warning('Returned', `Smart Card clearance returned for ${studentName}.`);
+      this.messageState = 'success';
+      this.message = `Request returned to ${studentName} with Smart Card feedback.`;
+      this.closeRejectForm();
+      this.viewingRequest = null;
+      this.clampPage();
+      setTimeout(() => { this.message = ''; }, 4000);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
 
-    list.sort((a, b) => b.studentCount - a.studentCount);
-    list.forEach((item, index) => {
-      item.rank = index + 1;
-    });
-
-    return list;
+  getStatusPercent(count: number): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((count / this.totalRequestCount) * 100);
   }
 
   downloadAnalyticsCsv(): void {
     const rows = [
-      ['UNIVERSITY OF DAR ES SALAAM - SMART CARD OFFICE CLEARANCE REPORT'],
-      [`Date: ${new Date().toLocaleString()}`],
+      ['UNIVERSITY OF DAR ES SALAAM - SMART CARD CLEARANCE REPORT'],
+      [`Generated: ${new Date().toLocaleString()}`],
       [],
-      ['1. EXECUTIVE METRICS'],
-      ['Total Student IDs Analyzed', String(this.totalCardStudents)],
-      ['Smart Cards Surrendered & Cleared', String(this.clearedCardsCount)],
-      ['Pending Physical Surrenders', String(this.pendingCardsCount)],
-      ['Lost Cards / Penalty Receipt Needed', String(this.flaggedCardsCount)],
-      ['Overall Smart Card Clearance Rate', `${this.smartCardClearanceRate}%`],
-      ['Total Stations Processing Capacity', String(this.totalStationCapacity)],
+      ['SUMMARY METRICS'],
+      ['Total Requests', String(this.totalRequestCount)],
+      ['Approved', String(this.approvedRequestCount)],
+      ['Pending', String(this.pendingRequestCount)],
+      ['Rejected', String(this.rejectedRequestCount)],
+      ['Clearance Rate', `${this.clearanceRatePercent}%`],
       [],
-      ['2. GENDER CLASSIFICATION'],
-      ['Gender', 'Total Students', 'Share %'],
-      ['Male', String(this.genderStats.maleTotal), `${this.genderStats.malePercent}%`],
-      ['Female', String(this.genderStats.femaleTotal), `${this.genderStats.femalePercent}%`],
-      [],
-      ['3. CARD STATION CLEARANCE BREAKDOWN'],
-      ['Station Name', 'Processing Volume', 'Cleared Count'],
-      ...this.stationHistogram.map(s => [s.label, String(s.count), String(s.cleared)]),
-      [],
-      ['4. COLLEGE SMART CARD CLEARANCE RANKING'],
-      ['Rank', 'College Code', 'College Full Name', 'Total Students', 'Cleared', 'Clearance Rate %', 'Status'],
-      ...this.collegeCardRankings.map(c => [String(c.rank), c.collegeCode, c.fullName, String(c.studentCount), String(c.clearedCount), `${c.clearanceRate}%`, c.activityLevel])
+      ['BREAKDOWN BY COLLEGE'],
+      ['College', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.collegeBreakdown.map(c => [
+        c.college,
+        String(c.total),
+        String(c.approved),
+        String(c.pending),
+        String(c.rejected),
+        `${c.clearanceRate}%`
+      ])
     ];
 
     const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `smart-card-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.href = url;
+    link.download = `smart-card-clearance-report-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
-    this.toastService.success('Export Successful', 'Smart Card analytics report exported as CSV.');
+    URL.revokeObjectURL(url);
+    this.toastService.success('Exported', 'Smart Card clearance report downloaded as CSV.');
   }
 
-  printAnalytics(): void {
-    window.print();
+  onLogoError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = '1';
+      img.src = '/udsm-logo.jpg';
+    }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
   }
 
   logout(): void {

@@ -1,21 +1,31 @@
+// src/app/dashboard/finance/finance.ts
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/services/auth.service';
 import { ClearanceService } from '../../core/services/clearance.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ClearanceRequest } from '../../core/models/clearance.model';
+import { ClearanceRequest, OfficeApproval } from '../../core/models/clearance.model';
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
+
+export interface FinanceCollegeStat {
+  label: string;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  clearanceRate: number;
+}
 
 @Component({
   selector: 'app-finance-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './finance.html',
   styleUrl: './finance.css'
 })
@@ -26,73 +36,97 @@ export class FinanceDashboard implements OnInit, OnDestroy {
   private readonly transcriptPaymentService = inject(TranscriptPaymentService);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   sidebarOpen = false;
-  viewMode: 'all' | 'requests' | 'analytics' | 'transcript-payments' = 'all';
-  selectedRequest: ClearanceRequest | null = null;
-  detailsRequest: ClearanceRequest | null = null;
-  rejectionComment = '';
-  message = '';
+  viewMode: 'requests' | 'transcript-payments' | 'analytics' = 'requests';
+
+  isLoadingRequests = false;
   isTranscriptPaymentsLoading = false;
+  isSubmitting = false;
+
+  message = '';
+  messageState: 'success' | 'error' = 'success';
+
+  // Clearance requests filter & pagination
+  searchTerm = '';
+  filterStatus: 'all' | 'pending' | 'approved' | 'rejected' = 'pending';
+  currentPage = 1;
+  pageSize = 15;
+
+  // Isolated Transcript Payments filters
+  transcriptSearchTerm = '';
+  transcriptFilterStatus: 'all' | 'pending' | 'approved' | 'rejected' = 'pending';
+
+  // Modals
+  selectedRequest: ClearanceRequest | null = null;
+  selectedTranscriptForReject: TranscriptPaymentRequest | null = null;
+  detailsRequest: ClearanceRequest | null = null;
+  enlargedPhotoUrl: string | null = null;
+  rejectionComment = '';
+
+  private isRefreshingTranscriptPayments = false;
   private transcriptRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly studentCache = new Map<string, any>();
 
   ngOnInit(): void {
     if (!this.isOfficer) return;
-    this.clearanceService.fetchOfficeRequests('Finance').subscribe();
-    this.isTranscriptPaymentsLoading = true;
-    void this.refreshTranscriptPayments(true).finally(() => {
-      this.isTranscriptPaymentsLoading = false;
-    });
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['requests', 'transcript-payments', 'analytics'].includes(initialTab)) {
+      this.viewMode = initialTab as any;
+    }
+    this.loadAllData(false);
+
     this.transcriptRefreshTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       void this.refreshTranscriptPayments(false);
-    }, 10000);
+    }, 30000);
   }
 
   ngOnDestroy(): void {
-    if (this.transcriptRefreshTimer) clearInterval(this.transcriptRefreshTimer);
+    if (this.transcriptRefreshTimer) {
+      clearInterval(this.transcriptRefreshTimer);
+      this.transcriptRefreshTimer = null;
+    }
+  }
+
+  loadAllData(showToast = false): void {
+    this.isLoadingRequests = true;
+    this.clearanceService.fetchOfficeRequests('Finance').subscribe({
+      next: () => {
+        this.isLoadingRequests = false;
+        this.clampPage();
+        if (showToast) {
+          this.toastService.success('Refreshed', 'Finance clearance and transcript payment queues updated.');
+        }
+      },
+      error: (err) => {
+        this.isLoadingRequests = false;
+        const msg = err?.error?.message || 'Unable to load Finance clearance requests.';
+        this.toastService.error('Load Failed', msg);
+      }
+    });
+
+    this.isTranscriptPaymentsLoading = true;
+    void this.refreshTranscriptPayments(showToast).finally(() => {
+      this.isTranscriptPaymentsLoading = false;
+    });
   }
 
   private async refreshTranscriptPayments(showError: boolean): Promise<void> {
+    if (this.isRefreshingTranscriptPayments) return;
+    this.isRefreshingTranscriptPayments = true;
     try {
       await this.transcriptPaymentService.refreshFinanceControlNumberRequests();
     } catch {
       if (showError) {
-        this.toastService.error('Transcript Payments Unavailable', 'Could not securely load transcript payment requests from the server.');
+        this.toastService.error(
+          'Transcript Payments Unavailable',
+          'Could not securely load transcript payment requests from the server.'
+        );
       }
-    }
-  }
-
-  readonly Math = Math;
-  selectedAnalyticsYear: string = 'all';
-  selectedAnalyticsGender: string = 'all';
-
-  setViewMode(mode: 'all' | 'requests' | 'analytics' | 'transcript-payments'): void {
-    this.viewMode = mode;
-  }
-
-  searchTerm = '';
-  filterStatus = 'pending';
-
-  // Pagination
-  currentPage = 1;
-  pageSize = 10;
-
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
-
-  closeSidebar(): void {
-    this.sidebarOpen = false;
-  }
-
-  onLogoError(event: Event): void {
-    const img = event.target as HTMLImageElement;
-    if (img && !img.dataset['fallback']) {
-      img.dataset['fallback'] = '1';
-      img.src = '/udsm-logo.jpg';
-    } else if (img && img.dataset['fallback'] === '1') {
-      img.dataset['fallback'] = '2';
-      img.src = 'assets/udsm-logo.png';
+    } finally {
+      this.isRefreshingTranscriptPayments = false;
     }
   }
 
@@ -104,67 +138,65 @@ export class FinanceDashboard implements OnInit, OnDestroy {
     return this.currentUser?.role === 'Finance';
   }
 
-  get studentRequest(): ClearanceRequest | null {
-    const user = this.currentUser;
-    if (!user || user.role !== 'Student') return null;
-    const requests = this.clearanceService.getStudentRequests(user.id);
-    return requests.at(-1) ?? null;
+  get unreadNotifications(): number {
+    return this.notificationService.unreadCount;
   }
+
+  /* =========================
+     CLEARANCE QUEUE GETTERS
+  ========================= */
 
   get requests(): ClearanceRequest[] {
     return this.clearanceService.getRequestsForOffice('Finance').filter(request => {
       const financeStatus = this.getRequestOfficeStatus(request, 'Finance');
-      return request.currentStage === 'Finance' || financeStatus !== 'Pending';
+      return (
+        request.currentStage === 'Finance' ||
+        request.currentStage === 'Supervisor' ||
+        request.status === 'Completed' ||
+        financeStatus !== 'Pending'
+      );
     });
   }
 
-  get transcriptPaymentRequests(): TranscriptPaymentRequest[] {
-    let list = this.transcriptPaymentService.getAllRequests().filter(request => request.serverManaged &&
-      (request.status === 'Receipt Submitted' || request.status === 'Paid' || request.status === 'Receipt Rejected'));
-    const batches = new Map<string, TranscriptPaymentRequest>();
-    for (const request of list) {
-      const batchKey = request.paymentBatchId || `${request.studentId}:${request.submittedControlNumber || request.controlNumber || request.id}`;
-      if (!batches.has(batchKey)) batches.set(batchKey, request);
-    }
-    list = Array.from(batches.values());
-    const term = this.searchTerm.trim().toLowerCase();
-    if (term) list = list.filter(request => request.registrationNumber.toLowerCase().includes(term) ||
-      (request.submittedControlNumber || '').toLowerCase().includes(term) || request.studentName.toLowerCase().includes(term));
-    if (this.filterStatus === 'pending') list = list.filter(request => request.status === 'Receipt Submitted');
-    else if (this.filterStatus === 'approved') list = list.filter(request => request.status === 'Paid');
-    else if (this.filterStatus === 'rejected') list = list.filter(request => request.status === 'Receipt Rejected');
-    return list;
+  get totalRequestCount(): number {
+    return this.requests.length;
   }
 
-  transcriptAsClearanceRequest(request: TranscriptPaymentRequest): ClearanceRequest {
-    return {
-      id: request.id, studentId: request.studentId, studentName: request.studentName,
-      registrationNumber: request.registrationNumber, email: request.postingContactEmail || 'student@udsm.ac.tz',
-      phoneNumber: request.postingContactPhone || '—', college: 'Directorate of Undergraduate Studies (DUS)',
-      department: 'Transcript Service', programme: request.award || 'Transcript Request', requestDate: request.requestedAt,
-      status: 'Pending', currentOffice: 'Finance' as any, currentStage: 'Finance' as any,
-      approvals: [{ office: 'Finance', status: 'Pending' }],
-      convocation: { submittedControlNumber: request.submittedControlNumber, controlNumber: request.controlNumber }
-    } as unknown as ClearanceRequest;
-  }
   get pendingRequestCount(): number {
-    return this.requests.filter(request =>
-      this.getRequestOfficeStatus(request, 'Finance') === 'Pending'
+    return this.requests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending').length;
+  }
+
+  get approvedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved').length;
+  }
+
+  get rejectedRequestCount(): number {
+    return this.requests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Rejected').length;
+  }
+
+  get resubmittedPendingCount(): number {
+    return this.requests.filter(
+      r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending' && this.hasFinanceReceipt(r)
     ).length;
+  }
+
+  get clearanceRatePercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.approvedRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get pendingPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.pendingRequestCount / this.totalRequestCount) * 100);
+  }
+
+  get rejectedPercent(): number {
+    if (!this.totalRequestCount) return 0;
+    return Math.round((this.rejectedRequestCount / this.totalRequestCount) * 100);
   }
 
   get filteredRequests(): ClearanceRequest[] {
     let list = this.requests;
-
-    if (this.searchTerm.trim()) {
-      const s = this.searchTerm.toLowerCase();
-      list = list.filter(r =>
-        (r.studentName || '').toLowerCase().includes(s) ||
-        (r.registrationNumber || '').toLowerCase().includes(s) ||
-        (r.programme || '').toLowerCase().includes(s) ||
-        this.getSubmittedControlNumber(r).toLowerCase().includes(s)
-      );
-    }
 
     if (this.filterStatus === 'pending') {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending');
@@ -174,340 +206,225 @@ export class FinanceDashboard implements OnInit, OnDestroy {
       list = list.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Rejected');
     }
 
+    const q = this.searchTerm.trim().toLowerCase();
+    if (q) {
+      list = list.filter(r =>
+        this.getStudentName(r).toLowerCase().includes(q) ||
+        this.getStudentRegNumber(r).toLowerCase().includes(q) ||
+        (r.programme || '').toLowerCase().includes(q) ||
+        this.getSubmittedControlNumber(r).toLowerCase().includes(q)
+      );
+    }
+
     return list;
   }
 
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+  }
+
   get paginatedRequests(): ClearanceRequest[] {
-    const start = (this.currentPage - 1) * this.pageSize;
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
     return this.filteredRequests.slice(start, start + this.pageSize);
   }
 
-  get totalPages(): number {
-    return Math.ceil(this.filteredRequests.length / this.pageSize) || 1;
+  get collegeBreakdown(): FinanceCollegeStat[] {
+    const map = new Map<string, { total: number; approved: number; pending: number; rejected: number }>();
+
+    for (const req of this.requests) {
+      const label = (req.college || '').trim() || 'Unspecified College';
+      const entry = map.get(label) || { total: 0, approved: 0, pending: 0, rejected: 0 };
+      entry.total += 1;
+      const st = this.getRequestOfficeStatus(req, 'Finance');
+      if (st === 'Approved') entry.approved += 1;
+      else if (st === 'Rejected') entry.rejected += 1;
+      else entry.pending += 1;
+      map.set(label, entry);
+    }
+
+    return Array.from(map.entries())
+      .map(([label, stats]) => ({
+        label,
+        ...stats,
+        clearanceRate: stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0
+      }))
+      .sort((a, b) => b.total - a.total);
   }
 
-  nextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  /* =========================
+     TRANSCRIPT PAYMENTS GETTERS
+  ========================= */
+
+  private get deduplicatedTranscriptRequests(): TranscriptPaymentRequest[] {
+    const raw = this.transcriptPaymentService.getAllRequests().filter(
+      r => r.serverManaged && (r.status === 'Receipt Submitted' || r.status === 'Paid' || r.status === 'Receipt Rejected')
+    );
+    const batches = new Map<string, TranscriptPaymentRequest>();
+    for (const req of raw) {
+      const batchKey = req.paymentBatchId || `${req.studentId}:${req.submittedControlNumber || req.controlNumber || req.id}`;
+      if (!batches.has(batchKey)) batches.set(batchKey, req);
     }
+    return Array.from(batches.values());
   }
 
-  prevPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  get totalTranscriptPaymentCount(): number {
+    return this.deduplicatedTranscriptRequests.length;
+  }
+
+  get pendingTranscriptPaymentCount(): number {
+    return this.deduplicatedTranscriptRequests.filter(r => r.status === 'Receipt Submitted').length;
+  }
+
+  get approvedTranscriptPaymentCount(): number {
+    return this.deduplicatedTranscriptRequests.filter(r => r.status === 'Paid').length;
+  }
+
+  get rejectedTranscriptPaymentCount(): number {
+    return this.deduplicatedTranscriptRequests.filter(r => r.status === 'Receipt Rejected').length;
+  }
+
+  get filteredTranscriptPaymentRequests(): TranscriptPaymentRequest[] {
+    let list = this.deduplicatedTranscriptRequests;
+
+    if (this.transcriptFilterStatus === 'pending') {
+      list = list.filter(r => r.status === 'Receipt Submitted');
+    } else if (this.transcriptFilterStatus === 'approved') {
+      list = list.filter(r => r.status === 'Paid');
+    } else if (this.transcriptFilterStatus === 'rejected') {
+      list = list.filter(r => r.status === 'Receipt Rejected');
     }
+
+    const q = this.transcriptSearchTerm.trim().toLowerCase();
+    if (q) {
+      list = list.filter(r =>
+        (r.registrationNumber || '').toLowerCase().includes(q) ||
+        (r.studentName || '').toLowerCase().includes(q) ||
+        (r.submittedControlNumber || r.controlNumber || '').toLowerCase().includes(q) ||
+        (r.award || '').toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }
+
+  getTranscriptStatusLabel(status: string): string {
+    if (status === 'Paid') return 'Approved';
+    if (status === 'Receipt Rejected') return 'Rejected';
+    return 'Pending';
+  }
+
+  /* =========================
+     NAVIGATION & FILTERS
+  ========================= */
+
+  setViewMode(mode: 'requests' | 'transcript-payments' | 'analytics'): void {
+    this.viewMode = mode;
+    this.closeSidebar();
+  }
+
+  filterByCard(status: 'all' | 'pending' | 'approved' | 'rejected'): void {
+    this.viewMode = 'requests';
+    this.filterStatus = status;
+    this.currentPage = 1;
   }
 
   onFilterChange(): void {
     this.currentPage = 1;
   }
 
-  getOfficeStatus(office: string): string {
-    const request = this.studentRequest;
-    if (!request) return 'Pending';
-    const approval = request.approvals.find(a => a.office === office);
-    return approval?.status ?? 'Pending';
+  clampPage(): void {
+    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    if (this.currentPage < 1) this.currentPage = 1;
   }
 
-  getRequestOfficeStatus(request: ClearanceRequest, office: string): string {
-    return request.approvals.find(approval => approval.office === office)?.status ?? 'Pending';
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
   }
 
-  async withdrawDecision(request: ClearanceRequest): Promise<void> {
-    if (!await this.clearanceService.withdrawOfficeDecision(request.id, 'Finance')) return;
-    this.message = 'Finance decision withdrawn. The request is pending again.';
-    this.detailsRequest = request;
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
   }
 
-  getFinanceRejectionReason(request: ClearanceRequest): string {
-    return request.approvals.find(approval => approval.office === 'Finance')?.comment || 'No reason was recorded.';
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  /* =========================
+     STUDENT & RECEIPT HELPERS
+  ========================= */
+
+  getOfficeApproval(request: ClearanceRequest, office: string = 'Finance'): OfficeApproval | undefined {
+    return request.approvals?.find(a => a.office === office);
+  }
+
+  getRequestOfficeStatus(request: ClearanceRequest, office: string = 'Finance'): 'Pending' | 'Approved' | 'Rejected' {
+    return this.getOfficeApproval(request, office)?.status ?? 'Pending';
+  }
+
+  getRequestReviewer(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request, 'Finance')?.reviewedBy || 'Not reviewed yet';
+  }
+
+  getRequestReviewedAt(request: ClearanceRequest): string | null {
+    return this.getOfficeApproval(request, 'Finance')?.reviewedAt || null;
+  }
+
+  getRequestComment(request: ClearanceRequest): string {
+    return this.getOfficeApproval(request, 'Finance')?.comment || '';
   }
 
   getRejectionHistory(request: ClearanceRequest) {
     return request.rejectionHistory ?? [];
   }
 
-  getRejectionReason(office: string): string {
-    const request = this.studentRequest;
-    if (!request) return '';
-    const approval = request.approvals.find(a => a.office === office);
-    return approval?.comment ?? '';
+  getStatusSummary(request: ClearanceRequest): string {
+    const status = this.getRequestOfficeStatus(request, 'Finance');
+    if (status === 'Approved') {
+      return request.isPostgraduate
+        ? 'Finance cleared — forwarded to Postgraduate Supervisor (Stage 6)'
+        : 'Finance cleared — student graduation clearance completed';
+    }
+    if (status === 'Rejected') return 'Action required — student flagged for fee balance or receipt proof';
+    if (this.hasFinanceReceipt(request)) return 'Student resubmitted Finance payment receipt — awaiting re-verification';
+    return 'Awaiting Finance verification of tuition fees and payment records';
   }
 
-  async approve(request: ClearanceRequest): Promise<void> {
-    const staff = this.currentUser;
-
-    if (!staff || !this.isOfficer) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const transcriptRequest = this.transcriptPaymentService.getAllRequests().find((t: TranscriptPaymentRequest) => t.id === request.id);
-    if (transcriptRequest) {
-      if (!transcriptRequest.serverManaged) {
-        this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
-        return;
-      }
-      try {
-        await this.transcriptPaymentService.approveControlNumberRequest(request.id);
-      } catch {
-        this.toastService.error('Approval Failed', 'Finance could not approve this request. Refresh the list and try again.');
-        return;
-      }
-      this.notificationService.createNotification(
-        request.studentId,
-        'Transcript Payment Approved',
-        'Finance has verified and approved your transcript payment control number. You can continue with your transcript request.',
-        'success'
-      );
-      this.toastService.success('Payment Approved', 'Transcript payment control number approved successfully by Finance.');
-      this.message = 'Transcript payment control number approved successfully.';
-      return;
-    }
-
-    const approved = await this.clearanceService.approveRequest(
-      request.id,
-      'Finance',
-      staff.fullName
+  hasFinanceReceipt(request: ClearanceRequest): boolean {
+    return !!(
+      request.resubmittedWithReceipt ||
+      request.financeReceipt?.controlNumber ||
+      request.financeReceipt?.receiptData ||
+      request.financeReceipt?.receiptFileName ||
+      request.financeReceipt?.receiptSubmittedAt
     );
-
-    if (!approved) {
-      this.toastService.warning(
-        'Clearance Incomplete',
-        'Cannot approve: student has not yet been cleared by all preceding offices (Department, Principal, and Parallel offices).'
-      );
-      this.message = 'Cannot approve: student has not yet been cleared by all preceding offices.';
-      setTimeout(() => { this.message = ''; }, 6000);
-      return;
-    }
-
-    this.notificationService.createNotification(
-      request.studentId,
-      'Clearance completed',
-      'Finance has approved your application. Your graduation clearance is now complete.',
-      'success'
-    );
-
-    this.toastService.success('Clearance Approved', 'Student clearance approved successfully by Finance.');
-    this.message = 'Clearance completed successfully.';
-  }
-
-  openRejectForm(request: ClearanceRequest): void {
-    if (!this.isOfficer) return;
-    this.selectedRequest = request;
-    this.rejectionComment = '';
-    this.message = '';
-  }
-
-  async reject(): Promise<void> {
-    const staff = this.currentUser;
-
-    if (!staff || !this.isOfficer || !this.selectedRequest || this.rejectionComment.trim().length < 5) {
-      return;
-    }
-
-    const transcriptRequest = this.transcriptPaymentService.getAllRequests().find((t: TranscriptPaymentRequest) => t.id === this.selectedRequest?.id);
-    if (transcriptRequest) {
-      if (!transcriptRequest.serverManaged) {
-        this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
-        this.selectedRequest = null;
-        return;
-      }
-      try {
-        await this.transcriptPaymentService.rejectControlNumberRequest(this.selectedRequest.id, this.rejectionComment.trim());
-      } catch {
-        this.toastService.error('Rejection Failed', 'Finance could not reject this request. Refresh the list and try again.');
-        return;
-      }
-      this.notificationService.createNotification(
-        this.selectedRequest.studentId,
-        'Transcript Control Number Rejected',
-        this.rejectionComment,
-        'warning'
-      );
-      this.message = 'Transcript payment control number returned to student.';
-      this.selectedRequest = null;
-      this.rejectionComment = '';
-      return;
-    }
-
-    if (!await this.clearanceService.rejectRequest(
-      this.selectedRequest.id,
-      'Finance',
-      staff.fullName,
-      this.rejectionComment
-    )) return;
-
-    this.notificationService.createNotification(
-      this.selectedRequest.studentId,
-      'Finance action required',
-      this.rejectionComment,
-      'warning'
-    );
-
-    this.message = 'The student has been notified about the required action.';
-    this.selectedRequest = null;
-    this.rejectionComment = '';
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
-  }
-
-  // =====================================================
-  // STUDENT DATA UTILS
-  // =====================================================
-
-  private studentCache: Map<string, any> = new Map();
-
-  private getStudentData(studentId: string): any | null {
-    if (this.studentCache.has(studentId)) {
-      return this.studentCache.get(studentId);
-    }
-    try {
-      const usersJson = localStorage.getItem('udsm-local-users');
-      if (usersJson) {
-        const users = JSON.parse(usersJson);
-        const user = users.find((u: any) => u.id === studentId);
-        if (user) {
-          this.studentCache.set(studentId, user);
-          return user;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-    }
-    return null;
-  }
-
-  getStudentName(request: ClearanceRequest): string {
-    if (request.studentName) return request.studentName;
-    const user = this.getStudentData(request.studentId);
-    if (user) {
-      return user.fullName || user.firstName + ' ' + user.lastName || user.registrationNumber || 'Student';
-    }
-    return request.registrationNumber || 'Student #' + request.studentId.substring(0, 8);
-  }
-
-  getStudentListName(request: ClearanceRequest): string {
-    const user = this.getStudentData(request.studentId);
-    const firstName = user?.firstName?.trim();
-    const middleName = user?.middleName?.trim();
-    const lastName = user?.lastName?.trim();
-    if (firstName && lastName) return `${lastName}, ${[firstName, middleName].filter(Boolean).join(' ')}`.toUpperCase();
-    const fullName = (request.studentName || user?.fullName || '').trim();
-    if (!fullName) return '—';
-    const parts = fullName.split(/\s+/).filter(Boolean);
-    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
-  }
-
-  getStudentRegNumber(request: ClearanceRequest): string {
-    const user = this.getStudentData(request.studentId);
-    return request.registrationNumber?.trim() || user?.registrationNumber?.trim() || user?.studentId?.trim() || '—';
-  }
-
-  getStudentGender(request: ClearanceRequest): string {
-    const gender = this.getStudentData(request.studentId)?.gender || (request as ClearanceRequest & { gender?: string }).gender;
-    if (typeof gender === 'string' && gender.trim() && gender.trim() !== '—') {
-      return gender.trim();
-    }
-    const name = (this.getStudentName(request) || '').toLowerCase();
-    const femaleIndicators = [
-      'amina', 'fatuma', 'grace', 'mary', 'jane', 'zainab', 'neema', 'rehema',
-      'halima', 'rose', 'hellen', 'esther', 'faith', 'doris', 'irene', 'mwajuma',
-      'asha', 'hadija', 'salma', 'mariam', 'beatrice', 'lucy', 'joyce', 'sarah',
-      'glory', 'mercy', 'catherine', 'judith', 'anna', 'magdalena', 'victoria',
-      'veronica', 'jackline', 'doreen', 'fadhila', 'subira', 'tumaini', 'upendo'
-    ];
-    for (const femaleName of femaleIndicators) {
-      if (name.includes(femaleName)) return 'Female';
-    }
-    const idStr = request.registrationNumber || request.studentId || name;
-    let sum = 0;
-    for (let i = 0; i < idStr.length; i++) sum += idStr.charCodeAt(i);
-    return sum % 2 === 0 ? 'Male' : 'Female';
-  }
-
-  getStudentEmail(request: ClearanceRequest): string {
-    return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
-  }
-
-  getStudentPhone(request: ClearanceRequest): string {
-    const user = this.getStudentData(request.studentId);
-    return request.phoneNumber?.trim() || user?.phoneNumber?.trim() || user?.phone?.trim() || '—';
-  }
-
-  getStudentProgramme(request: ClearanceRequest): string {
-    return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
-  }
-
-  openDetails(request: ClearanceRequest): void {
-    this.detailsRequest = request;
-  }
-
-  getStudentPhoto(request: ClearanceRequest): string | null {
-    let photo = request.photo;
-    if (!photo) {
-      const user = this.getStudentData(request.studentId);
-      if (user) {
-        photo = user.photo || user.profilePhoto || user.profileImageUrl;
-      }
-    }
-    if (!photo) return null;
-
-    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
-      return photo;
-    }
-    if (photo.length > 50) {
-      return 'data:image/jpeg;base64,' + photo;
-    }
-    return photo;
-  }
-
-  getStudentInitials(request: ClearanceRequest): string {
-    const name = this.getStudentName(request);
-    if (!name || name === 'Student') return 'ST';
-    const parts = name.split(' ');
-    let initials = '';
-    for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) initials += parts[i].charAt(0);
-    }
-    return initials.toUpperCase();
-  }
-
-  hasPhoto(request: ClearanceRequest): boolean {
-    const photo = this.getStudentPhoto(request);
-    return !!photo;
-  }
-
-  enlargedPhotoUrl: string | null = null;
-
-  openEnlargedPhoto(photoUrl: string | null): void {
-    if (photoUrl) {
-      this.enlargedPhotoUrl = photoUrl;
-    }
-  }
-
-  closeEnlargedPhoto(): void {
-    this.enlargedPhotoUrl = null;
   }
 
   hasReceipt(request: ClearanceRequest): boolean {
-    return !!(this.getSubmittedControlNumber(request) || request.convocation?.receiptData || request.convocation?.receiptFileName || request.convocation?.receiptSubmittedAt);
+    return !!(
+      this.hasFinanceReceipt(request) ||
+      this.getSubmittedControlNumber(request) ||
+      request.convocation?.receiptData ||
+      request.convocation?.receiptFileName ||
+      request.convocation?.receiptSubmittedAt
+    );
   }
 
   getSubmittedControlNumber(request: ClearanceRequest): string {
-    return request.convocation?.submittedControlNumber ||
-      (request.convocation?.receiptSubmittedAt
-        ? request.convocation.controlNumber || request.financeReceipt?.controlNumber || ''
-        : '');
+    return (
+      request.financeReceipt?.controlNumber ||
+      request.convocation?.submittedControlNumber ||
+      request.convocation?.controlNumber ||
+      ''
+    );
   }
 
   getReceiptImage(request: ClearanceRequest): string | null {
-    const data = request.convocation?.receiptData;
+    const data = request.financeReceipt?.receiptData || request.convocation?.receiptData;
     if (!data || data === 'IMAGE_TOO_LARGE_PLACEHOLDER') return null;
     if (data.startsWith('data:image') || data.startsWith('http') || data.startsWith('/')) {
       return data;
@@ -516,171 +433,333 @@ export class FinanceDashboard implements OnInit, OnDestroy {
   }
 
   getReceiptFileName(request: ClearanceRequest): string {
-    return request.convocation?.receiptFileName || 'Payment_Receipt.pdf';
+    return request.financeReceipt?.receiptFileName || request.convocation?.receiptFileName || '';
   }
 
-  // =========================================================================
-  // FINANCE SPECIFIC STATISTICAL ANALYTICS ENGINE
-  // =========================================================================
-
-  getStudentYear(request: ClearanceRequest): string {
-    const reg = request.registrationNumber || '';
-    const match = reg.match(/\b(202[0-9])\b/);
-    if (match) return match[1];
-    return '2024';
+  getReceiptSubmittedAt(request: ClearanceRequest): string | null {
+    return request.financeReceipt?.receiptSubmittedAt || request.convocation?.receiptSubmittedAt || null;
   }
 
-  get analyticsFilteredRequests(): ClearanceRequest[] {
-    let list = this.requests;
-    if (this.selectedAnalyticsYear !== 'all') {
-      list = list.filter(r => this.getStudentYear(r) === this.selectedAnalyticsYear);
+  getReceiptNote(request: ClearanceRequest): string {
+    return request.financeReceipt?.receiptNote || '';
+  }
+
+  private getStudentData(studentId: string): any | null {
+    if (this.studentCache.has(studentId)) {
+      return this.studentCache.get(studentId);
     }
-    if (this.selectedAnalyticsGender !== 'all') {
-      list = list.filter(r => this.getStudentGender(r) === this.selectedAnalyticsGender);
+    try {
+      const raw = localStorage.getItem('udsm-local-users');
+      if (raw) {
+        const users = JSON.parse(raw);
+        if (Array.isArray(users)) {
+          const match = users.find((u: any) => u.id === studentId) || null;
+          this.studentCache.set(studentId, match);
+          return match;
+        }
+      }
+    } catch {
+      // Ignore storage access errors
     }
-    return list;
+    this.studentCache.set(studentId, null);
+    return null;
   }
 
-  get totalFinanceStudents(): number {
-    return this.analyticsFilteredRequests.length;
+  getStudentName(request: ClearanceRequest): string {
+    if (request.studentName) return request.studentName;
+    const u = this.getStudentData(request.studentId);
+    return u?.fullName || [u?.firstName, u?.lastName].filter(Boolean).join(' ') || request.registrationNumber || 'Student';
   }
 
-  get clearedFinanceCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Approved').length;
+  getStudentListName(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    const first = u?.firstName?.trim();
+    const middle = u?.middleName?.trim();
+    const last = u?.lastName?.trim();
+    if (first && last) return `${last}, ${[first, middle].filter(Boolean).join(' ')}`.toUpperCase();
+    const fullName = (request.studentName || u?.fullName || '').trim();
+    if (!fullName) return '—';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    return parts.length > 1 ? `${parts.pop()}, ${parts.join(' ')}`.toUpperCase() : fullName.toUpperCase();
   }
 
-  get pendingFinanceCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Pending').length;
+  getStudentRegNumber(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    return request.registrationNumber?.trim() || u?.registrationNumber?.trim() || u?.studentId?.trim() || '—';
   }
 
-  get flaggedDebtsCount(): number {
-    return this.analyticsFilteredRequests.filter(r => this.getRequestOfficeStatus(r, 'Finance') === 'Rejected').length;
+  getStudentGender(request: ClearanceRequest): string {
+    const g = this.getStudentData(request.studentId)?.gender || (request as any).gender;
+    return typeof g === 'string' && g.trim() && g.trim() !== '—' ? g.trim() : 'Not recorded';
   }
 
-  get financeClearanceRate(): number {
-    const tot = Math.max(1, this.totalFinanceStudents);
-    return Math.round((this.clearedFinanceCount / tot) * 100);
+  getStudentEmail(request: ClearanceRequest): string {
+    return request.email?.trim() || this.getStudentData(request.studentId)?.email?.trim() || '—';
   }
 
-  get genderStats() {
-    const list = this.analyticsFilteredRequests;
-    const total = Math.max(1, list.length);
-    let maleTotal = 0;
-    let femaleTotal = 0;
-    list.forEach(r => {
-      if (this.getStudentGender(r) === 'Male') maleTotal++;
-      else femaleTotal++;
-    });
-    return {
-      maleTotal,
-      malePercent: Math.round((maleTotal / total) * 100),
-      femaleTotal,
-      femalePercent: Math.round((femaleTotal / total) * 100)
-    };
+  getStudentPhone(request: ClearanceRequest): string {
+    const u = this.getStudentData(request.studentId);
+    return request.phoneNumber?.trim() || u?.phoneNumber?.trim() || u?.phone?.trim() || '—';
   }
 
-  get yearFeeHistogram(): { label: string; count: number; cleared: number; heightPercent: number }[] {
-    const years = ['2024', '2023', '2022', '2021'];
-    const map = new Map<string, { count: number; cleared: number }>();
-    years.forEach(y => map.set(y, { count: 0, cleared: 0 }));
+  getStudentProgramme(request: ClearanceRequest): string {
+    return request.programme?.trim() || this.getStudentData(request.studentId)?.programme?.trim() || '—';
+  }
 
-    this.analyticsFilteredRequests.forEach(r => {
-      const yr = this.getStudentYear(r);
-      let rec = map.get(yr);
-      if (!rec) {
-        rec = { count: 0, cleared: 0 };
-        map.set(yr, rec);
+  getStudentPhoto(request: ClearanceRequest): string | null {
+    let photo = request.photo;
+    if (!photo) {
+      const u = this.getStudentData(request.studentId);
+      photo = u?.photo || u?.profilePhoto || u?.profileImageUrl;
+    }
+    if (!photo) return null;
+    if (photo.startsWith('data:image') || photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('assets/')) {
+      return photo;
+    }
+    return photo.length > 50 ? `data:image/jpeg;base64,${photo}` : photo;
+  }
+
+  getStudentInitials(name?: string): string {
+    if (!name) return 'ST';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+  }
+
+  /* =========================
+     MODALS & ACTIONS
+  ========================= */
+
+  openDetails(request: ClearanceRequest): void {
+    this.detailsRequest = request;
+  }
+
+  closeDetails(): void {
+    this.detailsRequest = null;
+  }
+
+  openPhotoLightbox(url: string | null): void {
+    if (url) this.enlargedPhotoUrl = url;
+  }
+
+  closePhotoLightbox(): void {
+    this.enlargedPhotoUrl = null;
+  }
+
+  openRejectForm(request: ClearanceRequest): void {
+    if (!this.isOfficer) return;
+    this.detailsRequest = null;
+    this.selectedTranscriptForReject = null;
+    this.selectedRequest = request;
+    this.rejectionComment = '';
+    this.message = '';
+  }
+
+  openTranscriptRejectForm(request: TranscriptPaymentRequest): void {
+    if (!this.isOfficer) return;
+    this.selectedRequest = null;
+    this.selectedTranscriptForReject = request;
+    this.rejectionComment = '';
+    this.message = '';
+  }
+
+  closeRejectModal(): void {
+    if (this.isSubmitting) return;
+    this.selectedRequest = null;
+    this.selectedTranscriptForReject = null;
+    this.rejectionComment = '';
+  }
+
+  async approveClearance(request: ClearanceRequest): Promise<void> {
+    if (this.isSubmitting) return;
+    const staff = this.currentUser;
+    if (!staff || !this.isOfficer) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    this.isSubmitting = true;
+    const studentName = this.getStudentName(request);
+    try {
+      const approved = await this.clearanceService.approveRequest(request.id, 'Finance', staff.fullName || 'Finance Officer');
+      if (!approved) {
+        this.messageState = 'error';
+        this.message = 'Cannot approve: student has not yet been cleared by all preceding offices (Parallel, Department, and Principal).';
+        this.toastService.warning('Clearance Incomplete', this.message);
+        return;
       }
-      rec.count++;
-      if (this.getRequestOfficeStatus(r, 'Finance') === 'Approved') {
-        rec.cleared++;
+
+      this.detailsRequest = null;
+      this.messageState = 'success';
+      if (request.isPostgraduate) {
+        this.message = `Finance cleared ${studentName}. Request forwarded to Postgraduate Supervisor (Stage 6).`;
+        this.toastService.success('Finance Approved', `${studentName} forwarded to Supervisor.`);
+      } else {
+        this.message = `Finance cleared ${studentName}. Graduation clearance is now complete.`;
+        this.toastService.success('Clearance Completed', `${studentName} cleared by Finance.`);
       }
-    });
-
-    const maxCount = Math.max(1, ...Array.from(map.values()).map(v => v.count));
-
-    return years.map(y => {
-      const rec = map.get(y) || { count: 0, cleared: 0 };
-      return {
-        label: y,
-        count: rec.count,
-        cleared: rec.cleared,
-        heightPercent: Math.max(14, Math.round((rec.count / maxCount) * 100))
-      };
-    });
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 
-  get pieSlices() {
-    const tot = Math.max(1, this.totalFinanceStudents);
-    const items = [
-      { label: 'Fees Fully Cleared', count: this.clearedFinanceCount, color: '#10b981' },
-      { label: 'Pending Receipt Check', count: this.pendingFinanceCount, color: '#f59e0b' },
-      { label: 'Outstanding Debt Flagged', count: this.flaggedDebtsCount, color: '#ef4444' }
-    ];
+  async approveTranscriptPayment(request: TranscriptPaymentRequest): Promise<void> {
+    if (this.isSubmitting) return;
+    if (!request.serverManaged) {
+      this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
+      return;
+    }
 
-    let currentAngle = -90;
-    return items.map(item => {
-      const sliceAngle = (item.count / tot) * 360;
-      const effectiveAngle = sliceAngle >= 359.99 ? 359.99 : sliceAngle;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + effectiveAngle;
-      const R = 85;
-      const r = 48;
-      const cx = 110;
-      const cy = 110;
-
-      const startRad = (startAngle * Math.PI) / 180;
-      const endRad = (endAngle * Math.PI) / 180;
-
-      const x1 = cx + R * Math.cos(startRad);
-      const y1 = cy + R * Math.sin(startRad);
-      const x2 = cx + R * Math.cos(endRad);
-      const y2 = cy + R * Math.sin(endRad);
-
-      const x3 = cx + r * Math.cos(endRad);
-      const y3 = cy + r * Math.sin(endRad);
-      const x4 = cx + r * Math.cos(startRad);
-      const y4 = cy + r * Math.sin(startRad);
-
-      const largeArc = effectiveAngle > 180 ? 1 : 0;
-      const svgPath = `M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${r} ${r} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-
-      currentAngle += sliceAngle;
-      return {
-        ...item,
-        percentage: Math.round((item.count / tot) * 100),
-        svgPath
-      };
-    });
+    this.isSubmitting = true;
+    try {
+      await this.transcriptPaymentService.approveControlNumberRequest(request.id);
+      this.messageState = 'success';
+      this.message = `Transcript payment control number approved for ${request.studentName} (${request.registrationNumber}).`;
+      this.toastService.success('Payment Approved', `Transcript payment verified for ${request.registrationNumber}.`);
+    } catch {
+      this.toastService.error('Approval Failed', 'Finance could not approve this transcript payment. Refresh and try again.');
+    } finally {
+      this.isSubmitting = false;
+    }
   }
+
+  async confirmReject(): Promise<void> {
+    if (this.isSubmitting) return;
+    const staff = this.currentUser;
+    if (!staff || !this.isOfficer) return;
+
+    const trimmed = this.rejectionComment.trim();
+    if (trimmed.length < 5) {
+      this.toastService.warning('Comment Too Short', 'Please enter at least 5 characters explaining what must be resolved.');
+      return;
+    }
+
+    // Branch A: Transcript Payment Rejection
+    if (this.selectedTranscriptForReject) {
+      const target = this.selectedTranscriptForReject;
+      if (!target.serverManaged) {
+        this.toastService.error('Payment Not Verified', 'This request is not linked to a server-verified transcript payment.');
+        this.selectedTranscriptForReject = null;
+        return;
+      }
+
+      this.isSubmitting = true;
+      try {
+        await this.transcriptPaymentService.rejectControlNumberRequest(target.id, trimmed);
+        this.messageState = 'success';
+        this.message = `Transcript payment control number returned to ${target.studentName} (${target.registrationNumber}).`;
+        this.toastService.warning('Payment Returned', `Transcript control number rejected for ${target.registrationNumber}.`);
+        this.selectedTranscriptForReject = null;
+        this.rejectionComment = '';
+      } catch {
+        this.toastService.error('Rejection Failed', 'Finance could not reject this transcript payment. Refresh and try again.');
+      } finally {
+        this.isSubmitting = false;
+      }
+      return;
+    }
+
+    // Branch B: Graduation Clearance Finance Rejection
+    if (!this.selectedRequest) return;
+    const target = this.selectedRequest;
+    const studentName = this.getStudentName(target);
+
+    this.isSubmitting = true;
+    try {
+      const ok = await this.clearanceService.rejectRequest(
+        target.id,
+        'Finance',
+        staff.fullName || 'Finance Officer',
+        trimmed
+      );
+      if (!ok) {
+        this.toastService.error('Rejection Failed', 'Finance could not return this clearance request. Refresh and try again.');
+        return;
+      }
+
+      this.messageState = 'success';
+      this.message = `Finance clearance returned for ${studentName}. Student can now upload a receipt to resubmit.`;
+      this.toastService.warning('Returned', `${studentName} was notified of the Finance requirement.`);
+      this.selectedRequest = null;
+      this.rejectionComment = '';
+      this.clampPage();
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async withdrawDecision(request: ClearanceRequest): Promise<void> {
+    if (this.isSubmitting) return;
+    if (!confirm(`Withdraw Finance decision for ${this.getStudentName(request)}? The request will return to Pending.`)) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      const ok = await this.clearanceService.withdrawOfficeDecision(request.id, 'Finance');
+      if (!ok) {
+        this.toastService.error('Withdraw Failed', 'This Finance decision could not be withdrawn.');
+        return;
+      }
+
+      this.messageState = 'success';
+      this.message = `Finance decision withdrawn for ${this.getStudentName(request)}.`;
+      this.toastService.info('Decision Withdrawn', 'The request is pending Finance review again.');
+      this.loadAllData(false);
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  /* =========================
+     CSV EXPORT, PRINT & LOGOUT
+  ========================= */
 
   downloadAnalyticsCsv(): void {
-    const rows = [
-      ['UDSM BURSAR / FINANCE OFFICE - CLEARANCE & FEE AUDIT REPORT'],
-      [`Date: ${new Date().toLocaleString()}`],
+    const rows: string[][] = [
+      ['UNIVERSITY OF DAR ES SALAAM - FINANCE OFFICE CLEARANCE & TRANSCRIPT PAYMENT REPORT'],
+      [`Generated On: ${new Date().toLocaleString()}`],
       [],
+      ['1. GRADUATION CLEARANCE SUMMARY'],
       ['Metric', 'Value'],
-      ['Total Finance Students', String(this.totalFinanceStudents)],
-      ['Fees Cleared & Approved', String(this.clearedFinanceCount)],
-      ['Pending Receipt Verification', String(this.pendingFinanceCount)],
-      ['Outstanding Debt Flags', String(this.flaggedDebtsCount)],
-      ['Finance Clearance Rate', `${this.financeClearanceRate}%`],
-      ['Male Students', `${this.genderStats.maleTotal} (${this.genderStats.malePercent}%)`],
-      ['Female Students', `${this.genderStats.femaleTotal} (${this.genderStats.femalePercent}%)`],
+      ['Total Finance Requests', String(this.totalRequestCount)],
+      ['Pending Review', String(this.pendingRequestCount)],
+      ['Pending With Resubmitted Receipt', String(this.resubmittedPendingCount)],
+      ['Approved', String(this.approvedRequestCount)],
+      ['Rejected', String(this.rejectedRequestCount)],
+      ['Clearance Rate', `${this.clearanceRatePercent}%`],
       [],
-      ['Cohort Fee Clearance Breakdown', 'Total', 'Cleared'],
-      ...this.yearFeeHistogram.map(y => [y.label, String(y.count), String(y.cleared)])
+      ['2. TRANSCRIPT PAYMENT VERIFICATION SUMMARY'],
+      ['Total Transcript Payment Submissions', String(this.totalTranscriptPaymentCount)],
+      ['Pending Verification', String(this.pendingTranscriptPaymentCount)],
+      ['Approved (Paid)', String(this.approvedTranscriptPaymentCount)],
+      ['Rejected', String(this.rejectedTranscriptPaymentCount)],
+      [],
+      ['3. COLLEGE BREAKDOWN (GRADUATION CLEARANCE)'],
+      ['College', 'Total', 'Approved', 'Pending', 'Rejected', 'Clearance Rate %'],
+      ...this.collegeBreakdown.map(c => [
+        c.label, String(c.total), String(c.approved), String(c.pending), String(c.rejected), `${c.clearanceRate}%`
+      ])
     ];
 
-    const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `finance-clearance-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.href = url;
+    link.download = `finance-clearance-report-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    URL.revokeObjectURL(url);
+    this.toastService.success('Export Ready', 'Finance clearance report downloaded as CSV.');
   }
 
   printAnalytics(): void {
     window.print();
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

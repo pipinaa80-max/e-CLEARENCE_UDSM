@@ -1,83 +1,98 @@
 // profile.component.ts
-import { Component, HostListener, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
 import { NotificationService } from '../core/services/notification.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
-import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
+import {
+  StaffSidebarNavItem,
+  getStaffDashboardRoute,
+  getStaffPortalMeta,
+  getStaffSidebarNavItems
+} from '../core/utils/staff-sidebar-nav.util';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, ReactiveFormsModule, DashboardHeaderComponent],
+  imports: [CommonModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
-export class ProfileComponent implements OnInit {
-
+export class ProfileComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly clearanceService = inject(ClearanceService);
-  private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly notificationService = inject(NotificationService);
-  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
   sidebarOpen = false;
-  userDropdownOpen = false;
   profilePhoto: string | null = null;
   photoLoadFailed = false;
   isLoading = true;
+  unreadNotifications = 0;
 
-  get unreadNotifications(): number {
-    return this.notificationService.unreadCount;
+  private unreadSub: Subscription | null = null;
+
+  get user() {
+    return this.authService.getCurrentUser();
   }
 
   get currentUser() {
     return this.user;
   }
 
-  toggleUserDropdown(event: Event): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.userDropdownOpen = !this.userDropdownOpen;
-    if (this.userDropdownOpen) {
-      this.notificationService.refreshUnreadCount().subscribe();
-    }
+  get isStudent(): boolean {
+    return !this.currentUser || this.currentUser.role === 'Student';
   }
 
-  closeUserDropdown(): void {
-    this.userDropdownOpen = false;
+  get isStationSecretary(): boolean {
+    return this.currentUser?.role === 'Station Secretary';
   }
 
-  @HostListener('document:click')
-  onDocumentClick(): void {
-    this.userDropdownOpen = false;
+  get isSecretary(): boolean {
+    return (
+      this.currentUser?.role === 'DUS Examination Office' ||
+      this.currentUser?.role === 'DUS Secretary' ||
+      this.isStationSecretary
+    );
   }
 
-  toggleSidebar(): void {
-    this.sidebarOpen = !this.sidebarOpen;
-    console.log('Sidebar toggled. Current state:', this.sidebarOpen);
+  get staffNavItems(): StaffSidebarNavItem[] {
+    return getStaffSidebarNavItems(this.currentUser);
   }
 
-  closeSidebar(): void {
-    this.sidebarOpen = false;
+  get dashboardRoute(): string {
+    return getStaffDashboardRoute(this.currentUser?.role);
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
+  get portalTitle(): string {
+    return getStaffPortalMeta(this.currentUser?.role).title;
   }
 
-  /* =========================
-     LOGGED-IN STUDENT
-  ========================= */
+  get portalSubtitle(): string {
+    return getStaffPortalMeta(this.currentUser?.role).subtitle;
+  }
 
-  get user() {
-    return this.authService.getCurrentUser();
+  get dashboardLabel(): string {
+    return getStaffPortalMeta(this.currentUser?.role).dashboardLabel;
+  }
+
+  get roleLabel(): string {
+    return this.currentUser?.role || 'Account';
+  }
+
+  get headerEyebrow(): string {
+    return this.isStudent ? 'Student Account' : `${this.roleLabel} Account`;
+  }
+
+  get headerSubtitle(): string {
+    return this.isStudent
+      ? 'View your student information and clearance account details.'
+      : 'View your staff profile, office assignment, and account information.';
   }
 
   get programme(): string | undefined {
@@ -120,25 +135,79 @@ export class ProfileComponent implements OnInit {
     return this.user?.sponsor || this.clearanceRequest?.sponsor;
   }
 
-  /* =========================
-     INIT - LOAD PROFILE PHOTO
-  ========================= */
+  get award(): string | undefined {
+    return this.user?.award || (this.clearanceRequest as any)?.award || undefined;
+  }
+
+  get hasResidenceOrSponsor(): boolean {
+    return Boolean(this.hall || this.wing || this.block || this.roomNumber || this.sponsor);
+  }
+
+  get primaryIdentifier(): string {
+    if (this.isStudent) {
+      return this.user?.registrationNumber || this.email || '';
+    }
+    return this.email || this.staffId || '';
+  }
+
+  get email(): string | undefined {
+    return this.user?.email;
+  }
+
+  get staffId(): string | undefined {
+    return (this.user as any)?.staffId || undefined;
+  }
+
+  get phone(): string | undefined {
+    return this.user?.phone || (this.user as any)?.phoneNumber || undefined;
+  }
+
+  get pickupStation(): string | undefined {
+    return (
+      this.user?.pickupStation ||
+      (this.user as any)?.stationName ||
+      (this.user as any)?.stationCode ||
+      undefined
+    );
+  }
+
+  get clearanceRequest() {
+    if (!this.isStudent || !this.user) return null;
+    const requests = this.clearanceService.getStudentRequests(this.user.id);
+    return requests.length > 0 ? requests[requests.length - 1] : null;
+  }
 
   ngOnInit(): void {
+    this.unreadSub = this.notificationService.unreadCount$.subscribe((count) => {
+      this.unreadNotifications = count;
+    });
     this.loadProfilePhoto();
     this.notificationService.refreshUnreadCount().subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.unreadSub?.unsubscribe();
+    this.unreadSub = null;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   refreshInformation(): void {
     this.loadProfilePhoto();
     this.authService.getProfile().subscribe({
-      next: () => {
-        this.loadProfilePhoto();
-      },
-      error: (err) => {
-        console.error('Profile - Failed to refresh profile:', err);
-        this.loadProfilePhoto();
-      }
+      next: () => this.loadProfilePhoto(),
+      error: () => this.loadProfilePhoto()
     });
   }
 
@@ -159,15 +228,17 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    const requests = this.clearanceService.getStudentRequests(user.id);
-    for (const request of [...requests].reverse()) {
-      const requestPhoto = this.authService.getProfilePhotoSource({ photo: request.photo });
-      if (requestPhoto) {
-        this.profilePhoto = requestPhoto;
-        user.photo = requestPhoto;
-        this.authService.updateCurrentUser(user);
-        this.isLoading = false;
-        return;
+    if (this.isStudent) {
+      const requests = this.clearanceService.getStudentRequests(user.id);
+      for (const request of [...requests].reverse()) {
+        const requestPhoto = this.authService.getProfilePhotoSource({ photo: request.photo });
+        if (requestPhoto) {
+          this.profilePhoto = requestPhoto;
+          user.photo = requestPhoto;
+          this.authService.updateCurrentUser(user);
+          this.isLoading = false;
+          return;
+        }
       }
     }
 
@@ -175,128 +246,33 @@ export class ProfileComponent implements OnInit {
     this.isLoading = false;
   }
 
-  /* =========================
-     STUDENT INITIALS
-  ========================= */
-
   get initials(): string {
     const name = this.user?.fullName;
-
-    if (!name) {
-      return 'ST';
-    }
-
-    const parts = name.split(' ');
-    let initials = '';
-
-    for (let i = 0; i < parts.length && i < 2; i++) {
-      if (parts[i]) {
-        initials += parts[i].charAt(0);
-      }
-    }
-
-    return initials.toUpperCase();
+    if (!name) return this.isStudent ? 'ST' : 'UD';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   }
-
-  /* =========================
-     LATEST CLEARANCE REQUEST
-  ========================= */
-
-  get clearanceRequest() {
-    const user = this.user;
-
-    if (!user) {
-      return null;
-    }
-
-    const requests = this.clearanceService.getStudentRequests(user.id);
-    return requests.length > 0 ? requests[requests.length - 1] : null;
-  }
-
-  /* =========================
-     REQUEST COMPLETED?
-  ========================= */
-
-  get hasClearanceRequest(): boolean {
-    return !!this.clearanceRequest;
-  }
-
-  /* =========================
-     CAN START CLEARANCE?
-  ========================= */
-
-  get canStartClearance(): boolean {
-    const request = this.clearanceRequest;
-    return !!request && request.status === 'Pending';
-  }
-
-  /* =========================
-     SHOULD COMPLETE REQUEST?
-  ========================= */
-
-  get needsClearanceRequest(): boolean {
-    return !this.hasClearanceRequest;
-  }
-
-  /* =========================
-     CLEARANCE STATUS
-  ========================= */
-
-  get clearanceStatus(): string {
-    const request = this.clearanceRequest;
-
-    if (!request) {
-      return 'Not Started';
-    }
-
-    if (request.status === 'Completed') {
-      return 'Completed';
-    }
-
-    if (request.status === 'Rejected') {
-      return 'Action Required';
-    }
-
-    return 'In Progress';
-  }
-
-  get isTranscriptPaid(): boolean {
-    const user = this.user;
-    if (!user) return false;
-    const requests = this.transcriptService.getStudentRequests(user.id);
-    return requests.some(r => r.attemptNumber === 1 && r.status === 'Paid');
-  }
-
-  /* =========================
-     GET PHOTO SOURCE
-  ========================= */
 
   getPhotoSource(): string | null {
     const userPhoto = this.authService.getProfilePhotoSource(this.user);
     if (userPhoto) return userPhoto;
     if (this.profilePhoto) return this.profilePhoto;
-
-    const request = this.clearanceRequest;
-    return this.authService.getProfilePhotoSource({ photo: request?.photo });
+    if (this.isStudent) {
+      const request = this.clearanceRequest;
+      return this.authService.getProfilePhotoSource({ photo: request?.photo });
+    }
+    return null;
   }
 
   hasPhoto(): boolean {
     return !this.photoLoadFailed && !!this.getPhotoSource();
   }
 
-  /* =========================
-     FORCE REFRESH PHOTO
-  ========================= */
-
   refreshPhoto(): void {
-    console.log('Refreshing all information...');
     this.profilePhoto = null;
     this.refreshInformation();
   }
-
-  /* =========================
-     HANDLE IMAGE ERROR
-  ========================= */
 
   onImageError(): void {
     this.profilePhoto = null;

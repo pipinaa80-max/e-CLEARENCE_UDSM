@@ -1,18 +1,19 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { CollectionStationService, CollectionStation } from '../core/services/collection-station.service';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
 import { DocumentService } from '../core/services/document.service';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-transcript-collection',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './collection.html',
   styleUrl: './collection.css'
 })
@@ -104,7 +105,7 @@ export class TranscriptCollectionComponent implements OnInit {
       await this.paymentService.refreshStudentControlNumberRequests();
       const request = this.request;
       if (!request?.paymentBatchId || !await firstValueFrom(this.documentService.hasRequiredTranscriptDocuments(request.paymentBatchId))) {
-        this.router.navigate(['/dashboard/student']);
+        this.router.navigate(['/dashboard']);
         return;
       }
       this.form.patchValue({

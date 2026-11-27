@@ -148,7 +148,7 @@
 
 @media (min-width: 1000px) {
   .sidebar-open .content-panel {
-    margin-left: 270px;
+    margin-left: 0;
   }
 }
 

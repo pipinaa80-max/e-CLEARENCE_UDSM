@@ -27,6 +27,7 @@ export interface DocumentUploadRequest {
   fileName: string;
   fileType: string;
   fileSize: number;
+  category?: string;
   description?: string;
 }
 

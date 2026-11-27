@@ -1,0 +1,74 @@
+<div class="student-sidebar-overlay" *ngIf="open" (click)="onClose()" aria-hidden="true"></div>
+
+<aside class="student-sidebar" [class.open]="open" aria-label="Student portal navigation">
+  <div class="student-sidebar-header">
+    <div class="student-brand">
+      <a routerLink="/dashboard" (click)="onClose()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
+      <div class="student-brand-text">
+        <strong>STUDENT PORTAL</strong>
+        <small>University of Dar es Salaam</small>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="student-sidebar-close-btn"
+      (click)="onClose()"
+      aria-label="Close navigation menu"
+    >
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <nav class="student-sidebar-nav">
+    <span class="student-nav-label">MAIN</span>
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="onClose()"
+    >
+      <i class="bi bi-grid-1x2-fill"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <span class="student-nav-label">CLEARANCE</span>
+    <a routerLink="/clearance/request" routerLinkActive="active" (click)="onClose()">
+      <i class="bi bi-file-earmark-plus-fill"></i>
+      <span>Clearance Request</span>
+    </a>
+    <a routerLink="/clearance/status" routerLinkActive="active" (click)="onClose()">
+      <i class="bi bi-diagram-3-fill"></i>
+      <span>Clearance Process</span>
+    </a>
+    <a routerLink="/clearance/history" routerLinkActive="active" (click)="onClose()">
+      <i class="bi bi-clock-history"></i>
+      <span>Clearance History</span>
+    </a>
+
+    <span class="student-nav-label">DOCUMENTS</span>
+    <a
+      routerLink="/documents"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="onClose()"
+    >
+      <i class="bi bi-folder2-open"></i>
+      <span>My Documents</span>
+    </a>
+    <a routerLink="/documents/upload" routerLinkActive="active" (click)="onClose()">
+      <i class="bi bi-cloud-arrow-up-fill"></i>
+      <span>Upload Document</span>
+    </a>
+
+    <ng-container *ngIf="showTranscriptLink">
+      <span class="student-nav-label">TRANSCRIPT</span>
+      <a routerLink="/transcript" routerLinkActive="active" (click)="onClose()">
+        <i class="bi bi-mortarboard-fill"></i>
+        <span>Transcript Request</span>
+      </a>
+    </ng-container>
+  </nav>
+</aside>

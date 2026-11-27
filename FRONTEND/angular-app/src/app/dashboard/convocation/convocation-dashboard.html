@@ -1,0 +1,386 @@
+<section class="office-page" [class.sidebar-open]="sidebarOpen">
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/udsm-logo.png" alt="UDSM Logo" />
+      <div class="brand-text">
+        <strong>CONVOCATION</strong>
+        <small>UDSM Clearance Office</small>
+      </div>
+      <button
+        type="button"
+        class="sidebar-mobile-close-btn"
+        (click)="closeSidebar()"
+        aria-label="Close navigation menu"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <nav>
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'all'"
+        (click)="setViewMode('all')"
+      >
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>All Submissions</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'pending'"
+        (click)="setViewMode('pending')"
+      >
+        <i class="bi bi-hourglass-split"></i>
+        <span>Pending Review</span>
+        <span class="nav-count-badge" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <i class="bi bi-bar-chart-line-fill"></i>
+        <span>Analytics</span>
+      </button>
+    </nav>
+  </aside>
+
+  <main class="content">
+    <app-dashboard-header
+      title="Convocation Officer Dashboard"
+      subtitle="Monitor, verify, and flag student Convocation payment control numbers."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadReceipts(true)" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
+    </app-dashboard-header>
+
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="filterStatus === 'ALL' && viewMode !== 'analytics'" (click)="selectStatusFilter('ALL')">
+        <span class="stat-label">Total Submissions</span>
+        <strong class="stat-value">{{ totalCount }}</strong>
+        <small>All recorded control numbers</small>
+      </button>
+
+      <button type="button" class="stat-card pending" [class.active]="filterStatus === 'PENDING' && viewMode !== 'analytics'" (click)="selectStatusFilter('PENDING')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingCount }}</strong>
+        <small>Awaiting verification</small>
+      </button>
+
+      <button type="button" class="stat-card approved" [class.active]="filterStatus === 'APPROVED' && viewMode !== 'analytics'" (click)="selectStatusFilter('APPROVED')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedCount }}</strong>
+        <small>Cleared for Parallel Stage</small>
+      </button>
+
+      <button type="button" class="stat-card rejected" [class.active]="filterStatus === 'REJECTED' && viewMode !== 'analytics'" (click)="selectStatusFilter('REJECTED')">
+        <span class="stat-label">Rejected / Flagged</span>
+        <strong class="stat-value">{{ rejectedCount }}</strong>
+        <small>Returned to student</small>
+      </button>
+    </section>
+
+    <!-- SUBMISSIONS QUEUE VIEW -->
+    <section class="dashboard-board" *ngIf="viewMode !== 'analytics'">
+      <div class="board-header">
+        <div>
+          <h2>{{ viewMode === 'pending' ? 'Pending Convocation Receipts' : 'Convocation Control Number Register' }}</h2>
+          <p>{{ filteredReceipts.length }} matching record{{ filteredReceipts.length === 1 ? '' : 's' }}</p>
+        </div>
+
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search"></i>
+            <input
+              type="search"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onSearchChange()"
+              placeholder="Search student, reg #, control #..."
+              aria-label="Search convocation submissions"
+            />
+          </div>
+
+          <select
+            class="board-select"
+            [(ngModel)]="filterStatus"
+            (ngModelChange)="selectStatusFilter($event)"
+            aria-label="Filter by status"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-loading-banner" *ngIf="isLoading && !receipts.length">
+        <span class="table-loading-spinner"></span>
+        <span>Loading convocation submissions...</span>
+      </div>
+
+      <div class="empty-state" *ngIf="!isLoading && filteredReceipts.length === 0">
+        <i class="bi bi-inbox"></i>
+        <p>No convocation payment submissions match your current filter.</p>
+      </div>
+
+      <div class="table-scroll" *ngIf="paginatedReceipts.length > 0">
+        <table class="convocation-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Academic Unit</th>
+              <th>Control Number</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of paginatedReceipts">
+              <td>
+                <strong class="cell-title">{{ item.studentName }}</strong>
+                <small class="cell-sub">{{ item.registrationNumber }}</small>
+              </td>
+              <td>
+                <span class="cell-title">{{ item.college || 'N/A' }}</span>
+                <small class="cell-sub">{{ item.department || item.programme || '—' }}</small>
+              </td>
+              <td>
+                <code class="control-code">{{ item.controlNumber }}</code>
+              </td>
+              <td>
+                <span class="cell-date">{{ item.submittedAt ? (item.submittedAt | date:'mediumDate') : '—' }}</span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="item.status.toLowerCase()">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons-cell">
+                  <button type="button" class="btn-simple-view" (click)="openDetails(item)">
+                    View
+                  </button>
+                  <button
+                    *ngIf="item.status === 'PENDING'"
+                    type="button"
+                    class="btn-approve"
+                    [disabled]="isActionSubmitting"
+                    (click)="approveReceipt(item)"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    *ngIf="item.status !== 'REJECTED'"
+                    type="button"
+                    class="btn-simple-remove"
+                    [disabled]="isActionSubmitting"
+                    (click)="openRejectModal(item)"
+                  >
+                    {{ item.status === 'APPROVED' ? 'Flag / Reject' : 'Reject' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" *ngIf="filteredReceipts.length > pageSize">
+        <button type="button" class="page-btn" (click)="prevPage()" [disabled]="currentPage <= 1">
+          ← Previous
+        </button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage >= totalPages">
+          Next →
+        </button>
+      </div>
+    </section>
+
+    <!-- ANALYTICS VIEW -->
+    <section class="dashboard-board analytics-board" *ngIf="viewMode === 'analytics'">
+      <div class="board-header">
+        <div>
+          <h2>Convocation Clearance Analytics</h2>
+          <p>Distribution of submitted payment control numbers across colleges and statuses.</p>
+        </div>
+      </div>
+
+      <div class="analytics-bars">
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Approved</span>
+            <strong>{{ approvedCount }} ({{ getPercent(approvedCount) }}%)</strong>
+          </div>
+          <div class="bar-track"><div class="bar-fill approved" [style.width.%]="getPercent(approvedCount)"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Pending Review</span>
+            <strong>{{ pendingCount }} ({{ getPercent(pendingCount) }}%)</strong>
+          </div>
+          <div class="bar-track"><div class="bar-fill pending" [style.width.%]="getPercent(pendingCount)"></div></div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">
+            <span>Rejected / Flagged</span>
+            <strong>{{ rejectedCount }} ({{ getPercent(rejectedCount) }}%)</strong>
+          </div>
+          <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="getPercent(rejectedCount)"></div></div>
+        </div>
+      </div>
+
+      <div class="table-scroll" *ngIf="collegeBreakdown.length > 0" style="margin-top: 24px;">
+        <table class="convocation-table">
+          <thead>
+            <tr>
+              <th>College / Unit</th>
+              <th>Total</th>
+              <th>Approved</th>
+              <th>Pending</th>
+              <th>Rejected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of collegeBreakdown">
+              <td><strong>{{ row.college }}</strong></td>
+              <td>{{ row.total }}</td>
+              <td><span class="status-badge approved">{{ row.approved }}</span></td>
+              <td><span class="status-badge pending">{{ row.pending }}</span></td>
+              <td><span class="status-badge rejected">{{ row.rejected }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</section>
+
+<!-- DETAILS MODAL -->
+<div class="modal-backdrop" *ngIf="detailsReceipt" (click)="closeDetails()">
+  <div class="modal-card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>Convocation Submission Details</h3>
+        <p>{{ detailsReceipt.studentName }} · {{ detailsReceipt.registrationNumber }}</p>
+      </div>
+      <button type="button" class="modal-close-btn" (click)="closeDetails()" aria-label="Close">✕</button>
+    </div>
+
+    <dl class="detail-grid">
+      <div>
+        <dt>Control Number</dt>
+        <dd><code class="control-code">{{ detailsReceipt.controlNumber }}</code></dd>
+      </div>
+      <div>
+        <dt>Receipt Reference</dt>
+        <dd>{{ detailsReceipt.receiptNumber || '—' }}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd><span class="status-badge" [ngClass]="detailsReceipt.status.toLowerCase()">{{ detailsReceipt.status }}</span></dd>
+      </div>
+      <div>
+        <dt>Payment Date</dt>
+        <dd>{{ detailsReceipt.paymentDate || '—' }}</dd>
+      </div>
+      <div>
+        <dt>College</dt>
+        <dd>{{ detailsReceipt.college || '—' }}</dd>
+      </div>
+      <div>
+        <dt>Department</dt>
+        <dd>{{ detailsReceipt.department || '—' }}</dd>
+      </div>
+      <div class="full-span">
+        <dt>Programme</dt>
+        <dd>{{ detailsReceipt.programme || '—' }}</dd>
+      </div>
+      <div class="full-span" *ngIf="detailsReceipt.approvedBy">
+        <dt>Processed By</dt>
+        <dd>{{ detailsReceipt.approvedBy }} <span *ngIf="detailsReceipt.approvedAt">· {{ detailsReceipt.approvedAt | date:'medium' }}</span></dd>
+      </div>
+      <div class="full-span" *ngIf="detailsReceipt.comments">
+        <dt>Comments / Audit Note</dt>
+        <dd>{{ detailsReceipt.comments }}</dd>
+      </div>
+    </dl>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeDetails()">Close</button>
+      <button
+        *ngIf="detailsReceipt.status === 'PENDING'"
+        type="button"
+        class="btn-approve"
+        [disabled]="isActionSubmitting"
+        (click)="approveReceipt(detailsReceipt)"
+      >
+        Approve Submission
+      </button>
+      <button
+        *ngIf="detailsReceipt.status !== 'REJECTED'"
+        type="button"
+        class="btn-danger"
+        [disabled]="isActionSubmitting"
+        (click)="openRejectModal(detailsReceipt)"
+      >
+        Flag / Reject Submission
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- REJECT / FLAG MODAL -->
+<div class="modal-backdrop" *ngIf="rejectTarget" (click)="closeRejectModal()">
+  <div class="modal-card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>Flag / Reject Convocation Control Number</h3>
+        <p>{{ rejectTarget.studentName }} ({{ rejectTarget.registrationNumber }}) · <code>{{ rejectTarget.controlNumber }}</code></p>
+      </div>
+      <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="reject-warning">
+        Rejecting this submission sets the student's Stage 1 (Convocation) status to <strong>Rejected</strong> and requires them to submit a valid payment control number before advancing.
+      </p>
+      <label class="modal-field">
+        <span>Reason for Rejection *</span>
+        <textarea
+          rows="4"
+          [(ngModel)]="rejectionReason"
+          placeholder="e.g. Control number not found in GePG payment register or payment amount incomplete..."
+        ></textarea>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" (click)="closeRejectModal()">Cancel</button>
+      <button
+        type="button"
+        class="btn-danger"
+        [disabled]="isActionSubmitting || rejectionReason.trim().length < 5"
+        (click)="confirmReject()"
+      >
+        {{ isActionSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
+      </button>
+    </div>
+  </div>
+</div>

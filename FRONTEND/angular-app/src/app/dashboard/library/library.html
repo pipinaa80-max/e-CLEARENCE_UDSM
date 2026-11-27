@@ -1,27 +1,18 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
-  <!-- SIDEBAR OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
-    <div class="sidebar-header">
-      <div class="brand">
-        <a routerLink="/dashboard/library" (click)="closeSidebar()">
-          <img src="/udsm-logo.png" (error)="onLogoError($event)" alt="Institutional Logo" />
-        </a>
-        <div class="brand-text">
-          <strong>LIBRARY</strong>
-          <small>Clearance Workspace</small>
-        </div>
+  <aside class="sidebar">
+    <div class="brand">
+      <a routerLink="/dashboard/library" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
+      <div class="brand-text">
+        <strong>LIBRARY PORTAL</strong>
+        <small>University Library</small>
       </div>
-      <button
-        type="button"
-        class="sidebar-mobile-close-btn"
-        (click)="closeSidebar()"
-        title="Close navigation menu"
-        aria-label="Close navigation menu"
-      >
-        <i class="bi bi-x-lg"></i>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -30,19 +21,32 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'requests'"
-        (click)="setViewMode('requests'); closeSidebar()"
+        (click)="setViewMode('requests')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
-        <span>Clearance Requests ({{ pendingRequestCount }})</span>
+        <i class="bi bi-book-half" aria-hidden="true"></i>
+        <span>Clearance Requests</span>
+        <span class="nav-count-badge" *ngIf="pendingRequestCount > 0">{{ pendingRequestCount }}</span>
       </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
+        <span>Analytics</span>
+      </button>
+
       <button
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'sections'"
-        (click)="setViewMode('sections'); closeSidebar()"
+        (click)="setViewMode('sections')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/></svg>
-        <span>Library Sections ({{ sections.length }})</span>
+        <i class="bi bi-collection-fill" aria-hidden="true"></i>
+        <span>Library Sections</span>
+        <span class="nav-count-badge neutral" *ngIf="sections.length > 0">{{ sections.length }}</span>
       </button>
     </nav>
   </aside>
@@ -51,442 +55,442 @@
   <main class="content">
     <app-dashboard-header
       title="Library Dashboard"
+      subtitle="Verify returned library books, overdue fine settlement, and repository thesis deposit clearance."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadRequests(true)" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
-    <!-- MESSAGE -->
     <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <!-- SECTIONS DIRECTORY BOARD (Shown in 'sections') -->
-    <section class="dashboard-board" id="sections-section" *ngIf="viewMode === 'sections'">
-      <div class="board-header">
-        <div class="board-title-group">
-          <div class="board-icon-badge"></div>
-          <div>
-            <h2>Library Sections &amp; Special Collections Directory</h2>
-            <p>Manage library departments, special reserves, digital resource hubs, collection capacities, and librarian contacts.</p>
-          </div>
-        </div>
-        <div class="board-actions-group">
-          <div class="board-search-box">
-            <input
-              type="text"
-              [(ngModel)]="sectionSearchTerm"
-              placeholder="Search section name, collection, or librarian..."
-              aria-label="Search library sections"
-            />
-          </div>
-          <button type="button" class="action-btn secondary" (click)="resetSections()" title="Reset to standard university sections">
-            Restore Defaults
-          </button>
-          <button type="button" class="action-btn primary" (click)="openAddSectionModal()">
-            + Add New Section
-          </button>
-        </div>
-      </div>
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="viewMode === 'requests' && filterStatus === 'All'" (click)="filterByCard('All')">
+        <span class="stat-label">Total Requests</span>
+        <strong class="stat-value">{{ totalRequestCount }}</strong>
+        <small>All Library clearance records</small>
+      </button>
 
-      <div class="board-body">
-        <!-- SECTIONS GRID -->
-        <div class="hostels-grid" *ngIf="filteredSections.length">
-          <div class="hostel-card compact" *ngFor="let section of filteredSections">
-            <div class="hostel-card-header">
-              <div class="header-main">
-                <h3>{{ section.name }}</h3>
-                <span class="location-badge" *ngIf="section.category"> {{ section.category }}</span>
-              </div>
-              <div class="card-actions">
-                <button type="button" class="btn-icon edit" (click)="openEditSectionModal(section)" title="Edit section details">
-                  <i class="bi bi-pencil-square"></i> Edit
-                </button>
-                <button type="button" class="btn-icon delete" (click)="deleteSection(section)" title="Delete section">
-                  <i class="bi bi-trash3-fill"></i>
-                </button>
-              </div>
-            </div>
+      <button type="button" class="stat-card pending" [class.active]="viewMode === 'requests' && filterStatus === 'Pending'" (click)="filterByCard('Pending')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingRequestCount }}</strong>
+        <small>Awaiting circulation verification</small>
+      </button>
 
-            <!-- COMPACT QUICK INFO -->
-            <div class="compact-info-row">
-              <span class="compact-item" *ngIf="section.capacity">
-                <strong>{{ section.capacity | number }}</strong> volumes
-              </span>
-              <span class="compact-dot" *ngIf="section.capacity && section.location">•</span>
-              <span class="compact-item" *ngIf="section.location">
-                📍 {{ section.location }}
-              </span>
-              <span class="compact-dot" *ngIf="section.collections.length">•</span>
-              <span class="compact-item units-count" *ngIf="section.collections.length">
-                {{ section.collections.length }} {{ section.collections.length === 1 ? 'Collection' : 'Collections' }}
-              </span>
-            </div>
+      <button type="button" class="stat-card approved" [class.active]="viewMode === 'requests' && filterStatus === 'Approved'" (click)="filterByCard('Approved')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedRequestCount }}</strong>
+        <small>{{ clearanceRatePercent }}% clearance rate</small>
+      </button>
 
-            <!-- EXPANDABLE DETAILS -->
-            <div class="hostel-expanded-details" *ngIf="isSectionExpanded(section.id)">
-              <p class="hostel-desc" *ngIf="section.description">{{ section.description }}</p>
-
-              <div class="hostel-meta-grid">
-                <div class="meta-item" *ngIf="section.capacity">
-                  <span class="meta-label">Holdings Capacity</span>
-                  <strong>{{ section.capacity | number }} items / books</strong>
-                </div>
-                <div class="meta-item" *ngIf="section.librarianName">
-                  <span class="meta-label">Section Librarian</span>
-                  <strong>{{ section.librarianName }}</strong>
-                </div>
-                <div class="meta-item" *ngIf="section.librarianContact">
-                  <span class="meta-label">Contact</span>
-                  <span>{{ section.librarianContact }}</span>
-                </div>
-                <div class="meta-item" *ngIf="section.location">
-                  <span class="meta-label">Library Location</span>
-                  <span>{{ section.location }}</span>
-                </div>
-              </div>
-
-              <!-- COLLECTIONS TAGS -->
-              <div class="units-breakdown" *ngIf="section.collections && section.collections.length">
-                <span class="unit-title">Curated Collections &amp; Archives:</span>
-                <div class="tags-container">
-                  <span class="tag block-tag" *ngFor="let c of section.collections">{{ c }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- VIEW MORE / VIEW LESS TOGGLE -->
-            <div class="card-footer-toggle">
-              <button
-                type="button"
-                class="view-more-btn"
-                (click)="toggleSectionDetails(section.id)"
-              >
-                {{ isSectionExpanded(section.id) ? 'View Less ▲' : 'View More ▼' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="board-empty-state" *ngIf="!filteredSections.length">
-          <div class="empty-icon"></div>
-          <h2>No Library Sections Found</h2>
-          <p>No section matches your search criteria. Click "+ Add New Section" to create one.</p>
-        </div>
-      </div>
+      <button type="button" class="stat-card rejected" [class.active]="viewMode === 'requests' && filterStatus === 'Rejected'" (click)="filterByCard('Rejected')">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedRequestCount }}</strong>
+        <small>Flagged for books or fines</small>
+      </button>
     </section>
 
-    <!-- CLEARANCE REQUESTS BOARD (Shown in 'requests') -->
-    <section class="dashboard-board" id="requests-section" *ngIf="viewMode === 'requests'">
-      <div class="board-header">
+    <!-- VIEW 1: CLEARANCE REQUESTS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'requests'">
+      <header class="board-header">
         <div class="board-title-group">
-          <div class="board-icon-badge"></div>
+          <span class="board-icon-badge"><i class="bi bi-book-half" aria-hidden="true"></i></span>
           <div>
-            <h2>Student Clearance Applications</h2>
-            <p>Review student applications, verify book loans &amp; overdue fine settlement, and approve or return requests.</p>
+            <h2>Library Clearance Applications</h2>
+            <p>Review student applications, check borrowed books and fines, and approve or return requests.</p>
           </div>
         </div>
+
         <div class="board-actions-group">
           <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
             <input
               type="text"
+              placeholder="Search name, reg no, programme..."
               [(ngModel)]="searchTerm"
               (ngModelChange)="onFilterChange()"
-              placeholder="Search student, registration number or programme..."
-              aria-label="Search requests"
             />
           </div>
-          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter status">
+
+          <select class="board-select" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" aria-label="Filter by status">
+            <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
           </select>
         </div>
-      </div>
+      </header>
 
       <div class="board-body board-table-body">
-        <!-- EMPTY STATE -->
-        <div class="board-empty-state" *ngIf="!filteredRequests.length">
-          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Library.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Library.' : 'There are currently no student applications awaiting Library approval.' }}</p>
+        <div class="board-empty-state" *ngIf="isLoading && !requests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading Library clearance requests...</h2>
+          <p>Fetching live student submissions from the server.</p>
         </div>
 
-        <!-- REQUEST LIST TABLE -->
-        <div class="board-table-container" *ngIf="filteredRequests.length">
+        <div class="board-empty-state" *ngIf="!isLoading && filteredRequests.length === 0">
+          <div class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+          <h2>No matching requests</h2>
+          <p>Try adjusting the search term or status filter above.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredRequests.length > 0">
           <app-parallel-office-request-table
-            [requests]="paginatedRequests"
             [office]="'Library'"
+            [requests]="paginatedRequests"
+            (view)="openStudentDetails($event)"
             (approve)="approve($event)"
-            (reject)="openRejectForm($event)"
-            (view)="openStudentDetailsModal($event)"
+            (reject)="openRejectModal($event)"
+            (bulkApproved)="onTableMutated()"
+            (withdrawn)="onTableMutated()"
           ></app-parallel-office-request-table>
         </div>
 
-        <div class="pagination" *ngIf="totalPages > 1">
-          <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-            &larr; Previous
-          </button>
-          <span class="page-info">
-            Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-          </span>
-          <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-            Next &rarr;
-          </button>
+        <div class="pagination" *ngIf="filteredRequests.length > pageSize">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of {{ totalPages }}</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next</button>
         </div>
       </div>
     </section>
 
-    <!-- STUDENT LIBRARY DETAILS MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="viewingRequest" (click)="closeStudentDetailsModal()">
-      <div class="hostel-modal-card student-details-modal" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
-          <div class="modal-student-header">
-            <div class="student-avatar-wrap">
-              <img *ngIf="hasPhoto(viewingRequest)" [src]="getStudentPhoto(viewingRequest)" [alt]="getStudentName(viewingRequest)" />
-              <span *ngIf="!hasPhoto(viewingRequest)">{{ getStudentInitials(viewingRequest) }}</span>
-            </div>
-            <div>
-              <h3>{{ getStudentName(viewingRequest) }}</h3>
-              <p>{{ getStudentRegNumber(viewingRequest) }} · {{ getStudentProgramme(viewingRequest) }}</p>
-            </div>
-          </div>
-          <button type="button" class="close-modal-btn" (click)="closeStudentDetailsModal()">✕</button>
-        </header>
-
-        <div class="student-modal-body">
-          <!-- LIBRARY BOOK LOANS DETAILS -->
-          <div class="detail-section highlight-box">
-            <div class="section-badge-title">
-              <span class="section-icon"></span>
-              <h4>Library Circulation &amp; Overdue Status</h4>
-            </div>
-
-            <div class="residence-status-pill hostel">
-              <strong>Loan Status:</strong> {{ getStudentBorrowedStatus(viewingRequest) }}
-            </div>
-
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">Outstanding Fines</span>
-                <strong class="detail-value text-accent">{{ getStudentFinesStatus(viewingRequest) }}</strong>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Library Card Barcode</span>
-                <strong class="detail-value text-primary">{{ getStudentLibraryCardStatus(viewingRequest) }}</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- ACADEMIC & INSTITUTIONAL INFO -->
-          <div class="detail-section">
-            <h4>Academic &amp; Department Information</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">College / Unit</span>
-                <span class="detail-value">{{ getStudentCollege(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Department</span>
-                <span class="detail-value">{{ getStudentDepartment(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Programme</span>
-                <span class="detail-value">{{ getStudentProgramme(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Sponsor</span>
-                <span class="detail-value">{{ getStudentSponsor(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- CONTACT DETAILS -->
-          <div class="detail-section">
-            <h4>Contact Details</h4>
-            <div class="details-grid-2">
-              <div class="detail-item">
-                <span class="detail-label">Email Address</span>
-                <span class="detail-value">{{ getStudentEmail(viewingRequest) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Phone Number</span>
-                <span class="detail-value">{{ getStudentPhone(viewingRequest) }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- LIBRARY CLEARANCE STATUS -->
-          <div class="detail-section">
-            <h4>Library Clearance Status</h4>
-            <div class="office-status-row">
-              <span>Status: <strong class="status-badge" [class.approved]="getRequestOfficeStatus(viewingRequest, 'Library') === 'Approved'" [class.rejected]="getRequestOfficeStatus(viewingRequest, 'Library') === 'Rejected'">{{ getRequestOfficeStatus(viewingRequest, 'Library') }}</strong></span>
-              <span *ngIf="viewingRequest.requestDate">Application Date: {{ viewingRequest.requestDate | date:'mediumDate' }}</span>
-            </div>
+    <!-- VIEW 2: LIVE ANALYTICS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'analytics'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>Library Clearance Analytics</h2>
+            <p>Live clearance breakdown computed strictly from verified Library submissions.</p>
           </div>
         </div>
 
-        <footer class="student-modal-footer">
-          <button type="button" class="cancel-button" (click)="closeStudentDetailsModal()">
-            Close
+        <div class="board-actions-group">
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" [disabled]="!totalRequestCount">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Export CSV</span>
           </button>
-          <div class="footer-actions" *ngIf="getRequestOfficeStatus(viewingRequest, 'Library') === 'Pending'">
-            <button type="button" class="return-button reject-btn" (click)="openRejectForm(viewingRequest); closeStudentDetailsModal()">
-              Reject / Return
-            </button>
-            <button type="button" class="approve-btn" (click)="approve(viewingRequest); closeStudentDetailsModal()">
-              Approve Library Clearance
-            </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="analytics-bars">
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Approved</span>
+              <strong>{{ approvedRequestCount }} ({{ clearanceRatePercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill approved" [style.width.%]="clearanceRatePercent"></div></div>
           </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Pending Review</span>
+              <strong>{{ pendingRequestCount }} ({{ pendingPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill pending" [style.width.%]="pendingPercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Rejected</span>
+              <strong>{{ rejectedRequestCount }} ({{ rejectedPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="rejectedPercent"></div></div>
+          </div>
+        </div>
+
+        <h3 class="analytics-section-title">College Breakdown</h3>
+        <div class="board-table-container" *ngIf="collegeBreakdown.length > 0; else emptyAnalytics">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>College / Unit</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of collegeBreakdown">
+                <td><strong>{{ item.label }}</strong></td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.approved }}</td>
+                <td>{{ item.pending }}</td>
+                <td>{{ item.rejected }}</td>
+                <td><strong>{{ item.clearanceRate }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-template #emptyAnalytics>
+          <div class="board-empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></div>
+            <h2>No analytics data yet</h2>
+            <p>Statistics will appear automatically as students reach Library clearance.</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- VIEW 3: LIBRARY SECTIONS DIRECTORY -->
+    <section class="dashboard-board" *ngIf="viewMode === 'sections'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-collection-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>Library Sections &amp; Service Desks ({{ sections.length }})</h2>
+            <p>Reference directory of UDSM library sections and special collections (changes saved locally in this browser).</p>
+          </div>
+        </div>
+
+        <div class="board-actions-group">
+          <div class="board-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="text" placeholder="Search section, collection, desk..." [(ngModel)]="sectionSearchTerm" />
+          </div>
+          <button type="button" class="btn-cancel" (click)="resetSections()">Restore Defaults</button>
+          <button type="button" class="action-btn primary" (click)="openAddSectionModal()">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>Add Section</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="board-body">
+        <div class="board-empty-state" *ngIf="filteredSections.length === 0">
+          <div class="empty-icon"><i class="bi bi-collection" aria-hidden="true"></i></div>
+          <h2>No sections match your search</h2>
+          <p>Try a different keyword or add a new library section.</p>
+        </div>
+
+        <div class="desks-grid" *ngIf="filteredSections.length > 0">
+          <article class="desk-card" *ngFor="let s of filteredSections">
+            <div class="desk-card-header">
+              <h3>{{ s.name }}</h3>
+              <span class="campus-badge">{{ s.category }}</span>
+            </div>
+            <p class="desk-location"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> {{ s.location }}</p>
+            <p class="desk-desc">{{ s.description }}</p>
+            <div class="desk-tags">
+              <span class="desk-tag" *ngIf="s.deskLead">{{ s.deskLead }}</span>
+              <span class="desk-tag" *ngIf="s.deskContact">{{ s.deskContact }}</span>
+              <span class="desk-tag" *ngFor="let c of s.collections">{{ c }}</span>
+            </div>
+            <div class="hostel-card-actions">
+              <button type="button" class="card-action-btn edit" (click)="openEditSectionModal(s)">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="card-action-btn delete" (click)="deleteSection(s)">
+                <i class="bi bi-trash" aria-hidden="true"></i> Remove
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT DETAILS MODAL -->
+    <div class="modal-backdrop" *ngIf="viewingRequest as req" (click)="closeStudentDetails()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-student-header">
+            <button
+              type="button"
+              class="student-avatar-wrap"
+              (click)="openPhotoLightbox(getStudentPhoto(req))"
+              [disabled]="!getStudentPhoto(req)"
+              [title]="getStudentPhoto(req) ? 'Click to enlarge photo' : 'No photo uploaded'"
+            >
+              <img *ngIf="getStudentPhoto(req) as photo" [src]="photo" [alt]="getStudentName(req)" />
+              <span *ngIf="!getStudentPhoto(req)">{{ getStudentInitials(getStudentName(req)) }}</span>
+            </button>
+            <div>
+              <h3>{{ getStudentName(req) }}</h3>
+              <p>{{ getStudentRegNumber(req) }} &middot; {{ req.programme }}</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeStudentDetails()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="status-highlight-box">
+          <div class="status-highlight-head">
+            <span class="section-icon"><i class="bi bi-book-half" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ getStatusSummary(req) }}</strong>
+              <small>Reviewed by: {{ getRequestReviewer(req) }}<ng-container *ngIf="getRequestReviewedAt(req) as dt"> &middot; {{ dt | date:'medium' }}</ng-container></small>
+            </div>
+            <span class="status-pill" [ngClass]="getRequestOfficeStatus(req).toLowerCase()">
+              {{ getRequestOfficeStatus(req) }}
+            </span>
+          </div>
+
+          <div class="rejection-note-box" *ngIf="getRequestComment(req)">
+            <strong>Officer Remark:</strong> {{ getRequestComment(req) }}
+          </div>
+        </div>
+
+        <dl class="detail-grid">
+          <div>
+            <dt>College / Unit</dt>
+            <dd>{{ req.college || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ req.department || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Programme</dt>
+            <dd>{{ req.programme || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Sponsor</dt>
+            <dd>{{ req.sponsor || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Email Address</dt>
+            <dd>{{ req.email || 'Not provided' }}</dd>
+          </div>
+          <div>
+            <dt>Submitted On</dt>
+            <dd>{{ req.requestDate ? (req.requestDate | date:'medium') : 'Not recorded' }}</dd>
+          </div>
+        </dl>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeStudentDetails()">Close</button>
+          <ng-container *ngIf="getRequestOfficeStatus(req) !== 'Approved'">
+            <button type="button" class="btn-danger" (click)="openRejectModal(req)" [disabled]="isSubmitting">Reject</button>
+            <button type="button" class="btn-approve" (click)="approve(req)" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Approve Clearance' }}
+            </button>
+          </ng-container>
         </footer>
       </div>
-    </section>
+    </div>
 
-    <!-- REJECTION MODAL -->
-    <section class="reject-modal" *ngIf="selectedRequest" (click)="selectedRequest = null">
+    <!-- REJECT MODAL -->
+    <div class="modal-backdrop" *ngIf="selectedRequest as target" (click)="closeRejectModal()">
       <div class="modal-card" (click)="$event.stopPropagation()">
-        <div class="modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-        <h2>Return Clearance Request</h2>
-        <p>Write the reason and action the student must take regarding library books or overdue fines before clearance can proceed.</p>
-
-        <label>Reason for Rejection</label>
-        <textarea
-          [(ngModel)]="rejectionComment"
-          placeholder="Enter reason e.g. unreturned library books, unpaid overdue fine, or missing reserve item..."
-        ></textarea>
-
-        <div class="modal-actions">
-          <button
-            type="button"
-            class="cancel-button"
-            (click)="selectedRequest = null"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            class="return-button"
-            (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
-          >
-            Send Reason to Student
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION ADD/EDIT MODAL -->
-    <section class="hostel-modal-overlay" *ngIf="showSectionModal" (click)="closeSectionModal()">
-      <div class="hostel-modal-card" (click)="$event.stopPropagation()">
-        <header class="hostel-modal-header">
+        <header class="modal-header">
           <div>
-            <h3>{{ editingSectionId ? 'Edit Library Section' : 'Add New Library Section' }}</h3>
-            <p>{{ editingSectionId ? 'Update details and holdings for this library section.' : 'Register a new library section or special collection in the system.' }}</p>
+            <h3>Reject Library Clearance</h3>
+            <p>{{ getStudentName(target) }} ({{ getStudentRegNumber(target) }})</p>
           </div>
-          <button type="button" class="close-modal-btn" (click)="closeSectionModal()">✕</button>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
         </header>
 
-        <form (ngSubmit)="saveSection()" class="hostel-modal-form">
-          <div class="form-row">
-            <label class="form-field">
-              <span>Section Name *</span>
-              <input
-                type="text"
-                [(ngModel)]="sectionForm.name"
-                name="sectionName"
-                placeholder="e.g. Africana & Special Reserve..."
-                required
-              />
-            </label>
+        <p class="reject-hint">
+          Specify the exact unreturned book title/call number, overdue fine balance, or missing thesis repository deposit the student must settle.
+        </p>
 
-            <label class="form-field">
-              <span>Category</span>
-              <input
-                type="text"
-                [(ngModel)]="sectionForm.category"
-                name="sectionCategory"
-                placeholder="e.g. Lending, Archival, Digital Hub..."
-              />
-            </label>
-          </div>
+        <label class="modal-field">
+          <span>Rejection Reason *</span>
+          <textarea
+            rows="4"
+            [(ngModel)]="rejectionComment"
+            placeholder="Minimum 5 characters explaining what the student must resolve..."
+          ></textarea>
+          <small class="field-hint" *ngIf="rejectionComment.trim().length > 0 && rejectionComment.trim().length < 5">
+            Please enter at least 5 characters.
+          </small>
+        </label>
 
-          <div class="form-row">
-            <label class="form-field">
-              <span>Holdings / Seat Capacity</span>
-              <input
-                type="number"
-                min="0"
-                [(ngModel)]="sectionForm.capacity"
-                name="sectionCapacity"
-                placeholder="e.g. 50000"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>Librarian in Charge</span>
-              <input
-                type="text"
-                [(ngModel)]="sectionForm.librarianName"
-                name="sectionLibrarianName"
-                placeholder="e.g. Dr. C. Mwinyi"
-              />
-            </label>
-          </div>
-
-          <div class="form-row">
-            <label class="form-field">
-              <span>Librarian Contact (Phone/Email)</span>
-              <input
-                type="text"
-                [(ngModel)]="sectionForm.librarianContact"
-                name="sectionLibrarianContact"
-                placeholder="e.g. +255 22 241 0401"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>Location / Level</span>
-              <input
-                type="text"
-                [(ngModel)]="sectionForm.location"
-                name="sectionLocation"
-                placeholder="e.g. Main Library Ground Floor"
-              />
-            </label>
-          </div>
-
-          <label class="form-field">
-            <span>Collections / Databases (comma-separated)</span>
-            <input
-              type="text"
-              [(ngModel)]="sectionForm.collectionsText"
-              name="sectionCollectionsText"
-              placeholder="e.g. Undergraduate Lending, Reserve Book Room, Research Journals"
-            />
-            <small class="field-help">Separate collection names with commas.</small>
-          </label>
-
-          <label class="form-field">
-            <span>Description / Remarks</span>
-            <textarea
-              [(ngModel)]="sectionForm.description"
-              name="sectionDescription"
-              rows="3"
-              placeholder="Additional information about library policies, lending duration, or research rules..."
-            ></textarea>
-          </label>
-
-          <div class="modal-actions">
-            <button type="button" class="cancel-button" (click)="closeSectionModal()">
-              Cancel
-            </button>
-            <button type="submit" class="return-button save-btn" [disabled]="!sectionForm.name.trim()">
-              {{ editingSectionId ? 'Save Changes' : 'Create Section' }}
-            </button>
-          </div>
-        </form>
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
+          <button
+            type="button"
+            class="btn-danger"
+            (click)="reject()"
+            [disabled]="isSubmitting || rejectionComment.trim().length < 5"
+          >
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
+          </button>
+        </footer>
       </div>
-    </section>
+    </div>
 
+    <!-- ADD / EDIT SECTION MODAL -->
+    <div class="modal-backdrop" *ngIf="showSectionModal" (click)="closeSectionModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h3>{{ editingSectionId ? 'Edit Library Section' : 'Add Library Section' }}</h3>
+            <p>Update the local University Library sections directory.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeSectionModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="hostel-form-grid">
+          <label class="modal-field full-span">
+            <span>Section Name *</span>
+            <input type="text" [(ngModel)]="sectionForm.name" placeholder="e.g., East Africana & Special Collections" />
+          </label>
+
+          <label class="modal-field">
+            <span>Category</span>
+            <input type="text" [(ngModel)]="sectionForm.category" placeholder="e.g., Archival & Research" />
+          </label>
+
+          <label class="modal-field">
+            <span>Location / Floor</span>
+            <input type="text" [(ngModel)]="sectionForm.location" placeholder="e.g., Main Library, Level 2" />
+          </label>
+
+          <label class="modal-field">
+            <span>Service Desk</span>
+            <input type="text" [(ngModel)]="sectionForm.deskLead" placeholder="e.g., Special Collections Desk" />
+          </label>
+
+          <label class="modal-field">
+            <span>Contact</span>
+            <input type="text" [(ngModel)]="sectionForm.deskContact" placeholder="e.g., +255 22 241 0500" />
+          </label>
+
+          <label class="modal-field full-span">
+            <span>Collections &amp; Databases (comma-separated)</span>
+            <input type="text" [(ngModel)]="sectionForm.collectionsText" placeholder="e.g., Reserve Book Room, Theses, Journals" />
+          </label>
+
+          <label class="modal-field full-span">
+            <span>Description</span>
+            <textarea rows="3" [(ngModel)]="sectionForm.description" placeholder="Summary of the library section..."></textarea>
+          </label>
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeSectionModal()">Cancel</button>
+          <button type="button" class="btn-approve" (click)="saveSection()">
+            {{ editingSectionId ? 'Save Changes' : 'Add Section' }}
+          </button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- PHOTO LIGHTBOX -->
+    <div class="modal-backdrop lightbox" *ngIf="enlargedPhotoUrl as photoUrl" (click)="closePhotoLightbox()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close-btn lightbox-close" (click)="closePhotoLightbox()" aria-label="Close photo">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <img [src]="photoUrl" alt="Student Passport Photo" />
+      </div>
+    </div>
   </main>
 </section>

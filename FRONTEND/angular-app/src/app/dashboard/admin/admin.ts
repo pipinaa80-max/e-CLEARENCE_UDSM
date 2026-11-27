@@ -1,15 +1,18 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminService } from '../../core/services/admin.service';
+import { isPostgraduateAward, isPostgraduateEntity } from '../../core/utils/postgraduate.util';
 import { normalizeBrandAssetUrl, ProjectAdminService, ProjectDashboard, ProjectConfig } from '../../core/services/project-admin.service';
 import { AwardService } from '../../core/services/award.service';
 import { SponsorService } from '../../core/services/sponsor.service';
 import { Sponsor } from '../../core/models/sponsor.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { DEFAULT_UDSM_BRAND_COLOR, normalizeUdsmBrandColor, UDSM_BRAND_COLORS } from '../../core/config/udsm-brand-colors';
+import { NotificationService } from '../../core/services/notification.service';
 
 interface DepartmentData {
   [department: string]: string[];
@@ -22,7 +25,7 @@ interface AcademicUnitData {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DashboardHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DashboardHeaderComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
@@ -31,12 +34,23 @@ export class AdminDashboard implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly projectAdminService = inject(ProjectAdminService);
   private readonly awardService = inject(AwardService);
   private readonly sponsorService = inject(SponsorService);
+  private readonly notificationService = inject(NotificationService);
+  private unreadSub?: Subscription;
+
+  @ViewChild('bulkUploadInput') bulkUploadInput?: ElementRef<HTMLInputElement>;
 
   Math = Math;
   sidebarOpen = false;
+  unreadNotifications = 0;
+  isSubmittingUser = false;
+  isDeletingUsers = false;
+  isSavingSponsor = false;
+  isSavingDashboard = false;
+  isSavingTheme = false;
   showAddForm = false;
   readonly themeColors = UDSM_BRAND_COLORS;
   themeColorDropdownOpen = false;
@@ -71,6 +85,16 @@ export class AdminDashboard implements OnInit, OnDestroy {
     return this.authService.getCurrentUser();
   }
 
+  get userInitials(): string {
+    const name = String(this.currentUser?.fullName || 'AD');
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase() || '')
+      .join('') || 'AD';
+  }
+
   users: any[] = [];
   selectedUserIds: Set<string> = new Set();
   roles: string[] = [
@@ -79,6 +103,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     'Lecturer',
     'Department',
     'Principal',
+    'Convocation',
     'Library',
     'Finance',
     'Games Coach',
@@ -90,7 +115,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
     'Workshop',
     'Laboratory',
     'Director of Undergraduate Studies',
-    'DUS Secretary',
+    'Director of Postgraduate Studies',
+    'DUS Examination Office',
+    'Station Secretary',
+    'Supervisor',
     'Administrator'
   ];
   clearanceRequests: any[] = [];
@@ -99,6 +127,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   userRoleFilter: string = '';
   userStatusFilter: '' | 'active' | 'inactive' = '';
   requestSearchTerm: string = '';
+  requestStatusFilter: '' | 'COMPLETED' | 'PENDING' | 'REJECTED' = '';
 
   get isAllSelected(): boolean {
     const filtered = this.filteredUsers;
@@ -123,18 +152,21 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   deleteSelectedUsers(): void {
     const ids = Array.from(this.selectedUserIds);
-    if (ids.length === 0) return;
+    if (ids.length === 0 || this.isDeletingUsers) return;
 
     if (confirm(`Are you sure you want to delete ${ids.length} selected users? This action is permanent.`)) {
+      this.isDeletingUsers = true;
       this.adminService.deleteUsers(ids).subscribe({
         next: (res) => {
+          this.isDeletingUsers = false;
           this.message = res.message || 'Users deleted successfully';
           this.isError = false;
           this.selectedUserIds.clear();
           this.loadData();
         },
         error: (err) => {
-          this.message = 'Failed to delete selected users';
+          this.isDeletingUsers = false;
+          this.message = err?.error?.message || 'Failed to delete selected users';
           this.isError = true;
         }
       });
@@ -143,6 +175,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   stats = {
     totalStudents: 0,
+    totalPostgraduates: 0,
+    totalUndergraduates: 0,
     totalRequests: 0,
     completed: 0,
     pending: 0,
@@ -150,6 +184,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
     totalStaff: 0,
     pendingUsers: 0
   };
+
+  userAwardFilter: string = '';
 
   newUser = {
     firstName: '',
@@ -163,7 +199,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
     department: '',
     programme: '',
     faculty: '',
-    yearOfStudy: ''
+    yearOfStudy: '',
+    award: 'Bachelor Degree',
+    isPostgraduate: false
   };
 
   readonly academicUnits: AcademicUnitData = {
@@ -268,6 +306,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
         'BSc in Microbiology',
         'BSc in Applied Microbiology and Chemistry'
       ],
+      'Natural and Applied Sciences': [
+        'BSc with Education'
+      ],
       'Physics': [
         'BSc in Physics (Medical Physics)',
         'BSc in Meteorology'
@@ -281,10 +322,16 @@ export class AdminDashboard implements OnInit, OnDestroy {
       'Geography': [
         'BA in Geography and Environmental Studies'
       ],
+      'Information Studies': [
+        'BA in Library and Information Studies'
+      ],
       'Political Science and Public Administration': [
         'BA in Political Science and Public Administration'
       ],
-      'Sociology and Anthropology': [
+      'Social Sciences': [
+        'BA with Education'
+      ],
+      'Sociology': [
         'BA in Anthropology',
         'BA in Psychology',
         'BA in Sociology',
@@ -292,9 +339,6 @@ export class AdminDashboard implements OnInit, OnDestroy {
       ],
       'Statistics': [
         'BA in Statistics'
-      ],
-      'Information Studies Unit': [
-        'BA in Library and Information Studies'
       ]
     },
     'University of Dar es Salaam Business School (UDBS)': {
@@ -386,8 +430,25 @@ export class AdminDashboard implements OnInit, OnDestroy {
       ]
     },
     'Institute of Marine Sciences (IMS)': {
-      'Marine and Coastal Resources / Marine Sciences': [
+      'Marine Sciences': [
         'Bachelor of Science in Marine Sciences'
+      ]
+    },
+    'Mineral Resources Institute (MRI)': {
+      'Environmental Engineering and Management': [
+        'Diploma in Environmental Engineering and Management in Mines'
+      ],
+      'Geology and Mineral Exploration': [
+        'Diploma in Geology and Mineral Exploration'
+      ],
+      'Land and Mine Surveying': [
+        'Diploma in Land and Mine Surveying'
+      ],
+      'Mining Engineering': [
+        'Diploma in Mining Engineering'
+      ],
+      'Petroleum Geosciences and Exploration': [
+        'Diploma in Petroleum Geosciences and Exploration'
       ]
     },
     'Dar es Salaam University College of Education (DUCE)': {
@@ -405,9 +466,15 @@ export class AdminDashboard implements OnInit, OnDestroy {
       ]
     },
     'Mbeya College of Health and Allied Sciences (MCHAS)': {
-      'Health Sciences': [
+      'Clinical Medicine': [
         'Doctor of Medicine (MD)',
         'Doctor of Dental Surgery (DDS)'
+      ],
+      'Pharmacy': [
+        'Bachelor of Pharmacy'
+      ],
+      'Nursing': [
+        'Bachelor of Science in Nursing'
       ]
     }
   };
@@ -422,9 +489,115 @@ export class AdminDashboard implements OnInit, OnDestroy {
     return Object.keys(this.academicUnits[college] || {});
   }
 
+  private readonly postgraduateProgrammesByCollege: Record<string, string[]> = {
+    'CoICT': [
+      'Master of Science in Computer Science',
+      'Master of Science in Data Science',
+      'Master of Science in Electronics Engineering and Information Technology',
+      'Master of Science in Telecommunications Engineering',
+      'PhD in Computer Science',
+      'PhD in Electronics Engineering and Information Technology'
+    ],
+    'CoET': [
+      'Master of Science in Civil Engineering',
+      'Master of Science in Electrical Power Engineering',
+      'Master of Science in Mechanical Engineering',
+      'Master of Science in Chemical Engineering',
+      'PhD in Engineering'
+    ],
+    'CoNAS': [
+      'Master of Science in Mathematics',
+      'Master of Science in Physics',
+      'Master of Science in Chemistry',
+      'Master of Science in Applied Microbiology',
+      'Master of Science in Biodiversity Conservation',
+      'PhD in Natural and Applied Sciences'
+    ],
+    'CoHU': [
+      'Master of Arts in Linguistics',
+      'Master of Arts in Literature',
+      'Master of Arts in History',
+      'Master of Arts in Archaeology',
+      'PhD in Humanities'
+    ],
+    'CoSS': [
+      'Master of Arts in Economics',
+      'Master of Arts in Political Science and Public Administration',
+      'Master of Arts in Sociology',
+      'Master of Arts in Geography and Environmental Management',
+      'PhD in Social Sciences'
+    ],
+    'CoAF': [
+      'Master of Science in Agricultural Engineering',
+      'Master of Science in Food Science and Technology',
+      'PhD in Agricultural Sciences'
+    ],
+    'UDBS': [
+      'Master of Business Administration (MBA)',
+      'Master of International Business (MIB)',
+      'Master of Finance and Accounting',
+      'PhD in Business Administration'
+    ],
+    'UDSoL': [
+      'Master of Laws (LL.M)',
+      'Postgraduate Diploma in Law',
+      'PhD in Law'
+    ],
+    'SoED': [
+      'Master of Education (MEd)',
+      'Master of Arts in Education (MA Ed)',
+      'Postgraduate Diploma in Education (PGDE)',
+      'PhD in Education'
+    ],
+    'SJMC': [
+      'Master of Arts in Mass Communication',
+      'Postgraduate Diploma in Mass Communication',
+      'PhD in Mass Communication'
+    ],
+    'SoMG': [
+      'Master of Science in Geology',
+      'Master of Science in Petroleum Geology',
+      'PhD in Geosciences'
+    ],
+    'SoAF': [
+      'Master of Science in Marine Sciences',
+      'Master of Science in Fisheries and Aquaculture',
+      'PhD in Aquatic Sciences'
+    ],
+    'MCHAS': [
+      'Master of Medicine (MMed)',
+      'Master of Public Health (MPH)',
+      'PhD in Health Sciences'
+    ],
+    'DUCE': [
+      'Master of Education (MEd)',
+      'Postgraduate Diploma in Education (PGDE)',
+      'PhD in Education'
+    ],
+    'MUCE': [
+      'Master of Education (MEd)',
+      'Postgraduate Diploma in Education (PGDE)',
+      'PhD in Education'
+    ]
+  };
+
+  private readonly defaultPostgraduateProgrammes: string[] = [
+    'Master of Science (MSc)',
+    'Master of Arts (MA)',
+    'Master of Business Administration (MBA)',
+    'Master of Education (MEd)',
+    'Master of Laws (LL.M)',
+    'Postgraduate Diploma (PGD)',
+    'Doctor of Philosophy (PhD)'
+  ];
+
   get programmeOptions(): string[] {
     const college = this.newUser.college;
     const department = this.newUser.department;
+    if (this.newUser.isPostgraduate) {
+      const collegePg = college ? this.postgraduateProgrammesByCollege[college] : undefined;
+      return collegePg?.length ? collegePg : this.defaultPostgraduateProgrammes;
+    }
     if (!college || !department) return [];
     return this.academicUnits[college]?.[department] || [];
   }
@@ -456,6 +629,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
     return (
       r === 'ACADEMIC STAFF' ||
       r === 'LECTURER' ||
+      r === 'SUPERVISOR' ||
+      r === 'RESEARCH SUPERVISOR' ||
       r === 'DEPARTMENT' ||
       r === 'DEPARTMENT OFFICER' ||
       r === 'WORKSHOP' ||
@@ -491,7 +666,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   get roleBadgeDescription(): string {
     if (this.isStudentRole) {
-      return 'Student Account — Requires College, Department, and Programme selection.';
+      if (this.newUser.isPostgraduate) {
+        return '🎓 Postgraduate Student — Requires College, Department, Programme, and Award Level. Routes through Convocation, Parallel Offices, Department, Principal, Finance, and Research Supervisor (Final Check). Requires Undergraduate Certificate upload.';
+      }
+      return '📘 Undergraduate Student — Requires College, Department, and Programme selection. Standard 5-stage clearance flow.';
     }
     if (this.isPrincipalRole) {
       return 'College Principal — Oversees the entire selected College (no individual department).';
@@ -500,6 +678,29 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return 'Academic / Departmental Staff — Associated with College and Department. Programme not required.';
     }
     return 'Institutional / Central Unit — University-wide office (College, Department, and Programme not required).';
+  }
+
+  onAwardChange(): void {
+    const award = (this.newUser.award || '').toLowerCase();
+    if (award.includes('postgraduate') || award.includes('master') || award.includes('phd') || award.includes('doctor')) {
+      this.newUser.isPostgraduate = true;
+    } else if (award.includes('bachelor') || award.includes('diploma') || award.includes('certificate')) {
+      this.newUser.isPostgraduate = false;
+    }
+  }
+
+  onPostgraduateToggle(): void {
+    if (this.newUser.isPostgraduate) {
+      const award = (this.newUser.award || '').toLowerCase();
+      if (!award.includes('postgraduate') && !award.includes('master') && !award.includes('phd')) {
+        this.newUser.award = 'Master Degree';
+      }
+    } else {
+      const award = (this.newUser.award || '').toLowerCase();
+      if (award.includes('postgraduate') || award.includes('master') || award.includes('phd')) {
+        this.newUser.award = 'Bachelor Degree';
+      }
+    }
   }
 
   onRoleChange(): void {
@@ -519,6 +720,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
       if (this.newUser.department && !this.departments.includes(this.newUser.department)) {
         this.newUser.department = '';
       }
+      if (!this.newUser.award) {
+        this.newUser.award = 'Bachelor Degree';
+      }
     }
   }
 
@@ -527,12 +731,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
     if (r.includes('LIBRARY')) return 'Library Services';
     if (r.includes('FINANCE')) return 'Bursar & Treasury';
     if (r.includes('ICT')) return 'Centre for Information and Communication Technology';
-    if (r.includes('CONVOCATION')) return 'Finance';
+    if (r.includes('CONVOCATION')) return 'Convocation Relations';
     if (r.includes('GAMES') || r.includes('COACH')) return 'Sports and Games Department';
     if (r.includes('HALL') || r.includes('WARDEN') || r.includes('USAB')) return 'Accommodation Bureau (USAB)';
     if (r.includes('DARUSO')) return 'DARUSO Student Union';
     if (r.includes('DEAN')) return 'Dean of Students Office';
     if (r.includes('SMART')) return 'Smart Card Unit';
+    if (r.includes('POSTGRADUATE') || r.includes('DPGS')) return 'Directorate of Postgraduate Studies';
+    if (r.includes('STATION')) return 'Collection Station Operations';
     if (r.includes('UNDERGRADUATE') || r.includes('DUS')) return 'Directorate of Undergraduate Studies';
     if (r.includes('ADMIN')) return 'University Administration';
     return '';
@@ -605,7 +811,18 @@ export class AdminDashboard implements OnInit, OnDestroy {
       const matchesStatus = !statusFilter ||
         (statusFilter === 'active' ? u.isActive !== false : u.isActive === false);
 
-      return matchesSearch && matchesRole && matchesStatus;
+      let matchesAward = true;
+      if (this.userAwardFilter === 'POSTGRADUATE') {
+        matchesAward = userRole === 'STUDENT' && this.isPostgraduateUser(u);
+      } else if (this.userAwardFilter === 'UNDERGRADUATE') {
+        matchesAward = userRole === 'STUDENT' && !this.isPostgraduateUser(u);
+      } else if (this.userAwardFilter) {
+        const uAward = (u.award || '').toLowerCase();
+        const fAward = this.userAwardFilter.toLowerCase();
+        matchesAward = uAward.includes(fAward) || (u.programme && u.programme.toLowerCase().includes(fAward));
+      }
+
+      return matchesSearch && matchesRole && matchesStatus && matchesAward;
     });
 
     this.totalPages = Math.max(1, Math.ceil(this.filteredUsers.length / this.pageSize));
@@ -655,6 +872,77 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.userSearchTerm = '';
     this.userRoleFilter = '';
     this.userStatusFilter = '';
+    this.userAwardFilter = '';
+    this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
+  }
+
+  isPostgraduateUser(u: any): boolean {
+    return isPostgraduateEntity(u);
+  }
+
+  isStudent(u: any): boolean {
+    return String(u?.role ?? '').toUpperCase() === 'STUDENT';
+  }
+
+  getStudentAwardCategory(u: any): { label: string; type: 'postgraduate' | 'undergraduate'; isPostgrad: boolean; badgeClass: string; icon: string } {
+    if (!u) return { label: 'Unknown', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-bachelor', icon: 'bi-mortarboard' };
+    const isPostgrad = this.isPostgraduateUser(u);
+    const award = (u.award || '').trim();
+    const prog = (u.programme || '').toLowerCase();
+
+    if (award) {
+      const lower = award.toLowerCase();
+      if (lower.includes('phd') || lower.includes('doctor')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-phd', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('master')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-masters', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('postgraduate')) {
+        return { label: award, type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-pgd', icon: 'bi-mortarboard-fill' };
+      }
+      if (lower.includes('bachelor') || lower.includes('degree')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-bachelor', icon: 'bi-mortarboard' };
+      }
+      if (lower.includes('diploma')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-diploma', icon: 'bi-award' };
+      }
+      if (lower.includes('certificate')) {
+        return { label: award, type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-certificate', icon: 'bi-patch-check' };
+      }
+      return { label: award, type: isPostgrad ? 'postgraduate' : 'undergraduate', isPostgrad, badgeClass: isPostgrad ? 'award-badge-masters' : 'award-badge-bachelor', icon: 'bi-mortarboard' };
+    }
+
+    if (prog.includes('phd') || prog.includes('doctor')) {
+      return { label: 'PhD', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-phd', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('master') || prog.includes('msc') || prog.includes('mba')) {
+      return { label: 'Master Degree', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-masters', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('postgraduate') || prog.includes('pgd')) {
+      return { label: 'Postgraduate Diploma', type: 'postgraduate', isPostgrad: true, badgeClass: 'award-badge-pgd', icon: 'bi-mortarboard-fill' };
+    }
+    if (prog.includes('diploma')) {
+      return { label: 'Diploma', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-diploma', icon: 'bi-award' };
+    }
+    if (prog.includes('certificate')) {
+      return { label: 'Certificate', type: 'undergraduate', isPostgrad: false, badgeClass: 'award-badge-certificate', icon: 'bi-patch-check' };
+    }
+
+    return { label: isPostgrad ? 'Postgraduate' : 'Bachelor Degree', type: isPostgrad ? 'postgraduate' : 'undergraduate', isPostgrad, badgeClass: isPostgrad ? 'award-badge-masters' : 'award-badge-bachelor', icon: 'bi-mortarboard' };
+  }
+
+  filterByAwardCategory(cat: string): void {
+    this.userRoleFilter = 'Student';
+    this.userAwardFilter = cat;
+    this.currentPage = 1;
+    this.applyUserFiltersAndPagination();
+  }
+
+  filterByStaff(): void {
+    this.userRoleFilter = 'STAFF';
+    this.userAwardFilter = '';
     this.currentPage = 1;
     this.applyUserFiltersAndPagination();
   }
@@ -672,15 +960,24 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
   applyRequestFiltersAndPagination(): void {
     const term = (this.requestSearchTerm || '').trim().toLowerCase();
+    const statusFilter = this.requestStatusFilter;
 
     this.filteredRequests = this.clearanceRequests.filter(r => {
+      const normalizedStatus = String(r.status || 'PENDING').toUpperCase();
+      if (statusFilter === 'COMPLETED') {
+        if (!['COMPLETED', 'APPROVED', 'CLEARED'].includes(normalizedStatus)) return false;
+      } else if (statusFilter && normalizedStatus !== statusFilter) {
+        return false;
+      }
+
       if (!term) return true;
       const name = (r.student?.fullName || r.studentName || '').toLowerCase();
       const reg = (r.student?.registrationNumber || r.registrationNumber || '').toLowerCase();
-      const dept = (r.department || '').toLowerCase();
-      const status = (r.status || '').toLowerCase();
+      const college = (r.college || r.student?.college || '').toLowerCase();
+      const dept = (r.department || r.student?.department || '').toLowerCase();
+      const status = normalizedStatus.toLowerCase();
       const stage = (r.currentStage || '').toLowerCase();
-      return name.includes(term) || reg.includes(term) || dept.includes(term) || status.includes(term) || stage.includes(term);
+      return name.includes(term) || reg.includes(term) || college.includes(term) || dept.includes(term) || status.includes(term) || stage.includes(term);
     });
 
     this.totalRequestPages = Math.max(1, Math.ceil(this.filteredRequests.length / this.requestPageSize));
@@ -738,12 +1035,26 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return;
     }
 
+    this.unreadSub = this.notificationService.unreadCount$.subscribe(count => {
+      this.unreadNotifications = count;
+    });
+    this.notificationService.refreshUnreadCount().subscribe();
+
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['users', 'clearance', 'upload', 'dashboards', 'theme', 'awards', 'sponsors'].includes(initialTab)) {
+      this.setTab(initialTab as any);
+      if (['upload', 'dashboards', 'theme', 'awards', 'sponsors'].includes(initialTab)) {
+        this.institutionalMenuOpen = true;
+      }
+    }
+
     this.loadData();
     this.loadProjectConfig();
     this.loadAwards();
   }
 
   ngOnDestroy(): void {
+    this.unreadSub?.unsubscribe();
   }
 
   isLoadingUsers: boolean = false;
@@ -809,52 +1120,30 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     this.adminService.getAllClearanceRequests().subscribe({
       next: (requests) => {
-        if (Array.isArray(requests) && requests.length > 0) {
-          this.clearanceRequests = requests;
-        } else {
-          this.loadLocalClearanceRequests();
-        }
+        this.clearanceRequests = Array.isArray(requests) ? requests : [];
         this.calculateStats();
         this.applyRequestFiltersAndPagination();
       },
       error: (err) => {
-        console.warn('Backend clearance requests fetch failed, checking local storage:', err);
-        this.loadLocalClearanceRequests();
+        console.error('Failed to load clearance requests from backend:', err);
+        this.clearanceRequests = [];
+        if (!this.message) {
+          this.message = err?.error?.message || 'Failed to load clearance requests from the server.';
+          this.isError = true;
+        }
         this.calculateStats();
         this.applyRequestFiltersAndPagination();
       }
     });
-  }
 
-  private loadLocalClearanceRequests(): void {
-    const raw = localStorage.getItem('udsm-clearance-requests');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.clearanceRequests = parsed.map(r => ({
-            id: r.id,
-            studentName: r.studentName || r.student?.fullName || 'Student',
-            registrationNumber: r.registrationNumber || r.student?.registrationNumber || 'N/A',
-            student: {
-              fullName: r.studentName || r.student?.fullName || 'Student',
-              registrationNumber: r.registrationNumber || r.student?.registrationNumber || 'N/A'
-            },
-            department: r.department || r.programme || 'N/A',
-            status: r.status || 'PENDING',
-            currentStage: r.currentStage || r.stage || 'Clearance Process',
-            submittedAt: r.requestDate || r.submittedAt || new Date().toISOString()
-          }));
-          this.applyRequestFiltersAndPagination();
-        }
-      } catch (e) {
-        console.error('Error loading local clearance requests:', e);
-      }
-    }
+    this.notificationService.refreshUnreadCount().subscribe();
   }
 
   calculateStats(): void {
-    this.stats.totalStudents = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT').length;
+    const students = this.users.filter(u => String(u.role ?? '').toUpperCase() === 'STUDENT');
+    this.stats.totalStudents = students.length;
+    this.stats.totalPostgraduates = students.filter(s => this.isPostgraduateUser(s)).length;
+    this.stats.totalUndergraduates = this.stats.totalStudents - this.stats.totalPostgraduates;
     this.stats.totalStaff = this.users.filter(u => String(u.role ?? '').toUpperCase() !== 'STUDENT').length;
     this.stats.pendingUsers = this.users.filter(u => u.isActive === false).length;
     this.stats.totalRequests = this.clearanceRequests.length;
@@ -959,8 +1248,10 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.setTab('users');
   }
 
-  navigateToClearanceRequests(statusFilter?: string): void {
-    this.requestSearchTerm = statusFilter || '';
+  navigateToClearanceRequests(statusFilter?: '' | 'COMPLETED' | 'PENDING' | 'REJECTED'): void {
+    this.requestSearchTerm = '';
+    this.requestStatusFilter = statusFilter || '';
+    this.currentRequestPage = 1;
     this.setTab('clearance');
   }
 
@@ -1077,6 +1368,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   addSponsor(): void {
+    if (this.isSavingSponsor) return;
     const name = this.newSponsorName.trim();
     if (!name) {
       this.message = 'Please enter a sponsor name.';
@@ -1084,6 +1376,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return;
     }
 
+    this.isSavingSponsor = true;
     const payload: Partial<Sponsor> = {
       name,
       code: this.newSponsorCode.trim() || undefined,
@@ -1093,6 +1386,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
 
     this.sponsorService.createSponsor(payload).subscribe({
       next: (created) => {
+        this.isSavingSponsor = false;
         this.message = `Sponsor "${created.name}" added successfully.`;
         this.isError = false;
         this.newSponsorName = '';
@@ -1101,6 +1395,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
         this.loadSponsors();
       },
       error: (err) => {
+        this.isSavingSponsor = false;
         console.error('Failed to add sponsor:', err);
         this.message = err.error?.message || `Sponsor "${name}" already exists or could not be added.`;
         this.isError = true;
@@ -1123,7 +1418,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   saveSponsorEdit(): void {
-    if (!this.editingSponsorId) return;
+    if (!this.editingSponsorId || this.isSavingSponsor) return;
     const name = this.editedSponsorName.trim();
     if (!name) {
       this.message = 'Sponsor name cannot be empty.';
@@ -1137,20 +1432,23 @@ export class AdminDashboard implements OnInit, OnDestroy {
       return;
     }
 
+    this.isSavingSponsor = true;
     this.sponsorService.updateSponsor(sponsor.id, {
       name,
       code: this.editedSponsorCode.trim() || undefined,
       description: this.editedSponsorDescription.trim() || undefined
     }).subscribe({
       next: (updated) => {
+        this.isSavingSponsor = false;
         this.message = `Sponsor "${updated.name}" updated successfully.`;
         this.isError = false;
         this.cancelEditSponsor();
         this.loadSponsors();
       },
       error: (err) => {
+        this.isSavingSponsor = false;
         console.error('Failed to update sponsor:', err);
-        this.message = 'Failed to update sponsor.';
+        this.message = err?.error?.message || 'Failed to update sponsor.';
         this.isError = true;
       }
     });
@@ -1191,6 +1489,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   addDashboard(): void {
+    if (this.isSavingDashboard) return;
     if (!this.newDashboard.id.trim() || !this.newDashboard.name.trim()) {
       this.message = 'Dashboard ID and Name are required.';
       this.isError = true;
@@ -1204,72 +1503,65 @@ export class AdminDashboard implements OnInit, OnDestroy {
       enabled: true
     };
 
+    this.isSavingDashboard = true;
     this.projectAdminService.createDashboard(newDash).subscribe({
       next: () => {
+        this.isSavingDashboard = false;
         this.message = 'Dashboard added successfully.';
         this.isError = false;
         this.newDashboard = { id: '', name: '', description: '' };
         this.loadProjectConfig();
       },
-      error: () => {
-        if (!this.projectConfig) {
-          this.loadProjectConfig();
-        }
-        if (this.projectConfig) {
-          const current = this.projectConfig.dashboards || [];
-          if (current.some(d => d.id === newDash.id)) {
-            this.message = `Dashboard ID "${newDash.id}" already exists.`;
-            this.isError = true;
-            return;
-          }
-          current.push(newDash);
-          this.projectConfig.dashboards = current;
-          this.saveLocalDashboards(current);
-          this.message = `Dashboard "${newDash.name}" added successfully.`;
-          this.isError = false;
-          this.newDashboard = { id: '', name: '', description: '' };
-        }
+      error: (err) => {
+        this.isSavingDashboard = false;
+        this.message = err?.error?.message || `Failed to save dashboard "${newDash.name}" to the server.`;
+        this.isError = true;
       }
     });
   }
 
   updateDashboard(dashboard: ProjectDashboard): void {
+    if (this.isSavingDashboard) return;
+    this.isSavingDashboard = true;
     this.projectAdminService.updateDashboard(dashboard).subscribe({
       next: () => {
+        this.isSavingDashboard = false;
         this.message = 'Dashboard updated successfully.';
         this.isError = false;
-      },
-      error: () => {
         if (this.projectConfig?.dashboards) {
           this.saveLocalDashboards(this.projectConfig.dashboards);
-          this.message = `Dashboard "${dashboard.name}" updated successfully.`;
-          this.isError = false;
         }
+      },
+      error: (err) => {
+        this.isSavingDashboard = false;
+        this.message = err?.error?.message || `Failed to update dashboard "${dashboard.name}" on the server.`;
+        this.isError = true;
       }
     });
   }
 
   deleteDashboard(id: string): void {
+    if (this.isSavingDashboard) return;
     if (!confirm('Delete this dashboard from your project?')) return;
+    this.isSavingDashboard = true;
     this.projectAdminService.deleteDashboard(id).subscribe({
       next: () => {
+        this.isSavingDashboard = false;
         this.message = 'Dashboard deleted successfully.';
         this.isError = false;
         this.loadProjectConfig();
       },
-      error: () => {
-        if (this.projectConfig?.dashboards) {
-          this.projectConfig.dashboards = this.projectConfig.dashboards.filter(d => d.id !== id);
-          this.saveLocalDashboards(this.projectConfig.dashboards);
-          this.message = 'Dashboard deleted successfully.';
-          this.isError = false;
-        }
+      error: (err) => {
+        this.isSavingDashboard = false;
+        this.message = err?.error?.message || 'Failed to delete dashboard on the server.';
+        this.isError = true;
       }
     });
   }
 
   saveTheme(): void {
-    if (!this.projectConfig) return;
+    if (!this.projectConfig || this.isSavingTheme) return;
+    this.isSavingTheme = true;
     const submittedBranding = {
       ...this.projectConfig.branding,
       primaryColor: normalizeUdsmBrandColor(this.projectConfig.branding.primaryColor)
@@ -1277,6 +1569,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     this.projectConfig.branding.primaryColor = submittedBranding.primaryColor;
     this.projectAdminService.updateBranding(submittedBranding).subscribe({
       next: (branding) => {
+        this.isSavingTheme = false;
         const savedBranding = {
           ...submittedBranding,
           ...branding,
@@ -1292,7 +1585,11 @@ export class AdminDashboard implements OnInit, OnDestroy {
         this.message = 'Project theme saved';
         this.isError = false;
       },
-      error: () => { this.message = 'Failed to save project theme'; this.isError = true; }
+      error: (err) => {
+        this.isSavingTheme = false;
+        this.message = err?.error?.message || 'Failed to save project theme';
+        this.isError = true;
+      }
     });
   }
 
@@ -1350,6 +1647,8 @@ export class AdminDashboard implements OnInit, OnDestroy {
   }
 
   addUser(): void {
+    if (this.isSubmittingUser) return;
+    this.isSubmittingUser = true;
     const payload = { ...this.newUser };
 
     // For staff, if registrationNumber / staff ID is omitted, generate a clean unique staff ID
@@ -1371,10 +1670,14 @@ export class AdminDashboard implements OnInit, OnDestroy {
       payload.programme = '';
     } else if (this.isDepartmentalStaffRole) {
       payload.programme = '';
+    } else if (this.isStudentRole) {
+      payload.award = this.newUser.award || 'Bachelor Degree';
+      payload.isPostgraduate = this.newUser.isPostgraduate || isPostgraduateAward(payload.award);
     }
 
     this.adminService.createUser(payload).subscribe({
       next: (res) => {
+        this.isSubmittingUser = false;
         // Check for success property in ApiResponse
         if (res && res.success !== false) {
           this.message = res.message || 'User added successfully';
@@ -1387,6 +1690,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
+        this.isSubmittingUser = false;
         this.message = 'Failed to add user: ' + (err.error?.message || err.message);
         this.isError = true;
       }
@@ -1406,7 +1710,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
       department: '',
       programme: '',
       faculty: '',
-      yearOfStudy: ''
+      yearOfStudy: '',
+      award: 'Bachelor Degree',
+      isPostgraduate: false
     };
   }
 
@@ -1507,6 +1813,9 @@ export class AdminDashboard implements OnInit, OnDestroy {
         this.message = res.message || `${this.uploadCategory === 'STAFF' ? 'Staff members' : 'Students'} successfully uploaded and processed!`;
         this.isError = false;
         this.selectedFile = null;
+        if (this.bulkUploadInput?.nativeElement) {
+          this.bulkUploadInput.nativeElement.value = '';
+        }
 
         // Immediate reload & auto-switch to User Management view
         this.loadData();
@@ -1524,7 +1833,7 @@ export class AdminDashboard implements OnInit, OnDestroy {
     const isStaff = this.uploadCategory === 'STAFF';
     const headers = isStaff
       ? 'First Name,Middle Name,Last Name,Email,Role,Staff ID (PF Number),Password,College,Department,Phone\r\n'
-      : 'First Name,Middle Name,Last Name,Email,Role,Registration Number,Password,College,Department,Programme,Phone\r\n';
+      : 'First Name,Middle Name,Last Name,Email,Role,Registration Number,Password,College,Department,Programme,Award,Phone\r\n';
     const filename = isStaff ? 'staff_registration_template.csv' : 'clearance_registration_template.csv';
     const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);

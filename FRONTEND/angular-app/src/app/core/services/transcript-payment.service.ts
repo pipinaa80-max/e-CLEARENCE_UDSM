@@ -29,6 +29,12 @@ interface TranscriptPaymentBackendRecord {
   postingPoBox?: string | null;
   contactPhone?: string | null;
   contactEmail?: string | null;
+  programme?: string | null;
+  award?: string | null;
+  isPostgraduate?: boolean;
+  issuedByDirector?: boolean;
+  issuedByDirectorTitle?: string | null;
+  issuedAt?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -54,18 +60,51 @@ export class TranscriptPaymentService {
     return this.cacheBackendRecord(response);
   }
 
+  private studentRefreshInFlight: Promise<void> | null = null;
+  private financeRefreshInFlight: Promise<void> | null = null;
+  private directorateRefreshInFlight: Promise<void> | null = null;
+
   async refreshStudentControlNumberRequests(): Promise<void> {
-    const responses = await firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
+    if (this.studentRefreshInFlight) {
+      return this.studentRefreshInFlight;
+    }
+    this.studentRefreshInFlight = firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
       `${this.config.apiUrl}/transcript-payments/mine`, { headers: this.authHeaders }
-    ));
-    this.replaceServerManagedRecords(responses || []);
+    )).then((responses) => {
+      this.replaceServerManagedRecords(responses || []);
+    }).finally(() => {
+      this.studentRefreshInFlight = null;
+    });
+    return this.studentRefreshInFlight;
   }
 
   async refreshFinanceControlNumberRequests(): Promise<void> {
-    const responses = await firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
+    if (this.financeRefreshInFlight) {
+      return this.financeRefreshInFlight;
+    }
+    this.financeRefreshInFlight = firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
       `${this.config.apiUrl}/transcript-payments/finance?status=ALL`, { headers: this.authHeaders }
-    ));
-    this.replaceServerManagedRecords(responses || []);
+    )).then((responses) => {
+      this.replaceServerManagedRecords(responses || []);
+    }).finally(() => {
+      this.financeRefreshInFlight = null;
+    });
+    return this.financeRefreshInFlight;
+  }
+
+  async refreshDirectorateControlNumberRequests(): Promise<void> {
+    if (this.directorateRefreshInFlight) {
+      return this.directorateRefreshInFlight;
+    }
+    const headers = this.authHeaders.set('X-Skip-Error-Toast', 'true');
+    this.directorateRefreshInFlight = firstValueFrom(this.http.get<TranscriptPaymentBackendRecord[]>(
+      `${this.config.apiUrl}/transcript-payments/directorate`, { headers }
+    )).then((responses) => {
+      this.replaceServerManagedRecords(responses || []);
+    }).finally(() => {
+      this.directorateRefreshInFlight = null;
+    });
+    return this.directorateRefreshInFlight;
   }
 
   async approveControlNumberRequest(requestId: string): Promise<TranscriptPaymentRequest[]> {
@@ -126,7 +165,9 @@ export class TranscriptPaymentService {
       studentId: record.studentId,
       studentName: record.studentName,
       registrationNumber: record.registrationNumber,
-      award: 'Degree Certificate & Transcript',
+      award: record.award || 'Degree Certificate & Transcript',
+      programme: record.programme || undefined,
+      isPostgraduate: Boolean(record.isPostgraduate),
       graduationYear: '',
       transcriptCount: 1,
       copyNumber: index + 1,
@@ -150,7 +191,10 @@ export class TranscriptPaymentService {
       postingWard: record.postingWard || undefined,
       postingPoBox: record.postingPoBox || undefined,
       postingContactPhone: record.contactPhone || undefined,
-      postingContactEmail: record.contactEmail || undefined
+      postingContactEmail: record.contactEmail || undefined,
+      issuedByDirector: Boolean(record.issuedByDirector),
+      issuedByDirectorTitle: record.issuedByDirectorTitle || undefined,
+      issuedAt: record.issuedAt || undefined
     }));
   }
 
@@ -496,7 +540,7 @@ export class TranscriptPaymentService {
     request.certificateVerifiedAt = verified ? new Date().toISOString() : undefined;
     if (verified && !request.digitalSignatureHash) {
       request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
-      request.signedBy = 'DUS Directorate Secretary';
+      request.signedBy = 'DUS Examination Office';
       request.signedAt = new Date().toISOString();
     }
     this.save(request);
@@ -561,6 +605,64 @@ export class TranscriptPaymentService {
     request.dispatchStatus = 'Dispatched';
     request.dispatchedAt = new Date().toISOString();
     this.save(request);
+    return true;
+  }
+
+  async issueTranscriptByDirectorAsync(
+    requestId: string,
+    directorTitle: string = 'Director of Undergraduate Studies'
+  ): Promise<TranscriptPaymentRequest[]> {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) {
+      throw new Error('Transcript request record not found.');
+    }
+    if (request.status !== 'Paid') {
+      throw new Error('Finance must verify and approve this transcript payment before it can be issued.');
+    }
+
+    const backendId = request.paymentBatchId || request.id;
+    if (request.serverManaged && backendId) {
+      const updated = await firstValueFrom(
+        this.http.post<TranscriptPaymentBackendRecord>(
+          `${this.config.apiUrl}/transcript-payments/${encodeURIComponent(backendId)}/issue`,
+          { directorTitle },
+          { headers: this.authHeaders }
+        )
+      );
+      return updated ? this.cacheBackendRecord(updated) : [request];
+    }
+
+    request.issuedByDirector = true;
+    request.issuedByDirectorTitle = directorTitle;
+    request.issuedAt = new Date().toISOString();
+    request.dispatchStatus = request.dispatchStatus || 'Pending Dispatch';
+    this.save(request);
+    return [request];
+  }
+
+  issueTranscriptByDirector(requestId: string, directorTitle: string = 'Director of Postgraduate Studies'): boolean {
+    const request = this.getAllRequests().find(item => item.id === requestId);
+    if (!request) return false;
+    request.issuedByDirector = true;
+    request.issuedByDirectorTitle = directorTitle;
+    request.issuedAt = new Date().toISOString();
+    request.dispatchStatus = 'Pending Dispatch';
+    this.save(request);
+
+    // Persist to MySQL backend for server-managed transcript payment requests
+    const backendId = request.paymentBatchId || request.id;
+    if (request.serverManaged && backendId) {
+      this.http.post<TranscriptPaymentBackendRecord>(
+        `${this.config.apiUrl}/transcript-payments/${encodeURIComponent(backendId)}/issue`,
+        { directorTitle },
+        { headers: this.authHeaders }
+      ).subscribe({
+        next: (updated) => {
+          if (updated) this.cacheBackendRecord(updated);
+        },
+        error: (err) => console.warn('Failed to persist director transcript issuance to backend:', err)
+      });
+    }
     return true;
   }
 

@@ -14,7 +14,8 @@ export type ClearanceOffice =
     | 'Finance'
     | 'Workshop'
     | 'Laboratory'
-    | 'Parallel';
+    | 'Parallel'
+    | 'Supervisor';
 
 export type ApprovalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -77,11 +78,14 @@ export interface ClearanceRequest {
   photo?: string;                 // Added
   clearanceType?: string;         // Added
   remarks?: string;               // Added
+  award?: string;
+  isPostgraduate?: boolean;
+  undergraduateCertificateUrl?: string;
   requestDate: string;
   status: 'Pending' | 'Completed' | 'Rejected';
   currentOffice?: ClearanceOffice;
   revisionOffice?: ClearanceOffice;
-  currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Completed';
+  currentStage: 'Convocation' | 'Parallel' | 'Department' | 'Principal' | 'Finance' | 'Supervisor' | 'Completed';
   convocation?: ConvocationPayment;
   financeReceipt?: FinanceReceiptSubmission;
   resubmittedWithReceipt?: boolean;

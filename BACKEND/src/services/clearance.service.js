@@ -1,6 +1,8 @@
 const { getDb } = require('../config/database');
 const NotificationService = require('./notification.service');
 const AuditService = require('./audit.service');
+const { isPostgraduateRecord } = require('../utils/postgraduate');
+const academicScope = require('../utils/academicScope');
 
 // Standard parallel offices
 const STANDARD_PARALLEL_OFFICES = [
@@ -22,157 +24,32 @@ class ClearanceService {
     return name.replace(/[_\s]+/g, ' ').trim().toLowerCase();
   }
 
-  /**
-   * Normalize academic unit names by stripping prefixes and punctuation
-   */
   static normalizeAcademicUnitString(raw) {
-    if (!raw) return '';
-    return String(raw)
-      .toLowerCase()
-      .trim()
-      .replace(/&/g, ' and ')
-      .replace(/^(department\s+of\s+|dept\.?\s+of\s+|department\s+|school\s+of\s+|college\s+of\s+|institute\s+of\s+)/i, '')
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    return academicScope.normalizeAcademicUnitString(raw);
   }
 
-  /**
-   * Generate acronym/initials from normalized unit string
-   */
   static generateInitials(norm) {
-    if (!norm) return '';
-    const stopWords = new Set(['and', 'of', 'in', 'the', 'for', 'dept', 'department', 'college', 'school', 'institute']);
-    return norm
-      .split(/\s+/)
-      .filter(w => w && !stopWords.has(w))
-      .map(w => w[0])
-      .join('')
-      .toLowerCase();
+    return academicScope.generateInitials(norm);
   }
 
-  /**
-   * Extract acronym in parentheses (e.g. "(CoICT)") or compute initials
-   */
   static extractAcronymOrInitials(raw, norm) {
-    const parenMatch = String(raw || '').match(/\(([^)]+)\)/);
-    if (parenMatch && parenMatch[1]) {
-      return parenMatch[1].trim().toLowerCase();
-    }
-    if (norm && norm.length <= 6 && !norm.includes(' ')) {
-      return norm;
-    }
-    return this.generateInitials(norm);
+    return academicScope.extractAcronymOrInitials(raw, norm);
   }
 
   static isComputerScienceAlias(raw) {
-    if (!raw) return false;
-    const lower = String(raw).toLowerCase().trim();
-    return (
-      lower === 'cse' ||
-      lower === 'cs' ||
-      lower === 'docse' ||
-      lower.includes('computer science') ||
-      lower.includes('computer engineering')
-    );
+    return academicScope.isComputerScienceAlias(raw);
   }
 
   static matchesCatalogEntity(raw, norm, entity) {
-    if (!entity) return false;
-    if (entity.code) {
-      const code = String(entity.code).trim().toLowerCase();
-      if (String(raw).trim().toLowerCase() === code || norm === code) {
-        return true;
-      }
-    }
-    if (entity.name) {
-      const eNorm = this.normalizeAcademicUnitString(entity.name);
-      if (String(raw).trim().toLowerCase() === String(entity.name).trim().toLowerCase() || (norm && norm === eNorm)) {
-        return true;
-      }
-      if (norm && eNorm && (norm.includes(eNorm) || eNorm.includes(norm))) {
-        return true;
-      }
-      const eInitials = this.generateInitials(eNorm);
-      if (eInitials && (norm === eInitials || String(raw).trim().toLowerCase() === eInitials)) {
-        return true;
-      }
-    }
-    return false;
+    return academicScope.matchesCatalogEntity(raw, norm, entity);
   }
 
-  /**
-   * Acronym-, prefix-, alias-, and catalog-aware Department scope matcher
-   */
   static matchesDepartmentScope(studentScope, userScope, activeDepartments = []) {
-    if (!studentScope || !userScope || !String(studentScope).trim() || !String(userScope).trim()) {
-      return true;
-    }
-    const uClean = String(userScope).trim();
-    if (/^(all|administration)$/i.test(uClean)) return true;
-
-    const s1 = String(studentScope).trim();
-    const s2 = uClean;
-    if (s1.toLowerCase() === s2.toLowerCase()) return true;
-
-    const n1 = this.normalizeAcademicUnitString(s1);
-    const n2 = this.normalizeAcademicUnitString(s2);
-    if (n1 && n2 && (n1 === n2 || n1.includes(n2) || n2.includes(n1))) {
-      return true;
-    }
-
-    if (this.isComputerScienceAlias(s1) && this.isComputerScienceAlias(s2)) {
-      return true;
-    }
-
-    for (const dept of activeDepartments) {
-      if (this.matchesCatalogEntity(s1, n1, dept) && this.matchesCatalogEntity(s2, n2, dept)) {
-        return true;
-      }
-    }
-
-    const a1 = this.extractAcronymOrInitials(s1, n1);
-    const a2 = this.extractAcronymOrInitials(s2, n2);
-    if (a1 && a2 && (a1 === a2 || a1 === n2 || a2 === n1)) {
-      return true;
-    }
-
-    return false;
+    return academicScope.matchesDepartmentScope(studentScope, userScope, activeDepartments);
   }
 
-  /**
-   * Acronym-, prefix-, and catalog-aware College scope matcher
-   */
   static matchesCollegeScope(studentScope, userScope, activeColleges = []) {
-    if (!studentScope || !userScope || !String(studentScope).trim() || !String(userScope).trim()) {
-      return true;
-    }
-    const uClean = String(userScope).trim();
-    if (/^(all|administration)$/i.test(uClean)) return true;
-
-    const s1 = String(studentScope).trim();
-    const s2 = uClean;
-    if (s1.toLowerCase() === s2.toLowerCase()) return true;
-
-    const n1 = this.normalizeAcademicUnitString(s1);
-    const n2 = this.normalizeAcademicUnitString(s2);
-    if (n1 && n2 && (n1 === n2 || n1.includes(n2) || n2.includes(n1))) {
-      return true;
-    }
-
-    for (const col of activeColleges) {
-      if (this.matchesCatalogEntity(s1, n1, col) && this.matchesCatalogEntity(s2, n2, col)) {
-        return true;
-      }
-    }
-
-    const a1 = this.extractAcronymOrInitials(s1, n1);
-    const a2 = this.extractAcronymOrInitials(s2, n2);
-    if (a1 && (a1 === n2 || n2.includes(a1))) return true;
-    if (a2 && (a2 === n1 || n1.includes(a2))) return true;
-    if (a1 && a2 && a1 === a2) return true;
-
-    return false;
+    return academicScope.matchesCollegeScope(studentScope, userScope, activeColleges);
   }
 
   /**
@@ -199,6 +76,7 @@ class ClearanceService {
       case 'LABORATORY_OFFICER': return 'Laboratory';
       case 'DEPARTMENT_OFFICER': return 'Department';
       case 'PRINCIPAL': return 'Principal';
+      case 'SUPERVISOR': return 'Supervisor';
       default: return requestedOffice && requestedOffice.trim() ? requestedOffice.trim() : 'Department';
     }
   }
@@ -208,7 +86,7 @@ class ClearanceService {
    */
   static isParallelOffice(officeName) {
     const norm = this.normalizeOfficeName(officeName);
-    if (norm === 'convocation' || norm === 'department' || norm === 'principal' || norm === 'finance') {
+    if (norm === 'convocation' || norm === 'department' || norm === 'principal' || norm === 'finance' || norm === 'supervisor') {
       return false;
     }
     return true;
@@ -232,6 +110,27 @@ class ClearanceService {
         student = await trx('students').whereRaw('LOWER(registration_number) = ?', [requestDTO.registrationNumber.trim().toLowerCase()]).first();
       }
 
+      const effectiveAward = (requestDTO.award && String(requestDTO.award).trim())
+        ? String(requestDTO.award).trim()
+        : (student?.award || user.award || null);
+      const effectiveUndergradCert = (requestDTO.undergraduateCertificate && String(requestDTO.undergraduateCertificate).trim())
+        ? String(requestDTO.undergraduateCertificate).trim()
+        : (requestDTO.undergraduateCertificateUrl && String(requestDTO.undergraduateCertificateUrl).trim())
+          ? String(requestDTO.undergraduateCertificateUrl).trim()
+          : (student?.undergraduate_certificate_url || null);
+
+      const college = requestDTO.college || student?.college || user.college || 'CoICT';
+      const department = requestDTO.department || student?.department || user.department || 'Computer Science & Engineering';
+      const programme = requestDTO.programme || student?.programme || user.programme || 'Degree Programme';
+
+      const isPostgrad = isPostgraduateRecord({
+        isPostgraduate: requestDTO.isPostgraduate !== undefined
+          ? requestDTO.isPostgraduate
+          : (student?.is_postgraduate || user.isPostgraduate),
+        award: effectiveAward,
+        programme
+      });
+
       if (!student) {
         // Create student profile from user details if missing
         const studentId = `std-${Date.now()}`;
@@ -240,9 +139,12 @@ class ClearanceService {
           user_id: user.id,
           registration_number: user.registrationNumber || requestDTO.registrationNumber || `REG-${Date.now()}`,
           full_name: user.fullName || requestDTO.studentName || 'Student',
-          college: requestDTO.college || user.college || 'CoICT',
-          department: requestDTO.department || user.department || 'Computer Science & Engineering',
-          programme: requestDTO.programme || user.programme || 'BSc. Computer Science',
+          college,
+          department,
+          programme,
+          award: effectiveAward,
+          is_postgraduate: isPostgrad ? 1 : 0,
+          undergraduate_certificate_url: effectiveUndergradCert,
           email: user.email,
           phone_number: requestDTO.phoneNumber || user.phoneNumber || null,
           hall: requestDTO.hall || null,
@@ -273,8 +175,12 @@ class ClearanceService {
         if (requestDTO.phoneNumber) updates.phone_number = requestDTO.phoneNumber;
         if (requestDTO.photo) updates.photo = requestDTO.photo;
         if (requestDTO.sponsor) updates.sponsor = requestDTO.sponsor;
+        if (effectiveAward) updates.award = effectiveAward;
+        if (isPostgrad) updates.is_postgraduate = 1;
+        if (effectiveUndergradCert) updates.undergraduate_certificate_url = effectiveUndergradCert;
 
         await trx('students').where({ id: student.id }).update(updates);
+        student = { ...student, ...updates };
       }
 
       // Check if student already has a pending clearance request
@@ -288,16 +194,15 @@ class ClearanceService {
         throw err;
       }
 
-      const college = requestDTO.college || student.college || 'CoICT';
-      const department = requestDTO.department || student.department || 'Computer Science & Engineering';
-      const programme = requestDTO.programme || student.programme || 'Degree Programme';
-
       // Insert new clearance request
       const [requestId] = await trx('clearance_requests').insert({
         student_id: student.id,
         college,
         department,
         programme,
+        award: effectiveAward,
+        is_postgraduate: isPostgrad ? 1 : 0,
+        undergraduate_certificate_url: effectiveUndergradCert,
         wing: requestDTO.wing || student.wing || null,
         block: requestDTO.block || student.block || null,
         address: requestDTO.address || student.address || null,
@@ -365,13 +270,23 @@ class ClearanceService {
         order_number: order++
       });
 
-      // 5. Stage 5: Finance (Final stage)
+      // 5. Stage 5: Finance
       approvalsToInsert.push({
         clearance_request_id: requestId,
         department: 'Finance',
         status: 'PENDING',
         order_number: order++
       });
+
+      // 6. Stage 6: Research Supervisor (Final check for Postgraduate students ONLY)
+      if (isPostgrad) {
+        approvalsToInsert.push({
+          clearance_request_id: requestId,
+          department: 'Supervisor',
+          status: 'PENDING',
+          order_number: order++
+        });
+      }
 
       await trx('department_approvals').insert(approvalsToInsert);
 
@@ -479,6 +394,16 @@ class ClearanceService {
       return 'Finance';
     }
 
+    // 6. Check Supervisor (Postgraduate final check)
+    const supervisorApproval = approvals.find(a => this.normalizeOfficeName(a.department) === 'supervisor');
+    if (supervisorApproval && supervisorApproval.status !== 'APPROVED') {
+      await trx('clearance_requests').where({ id: requestId }).update({
+        current_stage: 'Supervisor',
+        current_office: 'Supervisor'
+      });
+      return 'Supervisor';
+    }
+
     // All approved
     await trx('clearance_requests').where({ id: requestId }).update({
       current_stage: 'Completed',
@@ -532,27 +457,16 @@ class ClearanceService {
       // Fetch student details
       const student = await trx('students').where({ id: clearanceRequest.student_id }).first();
 
-      // Department Officer Scoping (acronym/prefix/catalog aware)
-      if (user.role === 'DEPARTMENT_OFFICER' && user.department) {
-        const studentDept = (student?.department || clearanceRequest.department || '').trim();
-        const activeDepartments = await trx('departments').where({ is_active: 1 }).select('code', 'name');
-        if (!this.matchesDepartmentScope(studentDept, user.department, activeDepartments)) {
-          const err = new Error(`Unauthorized: Department Officer for '${user.department}' cannot approve clearance for student in '${student?.department || 'different department'}'`);
-          err.statusCode = 403;
-          throw err;
-        }
-      }
-
-      // Principal Scoping (acronym/prefix/catalog aware)
-      if (user.role === 'PRINCIPAL' && user.college) {
-        const studentCol = (student?.college || clearanceRequest.college || '').trim();
-        const activeColleges = await trx('colleges').where({ is_active: 1 }).select('code', 'name');
-        if (!this.matchesCollegeScope(studentCol, user.college, activeColleges)) {
-          const err = new Error(`Unauthorized: Principal of '${user.college}' cannot approve clearance for student in '${student?.college || 'different college'}'`);
-          err.statusCode = 403;
-          throw err;
-        }
-      }
+      // College / Department Scoping (Principal, Department Officer, Research Supervisor)
+      const catalogs = await academicScope.loadAcademicCatalogs(trx, user);
+      academicScope.assertOfficerAcademicScope(
+        user,
+        {
+          college: (student?.college || clearanceRequest.college || '').trim(),
+          department: (student?.department || clearanceRequest.department || '').trim()
+        },
+        { ...catalogs, actionLabel: 'approve clearance' }
+      );
 
       // Fetch all approval records for this request
       const allApprovals = await trx('department_approvals')
@@ -648,6 +562,17 @@ class ClearanceService {
         }
       }
 
+      // Rule for Supervisor (Postgraduate Final Check): Finance must be approved first
+      if (normTarget === 'supervisor') {
+        const financeApproval = allApprovals.find(a => this.normalizeOfficeName(a.department) === 'finance');
+        const isFinanceApproved = financeApproval && financeApproval.status === 'APPROVED';
+        if (!isFinanceApproved) {
+          const err = new Error('Finance approval is required before Research Supervisor clearance.');
+          err.statusCode = 409;
+          throw err;
+        }
+      }
+
       // Record the approval
       const officerName = user.fullName || user.username || 'Authorized Officer';
       await trx('department_approvals')
@@ -695,12 +620,62 @@ class ClearanceService {
           });
         }
       } else {
-        await this.updateClearanceStage(trx, clearanceRequest.id);
+        const nextStage = await this.updateClearanceStage(trx, clearanceRequest.id);
         // Clear rejection status if this approval fixed the rejection
         if (clearanceRequest.status === 'REJECTED' && rejectedCount === 0) {
           await trx('clearance_requests').where({ id: clearanceRequest.id }).update({
             status: 'PENDING'
           });
+        }
+
+        // Notify ONLY the specific next office(s) whose queue just unlocked for this student
+        if (student) {
+          if (normTarget === 'smart card') {
+            const pendingOtherParallels = refreshedApprovals
+              .filter(a =>
+                this.isParallelOffice(a.department) &&
+                this.normalizeOfficeName(a.department) !== 'smart card' &&
+                a.status === 'PENDING'
+              )
+              .map(a => a.department);
+
+            if (pendingOtherParallels.length > 0) {
+              await NotificationService.notifyOfficesPendingApproval({
+                offices: pendingOtherParallels,
+                student,
+                clearanceRequest,
+                trx
+              });
+            }
+          } else if (this.isParallelOffice(office) && nextStage === 'Department') {
+            await NotificationService.notifyOfficePendingApproval({
+              office: 'Department',
+              student,
+              clearanceRequest,
+              trx
+            });
+          } else if (normTarget === 'department' && nextStage === 'Principal') {
+            await NotificationService.notifyOfficePendingApproval({
+              office: 'Principal',
+              student,
+              clearanceRequest,
+              trx
+            });
+          } else if (normTarget === 'principal' && nextStage === 'Finance') {
+            await NotificationService.notifyOfficePendingApproval({
+              office: 'Finance',
+              student,
+              clearanceRequest,
+              trx
+            });
+          } else if (normTarget === 'finance' && nextStage === 'Supervisor') {
+            await NotificationService.notifyOfficePendingApproval({
+              office: 'Supervisor',
+              student,
+              clearanceRequest,
+              trx
+            });
+          }
         }
       }
 
@@ -811,6 +786,17 @@ class ClearanceService {
         throw err;
       }
 
+      const student = await trx('students').where({ id: clearanceRequest.student_id }).first();
+      const catalogs = await academicScope.loadAcademicCatalogs(trx, user);
+      academicScope.assertOfficerAcademicScope(
+        user,
+        {
+          college: (student?.college || clearanceRequest.college || '').trim(),
+          department: (student?.department || clearanceRequest.department || '').trim()
+        },
+        { ...catalogs, actionLabel: 'reject clearance' }
+      );
+
       const approval = await trx('department_approvals')
         .where({ clearance_request_id: clearanceRequest.id })
         .andWhereRaw('LOWER(department) = ?', [this.normalizeOfficeName(office)])
@@ -896,6 +882,17 @@ class ClearanceService {
         err.statusCode = 404;
         throw err;
       }
+
+      const student = await trx('students').where({ id: clearanceRequest.student_id }).first();
+      const catalogs = await academicScope.loadAcademicCatalogs(trx, user);
+      academicScope.assertOfficerAcademicScope(
+        user,
+        {
+          college: (student?.college || clearanceRequest.college || '').trim(),
+          department: (student?.department || clearanceRequest.department || '').trim()
+        },
+        { ...catalogs, actionLabel: 'withdraw clearance decision' }
+      );
 
       const approval = await trx('department_approvals')
         .where({ clearance_request_id: clearanceRequest.id })
@@ -1026,6 +1023,15 @@ class ClearanceService {
         trx
       });
 
+      await NotificationService.notifyOfficePendingApproval({
+        office: 'Finance',
+        student,
+        clearanceRequest,
+        customTitle: 'Finance Verification Resubmitted',
+        customMessage: `${student.full_name || 'A student'} (${student.registration_number || student.id}) resubmitted payment receipt/control number for Finance verification.`,
+        trx
+      });
+
       await AuditService.logAction({
         userId: user.id,
         username: user.email || user.username,
@@ -1063,32 +1069,25 @@ class ClearanceService {
         'students.hall as student_hall',
         'students.room_number as student_room_number',
         'students.sponsor as student_sponsor',
-        'students.photo as student_photo'
+        'students.photo as student_photo',
+        'students.award as student_award',
+        'students.is_postgraduate as student_is_postgraduate',
+        'students.undergraduate_certificate_url as student_undergrad_cert_url'
       );
 
-    const activeDepartments = (user.role === 'DEPARTMENT_OFFICER' && user.department)
-      ? await db('departments').where({ is_active: 1 }).select('code', 'name')
-      : [];
-    const activeColleges = (user.role === 'PRINCIPAL' && user.college)
-      ? await db('colleges').where({ is_active: 1 }).select('code', 'name')
-      : [];
+    const catalogs = await academicScope.loadAcademicCatalogs(db, user);
 
     const allRequests = await query.orderBy('clearance_requests.submitted_at', 'desc');
-    const requests = allRequests.filter(req => {
-      if (user.role === 'DEPARTMENT_OFFICER' && user.department) {
-        const studentDept = (req.department || req.programme || '').trim();
-        if (!this.matchesDepartmentScope(studentDept, user.department, activeDepartments)) {
-          return false;
-        }
-      }
-      if (user.role === 'PRINCIPAL' && user.college) {
-        const studentCol = (req.college || '').trim();
-        if (!this.matchesCollegeScope(studentCol, user.college, activeColleges)) {
-          return false;
-        }
-      }
-      return true;
-    });
+    const requests = allRequests.filter(req =>
+      academicScope.matchesUserAcademicScope(
+        user,
+        {
+          college: (req.college || '').trim(),
+          department: (req.department || req.programme || '').trim()
+        },
+        catalogs
+      )
+    );
 
     if (requests.length === 0) {
       return [];
@@ -1173,6 +1172,12 @@ class ClearanceService {
           if (!princ || princ.status !== 'APPROVED') {
             continue;
           }
+        } else if (normTarget === 'supervisor') {
+          // Supervisor can view pending postgraduate queue once Finance is approved
+          const fin = approvals.find(a => this.normalizeOfficeName(a.department) === 'finance');
+          if (!fin || fin.status !== 'APPROVED') {
+            continue;
+          }
         }
       }
 
@@ -1201,13 +1206,13 @@ class ClearanceService {
       throw err;
     }
 
-    return this.getClearanceStatus(student.id);
+    return this.getClearanceStatus(student.id, user);
   }
 
   /**
    * Get clearance status by student ID or registration number
    */
-  static async getClearanceStatus(identifier) {
+  static async getClearanceStatus(identifier, requestingUser = null) {
     const db = getDb();
 
     let student = await db('students').where({ id: identifier }).first();
@@ -1222,6 +1227,20 @@ class ClearanceService {
       const err = new Error('Student not found');
       err.statusCode = 404;
       throw err;
+    }
+
+    // Prevent horizontal privilege escalation (IDOR): students may only view their own clearance status
+    if (requestingUser && requestingUser.role === 'STUDENT') {
+      const matchesUserId = student.user_id && String(requestingUser.id) === String(student.user_id);
+      const matchesRegNo =
+        requestingUser.registrationNumber &&
+        student.registration_number &&
+        String(requestingUser.registrationNumber).trim().toLowerCase() === String(student.registration_number).trim().toLowerCase();
+      if (!matchesUserId && !matchesRegNo) {
+        const err = new Error('Forbidden: You are only authorized to view your own clearance status.');
+        err.statusCode = 403;
+        throw err;
+      }
     }
 
     // Find pending request first, then fallback to latest
@@ -1272,8 +1291,12 @@ class ClearanceService {
     const AnalyticsService = require('./analytics.service');
     const full = await AnalyticsService.getFullSummary(user);
 
-    // Fetch mapped clearance requests with approvals for DUS Director analytics views
-    const reqRows = await db('clearance_requests')
+    // Scope DUS vs DPGS cleanly (DUS = Undergraduate, DPGS = Postgraduate, Admin = All)
+    const isDusScope = user.role === 'DIRECTOR_OF_UNDERGRADUATE_STUDIES';
+    const isDpgsScope = user.role === 'DIRECTOR_OF_POSTGRADUATE_STUDIES';
+
+    // Fetch mapped clearance requests with approvals for DUS / DPGS Director analytics views
+    let reqQuery = db('clearance_requests')
       .leftJoin('students', 'clearance_requests.student_id', 'students.id')
       .leftJoin('users', 'students.user_id', 'users.id')
       .select(
@@ -1282,15 +1305,42 @@ class ClearanceService {
         'students.registration_number as student_reg_no',
         'students.programme as student_programme',
         'students.year_of_study as student_year_of_study',
+        'students.award as student_award',
+        'students.is_postgraduate as student_is_postgraduate',
         'users.id as linked_user_id',
         'users.full_name as user_full_name',
         'users.email as user_email',
         'users.registration_number as user_reg_no',
         'users.college as user_college',
         'users.department as user_department',
-        'users.year_of_study as user_year_of_study'
+        'users.year_of_study as user_year_of_study',
+        'users.award as user_award',
+        'users.is_postgraduate as user_is_postgraduate'
       )
       .orderBy('clearance_requests.submitted_at', 'desc');
+
+    const analyticsCatalogs = await academicScope.loadAcademicCatalogs(db, user);
+    const rawReqRows = await reqQuery;
+    const reqRows = rawReqRows.filter(req => {
+      if (!academicScope.matchesUserAcademicScope(
+        user,
+        {
+          college: (req.college || req.user_college || '').trim(),
+          department: (req.department || req.user_department || '').trim()
+        },
+        analyticsCatalogs
+      )) {
+        return false;
+      }
+      const pg = isPostgraduateRecord({
+        isPostgraduate: req.is_postgraduate || req.student_is_postgraduate || req.user_is_postgraduate,
+        award: req.award || req.student_award || req.user_award,
+        programme: req.programme || req.student_programme
+      });
+      if (isDusScope) return !pg;
+      if (isDpgsScope) return pg;
+      return true;
+    });
 
     const reqIds = reqRows.map(r => r.id).filter(Boolean);
     const approvalsByReqId = {};
@@ -1312,27 +1362,48 @@ class ClearanceService {
       }
     }
 
-    const requestList = reqRows.map(req => ({
-      id: String(req.id),
-      studentId: String(req.student_id || req.linked_user_id || ''),
-      studentName: req.user_full_name || req.student_full_name || 'Student',
-      registrationNumber: req.student_reg_no || req.user_reg_no || '',
-      email: req.user_email || '',
-      college: req.college || req.user_college || '',
-      department: req.department || req.user_department || '',
-      programme: req.programme || req.student_programme || '',
-      yearOfStudy: req.student_year_of_study || req.user_year_of_study || null,
-      status: req.status,
-      currentStage: req.current_stage,
-      currentOffice: req.current_office,
-      requestDate: req.submitted_at ? new Date(req.submitted_at).toISOString() : null,
-      approvals: approvalsByReqId[req.id] || []
-    }));
+    const requestList = reqRows.map(req => {
+      const award = req.award || req.student_award || req.user_award || null;
+      const programme = req.programme || req.student_programme || '';
+      const isPg = isPostgraduateRecord({
+        isPostgraduate: req.is_postgraduate || req.student_is_postgraduate || req.user_is_postgraduate,
+        award,
+        programme
+      });
+      return {
+        id: String(req.id),
+        studentId: String(req.student_id || req.linked_user_id || ''),
+        studentName: req.user_full_name || req.student_full_name || 'Student',
+        registrationNumber: req.student_reg_no || req.user_reg_no || '',
+        email: req.user_email || '',
+        college: req.college || req.user_college || '',
+        department: req.department || req.user_department || '',
+        programme,
+        award,
+        isPostgraduate: isPg,
+        yearOfStudy: req.student_year_of_study || req.user_year_of_study || null,
+        status: req.status,
+        currentStage: req.current_stage,
+        currentOffice: req.current_office,
+        requestDate: req.submitted_at ? new Date(req.submitted_at).toISOString() : null,
+        approvals: approvalsByReqId[req.id] || []
+      };
+    });
 
-    // Compute registered student totals & year cohort breakdown (matches Spring Boot ClearanceService)
-    const studentUsers = await db('users')
+    // Compute registered student totals & year cohort breakdown (scoped for DUS/DPGS & college/department officers)
+    const rawStudentUsers = await db('users')
       .where({ role: 'STUDENT' })
-      .select('year_of_study', 'registration_number');
+      .select('year_of_study', 'registration_number', 'award', 'programme', 'is_postgraduate', 'college', 'department');
+
+    const studentUsers = rawStudentUsers.filter(u => {
+      if (!academicScope.matchesUserAcademicScope(user, { college: u.college, department: u.department }, analyticsCatalogs)) {
+        return false;
+      }
+      const pg = isPostgraduateRecord(u);
+      if (isDusScope) return !pg;
+      if (isDpgsScope) return pg;
+      return true;
+    });
 
     const totalRegisteredStudents = studentUsers.length;
     const registeredStudentsByYear = {};
@@ -1408,6 +1479,19 @@ class ClearanceService {
       photo: student?.photo || request.student_photo || null,
       controlNumber: controlNumber || null,
       control_number: controlNumber || null,
+      award: request.award || student?.award || request.student_award || null,
+      isPostgraduate: isPostgraduateRecord({
+        isPostgraduate: request.is_postgraduate || student?.is_postgraduate || request.student_is_postgraduate,
+        award: request.award || student?.award || request.student_award,
+        programme: request.programme || student?.programme
+      }),
+      is_postgraduate: isPostgraduateRecord({
+        isPostgraduate: request.is_postgraduate || student?.is_postgraduate || request.student_is_postgraduate,
+        award: request.award || student?.award || request.student_award,
+        programme: request.programme || student?.programme
+      }),
+      undergraduateCertificateUrl: request.undergraduate_certificate_url || student?.undergraduate_certificate_url || request.student_undergrad_cert_url || null,
+      undergraduate_certificate_url: request.undergraduate_certificate_url || student?.undergraduate_certificate_url || request.student_undergrad_cert_url || null,
       status: request.status,
       currentStage: request.current_stage || 'Convocation',
       currentOffice: request.current_office || 'Convocation',

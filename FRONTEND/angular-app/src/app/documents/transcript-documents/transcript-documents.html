@@ -1,28 +1,105 @@
-<section class="transcript-documents-page">
-  <app-dashboard-header
-    eyebrow="Clearance Step 4"
-    title="Transcript Documents"
-    subtitle="Attach the documents required to complete your transcript request."
-    [user]="currentUser"
-    (toggleSidebar)="toggleSidebar()"
-  >
-  </app-dashboard-header>
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
-  <main class="documents-card">
+  <main class="content-panel">
+    <app-dashboard-header
+      title="Transcript Documents"
+      subtitle="Attach the documents required to complete your transcript request."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+    </app-dashboard-header>
+
+    <main class="documents-card" style="margin-top: 18px;">
     <div class="step-intro">
       <div class="state-icon">4</div>
-      <div><span class="section-kicker">Payment approved</span><h2>Required Documentation</h2><p>Upload all three documents. Accepted formats are PDF, JPG and PNG.</p></div>
+      <div>
+        <span class="section-kicker">Payment approved</span>
+        <h2>Required Documentation</h2>
+        <p>{{ isPostgraduate ? 'Upload all four documents according to your entry pathway. Accepted formats are PDF, JPG and PNG.' : 'Upload all three documents according to your entry pathway. Accepted formats are PDF, JPG and PNG.' }}</p>
+      </div>
+    </div>
+
+    <!-- ENTRY QUALIFICATION PATHWAY SELECTOR -->
+    <div class="entry-pathway-banner">
+      <div class="pathway-header">
+        <span class="pathway-kicker">Entry Qualification Pathway</span>
+        <h4>Do you hold an Advanced Certificate (Form VI) or an Ordinary Diploma?</h4>
+        <p>Direct entry students provide their Form VI A-Level Certificate, while equivalent entry candidates provide their Diploma Certificate.</p>
+      </div>
+
+      <div class="pathway-toggle-group">
+        <button
+          type="button"
+          class="pathway-btn"
+          [ngClass]="{ 'active': entryQualificationType === 'A-Level' }"
+          (click)="setEntryQualificationType('A-Level')"
+          [disabled]="isSubmitted"
+        >
+          <span class="pathway-radio"></span>
+          <span class="pathway-btn-content">
+            <strong>Direct Entry (Form VI / A-Level)</strong>
+            <small>ACSEE Certificate (NECTA)</small>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="pathway-btn"
+          [ngClass]="{ 'active': entryQualificationType === 'Diploma' }"
+          (click)="setEntryQualificationType('Diploma')"
+          [disabled]="isSubmitted"
+        >
+          <span class="pathway-radio"></span>
+          <span class="pathway-btn-content">
+            <strong>Equivalent Entry (Diploma Holder)</strong>
+            <small>Ordinary Diploma (NACTE / NTA Level 6)</small>
+          </span>
+        </button>
+      </div>
     </div>
 
     <div class="document-list">
       <article class="document-item" *ngFor="let category of requiredDocuments">
-        <div><span class="document-number">0{{ requiredDocuments.indexOf(category) + 1 }}</span><h3>{{ category }}</h3><p>{{ uploaded[category] ? 'Document uploaded successfully.' : (isSubmitted ? 'Documentation period ended.' : 'Choose the required document to continue.') }}</p></div>
+        <div>
+          <span class="document-number">0{{ requiredDocuments.indexOf(category) + 1 }}</span>
+          <h3>
+            {{ category }}
+            <span class="entry-pill" *ngIf="category === 'A-Level Certificate'">Direct Entry</span>
+            <span class="entry-pill diploma-pill" *ngIf="category === 'Diploma Certificate'">Equivalent Entry</span>
+          </h3>
+          <p>{{ getDocumentDescription(category) }}</p>
+          <div class="pathway-inline-switch" *ngIf="!uploaded[category] && !isSubmitted">
+            <button
+              *ngIf="category === 'A-Level Certificate'"
+              type="button"
+              class="link-switch"
+              (click)="setEntryQualificationType('Diploma')"
+            >
+              ⇄ Have an Ordinary Diploma instead? Switch to Diploma Certificate
+            </button>
+            <button
+              *ngIf="category === 'Diploma Certificate'"
+              type="button"
+              class="link-switch"
+              (click)="setEntryQualificationType('A-Level')"
+            >
+              ⇄ Entered via Form VI? Switch to A-Level Certificate
+            </button>
+          </div>
+        </div>
         <div class="document-action">
-          <span class="uploaded-badge" *ngIf="uploaded[category]">Uploaded</span>
-          <input type="file" accept=".pdf,.jpg,.jpeg,.png" [attr.aria-label]="'Upload ' + category" (change)="onFileSelected(category, $event)" [disabled]="uploaded[category] || isSubmitted" />
-          <button type="button" class="primary-button" (click)="upload(category)" [disabled]="uploaded[category] || uploading === category || isSubmitted">
-            {{ uploading === category ? 'Uploading...' : 'Upload' }}
-          </button>
+          <div class="file-action-buttons" *ngIf="uploaded[category]">
+            <button type="button" class="btn-simple-view" (click)="viewDocument(category)">View</button>
+            <button type="button" class="btn-simple-remove" (click)="removeDocument(category)" [disabled]="isSubmitted">Remove</button>
+          </div>
+          <ng-container *ngIf="!uploaded[category]">
+            <input type="file" accept=".pdf,.jpg,.jpeg,.png" [attr.aria-label]="'Upload ' + category" (change)="onFileSelected(category, $event)" [disabled]="isSubmitted" />
+            <button type="button" class="primary-button" (click)="upload(category)" [disabled]="uploading === category || isSubmitted">
+              {{ uploading === category ? 'Uploading...' : 'Upload' }}
+            </button>
+          </ng-container>
         </div>
       </article>
     </div>
@@ -33,5 +110,6 @@
       <button type="button" class="primary-button" *ngIf="allUploaded && !isSubmitted" (click)="submit()">Submit &amp; Return to Process</button>
       <span class="success-text" *ngIf="isSubmitted">✓ Documents Submitted</span>
     </div>
+    </main>
   </main>
 </section>

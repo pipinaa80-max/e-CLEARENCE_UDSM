@@ -1,181 +1,133 @@
-<section
-  class="convocation-page"
->
+<section class="student-portal-shell" [class.sidebar-open]="sidebarOpen">
+  <app-student-sidebar [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
-  <div class="convocation-wrapper">
-
-    <!-- HEADER -->
-    <header class="page-header">
-      <div>
-        <span class="step-label">
-          Clearance Step 1
-        </span>
-
-        <h1>
-          Convocation
-        </h1>
-
-        <p>
-          Complete the Convocation payment and verification process.
-        </p>
+  <main class="content-panel">
+    <app-dashboard-header
+      title="Convocation"
+      subtitle="Submit your official payment control number to complete Convocation clearance."
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <div header-actions>
+        <a routerLink="/clearance/status" class="back-link">← Back to Process</a>
       </div>
+    </app-dashboard-header>
 
-      <a
-        routerLink="/clearance/status"
-        class="back-link"
-      >
-        ← Back to Process
-      </a>
-    </header>
+    <div class="convocation-wrapper">
+      <main class="convocation-card">
 
-    <!-- MAIN CARD -->
-    <main class="convocation-card">
-
-      <!-- ==============================================
-           NO ACTIVE CLEARANCE REQUEST
-      =============================================== -->
-      <section
-        *ngIf="!studentRequest"
-        class="convocation-state"
-      >
-        <div class="state-icon warning-icon">
-          <i class="bi bi-exclamation-triangle-fill"></i>
+        <!-- LOADING STATE -->
+        <div class="table-loading-banner" *ngIf="isFetching && !studentRequest">
+          <span class="table-loading-spinner"></span>
+          <span>Loading your clearance request...</span>
         </div>
 
-        <span class="state-label">
-          Notice
-        </span>
+        <!-- NO ACTIVE CLEARANCE REQUEST -->
+        <section *ngIf="!isFetching && !studentRequest" class="convocation-state">
+          <div class="state-icon warning-icon">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+          <span class="state-label">Notice</span>
+          <h2>No Active Clearance Request</h2>
+          <p>
+            You do not have an active clearance request yet. Please initiate your clearance request first to begin the clearance process.
+          </p>
+          <a routerLink="/clearance/request" class="primary-button link-button">
+            Start Clearance Request
+          </a>
+        </section>
 
-        <h2>
-          No Active Clearance Request
-        </h2>
+        <!-- CONVOCATION APPROVED (STEP 1 COMPLETE) -->
+        <section *ngIf="studentRequest && isConvocationApproved" class="convocation-state success-state">
+          <div class="state-icon success-icon">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <span class="state-label">Step 1 Complete</span>
+          <h2>Convocation Clearance Approved</h2>
+          <p>
+            Your Convocation payment control number has been recorded and Step 1 is complete.
+            Finance will perform final verification during Stage 5 clearance.
+          </p>
 
-        <p>
-          You do not have an active clearance request yet. Please initiate your clearance request first to begin the clearance process.
-        </p>
-
-        <a
-          routerLink="/clearance/request"
-          class="primary-button link-button"
-        >
-          Start Clearance Request
-        </a>
-      </section>
-
-      <!-- ==============================================
-           CONVOCATION APPROVED (STEP 1 COMPLETE)
-      =============================================== -->
-      <section
-        *ngIf="studentRequest && isConvocationApproved"
-        class="convocation-state success-state"
-      >
-        <div class="state-icon success-icon">
-          <i class="bi bi-check-circle-fill"></i>
-        </div>
-
-        <span class="state-label">
-          Step 1 Complete
-        </span>
-
-        <h2>
-          Convocation Clearance Approved
-        </h2>
-
-        <p>
-          Your Convocation clearance and payment have been verified and approved.
-          You can now proceed to Step 2 for clearance with your department and institutional offices.
-        </p>
-
-        <div class="waiting-message approved-message">
-          ✓ Approved by Convocation Office
-        </div>
-
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="isLoading"
-          (click)="continueToStep2()"
-        >
-          Next: Proceed to Step 2 →
-        </button>
-      </section>
-
-      <!-- ==============================================
-           STEP 1: SUBMIT CONTROL NUMBER & PAYMENT
-      =============================================== -->
-      <section
-        *ngIf="
-          studentRequest &&
-          !isConvocationApproved &&
-          !receiptSubmitted
-        "
-        class="convocation-state"
-      >
-        <div class="state-icon">
-          1
-        </div>
-
-        <span class="state-label">
-          Payment &amp; Control Number
-        </span>
-
-        <h2>
-          Submit Payment Control Number
-        </h2>
-
-        <p>
-          Submit your official payment control number (Namba ya Malipo) for Finance and Convocation verification.
-        </p>
-
-        <!-- CONTROL NUMBER FORM -->
-        <form
-          [formGroup]="form"
-          (ngSubmit)="submit()"
-          class="receipt-form"
-        >
-          <div style="margin-bottom: 16px; text-align: left;">
-            <label style="display: block; font-weight: 700; color: #003b5c; font-size: 0.92rem; margin-bottom: 6px;">
-              Written Control Number <span style="color: #dc2626;">*</span>
-            </label>
-            <input
-              type="text"
-              formControlName="controlNumber"
-              placeholder="e.g. 991234567890 or GePG Control Number"
-              style="width: 100%; padding: 12px 14px; font-size: 1rem; font-weight: 600; letter-spacing: 0.5px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; background: #ffffff; color: #0f172a;"
-            />
-            <small style="display: block; color: #64748b; font-size: 0.8rem; margin-top: 4px;">
-              Enter the official 12-digit or alphanumeric Government/University Payment Control Number.
-            </small>
+          <div class="control-number-section" *ngIf="submittedControlNumber">
+            <span>Submitted Payment Control Number</span>
+            <strong>{{ submittedControlNumber }}</strong>
           </div>
 
-          <button
-            type="submit"
-            class="primary-button"
-            [disabled]="isLoading || !hasControlNumber"
-          >
-            {{ isLoading ? 'Submitting Control Number...' : 'Submit Control Number and Proceed to Step 2' }}
-          </button>
-        </form>
-      </section>
+          <div class="waiting-message approved-message">
+            ✓ Stage 1 Complete · Ready for Parallel Offices
+          </div>
 
-      <!-- MESSAGE -->
-      <p
-        *ngIf="message"
-        class="success-message"
-      >
-        {{ message }}
-      </p>
+          <div>
+            <button type="button" class="primary-button" (click)="continueToStep2()">
+              Proceed to Clearance Process →
+            </button>
+          </div>
+        </section>
 
-      <!-- BACK LINK -->
-      <a
-        routerLink="/clearance/status"
-        class="status-link"
-      >
-        Back to Clearance Status
-      </a>
+        <!-- STEP 1: SUBMIT OR RESUBMIT CONTROL NUMBER -->
+        <section *ngIf="studentRequest && !isConvocationApproved" class="convocation-state">
+          <div class="state-icon" [class.warning-icon]="isConvocationRejected">
+            <i *ngIf="isConvocationRejected" class="bi bi-exclamation-circle-fill"></i>
+            <span *ngIf="!isConvocationRejected">1</span>
+          </div>
 
-    </main>
+          <span class="state-label">
+            {{ isConvocationRejected ? 'Correction Required' : 'Payment & Control Number' }}
+          </span>
 
-  </div>
+          <h2>
+            {{ isConvocationRejected ? 'Resubmit Payment Control Number' : 'Submit Payment Control Number' }}
+          </h2>
 
+          <p>
+            Enter your official payment control number (Namba ya Malipo) for Convocation and Finance verification.
+          </p>
+
+          <div class="rejection-alert" *ngIf="isConvocationRejected">
+            <strong>Convocation Officer Feedback:</strong>
+            <p>{{ rejectionComment }}</p>
+          </div>
+
+          <div class="error-message" *ngIf="errorMessage">
+            {{ errorMessage }}
+          </div>
+
+          <form [formGroup]="form" (ngSubmit)="submit()" class="receipt-form">
+            <div class="control-field">
+              <label for="convocationControlNumber">
+                Written Control Number <span class="required-mark">*</span>
+              </label>
+              <input
+                id="convocationControlNumber"
+                type="text"
+                formControlName="controlNumber"
+                maxlength="40"
+                autocomplete="off"
+                placeholder="e.g. 991234567890"
+              />
+              <small>
+                Enter the official 4–40 character Government/University Payment Control Number (letters, numbers, or hyphens).
+              </small>
+            </div>
+
+            <button
+              type="submit"
+              class="primary-button"
+              [disabled]="isSubmitting || !isControlNumberValid"
+            >
+              {{ isSubmitting ? 'Submitting Control Number...' : (isConvocationRejected ? 'Resubmit Control Number' : 'Submit Control Number & Proceed to Step 2') }}
+            </button>
+          </form>
+        </section>
+
+        <p *ngIf="message" class="success-message">{{ message }}</p>
+
+        <a routerLink="/clearance/status" class="status-link">
+          Back to Clearance Status
+        </a>
+      </main>
+    </div>
+  </main>
 </section>

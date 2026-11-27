@@ -13,6 +13,7 @@ import {
 
 import { StorageService } from './storage.service';
 import { ConfigService } from './config.service';
+import { isPostgraduateEntity } from '../utils/postgraduate.util';
 
 @Injectable({
   providedIn: 'root'
@@ -94,9 +95,15 @@ export class ClearanceService {
         }))
       : [];
 
+    const isPostgrad = isPostgraduateEntity({
+      isPostgraduate: res.isPostgraduate ?? res.is_postgraduate,
+      award: res.award,
+      programme: res.programme
+    });
+
     return {
       id: String(res.requestId || res.id),
-      studentId: res.studentId || '',
+      studentId: res.studentId || res.userId || '',
       studentName: res.studentName || '',
       registrationNumber: res.registrationNumber || '',
       email: res.email || '',
@@ -106,6 +113,9 @@ export class ClearanceService {
       college: res.college || res.faculty || '',
       department: res.department || '',
       programme: res.programme || '',
+      award: res.award || undefined,
+      isPostgraduate: isPostgrad,
+      undergraduateCertificateUrl: res.undergraduateCertificateUrl || res.undergraduate_certificate_url || undefined,
       hall: res.hall || '',
       wing: res.wing || '',
       block: res.block || '',
@@ -122,7 +132,7 @@ export class ClearanceService {
       status: mapOverallStatus(res.status),
       currentOffice: res.currentOffice as ClearanceOffice,
       currentStage: (res.currentStage || 'Convocation') as any,
-      approvals: approvals.length > 0 ? approvals : this.getDefaultApprovals(res.college || res.faculty)
+      approvals: approvals.length > 0 ? approvals : this.getDefaultApprovals(res.college || res.faculty, isPostgrad)
     };
   }
 
@@ -220,6 +230,10 @@ export class ClearanceService {
     return obs$;
   }
 
+  getOfficeRequestsBackend(office: ClearanceOffice, status?: string): Observable<ClearanceRequest[]> {
+    return this.fetchOfficeRequests(office, status);
+  }
+
   fetchMyRequest(force: boolean = false): Observable<ClearanceRequest | null> {
     if (this.myRequestInFlight$ && !force) {
       return this.myRequestInFlight$;
@@ -281,13 +295,14 @@ export class ClearanceService {
     }, { headers });
   }
 
-  getDefaultApprovals(college: string): OfficeApproval[] {
+  getDefaultApprovals(college: string, isPostgraduate: boolean = false): OfficeApproval[] {
     return [
       { office: 'Convocation', status: 'Pending' },
       ...this.getClearanceOffices(college).map(office => ({ office, status: 'Pending' as ApprovalStatus })),
       { office: 'Department', status: 'Pending' },
       { office: 'Principal', status: 'Pending' },
-      { office: 'Finance', status: 'Pending' }
+      { office: 'Finance', status: 'Pending' },
+      ...(isPostgraduate ? [{ office: 'Supervisor' as ClearanceOffice, status: 'Pending' as ApprovalStatus }] : [])
     ];
   }
 
@@ -308,6 +323,9 @@ export class ClearanceService {
     roomNumber?: string;
     sponsor?: string;
     photo?: string;
+    award?: string;
+    isPostgraduate?: boolean;
+    undergraduateCertificate?: string;
   }): Observable<any> {
     const headers = this.getAuthHeaders();
     return this.http.post(`${this.config.apiUrl}/clearance/request`, {
@@ -408,11 +426,20 @@ export class ClearanceService {
     photo?: string;
     clearanceType?: string;
     remarks?: string;
+    award?: string;
+    isPostgraduate?: boolean;
+    undergraduateCertificate?: string;
   }): ClearanceRequest {
 
     if (this.getStudentRequests(requestData.studentId).length > 0) {
       throw new Error('You already have a submitted clearance request.');
     }
+
+    const isPostgrad = isPostgraduateEntity({
+      isPostgraduate: requestData.isPostgraduate,
+      award: requestData.award,
+      programme: requestData.programme
+    });
 
     const request: ClearanceRequest = {
       id: crypto.randomUUID(),
@@ -434,6 +461,9 @@ export class ClearanceService {
       residenceEvidence: requestData.residenceEvidence || '',
       sponsor: requestData.sponsor || '',
       photo: requestData.photo || '',
+      award: requestData.award,
+      isPostgraduate: isPostgrad,
+      undergraduateCertificateUrl: requestData.undergraduateCertificate,
       clearanceType: requestData.clearanceType || 'Graduation Clearance',
       remarks: requestData.remarks || '',
       requestDate: new Date().toISOString(),
@@ -460,7 +490,11 @@ export class ClearanceService {
         {
           office: 'Finance',
           status: 'Pending'
-        }
+        },
+        ...(isPostgrad ? [{
+          office: 'Supervisor' as ClearanceOffice,
+          status: 'Pending' as const
+        }] : [])
       ]
     };
 
@@ -536,11 +570,18 @@ export class ClearanceService {
   // =====================================================
 
   getStudentRequests(studentId: string): ClearanceRequest[] {
-    const authUser = this.storage.get<any>('udsm-auth-user');
+    const authUser =
+      this.storage.get<any>('udsm-current-user') ||
+      this.storage.get<any>('udsm-auth-user');
+    const candidateIds = new Set(
+      [studentId, authUser?.id, authUser?.userId, authUser?.studentId]
+        .filter(Boolean)
+        .map(v => String(v).trim())
+    );
     const userReg = authUser?.registrationNumber?.trim()?.toLowerCase();
     const userEmail = authUser?.email?.trim()?.toLowerCase();
     return this.getAllRequests().filter(request =>
-      request.studentId === studentId ||
+      (request.studentId && candidateIds.has(String(request.studentId).trim())) ||
       (userReg && request.registrationNumber && request.registrationNumber.trim().toLowerCase() === userReg) ||
       (userEmail && request.email && request.email.trim().toLowerCase() === userEmail)
     );
@@ -633,10 +674,31 @@ export class ClearanceService {
           principalApproval?.status === 'Approved' ||
           principalApproval?.status === 'Rejected' ||
           request.currentStage === 'Finance' ||
+          request.currentStage === 'Supervisor' ||
           request.status === 'Completed';
         if (!principalStageReached) return false;
 
         return !college || this.matchCollegeName(request.college, college);
+      }
+
+      if (office === 'Supervisor') {
+        const isPostgrad = isPostgraduateEntity(request);
+        if (!isPostgrad) return false;
+
+        const supervisorApproval = request.approvals.find(a => a && a.office === 'Supervisor');
+        const financeApproval = request.approvals.find(a => a && a.office === 'Finance');
+        const supervisorStageReached = request.currentStage === 'Supervisor' ||
+          financeApproval?.status === 'Approved' ||
+          supervisorApproval?.status === 'Approved' ||
+          supervisorApproval?.status === 'Rejected' ||
+          request.status === 'Completed';
+
+        if (!supervisorStageReached) return false;
+
+        return (
+          (!college || this.matchCollegeName(request.college, college)) &&
+          (!department || this.matchDepartmentName(request.department, department))
+        );
       }
 
       if (request.approvals.some(a => a && a.office === office) || this.getClearanceOffices(request.college).includes(office)) {
@@ -841,6 +903,17 @@ export class ClearanceService {
     return true;
   }
 
+  submitFinanceReceiptToServer(controlNumber: string): Observable<{ success: boolean; message: string }> {
+    const cleaned = controlNumber.trim();
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.config.apiUrl}/clearance/submit-finance-receipt`,
+      {
+        controlNumber: cleaned,
+        note: `Control number resubmitted: ${cleaned}`
+      }
+    );
+  }
+
   // =====================================================
   // STEP 1 - OFFICER VERIFIES PAYMENT RECEIPT
   // =====================================================
@@ -912,10 +985,18 @@ export class ClearanceService {
     if (!request || !approval) return false;
 
     if (office === 'Finance') {
-      const otherApprovals = request?.approvals?.filter(a => a && a.office !== 'Finance') || [];
+      const otherApprovals = request?.approvals?.filter(a => a && a.office !== 'Finance' && a.office !== 'Supervisor') || [];
       const allCleared = otherApprovals.length > 0 && otherApprovals.every(a => a && a.status === 'Approved');
       if (!allCleared) {
         console.warn(`Request ${requestId} cannot reach or be approved by Finance until all other offices are cleared.`);
+        return false;
+      }
+    }
+
+    if (office === 'Supervisor') {
+      const financeApproval = request?.approvals?.find(a => a && a.office === 'Finance');
+      if (!financeApproval || financeApproval.status !== 'Approved') {
+        console.warn(`Request ${requestId} cannot reach or be approved by Supervisor until Finance is cleared.`);
         return false;
       }
     }
@@ -936,6 +1017,16 @@ export class ClearanceService {
       request.currentStage = 'Principal';
       request.currentOffice = 'Principal';
     } else if (office === 'Finance') {
+      const isPostgrad = isPostgraduateEntity(request);
+      if (isPostgrad) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else {
+        request.currentStage = 'Completed';
+        request.currentOffice = undefined;
+        request.status = 'Completed';
+      }
+    } else if (office === 'Supervisor') {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
       request.status = 'Completed';
@@ -1043,7 +1134,8 @@ export class ClearanceService {
     approval.reviewedAt = undefined;
     request.status = 'Pending';
     request.revisionOffice = undefined;
-    request.currentStage = office === 'Department' ? 'Department'
+    request.currentStage = office === 'Supervisor' ? 'Supervisor'
+      : office === 'Department' ? 'Department'
       : office === 'Principal' ? 'Principal'
       : office === 'Finance' ? 'Finance'
       : office === 'Convocation' ? 'Convocation' : 'Parallel';
@@ -1067,7 +1159,7 @@ export class ClearanceService {
       requestId: string,
       requestData: Partial<Pick<ClearanceRequest,
           'email' | 'phoneNumber' | 'physicalAddress' | 'address' | 'college' | 'department' | 'programme' | 'hall' | 'wing' | 'block' | 'roomNumber' |
-          'residenceType' | 'residenceEvidence' | 'sponsor' | 'photo'>>
+          'residenceType' | 'residenceEvidence' | 'sponsor' | 'photo' | 'award' | 'isPostgraduate' | 'undergraduateCertificateUrl'>>
   ): boolean {
     const request = this.getRequest(requestId);
 
@@ -1085,11 +1177,17 @@ export class ClearanceService {
     approval.reviewedBy = undefined;
     approval.reviewedAt = undefined;
     request.status = 'Pending';
-    request.currentStage = request.revisionOffice === 'Department'
-        ? 'Department'
-        : request.revisionOffice === 'Convocation'
-            ? 'Convocation'
-            : 'Parallel';
+    request.currentStage = request.revisionOffice === 'Supervisor'
+        ? 'Supervisor'
+        : request.revisionOffice === 'Finance'
+            ? 'Finance'
+            : request.revisionOffice === 'Principal'
+                ? 'Principal'
+                : request.revisionOffice === 'Department'
+                    ? 'Department'
+                    : request.revisionOffice === 'Convocation'
+                        ? 'Convocation'
+                        : 'Parallel';
     request.currentOffice = request.revisionOffice;
     request.revisionOffice = undefined;
 
@@ -1136,9 +1234,23 @@ export class ClearanceService {
     }
 
     if (request.currentStage === 'Finance') {
+      const isPostgrad = isPostgraduateEntity(request);
+      if (isPostgrad) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else {
+        request.currentStage = 'Completed';
+        request.currentOffice = undefined;
+        request.status = 'Completed';
+      }
+      return;
+    }
+
+    if (request.currentStage === 'Supervisor') {
       request.currentStage = 'Completed';
       request.currentOffice = undefined;
       request.status = 'Completed';
+      return;
     }
   }
 
@@ -1151,13 +1263,16 @@ export class ClearanceService {
       request.convocation = {};
     }
 
+    const isPostgrad = isPostgraduateEntity(request);
+
     const existing = request.approvals ?? [];
     const offices: ClearanceOffice[] = [
       'Convocation',
       ...this.getClearanceOffices(request.college),
       'Department',
       'Principal',
-      'Finance'
+      'Finance',
+      ...(isPostgrad ? ['Supervisor' as ClearanceOffice] : [])
     ];
 
     for (const office of offices) {
@@ -1182,26 +1297,53 @@ export class ClearanceService {
     const deptApproved = getStatus('Department') === 'Approved';
     const principalApproved = getStatus('Principal') === 'Approved';
     const financeApproved = getStatus('Finance') === 'Approved';
+    const supervisorApproved = getStatus('Supervisor') === 'Approved';
 
-    if (financeApproved || request.status === 'Completed') {
-      request.currentStage = 'Completed';
-      request.status = 'Completed';
-      request.currentOffice = undefined;
-    } else if (principalApproved) {
-      request.currentStage = 'Finance';
-      request.currentOffice = 'Finance';
-    } else if (deptApproved) {
-      request.currentStage = 'Principal';
-      request.currentOffice = 'Principal';
-    } else if (allParallelApproved) {
-      request.currentStage = 'Department';
-      request.currentOffice = 'Department';
-    } else if (convocationApproved) {
-      request.currentStage = 'Parallel';
-      request.currentOffice = undefined;
+    if (isPostgrad) {
+      if (supervisorApproved || request.status === 'Completed') {
+        request.currentStage = 'Completed';
+        request.status = 'Completed';
+        request.currentOffice = undefined;
+      } else if (financeApproved) {
+        request.currentStage = 'Supervisor';
+        request.currentOffice = 'Supervisor';
+      } else if (principalApproved) {
+        request.currentStage = 'Finance';
+        request.currentOffice = 'Finance';
+      } else if (deptApproved) {
+        request.currentStage = 'Principal';
+        request.currentOffice = 'Principal';
+      } else if (allParallelApproved) {
+        request.currentStage = 'Department';
+        request.currentOffice = 'Department';
+      } else if (convocationApproved) {
+        request.currentStage = 'Parallel';
+        request.currentOffice = undefined;
+      } else {
+        request.currentStage = 'Convocation';
+        request.currentOffice = undefined;
+      }
     } else {
-      request.currentStage = 'Convocation';
-      request.currentOffice = undefined;
+      if (financeApproved || request.status === 'Completed') {
+        request.currentStage = 'Completed';
+        request.status = 'Completed';
+        request.currentOffice = undefined;
+      } else if (principalApproved) {
+        request.currentStage = 'Finance';
+        request.currentOffice = 'Finance';
+      } else if (deptApproved) {
+        request.currentStage = 'Principal';
+        request.currentOffice = 'Principal';
+      } else if (allParallelApproved) {
+        request.currentStage = 'Department';
+        request.currentOffice = 'Department';
+      } else if (convocationApproved) {
+        request.currentStage = 'Parallel';
+        request.currentOffice = undefined;
+      } else {
+        request.currentStage = 'Convocation';
+        request.currentOffice = undefined;
+      }
     }
 
     return request;

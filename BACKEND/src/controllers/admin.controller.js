@@ -3,8 +3,13 @@ const AdminService = require('../services/admin.service');
 class AdminController {
   static async getAllUsers(req, res, next) {
     try {
-      const users = await AdminService.getAllUsers();
-      return res.status(200).json(users);
+      const result = await AdminService.getAllUsers({
+        page: req.query.page,
+        limit: req.query.limit,
+        search: req.query.search,
+        role: req.query.role
+      });
+      return res.status(200).json(result);
     } catch (err) {
       next(err);
     }

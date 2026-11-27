@@ -75,7 +75,14 @@
             </ng-container>
             <ng-template #reviewedStatus>
               <span class="reviewed-status">{{ getOfficeStatus(request) }}</span>
-              <button type="button" class="withdraw-button" (click)="withdraw(request)">Withdraw</button>
+              <button
+                type="button"
+                class="withdraw-button"
+                [disabled]="withdrawingId === request.id"
+                (click)="withdraw(request)"
+              >
+                {{ withdrawingId === request.id ? 'Withdrawing...' : 'Withdraw' }}
+              </button>
             </ng-template>
           </div>
         </td>

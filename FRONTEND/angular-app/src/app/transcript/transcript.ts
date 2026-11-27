@@ -1,19 +1,20 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../core/services/auth.service';
 import { ClearanceService } from '../core/services/clearance.service';
 import { ClearanceRequest } from '../core/models/clearance.model';
 import { DashboardHeaderComponent } from '../shared/components/dashboard-header/dashboard-header';
+import { StudentSidebarComponent } from '../shared/components/student-sidebar/student-sidebar';
 import { TranscriptPaymentService } from '../core/services/transcript-payment.service';
 import { TranscriptPaymentRequest } from './transcript-payment.model';
 
 @Component({
   selector: 'app-transcript',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, RouterLinkActive, DashboardHeaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DashboardHeaderComponent, StudentSidebarComponent],
   templateUrl: './transcript.html',
   styleUrl: './transcript.css'
 })

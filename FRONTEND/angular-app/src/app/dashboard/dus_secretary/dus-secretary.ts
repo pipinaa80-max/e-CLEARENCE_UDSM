@@ -1,9 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { TranscriptPaymentService } from '../../core/services/transcript-payment.service';
 import { ReceiptFileStoreService } from '../../core/services/receipt-file-store.service';
@@ -11,6 +12,7 @@ import { CollectionStationService, CollectionStation } from '../../core/services
 import { TranscriptPaymentRequest } from '../../transcript/transcript-payment.model';
 import { DashboardHeaderComponent } from '../../shared/components/dashboard-header/dashboard-header';
 import { ConfigService } from '../../core/services/config.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-dus-secretary-dashboard',
@@ -19,7 +21,7 @@ import { ConfigService } from '../../core/services/config.service';
   templateUrl: './dus-secretary.html',
   styleUrl: './dus-secretary.css'
 })
-export class DusSecretaryDashboardComponent implements OnInit {
+export class DusSecretaryDashboardComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly transcriptService = inject(TranscriptPaymentService);
   private readonly receiptFileStore = inject(ReceiptFileStoreService);
@@ -27,10 +29,14 @@ export class DusSecretaryDashboardComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly notificationService = inject(NotificationService);
+  private unreadSub?: Subscription;
 
   sidebarOpen = false;
+  unreadNotifications = 0;
   activeSection: 'verification' | 'dispatch' | 'pipeline' | 'personnel' = 'verification';
   requests: TranscriptPaymentRequest[] = [];
   stations: CollectionStation[] = [];
@@ -40,12 +46,16 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
+  loadError = '';
+  isProcessing = false;
+  isSavingSecretary = false;
+  togglingSecretaryId: string | null = null;
 
   // Digital Signature Modal State
   showSignatureModal = false;
   selectedSigRequest: TranscriptPaymentRequest | null = null;
   signatureForm = {
-    secretaryName: 'Directorate Secretary',
+    secretaryName: 'DUS Examination Office',
     title: 'Directorate of Undergraduate Studies (DUS)',
     stampNote: 'Official Certificate & Transcript Release Verification'
   };
@@ -76,16 +86,44 @@ export class DusSecretaryDashboardComponent implements OnInit {
     return this.authService.getCurrentUser();
   }
 
+  get userInitials(): string {
+    const name = String(this.currentUser?.fullName || 'DUS');
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0]?.toUpperCase() || '')
+      .join('') || 'DU';
+  }
+
   isLoadingRequests = false;
 
   ngOnInit(): void {
-    // 1. Instant local render (0ms latency)
-    this.mergeRequests([]);
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab && ['verification', 'dispatch', 'pipeline', 'personnel'].includes(initialTab)) {
+      this.activeSection = initialTab as any;
+    }
+    this.unreadSub = this.notificationService.unreadCount$.subscribe(count => {
+      this.unreadNotifications = count;
+    });
+    this.notificationService.refreshUnreadCount().subscribe();
 
-    // 2. Async backend sync
     this.loadStations();
     this.loadRequests();
     this.loadStationSecretaries();
+  }
+
+  ngOnDestroy(): void {
+    this.unreadSub?.unsubscribe();
+    this.closeStudentDocumentsModal();
+    this.closeReceiptView();
+  }
+
+  refreshAll(): void {
+    this.loadStations();
+    this.loadRequests();
+    this.loadStationSecretaries();
+    this.notificationService.refreshUnreadCount().subscribe();
   }
 
   loadStations(): void {
@@ -128,23 +166,64 @@ export class DusSecretaryDashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
+  // Server-side pagination & authoritative SQL KPI counts across the entire registry
+  serverStats: {
+    totalStudents: number;
+    verifiedCount: number;
+    unverifiedCount: number;
+    pendingDispatchCount: number;
+    inTransitCount: number;
+    inVaultCount: number;
+    collectedCount: number;
+  } | null = null;
+  serverStationStats: { stationCode: string; total: number; inTransit: number; inVault: number; collected: number }[] = [];
+  serverTotalFiltered = 0;
+  serverTotalPages = 1;
+  private searchDebounceTimer: any = null;
+
   loadRequests(): void {
     this.isLoadingRequests = true;
-    const url = `${this.config.apiUrl}/dus-secretary/students`;
+    this.loadError = '';
+    const params = new URLSearchParams({
+      paginated: 'true',
+      page: String(this.currentPage),
+      pageSize: String(this.pageSize),
+      section: this.activeSection,
+      filterTab: this.filterTab
+    });
+    if (this.searchTerm.trim()) {
+      params.set('query', this.searchTerm.trim());
+    }
+    const url = `${this.config.apiUrl}/dus-secretary/students?${params.toString()}`;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
-    this.http.get<any[]>(url, { headers, withCredentials: true }).subscribe({
-      next: (students) => {
+    this.http.get<any>(url, { headers, withCredentials: true }).subscribe({
+      next: (resp) => {
         this.isLoadingRequests = false;
-        const backendRequests = (students && students.length > 0)
-          ? students.map(s => this.mapStudentToRequest(s))
-          : [];
-        this.mergeRequests(backendRequests);
+        if (resp && !Array.isArray(resp) && Array.isArray(resp.items)) {
+          this.requests = resp.items.map((s: any) => this.mapStudentToRequest(s));
+          this.serverTotalFiltered = Number(resp.total ?? this.requests.length);
+          this.serverTotalPages = Math.max(1, Number(resp.totalPages ?? 1));
+          this.currentPage = Math.max(1, Math.min(Number(resp.page ?? this.currentPage), this.serverTotalPages));
+          this.serverStats = resp.stats || null;
+          this.serverStationStats = Array.isArray(resp.stationStats) ? resp.stationStats : [];
+        } else {
+          // Legacy array fallback
+          const students = Array.isArray(resp) ? resp : [];
+          this.serverStats = null;
+          this.serverStationStats = [];
+          const backendRequests = students.map(s => this.mapStudentToRequest(s));
+          this.mergeRequests(backendRequests);
+          this.serverTotalFiltered = this.requests.length;
+          this.serverTotalPages = Math.max(1, Math.ceil(this.requests.length / this.pageSize));
+        }
       },
       error: (err) => {
         this.isLoadingRequests = false;
+        this.loadError = err?.error?.message || 'Unable to load certificate verification records from the server.';
         console.error('Failed to load students from backend:', err);
+        this.serverStats = null;
         this.mergeRequests([]);
       }
     });
@@ -211,6 +290,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
     request: TranscriptPaymentRequest;
     documents: any[];
     loading: boolean;
+    docLoadError: string;
     activeDoc: any | null;
     activeDocSafeUrl: SafeResourceUrl | null;
     activeDocBlobUrl: string | null;
@@ -223,6 +303,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
       request: req,
       documents: [],
       loading: true,
+      docLoadError: '',
       activeDoc: null,
       activeDocSafeUrl: null,
       activeDocBlobUrl: null,
@@ -235,57 +316,8 @@ export class DusSecretaryDashboardComponent implements OnInit {
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
-    const populateFallbackDocs = (existingDocs: any[] = []) => {
+    const appendPaymentReceiptIfPresent = (existingDocs: any[] = []) => {
       const docsList = [...existingDocs];
-
-      const hasBirth = docsList.some(d => d.category?.includes('Birth') || d.fileType?.includes('Birth'));
-      if (!hasBirth) {
-        docsList.push({
-          id: 'doc-birth-' + req.id,
-          fileName: `Birth_Certificate_${req.registrationNumber || req.studentId}.pdf`,
-          fileType: 'Official Birth Certificate (RITA)',
-          category: 'Birth Certificate',
-          uploadDate: req.requestedAt || new Date().toISOString(),
-          verified: true
-        });
-      }
-
-      const hasOLevel = docsList.some(d => d.category?.includes('O-Level') || d.fileType?.includes('O-Level'));
-      if (!hasOLevel) {
-        docsList.push({
-          id: 'doc-olevel-' + req.id,
-          fileName: `NECTA_CSEE_OLevel_${req.registrationNumber || req.studentId}.pdf`,
-          fileType: 'NECTA CSEE O-Level Certificate',
-          category: 'O-Level Certificate',
-          uploadDate: req.requestedAt || new Date().toISOString(),
-          verified: true
-        });
-      }
-
-      const hasALevel = docsList.some(d => d.category?.includes('A-Level') || d.fileType?.includes('A-Level'));
-      if (!hasALevel) {
-        docsList.push({
-          id: 'doc-alevel-' + req.id,
-          fileName: `NECTA_ACSEE_ALevel_${req.registrationNumber || req.studentId}.pdf`,
-          fileType: 'NECTA ACSEE A-Level Certificate',
-          category: 'A-Level Certificate',
-          uploadDate: req.requestedAt || new Date().toISOString(),
-          verified: true
-        });
-      }
-
-      const hasDegree = docsList.some(d => d.category?.includes('Degree') || d.category?.includes('Transcript'));
-      if (!hasDegree) {
-        docsList.push({
-          id: 'doc-degree-' + req.id,
-          fileName: `Degree_Transcript_${req.registrationNumber || req.studentId}.pdf`,
-          fileType: 'UDSM Official Degree Transcript & Clearance Record',
-          category: 'Degree Record',
-          uploadDate: req.requestedAt || new Date().toISOString(),
-          verified: true
-        });
-      }
-
       const hasReceipt = req.receiptFileName || req.receiptData || (req.receipts && req.receipts.length > 0);
       if (hasReceipt) {
         const rawData = req.receiptData || (req.receipts && req.receipts[0]?.receiptData) || '';
@@ -305,7 +337,6 @@ export class DusSecretaryDashboardComponent implements OnInit {
           isPaymentReceipt: true
         });
       }
-
       return docsList;
     };
 
@@ -313,17 +344,19 @@ export class DusSecretaryDashboardComponent implements OnInit {
       next: (docs) => {
         if (!this.selectedStudentDocModal) return;
         this.selectedStudentDocModal.loading = false;
-        this.selectedStudentDocModal.documents = populateFallbackDocs(docs || []);
+        this.selectedStudentDocModal.docLoadError = '';
+        this.selectedStudentDocModal.documents = appendPaymentReceiptIfPresent(docs || []);
         if (this.selectedStudentDocModal.documents.length > 0) {
           this.selectDocForPreview(this.selectedStudentDocModal.documents[0]);
         }
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.warn('Backend documents endpoint unavailable, serving dossier records:', err);
+        console.error('Failed to load student documents from server:', err);
         if (!this.selectedStudentDocModal) return;
         this.selectedStudentDocModal.loading = false;
-        this.selectedStudentDocModal.documents = populateFallbackDocs([]);
+        this.selectedStudentDocModal.docLoadError = err?.error?.message || 'Unable to load uploaded student documents from the server.';
+        this.selectedStudentDocModal.documents = appendPaymentReceiptIfPresent([]);
         if (this.selectedStudentDocModal.documents.length > 0) {
           this.selectDocForPreview(this.selectedStudentDocModal.documents[0]);
         }
@@ -379,8 +412,8 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   verifyFromModal(request: TranscriptPaymentRequest): void {
+    this.closeStudentDocumentsModal();
     this.onCertificateCheckboxChange(request, true);
-    this.showToast(`Credentials verified for ${request.studentName}.`, 'success');
   }
 
   async viewReceipt(req: TranscriptPaymentRequest): Promise<void> {
@@ -420,15 +453,15 @@ export class DusSecretaryDashboardComponent implements OnInit {
       studentName: s.fullName,
       registrationNumber: s.registrationNumber,
       award: s.programme || 'Degree Certificate & Transcript',
-      graduationYear: s.graduationYear || '2024',
+      graduationYear: s.graduationYear || '',
       transcriptCount: 1,
       amount: 15000,
       currency: 'TZS',
       attemptNumber: 1,
       status: 'Paid',
-      controlNumber: '99' + Math.abs(this.hashCode(s.registrationNumber || s.id)).toString().padStart(10, '0').slice(0, 10),
+      controlNumber: s.controlNumber || '',
       requestedAt: s.createdAt || new Date().toISOString(),
-      collectionMethod: s.stationName ? 'Physical Collection' : 'Physical Collection',
+      collectionMethod: s.collectionMethod || 'Physical Collection',
       postingRegion: s.college || 'Dar es Salaam',
       postingAddress: s.stationName || s.department || 'DUS Directorate Office',
       postingContactPhone: s.phoneNumber || '',
@@ -448,43 +481,61 @@ export class DusSecretaryDashboardComponent implements OnInit {
     };
   }
 
-  private hashCode(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash;
-  }
-
   setSection(sec: 'verification' | 'dispatch' | 'pipeline' | 'personnel'): void {
     this.activeSection = sec;
+    this.filterTab = 'ALL';
     this.searchTerm = '';
+    this.currentPage = 1;
+    if (sec === 'verification' || sec === 'dispatch' || sec === 'pipeline') {
+      this.loadRequests();
+    }
   }
 
-  // Summary Metrics
+  setFilterTab(tab: 'ALL' | 'PHYSICAL' | 'DHL' | 'PENDING' | 'DISPATCHED'): void {
+    this.filterTab = tab;
+    this.currentPage = 1;
+    this.loadRequests();
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+    this.searchDebounceTimer = setTimeout(() => {
+      this.loadRequests();
+    }, 300);
+  }
+
+  // Summary Metrics (Authoritative SQL counts across all 5,316+ students when connected)
   get totalRequests(): number {
-    return this.requests.length;
+    return this.serverStats ? this.serverStats.totalStudents : this.requests.length;
   }
 
   get unverifiedCount(): number {
-    return this.requests.filter(r => !r.certificateVerified).length;
+    return this.serverStats ? this.serverStats.unverifiedCount : this.requests.filter(r => !r.certificateVerified).length;
   }
 
   get verifiedCount(): number {
-    return this.requests.filter(r => !!r.certificateVerified).length;
+    return this.serverStats ? this.serverStats.verifiedCount : this.requests.filter(r => !!r.certificateVerified).length;
   }
 
   get pendingDispatchCount(): number {
-    return this.requests.filter(r => r.certificateVerified && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected').length;
+    return this.serverStats
+      ? this.serverStats.pendingDispatchCount
+      : this.requests.filter(r => r.certificateVerified && r.dispatchStatus !== 'Dispatched' && r.dispatchStatus !== 'Collected').length;
   }
 
   get inTransitCount(): number {
-    return this.requests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length;
+    return this.serverStats
+      ? this.serverStats.inTransitCount
+      : this.requests.filter(r => r.dispatchStatus === 'Dispatched' && r.intakeStatus !== 'Received at Station' && r.intakeStatus !== 'Collected by Student').length;
   }
 
   get inVaultCount(): number {
-    return this.requests.filter(r => r.intakeStatus === 'Received at Station').length;
+    return this.serverStats
+      ? this.serverStats.inVaultCount
+      : this.requests.filter(r => r.intakeStatus === 'Received at Station').length;
   }
 
   get physicalPending(): number {
@@ -496,11 +547,27 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   get dispatchedCount(): number {
-    return this.requests.filter(r => r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected').length;
+    return this.serverStats
+      ? (this.serverStats.inTransitCount + this.serverStats.inVaultCount + this.serverStats.collectedCount)
+      : this.requests.filter(r => r.dispatchStatus === 'Dispatched' || r.dispatchStatus === 'Collected').length;
   }
 
   // Station pipeline overview across all stations
   get stationPipelineStats(): any[] {
+    if (this.serverStats) {
+      return this.stations.map(st => {
+        const match = this.serverStationStats.find(
+          s => s.stationCode && s.stationCode.toLowerCase() === st.code.toLowerCase()
+        );
+        return {
+          station: st,
+          inTransit: match?.inTransit || 0,
+          inVault: match?.inVault || 0,
+          collected: match?.collected || 0,
+          total: match?.total || 0
+        };
+      });
+    }
     return this.stations.map(st => {
       const stRequests = this.requests.filter(r =>
         (r.stationCode && r.stationCode.toLowerCase() === st.code.toLowerCase()) ||
@@ -517,7 +584,50 @@ export class DusSecretaryDashboardComponent implements OnInit {
     });
   }
 
-  // Filtered List
+  // Filtered List & Pagination
+  currentPage = 1;
+  pageSize = 25;
+
+  get displayTotalRecords(): number {
+    return this.serverStats ? this.serverTotalFiltered : this.filteredRequests.length;
+  }
+
+  get totalPages(): number {
+    if (this.serverStats) {
+      return this.serverTotalPages;
+    }
+    return Math.max(1, Math.ceil(this.filteredRequests.length / this.pageSize));
+  }
+
+  get paginatedRequests(): TranscriptPaymentRequest[] {
+    if (this.serverStats) {
+      return this.requests;
+    }
+    const safePage = Math.min(this.currentPage, this.totalPages);
+    const start = (safePage - 1) * this.pageSize;
+    return this.filteredRequests.slice(start, start + this.pageSize);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      if (this.serverStats) {
+        this.loadRequests();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      if (this.serverStats) {
+        this.loadRequests();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   get filteredRequests(): TranscriptPaymentRequest[] {
     return this.requests.filter(r => {
       // Tab-specific filters
@@ -624,37 +734,28 @@ export class DusSecretaryDashboardComponent implements OnInit {
     this.loadRequests();
   }
 
-  // EXECUTE ACTIONS AFTER CONFIRMATION (WITH DATABASE PERSISTENCE)
+  // EXECUTE ACTIONS AFTER CONFIRMATION (WITH SERVER-VERIFIED DATABASE PERSISTENCE)
   private executeCertificateVerification(request: TranscriptPaymentRequest, verified: boolean): void {
-    request.certificateVerified = verified;
-    this.transcriptService.updateVerificationStatus(request.id, verified);
-
-    if (verified) {
-      request.certificateVerifiedAt = new Date().toISOString();
-      if (!request.digitalSignatureHash) {
-        request.digitalSignatureHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
-        request.signedBy = this.currentUser?.fullName || 'Directorate Secretary';
-        request.signedAt = new Date().toISOString();
-      }
-      this.saveVerificationToBackend(request, verified);
-      this.autoNotifyRelease(request);
-    } else {
-      request.certificateVerified = false;
-      this.saveVerificationToBackend(request, false);
-      this.showToast(`Verification unchecked for ${request.studentName}. Dispatch controls locked.`, 'error');
-      this.loadRequests();
-    }
-  }
-
-  private saveVerificationToBackend(request: TranscriptPaymentRequest, verified: boolean): void {
+    if (this.isProcessing) return;
     const studentIdentifier = request.registrationNumber || request.studentId;
-    if (!studentIdentifier) return;
+    if (!studentIdentifier) {
+      this.showToast('Missing student identifier for verification.', 'error');
+      return;
+    }
+
+    this.isProcessing = true;
+    const sigHash = verified
+      ? (request.digitalSignatureHash || 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000))
+      : request.digitalSignatureHash;
+    const signer = verified
+      ? (request.signedBy || this.currentUser?.fullName || 'DUS Examination Office')
+      : request.signedBy;
 
     const payload = {
       studentId: studentIdentifier,
       verified,
-      digitalSignatureHash: request.digitalSignatureHash,
-      signedBy: request.signedBy
+      digitalSignatureHash: sigHash,
+      signedBy: signer
     };
 
     const url = `${this.config.apiUrl}/dus-secretary/verify-certificate`;
@@ -662,96 +763,151 @@ export class DusSecretaryDashboardComponent implements OnInit {
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
     this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-      next: () => console.log('Saved certificate verification to PostgreSQL database.'),
-      error: (err) => console.error('Error saving verification to database:', err)
+      next: () => {
+        this.isProcessing = false;
+        request.certificateVerified = verified;
+        this.transcriptService.updateVerificationStatus(request.id, verified);
+
+        if (verified) {
+          request.certificateVerifiedAt = new Date().toISOString();
+          request.digitalSignatureHash = sigHash;
+          request.signedBy = signer;
+          request.signedAt = new Date().toISOString();
+          this.autoNotifyRelease(request);
+          this.loadRequests();
+        } else {
+          this.showToast(`Verification unchecked for ${request.studentName}. Dispatch controls locked.`, 'error');
+          this.loadRequests();
+        }
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        this.showToast(err?.error?.message || 'Failed to save certificate verification to server.', 'error');
+        this.loadRequests();
+      }
     });
   }
 
   private executeUpdateDispatchStatus(request: TranscriptPaymentRequest, status: 'Pending Dispatch' | 'Dispatched' | 'Collected'): void {
-    request.dispatchStatus = status;
-
-    let targetStation: CollectionStation | undefined;
-    if (status === 'Dispatched') {
-      targetStation = this.stations.find(s => s.code === this.selectedDispatchStationCode);
-      if (targetStation) {
-        request.stationCode = targetStation.code;
-        request.stationName = targetStation.name;
-      }
-      request.intakeStatus = 'In-Transit';
-      request.dispatchedAt = new Date().toISOString();
-      this.transcriptService.markDispatched(request.id);
-    } else {
-      if (status === 'Collected') {
-        request.intakeStatus = 'Collected by Student';
-      } else {
-        request.intakeStatus = 'Awaiting Intake';
-      }
-      this.transcriptService.updateCollectionDetails(
-        request.id,
-        request.collectionMethod || 'Physical Collection',
-        request.postingAddress || '',
-        request.postingRegion,
-        request.postingWard,
-        request.postingPoBox,
-        request.postingContactPhone,
-        request.postingContactEmail
-      );
-    }
-
-    // Persist dispatch status update directly to backend database
+    if (this.isProcessing) return;
     const studentIdentifier = request.registrationNumber || request.studentId;
-    if (studentIdentifier) {
-      const url = `${this.config.apiUrl}/dus-secretary/update-dispatch`;
-      const token = this.authService.getToken();
-      const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
-
-      const payload = {
-        studentId: studentIdentifier,
-        dispatchStatus: status,
-        stationCode: request.stationCode || this.selectedDispatchStationCode,
-        stationName: request.stationName || targetStation?.name,
-        intakeStatus: request.intakeStatus
-      };
-
-      this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
-        next: (res: any) => {
-          console.log('Dispatch status saved to database:', res);
-          this.loadRequests();
-        },
-        error: (err) => console.error('Error saving dispatch status to database:', err)
-      });
+    if (!studentIdentifier) {
+      this.showToast('Missing student identifier for dispatch update.', 'error');
+      return;
     }
 
-    const destMsg = request.stationName ? ` routed to ${request.stationName}` : '';
-    this.showToast(`Consignment dispatch updated to "${status}"${destMsg} for ${request.studentName}.`, 'success');
+    this.isProcessing = true;
+    const targetStation = status === 'Dispatched'
+      ? this.stations.find(s => s.code === this.selectedDispatchStationCode)
+      : undefined;
+    const nextStationCode = status === 'Dispatched'
+      ? (targetStation?.code || this.selectedDispatchStationCode)
+      : (request.stationCode || this.selectedDispatchStationCode);
+    const nextStationName = status === 'Dispatched'
+      ? (targetStation?.name || request.stationName)
+      : request.stationName;
+    const nextIntakeStatus: 'In-Transit' | 'Collected by Student' | 'Awaiting Intake' =
+      status === 'Dispatched'
+        ? 'In-Transit'
+        : (status === 'Collected' ? 'Collected by Student' : 'Awaiting Intake');
+
+    const url = `${this.config.apiUrl}/dus-secretary/update-dispatch`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
+
+    const payload = {
+      studentId: studentIdentifier,
+      dispatchStatus: status,
+      stationCode: nextStationCode,
+      stationName: nextStationName,
+      intakeStatus: nextIntakeStatus
+    };
+
+    this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        request.dispatchStatus = status;
+        request.stationCode = nextStationCode;
+        request.stationName = nextStationName;
+        request.intakeStatus = nextIntakeStatus;
+
+        if (status === 'Dispatched') {
+          request.dispatchedAt = new Date().toISOString();
+          this.transcriptService.markDispatched(request.id);
+        } else {
+          this.transcriptService.updateCollectionDetails(
+            request.id,
+            request.collectionMethod || 'Physical Collection',
+            request.postingAddress || '',
+            request.postingRegion,
+            request.postingWard,
+            request.postingPoBox,
+            request.postingContactPhone,
+            request.postingContactEmail
+          );
+        }
+
+        const destMsg = nextStationName ? ` routed to ${nextStationName}` : '';
+        this.showToast(`Consignment dispatch updated to "${status}"${destMsg} for ${request.studentName}.`, 'success');
+        this.loadRequests();
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        this.showToast(err?.error?.message || 'Failed to update consignment dispatch status on the server.', 'error');
+        this.loadRequests();
+      }
+    });
   }
 
   private executeApplySignature(): void {
-    if (!this.selectedSigRequest) return;
+    if (!this.selectedSigRequest || this.isProcessing) return;
+    const targetReq = this.selectedSigRequest;
+    const studentIdentifier = targetReq.registrationNumber || targetReq.studentId;
+    if (!studentIdentifier) {
+      this.showToast('Missing student identifier for digital seal.', 'error');
+      return;
+    }
 
+    this.isProcessing = true;
     const sigHash = 'UDSM-DUS-SIG-' + Math.floor(100000000 + Math.random() * 900000000);
     const signer = `${this.signatureForm.secretaryName} (${this.signatureForm.title})`;
 
-    this.selectedSigRequest.certificateVerified = true;
-    this.selectedSigRequest.certificateVerifiedAt = new Date().toISOString();
-    this.selectedSigRequest.digitalSignatureHash = sigHash;
-    this.selectedSigRequest.signedBy = signer;
-    this.selectedSigRequest.signedAt = new Date().toISOString();
+    const url = `${this.config.apiUrl}/dus-secretary/verify-certificate`;
+    const token = this.authService.getToken();
+    const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
-    this.transcriptService.applyDigitalSignature(this.selectedSigRequest.id, 'DUS_OFFICIAL_DIGITAL_STAMP', sigHash, signer);
-    this.transcriptService.updateVerificationStatus(this.selectedSigRequest.id, true);
+    this.http.post(url, {
+      studentId: studentIdentifier,
+      verified: true,
+      digitalSignatureHash: sigHash,
+      signedBy: signer
+    }, { headers, withCredentials: true }).subscribe({
+      next: () => {
+        this.isProcessing = false;
+        targetReq.certificateVerified = true;
+        targetReq.certificateVerifiedAt = new Date().toISOString();
+        targetReq.digitalSignatureHash = sigHash;
+        targetReq.signedBy = signer;
+        targetReq.signedAt = new Date().toISOString();
 
-    this.saveVerificationToBackend(this.selectedSigRequest, true);
+        this.transcriptService.applyDigitalSignature(targetReq.id, 'DUS_OFFICIAL_DIGITAL_STAMP', sigHash, signer);
+        this.transcriptService.updateVerificationStatus(targetReq.id, true);
 
-    this.showToast(`✍️ Official Directorate Digital Seal & Signature applied to ${this.selectedSigRequest.studentName}! Saved to database.`, 'success');
-    this.autoNotifyRelease(this.selectedSigRequest);
-    this.closeSignatureModal();
+        this.closeSignatureModal();
+        this.autoNotifyRelease(targetReq);
+      },
+      error: (err) => {
+        this.isProcessing = false;
+        this.showToast(err?.error?.message || 'Failed to apply Directorate Digital Seal on the server.', 'error');
+        this.loadRequests();
+      }
+    });
   }
 
   // Digital Signature Modal Handlers
   openSignatureModal(request: TranscriptPaymentRequest): void {
     this.selectedSigRequest = request;
-    this.signatureForm.secretaryName = this.currentUser?.fullName || 'Directorate Secretary';
+    this.signatureForm.secretaryName = this.currentUser?.fullName || 'DUS Examination Office';
     this.showSignatureModal = true;
   }
 
@@ -771,9 +927,9 @@ export class DusSecretaryDashboardComponent implements OnInit {
       releaseDate: new Date().toISOString().split('T')[0],
       instructions: request.collectionMethod === 'Post by DHL'
         ? `Education Certificate verified and digitally signed. Dispatched via DHL Courier Service to ${request.postingRegion || 'specified address'}.`
-        : 'Education Certificate verified and digitally signed. Please visit DUS Secretary Office Room 102 with your valid Student ID or National ID.',
+        : 'Education Certificate verified and digitally signed. Please visit DUS Examination Office Room 102 with your valid Student ID or National ID.',
       trackingNumber: '',
-      customNote: `Digitally Signed and Sealed by ${request.signedBy || 'Directorate Secretary'} (${request.digitalSignatureHash || 'UDSM-DUS-SIG-SEALED'}).`
+      customNote: `Digitally Signed and Sealed by ${request.signedBy || 'DUS Examination Office'} (${request.digitalSignatureHash || 'UDSM-DUS-SIG-SEALED'}).`
     };
 
     const url = `${this.config.apiUrl}/dus-secretary/notify-release`;
@@ -782,11 +938,11 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
     this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
       next: (res: any) => {
-        this.showToast(`🎓 Certificate verified, signed & release notification automatically sent to ${res.studentName || request.studentName}!`, 'success');
+        this.showToast(`Certificate verified, sealed & release notification sent to ${res.studentName || request.studentName}.`, 'success');
         this.loadRequests();
       },
       error: () => {
-        this.showToast(`Education certificate verified and signed for ${request.studentName}. System alert sent.`, 'success');
+        this.showToast(`Certificate verified and sealed for ${request.studentName}, but the release notification could not be sent.`, 'error');
         this.loadRequests();
       }
     });
@@ -846,6 +1002,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   saveStationSecretary(): void {
+    if (this.isSavingSecretary) return;
     if (!this.secretaryForm.fullName || !this.secretaryForm.fullName.trim()) {
       this.showToast('Full name is required.', 'error');
       return;
@@ -859,6 +1016,7 @@ export class DusSecretaryDashboardComponent implements OnInit {
       return;
     }
 
+    this.isSavingSecretary = true;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
 
@@ -876,11 +1034,13 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
       this.http.put(url, payload, { headers, withCredentials: true }).subscribe({
         next: (res: any) => {
-          this.showToast(`Station Secretary ${res.fullName || ''} updated successfully!`, 'success');
+          this.isSavingSecretary = false;
+          this.showToast(`Station Secretary ${res.fullName || ''} updated successfully.`, 'success');
           this.loadStationSecretaries();
           this.closeStationSecretaryModal();
         },
         error: (err) => {
+          this.isSavingSecretary = false;
           const msg = err.error?.message || 'Failed to update station secretary.';
           this.showToast(msg, 'error');
         }
@@ -897,11 +1057,13 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
       this.http.post(url, payload, { headers, withCredentials: true }).subscribe({
         next: (res: any) => {
-          this.showToast(`✅ Station Secretary ${res.fullName} created for ${res.stationName || res.stationCode}!`, 'success');
+          this.isSavingSecretary = false;
+          this.showToast(`Station Secretary ${res.fullName} created for ${res.stationName || res.stationCode}.`, 'success');
           this.loadStationSecretaries();
           this.closeStationSecretaryModal();
         },
         error: (err) => {
+          this.isSavingSecretary = false;
           const msg = err.error?.message || 'Failed to create station secretary.';
           this.showToast(msg, 'error');
         }
@@ -910,6 +1072,8 @@ export class DusSecretaryDashboardComponent implements OnInit {
   }
 
   toggleStationSecretaryStatus(sec: any): void {
+    if (this.togglingSecretaryId) return;
+    this.togglingSecretaryId = sec.id;
     const token = this.authService.getToken();
     const headers = token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : undefined;
     const url = `${this.config.apiUrl}/dus-secretary/station-secretaries/${sec.id}`;
@@ -917,10 +1081,14 @@ export class DusSecretaryDashboardComponent implements OnInit {
 
     this.http.put(url, { active: newStatus }, { headers, withCredentials: true }).subscribe({
       next: () => {
+        this.togglingSecretaryId = null;
         sec.active = newStatus;
         this.showToast(`Station Secretary ${sec.fullName} is now ${newStatus ? 'Active' : 'Deactivated'}.`, 'success');
       },
-      error: () => this.showToast('Failed to change secretary status.', 'error')
+      error: (err) => {
+        this.togglingSecretaryId = null;
+        this.showToast(err?.error?.message || 'Failed to change secretary status.', 'error');
+      }
     });
   }
 

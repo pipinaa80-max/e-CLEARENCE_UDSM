@@ -1,96 +1,150 @@
-<section class="dashboard-shell" [class.sidebar-open]="sidebarOpen">
+<section [class]="isStudent ? 'student-portal-shell' : 'dashboard-shell'" [class.sidebar-open]="sidebarOpen">
 
-  <!-- SIDEBAR OVERLAY -->
-  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+  <!-- SHARED STUDENT SIDEBAR (UNTOUCHED) -->
+  <app-student-sidebar *ngIf="isStudent" [open]="sidebarOpen" (close)="closeSidebar()"></app-student-sidebar>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <!-- STAFF SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" *ngIf="!isStudent && sidebarOpen" (click)="closeSidebar()"></div>
+
+  <!-- STAFF SIDEBAR -->
+  <aside class="sidebar" *ngIf="!isStudent" [class.sidebar-open]="sidebarOpen">
     <div class="brand">
-      <a [routerLink]="[dashboardRoute]">
+      <a [routerLink]="[dashboardRoute]" (click)="closeSidebar()">
         <img src="/udsm-logo.png" alt="UDSM Logo" />
       </a>
       <div>
         <strong>{{ portalTitle }}</strong>
         <small>{{ portalSubtitle }}</small>
       </div>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
     </div>
 
-    <!-- Student Sidebar Links -->
-    <nav *ngIf="isStudent">
-      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/clearance/status" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6h-1A1.5 1.5 0 0 1 6 4.5v-1zM8.5 3h-1a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1zm10.5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1zm1.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-1z"/><path d="M7.5 6v2.5H2.5V10h-1V7.5A.5.5 0 0 1 2 7h10.5a.5.5 0 0 1 .5.5V10h-1V8.5H8.5V6h-1z"/></svg>
-        <span>Clearance Process</span>
-      </a>
-    </nav>
-
-    <!-- DUS / Station Secretary Sidebar Links (mirrors their dashboards) -->
-    <nav *ngIf="isSecretary">
-      <a *ngIf="!isStationSecretary" routerLink="/dashboard/dus-secretary" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>Main Campus Dispatch</span>
-      </a>
-      <a routerLink="/dashboard/station-secretary" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 1 0-6 0v2H3.5A1.5 1.5 0 0 0 2 6.5v7A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 12.5 5H11zm-7 1h8a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-7a.5.5 0 0 1 .5-.5z"/></svg>
-        <span>{{ isStationSecretary ? 'Station Vault & Intake' : 'Station Intake & Handover' }}</span>
-      </a>
-      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
-        <span>Notifications</span>
+    <!-- Role-Aware Staff Sidebar Links (matches each dashboard's full navigation) -->
+    <nav>
+      <a
+        *ngFor="let item of staffNavItems"
+        [routerLink]="[item.route]"
+        [queryParams]="item.queryParams || null"
+        (click)="closeSidebar()"
+      >
+        <i class="bi" [ngClass]="item.icon" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
       </a>
     </nav>
-
-    <!-- Staff Sidebar Links -->
-    <nav *ngIf="!isStudent && !isSecretary">
-      <a [routerLink]="[dashboardRoute]" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
-        <span>{{ dashboardLabel }}</span>
-      </a>
-      <a routerLink="/notifications" routerLinkActive="active" (click)="closeSidebar()">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
-        <span>Notifications</span>
-      </a>
-    </nav>
-
   </aside>
 
   <!-- MAIN CONTENT -->
   <main class="content-panel">
 
-    <div class="notifications-card">
-        <app-dashboard-header
-            title="Notifications"
-            [user]="currentUser"
-            [showToggle]="true"
-            (toggleSidebar)="toggleSidebar()"
-        >
-            <div header-actions style="display: flex; gap: 10px; align-items: center;">
-                <a [routerLink]="[dashboardRoute]" class="header-back-btn" title="Return to Dashboard">
-                  <i class="bi bi-arrow-left"></i>
-                  <span>Back to Dashboard</span>
-                </a>
-                <button *ngIf="notifications.length" type="button" class="mark-read-btn" (click)="markAllRead()">Mark all as read</button>
-            </div>
-        </app-dashboard-header>
-        
-        <div class="empty-state" *ngIf="!notifications.length">You have no notifications yet. System updates will appear here.</div>
-        <ul class="notification-list" *ngIf="notifications.length">
-            <li *ngFor="let notification of notifications" [class.unread]="!notification.read" (click)="markRead(notification.id)">
-            <span class="notice-icon">
-              <i *ngIf="notification.read" class="bi bi-check2-all"></i>
-              <i *ngIf="!notification.read" class="bi bi-bell-fill"></i>
-            </span>
-        <div>
-            <strong>{{ notification.title }}</strong>
-            <span>{{ notification.message }}</span>
-            <small>{{ notification.createdAt | date:'medium' }}</small>
+    <app-dashboard-header
+      title="Notifications"
+      [subtitle]="'System updates, clearance decisions, and official dispatches for ' + portalSubtitle"
+      [user]="currentUser"
+      [showToggle]="true"
+      (toggleSidebar)="toggleSidebar()"
+    >
+      <button header-actions type="button" class="header-refresh-btn" (click)="loadNotifications()" [disabled]="isLoading" title="Refresh notifications">
+        <i class="bi bi-arrow-clockwise" [class.spin-icon]="isLoading" aria-hidden="true"></i>
+        <span>{{ isLoading ? 'Syncing…' : 'Refresh' }}</span>
+      </button>
+    </app-dashboard-header>
+
+    <section class="notifications-card">
+      <!-- CLEAN TOOLBAR: FILTERS, SEARCH & ACTIONS -->
+      <div class="notifications-toolbar">
+        <div class="filter-pills" role="tablist" aria-label="Filter notifications">
+          <button type="button" class="filter-pill" [class.active]="activeFilter === 'ALL'" (click)="setFilter('ALL')">
+            All <span class="pill-count">{{ notifications.length }}</span>
+          </button>
+          <button type="button" class="filter-pill" [class.active]="activeFilter === 'UNREAD'" (click)="setFilter('UNREAD')">
+            Unread <span class="pill-count unread-pill-count">{{ unreadCount }}</span>
+          </button>
+          <button type="button" class="filter-pill" [class.active]="activeFilter === 'READ'" (click)="setFilter('READ')">
+            Read <span class="pill-count">{{ readCount }}</span>
+          </button>
         </div>
-            </li>
-        </ul>
-    </div>
+
+        <div class="toolbar-right">
+          <div class="notif-search-box">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onSearchChange()"
+              placeholder="Search notifications..."
+              aria-label="Search notifications"
+            />
+          </div>
+
+          <button
+            type="button"
+            class="btn-mark-all"
+            [disabled]="unreadCount === 0"
+            (click)="markAllRead()"
+          >
+            <i class="bi bi-check2-all" aria-hidden="true"></i>
+            <span>Mark all read</span>
+          </button>
+
+          <a [routerLink]="[dashboardRoute]" class="btn-back-dashboard">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Back to {{ dashboardLabel }}</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- LOADING STATE -->
+      <div class="loading-state" *ngIf="isLoading && !notifications.length">
+        <i class="bi bi-arrow-repeat spin-icon" aria-hidden="true"></i>
+        <span>Loading notifications...</span>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div class="empty-state" *ngIf="!isLoading && !filteredNotifications.length">
+        <i class="bi bi-bell-slash empty-icon" aria-hidden="true"></i>
+        <strong>{{ notifications.length === 0 ? 'No notifications yet' : 'No matching notifications' }}</strong>
+        <p>{{ notifications.length === 0 ? 'System and clearance updates will appear here automatically.' : 'Try switching filter tabs or clearing your search query.' }}</p>
+      </div>
+
+      <!-- NOTIFICATION FEED -->
+      <ul class="notification-list" *ngIf="paginatedNotifications.length">
+        <li
+          *ngFor="let notification of paginatedNotifications"
+          [class.unread]="!notification.read"
+          (click)="markRead(notification.id)"
+        >
+          <span class="notice-icon" [ngClass]="getNotificationBadge(notification).cssClass">
+            <i class="bi" [ngClass]="getNotificationBadge(notification).icon" aria-hidden="true"></i>
+          </span>
+
+          <div class="notice-body">
+            <div class="notice-header">
+              <div class="notice-title-group">
+                <span class="unread-dot" *ngIf="!notification.read" title="Unread"></span>
+                <strong>{{ notification.title }}</strong>
+                <span class="type-badge" [ngClass]="getNotificationBadge(notification).cssClass">
+                  {{ getNotificationBadge(notification).label }}
+                </span>
+              </div>
+              <small class="notice-time">{{ notification.createdAt | date:'medium' }}</small>
+            </div>
+            <p class="notice-message">{{ notification.message }}</p>
+            <div class="notice-meta-row" *ngIf="!notification.read">
+              <span class="mark-read-hint"><i class="bi bi-check2"></i> Click to mark as read</span>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <!-- PAGINATION -->
+      <div class="notif-pagination" *ngIf="totalPages > 1">
+        <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">&larr; Previous</button>
+        <span class="page-info">Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong> ({{ filteredNotifications.length }} alerts)</span>
+        <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next &rarr;</button>
+      </div>
+    </section>
 
   </main>
 </section>

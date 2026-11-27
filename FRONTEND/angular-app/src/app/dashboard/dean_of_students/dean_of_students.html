@@ -1,30 +1,18 @@
 <section class="office-page" [class.sidebar-open]="sidebarOpen">
-  <!-- SIDEBAR OVERLAY -->
   <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
 
-  <aside class="sidebar" [class.sidebar-open]="sidebarOpen">
-    <div class="sidebar-header">
-      <div class="brand">
-        <a routerLink="/dashboard/dean-of-students" (click)="closeSidebar()">
-          <img
-            src="/udsm-logo.png"
-            (error)="onLogoError($event)"
-            alt="Institutional Logo"
-          />
-        </a>
-        <div class="brand-text">
-          <strong>DEAN OF STUDENTS</strong>
-          <small>Clearance Workspace</small>
-        </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <a routerLink="/dashboard/dean-of-students" (click)="closeSidebar()">
+        <img src="/udsm-logo.png" alt="UDSM Logo" />
+      </a>
+      <div class="brand-text">
+        <strong>DEAN OF STUDENTS</strong>
+        <small>Student Welfare Bureau</small>
       </div>
-      <button
-        type="button"
-        class="sidebar-mobile-close-btn"
-        (click)="closeSidebar()"
-        title="Close navigation menu"
-        aria-label="Close navigation menu"
-      >
-        <i class="bi bi-x-lg"></i>
+      <button type="button" class="sidebar-mobile-close-btn" (click)="closeSidebar()" aria-label="Close navigation menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
       </button>
     </div>
 
@@ -33,49 +21,95 @@
         type="button"
         class="nav-tab-btn"
         [class.active]="viewMode === 'requests'"
-        (click)="setViewMode('requests'); closeSidebar()"
+        (click)="setViewMode('requests')"
       >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M14 14V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM4 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M5 6h6v1H5V6zm0 3h6v1H5V9zm0 3h4v1H5v-1z"/></svg>
-        <span>Pending Requests ({{ pendingRequestCount }})</span>
+        <i class="bi bi-shield-check" aria-hidden="true"></i>
+        <span>Clearance Requests</span>
+        <span class="nav-count-badge" *ngIf="pendingRequestCount > 0">{{ pendingRequestCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-tab-btn"
+        [class.active]="viewMode === 'analytics'"
+        (click)="setViewMode('analytics')"
+      >
+        <i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i>
+        <span>Analytics</span>
       </button>
     </nav>
   </aside>
 
-
+  <!-- MAIN CONTENT -->
   <main class="content">
-
     <app-dashboard-header
       title="Dean of Students Dashboard"
+      subtitle="Verify student welfare, disciplinary standing, and Dean of Students bureau clearance."
       [user]="currentUser"
       [showToggle]="true"
       (toggleSidebar)="toggleSidebar()"
     >
+      <div header-actions>
+        <button type="button" class="refresh-btn" (click)="loadRequests(true)" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
+        </button>
+      </div>
     </app-dashboard-header>
 
+    <p class="message" [class.error-message]="messageState === 'error'" *ngIf="message">{{ message }}</p>
 
-    <p
-      class="message"
-      [class.error-message]="messageState === 'error'"
-      *ngIf="message"
-    >
-      {{ message }}
-    </p>
+    <!-- KPI SUMMARY CARDS -->
+    <section class="stats-grid">
+      <button type="button" class="stat-card" [class.active]="viewMode === 'requests' && filterStatus === 'All'" (click)="filterByCard('All')">
+        <span class="stat-label">Total Requests</span>
+        <strong class="stat-value">{{ totalRequestCount }}</strong>
+        <small>All Dean of Students records</small>
+      </button>
 
-  <ng-container *ngIf="viewMode === 'requests'">
-    <section class="dashboard-board">
+      <button type="button" class="stat-card pending" [class.active]="viewMode === 'requests' && filterStatus === 'Pending'" (click)="filterByCard('Pending')">
+        <span class="stat-label">Pending Review</span>
+        <strong class="stat-value">{{ pendingRequestCount }}</strong>
+        <small>Awaiting welfare verification</small>
+      </button>
+
+      <button type="button" class="stat-card approved" [class.active]="viewMode === 'requests' && filterStatus === 'Approved'" (click)="filterByCard('Approved')">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value">{{ approvedRequestCount }}</strong>
+        <small>{{ clearanceRatePercent }}% clearance rate</small>
+      </button>
+
+      <button type="button" class="stat-card rejected" [class.active]="viewMode === 'requests' && filterStatus === 'Rejected'" (click)="filterByCard('Rejected')">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value">{{ rejectedRequestCount }}</strong>
+        <small>Flagged for bureau follow-up</small>
+      </button>
+    </section>
+
+    <!-- VIEW 1: CLEARANCE REQUESTS -->
+    <section class="dashboard-board" *ngIf="viewMode === 'requests'">
       <header class="board-header">
         <div class="board-title-group">
-          <div class="board-icon-badge" aria-hidden="true"></div>
+          <span class="board-icon-badge"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
           <div>
-            <h2>Student Clearance Applications</h2>
-            <p>Review student applications and approve or return requests for Dean of Students clearance.</p>
+            <h2>Dean of Students Clearance Applications</h2>
+            <p>Review student applications, verify welfare and disciplinary records, and approve or return requests.</p>
           </div>
         </div>
+
         <div class="board-actions-group">
           <div class="board-search-box">
-            <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onFilterChange()" placeholder="Search student, registration number or programme..." aria-label="Search requests" />
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input
+              type="text"
+              placeholder="Search name, reg no, college, programme..."
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="onFilterChange()"
+            />
           </div>
-          <select [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" class="board-select" aria-label="Filter by status">
+
+          <select class="board-select" [(ngModel)]="filterStatus" (ngModelChange)="onFilterChange()" aria-label="Filter by status">
+            <option value="All">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
@@ -84,128 +118,296 @@
       </header>
 
       <div class="board-body board-table-body">
-        <section class="board-empty-state" *ngIf="!filteredRequests.length">
-          <div class="empty-icon"><i class="bi bi-inbox-fill"></i></div>
-          <h2>{{ searchTerm ? 'No matching requests' : filterStatus === 'Approved' ? 'No approved applications' : filterStatus === 'Rejected' ? 'No rejected applications' : 'No pending requests' }}</h2>
-          <p>{{ searchTerm ? 'Try a different search term or registration number.' : filterStatus === 'Approved' ? 'There are currently no approved student applications for Dean of Students.' : filterStatus === 'Rejected' ? 'There are currently no rejected student applications for Dean of Students.' : 'There are currently no student applications awaiting Dean of Students approval.' }}</p>
-        </section>
+        <div class="board-empty-state" *ngIf="isLoading && !requests.length">
+          <div class="empty-icon"><i class="bi bi-arrow-repeat" aria-hidden="true"></i></div>
+          <h2>Loading Dean of Students clearance requests...</h2>
+          <p>Fetching live student submissions from the server.</p>
+        </div>
 
-        <div class="board-table-container" *ngIf="filteredRequests.length">
+        <div class="board-empty-state" *ngIf="!isLoading && filteredRequests.length === 0">
+          <div class="empty-icon"><i class="bi bi-inbox" aria-hidden="true"></i></div>
+          <h2>No matching requests</h2>
+          <p>Try adjusting the search term or status filter above.</p>
+        </div>
+
+        <div class="board-table-container" *ngIf="filteredRequests.length > 0">
           <app-parallel-office-request-table
-            [requests]="paginatedRequests"
             [office]="'Dean of Students'"
+            [requests]="paginatedRequests"
+            (view)="openStudentDetails($event)"
             (approve)="approve($event)"
-            (reject)="openRejectForm($event)"
-            (view)="detailsRequest = $event"
-            (bulkApproved)="loadData()"
+            (reject)="openRejectModal($event)"
+            (bulkApproved)="onTableMutated()"
+            (withdrawn)="onTableMutated()"
           ></app-parallel-office-request-table>
         </div>
 
-    <div class="pagination" *ngIf="totalPages > 1">
-      <button type="button" class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">
-        &larr; Previous
-      </button>
-      <span class="page-info">
-        Page <strong>{{ currentPage }}</strong> of <strong>{{ totalPages }}</strong>
-      </span>
-      <button type="button" class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
-        Next &rarr;
-      </button>
-    </div>
+        <div class="pagination" *ngIf="filteredRequests.length > pageSize">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page <strong>{{ currentPage }}</strong> of {{ totalPages }}</span>
+          <button type="button" class="page-btn" [disabled]="currentPage >= totalPages" (click)="nextPage()">Next</button>
+        </div>
       </div>
     </section>
-  </ng-container>
 
-
-    <section
-      class="reject-modal"
-      *ngIf="selectedRequest"
-    >
-
-      <div class="modal-card">
-
-        <div class="modal-icon">
-          <i class="bi bi-exclamation-triangle-fill"></i>
+    <!-- VIEW 2: LIVE ANALYTICS -->
+    <section class="dashboard-board analytics-print-board" *ngIf="viewMode === 'analytics'">
+      <header class="board-header">
+        <div class="board-title-group">
+          <span class="board-icon-badge"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i></span>
+          <div>
+            <h2>Dean of Students Clearance Analytics</h2>
+            <p>Live clearance breakdown computed strictly from verified Dean of Students submissions.</p>
+          </div>
         </div>
 
-        <h2>
-          Return Clearance Request
-        </h2>
+        <div class="board-actions-group no-print">
+          <button type="button" class="btn-cancel" (click)="printAnalyticsReport()" [disabled]="!totalRequestCount">
+            <i class="bi bi-printer" aria-hidden="true"></i>
+            <span>Print Report</span>
+          </button>
+          <button type="button" class="action-btn primary" (click)="downloadAnalyticsCsv()" [disabled]="!totalRequestCount">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </header>
 
-        <p>
-          Write the reason and action the student
-          must take before the clearance can proceed.
+      <div class="board-body">
+        <div class="analytics-bars">
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Approved</span>
+              <strong>{{ approvedRequestCount }} ({{ clearanceRatePercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill approved" [style.width.%]="clearanceRatePercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Pending Review</span>
+              <strong>{{ pendingRequestCount }} ({{ pendingPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill pending" [style.width.%]="pendingPercent"></div></div>
+          </div>
+
+          <div class="bar-row">
+            <div class="bar-label">
+              <span>Rejected</span>
+              <strong>{{ rejectedRequestCount }} ({{ rejectedPercent }}%)</strong>
+            </div>
+            <div class="bar-track"><div class="bar-fill rejected" [style.width.%]="rejectedPercent"></div></div>
+          </div>
+        </div>
+
+        <h3 class="analytics-section-title">College Breakdown</h3>
+        <div class="board-table-container" *ngIf="collegeBreakdown.length > 0; else emptyAnalytics">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>College / Unit</th>
+                <th>Total</th>
+                <th>Approved</th>
+                <th>Pending</th>
+                <th>Rejected</th>
+                <th>Clearance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of collegeBreakdown">
+                <td><strong>{{ item.label }}</strong></td>
+                <td>{{ item.total }}</td>
+                <td>{{ item.approved }}</td>
+                <td>{{ item.pending }}</td>
+                <td>{{ item.rejected }}</td>
+                <td><strong>{{ item.clearanceRate }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <ng-container *ngIf="programmeBreakdown.length > 0">
+          <h3 class="analytics-section-title">Programme Breakdown</h3>
+          <div class="board-table-container">
+            <table class="analytics-table">
+              <thead>
+                <tr>
+                  <th>Programme</th>
+                  <th>Total</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                  <th>Rejected</th>
+                  <th>Clearance Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of programmeBreakdown">
+                  <td><strong>{{ item.label }}</strong></td>
+                  <td>{{ item.total }}</td>
+                  <td>{{ item.approved }}</td>
+                  <td>{{ item.pending }}</td>
+                  <td>{{ item.rejected }}</td>
+                  <td><strong>{{ item.clearanceRate }}%</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-template #emptyAnalytics>
+          <div class="board-empty-state">
+            <div class="empty-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></div>
+            <h2>No analytics data yet</h2>
+            <p>Statistics will appear automatically as students reach Dean of Students clearance.</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+
+    <!-- STUDENT DETAILS MODAL -->
+    <div class="modal-backdrop" *ngIf="viewingRequest as req" (click)="closeStudentDetails()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div class="modal-student-header">
+            <button
+              type="button"
+              class="student-avatar-wrap"
+              (click)="openPhotoLightbox(getStudentPhoto(req))"
+              [disabled]="!getStudentPhoto(req)"
+              [title]="getStudentPhoto(req) ? 'Click to enlarge photo' : 'No photo uploaded'"
+            >
+              <img *ngIf="getStudentPhoto(req) as photo" [src]="photo" [alt]="getStudentName(req)" />
+              <span *ngIf="!getStudentPhoto(req)">{{ getStudentInitials(getStudentName(req)) }}</span>
+            </button>
+            <div>
+              <h3>{{ getStudentName(req) }}</h3>
+              <p>{{ getStudentRegNumber(req) }} &middot; {{ req.programme }}</p>
+            </div>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeStudentDetails()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="status-highlight-box">
+          <div class="status-highlight-head">
+            <span class="section-icon"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+            <div>
+              <strong>{{ getStatusSummary(req) }}</strong>
+              <small>Reviewed by: {{ getRequestReviewer(req) }}<ng-container *ngIf="getRequestReviewedAt(req) as dt"> &middot; {{ dt | date:'medium' }}</ng-container></small>
+            </div>
+            <span class="status-pill" [ngClass]="getRequestOfficeStatus(req).toLowerCase()">
+              {{ getRequestOfficeStatus(req) }}
+            </span>
+          </div>
+
+          <div class="rejection-note-box" *ngIf="getRequestComment(req)">
+            <strong>Officer Remark:</strong> {{ getRequestComment(req) }}
+          </div>
+        </div>
+
+        <dl class="detail-grid">
+          <div>
+            <dt>College / Unit</dt>
+            <dd>{{ req.college || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Department</dt>
+            <dd>{{ req.department || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Programme</dt>
+            <dd>{{ req.programme || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Sponsor</dt>
+            <dd>{{ req.sponsor || 'Not specified' }}</dd>
+          </div>
+          <div>
+            <dt>Gender</dt>
+            <dd>{{ getStudentGender(req) }}</dd>
+          </div>
+          <div>
+            <dt>Convocation Status</dt>
+            <dd>{{ getRequestOfficeStatus(req, 'Convocation') }}</dd>
+          </div>
+          <div>
+            <dt>Email Address</dt>
+            <dd>{{ req.email || 'Not provided' }}</dd>
+          </div>
+          <div>
+            <dt>Phone Number</dt>
+            <dd>{{ getStudentPhone(req) }}</dd>
+          </div>
+          <div>
+            <dt>Submitted On</dt>
+            <dd>{{ req.requestDate ? (req.requestDate | date:'medium') : 'Not recorded' }}</dd>
+          </div>
+        </dl>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeStudentDetails()">Close</button>
+          <ng-container *ngIf="getRequestOfficeStatus(req) !== 'Approved'">
+            <button type="button" class="btn-danger" (click)="openRejectModal(req)" [disabled]="isSubmitting">Reject</button>
+            <button type="button" class="btn-approve" (click)="approve(req)" [disabled]="isSubmitting">
+              {{ isSubmitting ? 'Processing...' : 'Approve Clearance' }}
+            </button>
+          </ng-container>
+        </footer>
+      </div>
+    </div>
+
+    <!-- REJECT MODAL -->
+    <div class="modal-backdrop" *ngIf="selectedRequest as target" (click)="closeRejectModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h3>Reject Dean of Students Clearance</h3>
+            <p>{{ getStudentName(target) }} ({{ getStudentRegNumber(target) }})</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeRejectModal()" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <p class="reject-hint">
+          Specify the exact student welfare, disciplinary, or loan-board matter the student must resolve before Dean of Students clearance can be approved.
         </p>
 
-
-        <label>
-          Reason for Rejection
+        <label class="modal-field">
+          <span>Rejection Reason *</span>
+          <textarea
+            rows="4"
+            [(ngModel)]="rejectionComment"
+            placeholder="Minimum 5 characters explaining what the student must resolve..."
+          ></textarea>
+          <small class="field-hint" *ngIf="rejectionComment.trim().length > 0 && rejectionComment.trim().length < 5">
+            Please enter at least 5 characters.
+          </small>
         </label>
 
-
-        <textarea
-          [(ngModel)]="rejectionComment"
-          placeholder="Enter reason..."
-        ></textarea>
-
-
-        <div class="modal-actions">
-
+        <footer class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="closeRejectModal()" [disabled]="isSubmitting">Cancel</button>
           <button
             type="button"
-            class="cancel-button"
-            (click)="selectedRequest = null"
-          >
-            Cancel
-          </button>
-
-
-          <button
-            type="button"
-            class="return-button"
+            class="btn-danger"
             (click)="reject()"
-            [disabled]="!rejectionComment.trim()"
+            [disabled]="isSubmitting || rejectionComment.trim().length < 5"
           >
-            Send Reason to Student
+            {{ isSubmitting ? 'Submitting...' : 'Confirm Rejection' }}
           </button>
-
-        </div>
-
+        </footer>
       </div>
-
-    </section>
-
-    <section class="compact-details-overlay" *ngIf="detailsRequest" (click)="detailsRequest = null">
-      <div class="compact-details-card" role="dialog" aria-modal="true" aria-label="Student details" (click)="$event.stopPropagation()">
-        <button type="button" class="compact-close" aria-label="Close" (click)="detailsRequest = null">×</button>
-        <div class="compact-details-heading">
-          <div class="student-photo">
-            <img *ngIf="hasPhoto(detailsRequest)" [src]="getStudentPhoto(detailsRequest)" alt="Student photo" class="student-photo-clickable" (click)="openEnlargedPhoto(getStudentPhoto(detailsRequest))" />
-            <span *ngIf="!hasPhoto(detailsRequest)">{{ getStudentInitials(detailsRequest) }}</span>
-          </div>
-          <div><span class="request-label">Student Information</span><h2>{{ getStudentName(detailsRequest) }}</h2></div>
-        </div>
-        <dl class="compact-details-grid">
-          <div><dt>Registration Number</dt><dd>{{ getStudentRegNumber(detailsRequest) }}</dd></div>
-          <div><dt>Gender</dt><dd>{{ getStudentGender(detailsRequest) }}</dd></div>
-          <div><dt>Email</dt><dd>{{ getStudentEmail(detailsRequest) }}</dd></div>
-          <div><dt>Phone Number</dt><dd>{{ getStudentPhone(detailsRequest) }}</dd></div>
-          <div><dt>Programme</dt><dd>{{ detailsRequest.programme || '—' }}</dd></div>
-          <div><dt>Department</dt><dd>{{ detailsRequest.department || '—' }}</dd></div>
-          <div><dt>College</dt><dd>{{ detailsRequest.college || '—' }}</dd></div>
-          <div><dt>Submitted</dt><dd>{{ detailsRequest.requestDate | date:'mediumDate' }}</dd></div>
-          <div><dt>Convocation Approval</dt><dd>{{ getRequestOfficeStatus(detailsRequest, 'Convocation') }}</dd></div>
-        </dl>
-      </div>
-    </section>
-  </main>
-
-  <!-- ENLARGED PHOTO MODAL -->
-  <div class="photo-modal-overlay" *ngIf="enlargedPhotoUrl" (click)="closeEnlargedPhoto()">
-    <div class="photo-modal-content" (click)="$event.stopPropagation()">
-      <button type="button" class="photo-modal-close" (click)="closeEnlargedPhoto()">×</button>
-      <img [src]="enlargedPhotoUrl" alt="Enlarged Student Photo" />
     </div>
-  </div>
 
+    <!-- PHOTO LIGHTBOX -->
+    <div class="modal-backdrop lightbox" *ngIf="enlargedPhotoUrl as photoUrl" (click)="closePhotoLightbox()">
+      <div class="lightbox-card" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close-btn lightbox-close" (click)="closePhotoLightbox()" aria-label="Close photo">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+        <img [src]="photoUrl" alt="Student Passport Photo" />
+      </div>
+    </div>
+  </main>
 </section>

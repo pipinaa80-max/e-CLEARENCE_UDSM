@@ -1,34 +1,82 @@
 :host {
   display: block;
-}
-
-.upload-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px;
-  background: var(--bg-light);
+  min-height: 100dvh;
 }
 
 .upload-card {
-  width: min(100%, 720px);
-  padding: 30px;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  width: min(100%, 780px);
+  margin: 18px auto 0;
+  padding: 28px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border-soft, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  box-sizing: border-box;
+}
+
+.upload-card header h2 {
+  margin: 0 0 6px;
+  color: var(--udsm-blue-dark, #032847);
+  font-size: 1.25rem;
+}
+
+.upload-card header p {
+  margin: 0 0 20px;
+  color: var(--text-muted, #64748b);
+  font-size: 0.9rem;
+}
+
+.documents-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 14px;
   border-radius: 8px;
-  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.upload-card h1 {
-  margin: 0 0 24px;
-  color: var(--udsm-blue-dark);
-  font-size: 1.7rem;
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
 }
 
-.upload-card header p { margin: -12px 0 22px; color: var(--text-muted); }
-.checklist { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:24px; }
-.checklist > div { display:flex; align-items:flex-start; gap:9px; padding:12px; border:1px solid var(--border-soft); border-radius:var(--radius-control); background:var(--surface-soft); color:var(--text-muted); }
-.checklist .complete { border-color:color-mix(in srgb,var(--success) 35%,var(--border-soft)); color:var(--success); background:color-mix(in srgb,var(--success) 8%,#fff); }.checklist span{font-weight:800;}.checklist strong,.checklist small{display:block;}.checklist small{margin-top:3px;font-size:.75rem;line-height:1.35;}
+.checklist > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft, #e2e8f0);
+  border-radius: 8px;
+  background: var(--surface-soft, #f8fafc);
+  color: var(--text-muted, #64748b);
+}
+
+.checklist .complete {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.checklist span {
+  font-weight: 800;
+}
+
+.checklist strong,
+.checklist small {
+  display: block;
+}
+
+.checklist small {
+  margin-top: 2px;
+  font-size: 0.76rem;
+}
 
 form {
   display: grid;
@@ -39,43 +87,77 @@ form {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: var(--text-dark);
+  color: var(--text-dark, #0f172a);
   font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .field input,
 .field select {
   width: 100%;
   min-height: 46px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-soft);
+  padding: 11px 14px;
+  border: 1px solid var(--border-soft, #cbd5e1);
   border-radius: 8px;
   background: #ffffff;
-  color: var(--text-dark);
+  color: var(--text-dark, #0f172a);
+  box-sizing: border-box;
 }
 
 .file-field input {
   padding: 10px;
 }
 
+.upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
 button {
   min-height: 46px;
+  padding: 0 22px;
   border: none;
   border-radius: 8px;
-  background: var(--udsm-blue);
+  background: var(--udsm-blue, #053f70);
   color: #ffffff;
   cursor: pointer;
   font-weight: 800;
 }
 
-button:hover {
-  background: var(--udsm-blue-dark);
+button:hover:not(:disabled) {
+  background: var(--udsm-blue-dark, #032847);
 }
 
-.success-message {
-  margin: 0;
-  color: var(--success);
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.documents-link {
   font-weight: 700;
+  color: var(--udsm-blue, #053f70);
+  text-decoration: none;
 }
 
-.error-message { margin:0; color:var(--danger); font-weight:700; }.documents-link{margin-top:18px;display:inline-block;font-weight:700;text-decoration:none;}button:disabled{cursor:not-allowed;opacity:.65;}@media(max-width:600px){.checklist{grid-template-columns:1fr;}}
+@media (max-width: 640px) {
+  .upload-card {
+    padding: 18px;
+  }
+
+  .checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .upload-actions button,
+  .documents-link {
+    width: 100%;
+    text-align: center;
+  }
+}

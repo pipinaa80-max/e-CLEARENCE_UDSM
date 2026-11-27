@@ -44,6 +44,26 @@ const parsedPort = rawPort && String(rawPort).trim() !== ''
   ? (/^\d+$/.test(String(rawPort).trim()) ? Number(rawPort) : String(rawPort).trim())
   : 8080;
 
+function parseDurationToMs(raw, fallbackMs) {
+  if (raw === undefined || raw === null || raw === '') return fallbackMs;
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw;
+  const str = String(raw).trim().toLowerCase();
+  if (/^\d+$/.test(str)) return Number(str);
+  const m = str.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h|d)$/);
+  if (!m) return fallbackMs;
+  const val = parseFloat(m[1]);
+  const unit = m[2];
+  const mult = unit === 'ms' ? 1 : unit === 's' ? 1000 : unit === 'm' ? 60_000 : unit === 'h' ? 3_600_000 : 86_400_000;
+  return Math.round(val * mult);
+}
+
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '30m';
+const jwtExpiresInMs = parseDurationToMs(jwtExpiresIn, 30 * 60 * 1000);
+const sessionInactivityTimeoutMs = parseDurationToMs(
+  process.env.SESSION_INACTIVITY_TIMEOUT || '30m',
+  30 * 60 * 1000
+);
+
 const env = {
   NODE_ENV: nodeEnv,
   PORT: parsedPort,
@@ -57,11 +77,12 @@ const env = {
   DB_NAME: process.env.DB_NAME || 'clearance_db',
   DB_TEST_NAME: process.env.DB_TEST_NAME || 'clearance_test_db',
   
-  // JWT Configuration (Default dev secret is strictly for development)
+  // JWT Configuration (Default 30m access token + 30m inactivity timeout)
   JWT_SECRET: jwtSecret,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
+  JWT_EXPIRES_IN: jwtExpiresIn,
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  JWT_EXPIRES_IN_MS: 86400000, // 24 hours in milliseconds (matches Spring Boot)
+  JWT_EXPIRES_IN_MS: jwtExpiresInMs,
+  SESSION_INACTIVITY_TIMEOUT_MS: sessionInactivityTimeoutMs,
   
   // Password Reset Token Expiry (1 hour = 3600000ms)
   PASSWORD_RESET_TOKEN_EXPIRY_MS: 60 * 60 * 1000,
